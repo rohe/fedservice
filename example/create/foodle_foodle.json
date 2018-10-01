@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "openid-client": {
+    "openid_client": {
       "application_type": "web",
       "claims": [
         "sub",

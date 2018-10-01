@@ -49,7 +49,7 @@ def is_lesser(a, b):
     return False
 
 
-class LessOrEqual(object):
+class Statement(object):
     """
     Class in which to store the parse result from flattening a compounded
     metadata statement.
@@ -98,7 +98,7 @@ class LessOrEqual(object):
         else:
             return {}
 
-    def eval(self, orig):
+    def restrict(self, orig):
         """
         Apply the less or equal algorithm on the ordered list of metadata
         statements

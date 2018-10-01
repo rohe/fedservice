@@ -11,7 +11,18 @@ class Issuer(object):
         self.superior = []
 
 
-def get_entity_statement(entity_id, target, httpd):
+def get_entity_statement(entity_id, target, httpd, prefetch=False):
+    """
+    Fetches an entity statement from a metadata API endpoint according to
+    section 4.2.1
+
+    :param entity_id: The issuer of the signed information
+    :param target: The subject about which the information is wanted
+    :param httpd: A http client function used to fetch the information
+    :param prefetch: If set to "true", it indicates that the requester would
+        like the API to prefetch entity statements that may be relevant.
+    :return: A signed JWT
+    """
     url = '{}?target={}'.format(entity_id, target)
     res = httpd('GET', url)
     if res.status_code == 200:

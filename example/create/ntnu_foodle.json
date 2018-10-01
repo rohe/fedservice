@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "openid-client": {
+    "openid_client": {
       "allowed_claims": [
         "sub",
         "name",

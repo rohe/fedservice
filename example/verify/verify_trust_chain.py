@@ -2,7 +2,7 @@
 import argparse
 import json
 
-from fedservice.entity_statement.le import LessOrEqual
+from fedservice.entity_statement.verify import flatten_metadata
 from fedservice.entity_statement.verify import verify_trust_chain
 
 from cryptojwt.key_jar import KeyJar
@@ -29,13 +29,7 @@ if __name__ == "__main__":
 
     print("Chain length: {}".format(len(ves)))
 
-    # start with the trust root
-    res = LessOrEqual()
-    res.le = ves[0]['metadata']['openid-client']
-    for es in ves[1:]:
-        res = LessOrEqual(sup=res)
-        if res.eval(es['metadata']['openid-client']) is False:
-            raise ValueError('Could not flatten')
+    res = flatten_metadata(ves, 'openid_client')
 
     if res:
         print(res.protected_claims())
