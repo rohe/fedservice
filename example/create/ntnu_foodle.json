@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "openid-client": {
+      "allowed_claims": [
+        "sub",
+        "name",
+        "email"
+      ],
+      "id_token_signing_alg_values_supported": [
+        "RS256",
+        "RS512"
+      ],
+      "response_types": [
+        "code"
+      ]
+    }
+  }
+}
