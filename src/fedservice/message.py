@@ -46,6 +46,6 @@ class EntityStatement(JsonWebToken):
         'iss': SINGLE_REQUIRED_STRING,
         'exp': SINGLE_REQUIRED_INT,
         'iat': SINGLE_REQUIRED_INT,
-        'authorityHints': SINGLE_REQUIRED_DICT,
+        'authority_hints': SINGLE_REQUIRED_DICT,
         'metadata': SINGLE_REQUIRED_METADATA
     })

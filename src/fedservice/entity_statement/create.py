@@ -19,9 +19,7 @@ def create_entity_statement(metadata, iss, sub, key_jar, authority_hints=None,
     msg = {"metadata": metadata, 'sub': sub}
 
     if authority_hints:
-        msg['authorityHints'] = authority_hints
-    else:
-        msg['authorityHints'] = []
+        msg['authority_hints'] = authority_hints
 
     # The public signing keys of the subject
     msg['jwks'] = key_jar.export_jwks(issuer=sub)

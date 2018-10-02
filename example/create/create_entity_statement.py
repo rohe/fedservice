@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-j', dest='jwks',
                     help="A file containing a JWKS for this entity")
 parser.add_argument('-m', dest='msg', help="The basic message")
-parser.add_argument('-a', dest='authority', help="authorityHints")
+parser.add_argument('-a', dest='authority', help="authority_hints")
 parser.add_argument('-i', dest='iss')
 parser.add_argument('-s', dest='sub')
 parser.add_argument('-k', dest='sub_jwks',
@@ -23,8 +23,11 @@ kj.import_jwks_as_json(open(args.jwks).read(), args.iss)
 kj.import_jwks_as_json(open(args.sub_jwks).read(), args.sub)
 
 msg = json.loads(open(args.msg).read())
-
-_jwt = create_entity_statement(msg["metadata"], args.iss, args.sub, kj,
-                               args.authority)
+if args.authority:
+    _auth = json.loads(open(args.authority).read())
+    _jwt = create_entity_statement(msg["metadata"], args.iss, args.sub, kj,
+                                   _auth)
+else:
+    _jwt = create_entity_statement(msg["metadata"], args.iss, args.sub, kj)
 
 print(_jwt)
