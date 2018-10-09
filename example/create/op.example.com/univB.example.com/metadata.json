@@ -1,0 +1,7 @@
+{
+  "scopes_supported": [
+    "openid",
+    "email",
+    "profile"
+  ]
+}

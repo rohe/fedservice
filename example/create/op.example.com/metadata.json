@@ -1,0 +1,7 @@
+{
+  "openid_provider":{
+    "issuer": "https://op.example.com",
+    "federation_registration_endpoint": "https://op.example.com/fre",
+    "authorization_endpoint": "https://op.example.com/auth"
+  }
+}
