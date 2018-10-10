@@ -98,13 +98,16 @@ class Statement(object):
         else:
             return {}
 
-    def restrict(self, orig):
+    def restrict(self, orig, strict=True):
         """
         Apply the less or equal algorithm on the ordered list of metadata
         statements
 
         :param orig: Start values
-        :param signer: Who vouched for this information
+        :param strict: Whether the evaluation should be strict, that is return
+            an error if a subordinate tries to register something that is
+            not less or equal to what the subordinates has said or just
+            ignore what the client specifies.
         :return:
         """
         _le = {}
@@ -117,6 +120,8 @@ class Statement(object):
                     _err.append(
                         {'claim': k, 'policy': orig[k], 'err': v,
                          'signer': self.iss})
+                    if not strict:
+                        _le[k] = v
             else:
                 _le[k] = v
 
@@ -127,7 +132,7 @@ class Statement(object):
         self.le = _le
         self.err = _err
 
-        if _err:
+        if strict and _err:
             return False
         else:
             return True

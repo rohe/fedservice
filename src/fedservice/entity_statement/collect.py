@@ -37,75 +37,30 @@ class Collector(object):
         self.web_finger = web_finger
         self.trusted_roots = trusted_roots
 
-    def get_entity_statement(self, entity_id, target, prefetch=False):
+    def load_entity_statements(self, iss, sub, op='', aud='', prefetch=False):
         """
         Fetches an entity statement from a metadata API endpoint according to
         section 4.2.1
 
-        :param entity_id: The issuer of the signed information
-        :param target: The subject about which the information is wanted
-        :param httpd: A http client function used to fetch the information
+        :param iss: The issuer of the signed information
+        :param sub: The subject about which the information is wanted
+        :param op: The operation that should be performed.
+        :param aud: The entity identifier of the requester
         :param prefetch: If set to "true", it indicates that the requester would
             like the API to prefetch entity statements that may be relevant.
-        :return: A signed JWT
+        :return: A JSON encoded list of signed entity statements
         """
-        url = '{}?{}'.format(entity_id, urlencode({'target': target}))
-        res = self.httpd('GET', url)
-        if res.status_code == 200:
-            return res.text
-        else:
-            raise HTTPError(res.text)
+        qpart = {'iss': iss, 'sub': sub}
+        if aud:
+            qpart['aud'] = aud
+        if prefetch:
+            qpart['prefetch'] = prefetch
 
-    def load_entity_statement(self, iss, sub):
-        """
-
-        :param iss: The issuer of the statement
-        :param sub: The entity the statement describes
-        :param httpd: A HTTP client function to use
-        :param web_finger: WebFinger instance
-        :return: An unverified entity statement
-        """
-
-        print('load_entity_statement')
-        print('iss:{}'.format(iss))
-        print('sub:{}'.format(sub))
-
-        # Use web finger to find the metadata API
-        # if self.web_finger:
-        #     metadata_api_endpoint = ''
-        #     # _url = self.web_finger.query(iss)
-        #     p = urlparse(iss)
-        #     _qurl = '{}://{}/.well-known/webfinger?{}'.format(
-        #         p.scheme, p.netloc, urlencode({'rel': REL, 'resource': sub}))
-        #     print('url:{}'.format(_qurl))
-        #
-        #     hres = self.httpd('GET', _qurl)
-        #     if hres.status_code >= 400:
-        #         raise HTTPError(hres.text)
-        #
-        #     res = self.web_finger.parse_response(hres.text)
-        #     if res['subject'] == sub:
-        #         for link in res['links']:
-        #             if link['rel'] == REL:
-        #                 metadata_api_endpoint = link['href']
-        #                 break
-        #     if not metadata_api_endpoint:
-        #         raise ValueError('No Metadata API endpoint')
-        #
-        #     print('metadata_api_endpoint: {}'.format(metadata_api_endpoint))
-        #     try:
-        #         _info = self.get_entity_statement(metadata_api_endpoint,
-        #                                           target=sub)
-        #     except HTTPError as err:
-        #         raise
-        #     else:
-        #         # JSON array
-        #         return json.loads(_info)
-        # else:
         p = urlparse(iss)
         _qurl = '{}://{}/.well-known/openid-federation?{}'.format(
-            p.scheme, p.netloc, urlencode({'iss': iss, 'sub': sub}))
-        print('url:{}'.format(_qurl))
+            p.scheme, p.netloc, urlencode(qpart))
+
+        print('metadata API url:{}'.format(_qurl))
 
         hres = self.httpd('GET', _qurl)
         if hres.status_code >= 400:
@@ -117,11 +72,11 @@ class Collector(object):
         """
         Unravel a branch
 
-        :param iss:
-        :param sub:
-        :return:
+        :param iss: The issuer I want to ask
+        :param sub: The entity I want to ask about
+        :return: An Issuer instance
         """
-        _jarr = self.load_entity_statement(iss, sub)
+        _jarr = self.load_entity_statements(iss, sub)
         if _jarr:
             return self.collect_entity_statements(_jarr)
 

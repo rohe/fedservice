@@ -24,7 +24,7 @@ if __name__ == "__main__":
         kj.import_jwks(jwks, iss)
     _collector = Collector(trusted_roots=trust_roots)
 
-    _jarr = _collector.load_entity_statement(args.entity_id, args.entity_id)
+    _jarr = _collector.load_entity_statements(args.entity_id, args.entity_id)
     _node = _collector.collect_entity_statements(_jarr)
 
     for path in _node.paths():
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
         print("Chain length: {}".format(len(ves)))
 
-        res = flatten_metadata(ves, 'openid_client')
+        res = flatten_metadata(ves, 'openid_client', strict=False)
 
         if res:
             print(40 * '=')

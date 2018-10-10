@@ -1,3 +1,5 @@
+import json
+
 from cryptojwt.jws.jws import factory
 
 from fedservice.entity_statement.statement import Statement
@@ -23,7 +25,7 @@ def verify_trust_chain(es_list, key_jar):
     return ves
 
 
-def flatten_metadata(es_list, entity_type):
+def flatten_metadata(es_list, entity_type, strict=True):
     """
     Will flatten metadata for a specific entity type starting with the trust
     root
@@ -32,15 +34,20 @@ def flatten_metadata(es_list, entity_type):
         issued by the trust root, the second the intermediate below the trust
         root and so on through the list of intermediates until the statement
         issued by the entity itself is reached.
-
     :param entity_type:
+    :param strict:
     :return:
     """
     res = Statement()
     res.le = es_list[0]['metadata'][entity_type]
     for es in es_list[1:]:
+        print(40*'=')
+        print(json.dumps(res.le, sort_keys=True, indent=4,
+                         separators=(',', ': ')))
         res = Statement(sup=res)
-        if res.restrict(es['metadata'][entity_type]) is False:
+        _ms = es['metadata'][entity_type]
+        print(json.dumps(_ms, sort_keys=True, indent=4, separators=(',', ': ')))
+        if res.restrict(es['metadata'][entity_type], strict) is False:
             raise ValueError('Could not flatten')
 
     return res
