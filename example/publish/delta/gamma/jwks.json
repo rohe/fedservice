@@ -1,0 +1,19 @@
+{
+  "keys": [
+    {
+      "kty": "RSA",
+      "use": "sig",
+      "kid": "gamma1",
+      "e": "AQAB",
+      "n": "rd8cEalP3d7V-ihdiYnQ3fe3D7dyyWqcJIY46q-P8QgyDZ1osSGVA8n2FAmIgKZcHg5zvGh5TLRign6KXtDeoOqO9ciVWGFREtL63Vn7agTDUg2Nx6rekzBg8w3jT9MCFgM0Hzyi59K59ko_XRMLr36ffBMoMI6mAhVwC7Go7oQmOZrzqO55ySaA5EdYfbB4U3yvjOvNh2ImeSEhInZaues0JrxPW8XS27bwOnCZWhQ2DmqqZZ6SPZG_TcwuhBttRmNkSVmFQzlFiQS_TJddblWIaVFDGw7G3Icn8F8fibKoMnvPL2acE0DoHwvmcYTVEIvUrxhZLqs9zQosxGOb6w"
+    },
+    {
+      "kty": "EC",
+      "use": "sig",
+      "kid": "gamma2",
+      "crv": "P-256",
+      "x": "_hItjOYY-S6vwbcZx4MO2Uus_6xatLwcGlZTWPtzmQI",
+      "y": "2ldnO0Hy_-OaczsfPp3GW5wwt1WnXhlZpczonWoYKSQ"
+    }
+  ]
+}

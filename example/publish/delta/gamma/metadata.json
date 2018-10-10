@@ -1,0 +1,11 @@
+{
+  "openid_client": {
+    "application_type": "web",
+    "client_name": "Agaton Sax",
+    "scopes": [
+      "openid",
+      "email",
+      "profile"
+    ]
+  }
+}

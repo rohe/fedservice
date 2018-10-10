@@ -1,0 +1,23 @@
+{
+  "keys": [
+    {
+      "kty": "RSA",
+      "use": "sig",
+      "kid": "gamma1",
+      "e": "AQAB",
+      "n": "rd8cEalP3d7V-ihdiYnQ3fe3D7dyyWqcJIY46q-P8QgyDZ1osSGVA8n2FAmIgKZcHg5zvGh5TLRign6KXtDeoOqO9ciVWGFREtL63Vn7agTDUg2Nx6rekzBg8w3jT9MCFgM0Hzyi59K59ko_XRMLr36ffBMoMI6mAhVwC7Go7oQmOZrzqO55ySaA5EdYfbB4U3yvjOvNh2ImeSEhInZaues0JrxPW8XS27bwOnCZWhQ2DmqqZZ6SPZG_TcwuhBttRmNkSVmFQzlFiQS_TJddblWIaVFDGw7G3Icn8F8fibKoMnvPL2acE0DoHwvmcYTVEIvUrxhZLqs9zQosxGOb6w",
+      "d": "Upa55IHCGCezCEKIO76k4eq6n9KJybbEOG0xN_jwrJMyA1mT0x-agtQ5-UaV-lYLR5Oh0grmI1NDv6yP2X3pYhJImeMPXY3MTt68nswRKkjc5mrdv8wgMVY3lvwvz0jxorce2P-aefeUsbKO6o0Tbeb9ppgK7RW1MSQxtrxK_BAtDSMwcjUp8trzk_CyFElEZzYD7a9SfRdRgySRdDQwINkMzH-dJN_RkX8G-rLucLfAPkbE0zf7QVRq_bqxqznm13p7g7yROScvMBeOkUlz5oeelV-dPuvlTu3NuFHIuvpqlPdXVkKMyTBhAnJRdwRK9R0ln8_DVaBo65fhxcSPQQ",
+      "p": "1d3mYdfD5K6x5gJ0CM0q-FkcwNZnhUcyc7goggsjFCitwlX5K3aaUf_VyPq927vXG17aOLaGAeQX9uGXBicnYO8GULHjGJODph8arkTltTkyHtv-B1PGD6aCwr1TuhgxKu3qAKdrlwzTGxz5YUNKQOcCuISSc0RS13vvcdS4fXs",
+      "q": "0CAZT9YFfijOc8en38qcr0rlhfrcXyy258aQAztD6Ul4rHhBuHEgmGJMFrz14pPohmoZfTrfq1QZpYl8dgb4mn_HoSaJJmS9bquZH-hlFfWoAAkOMx9yp25wL0SlpUCIf9rp5S6j-QEfk5WTc0I20ASxbrCnlsKgpcUZgHxjOFE"
+    },
+    {
+      "kty": "EC",
+      "use": "sig",
+      "kid": "gamma2",
+      "crv": "P-256",
+      "x": "_hItjOYY-S6vwbcZx4MO2Uus_6xatLwcGlZTWPtzmQI",
+      "y": "2ldnO0Hy_-OaczsfPp3GW5wwt1WnXhlZpczonWoYKSQ",
+      "d": "K5xz8k6sAZE4IQboY4Igaf5O6k6anA13g5PMhYhffCM"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "https://127.0.0.1:6000/alpha": {
+    "keys": [
+      {
+        "kty": "RSA",
+        "use": "sig",
+        "kid": "alpha1",
+        "e": "AQAB",
+        "n": "6B5BoSGfQ3dNvsNQ6U5Jph0wqszNNXAsEcMarjOUdSUWg7ayHJ4x0w62qZ4eGH1nFcj5OtlYL354fyfHOsAOUhiAHDrd9g6NZNLgA5QjykT1zwCHky8dXP6GfUrkrhVouIo5ynVWNqtxVMDsAtwYblqevKeNpVfBGNBV79FiIQPBboqOG8jo1cOthXNfmHsTdmKRETr385B1Hbz1jBpXA6MnZcCF3mwBueHJrSuRV4UFKf7MdRhcUYx9lDXGpe7lCijh1dfPd-Qn5sfTCljyKnad26MZJmYYLddIo1Fuo0r6cHjnuEMoQp7PdwCZNyOo84M2i4DFCOVEgjfEBRioMw",
+        "d": "2iuuJiRzDLezRG1SvKeQA-mF19Q9wU-YrG1Ew53JmT3t5oku6kUqsaUvvUfYI86iuNA4qb6l66Yk3edmlGr2SuWqbF5MSD0vWyf11IdGCJU-sX1e8NGk-MZnZJajUJjg4CtT3F7jVOlZ0X6vlpSHBhp4_vtB4LoVzhvr2khkwn9545_Jzf03sGcK0pdK9aQ3liuqgf6hJOJdXeNayxvsw2cNBjse34J0GfuLfQTf3qDlNkZW04hKFmwS5GfWspMjm79C5M9BotadpI5aWsIGSSMPUWPloMEFC4_58AuMlcGY1Kjd_MY_kFbxnQOdoVUOFK_9QdRiWPlAcehEXBXQ-Q",
+        "p": "9xjXeYiHTMH6-aANBzh7V1C7O5i1gvU6DmeVYUIyvpCjxBEAhNGso9jpQg6Qi_pYliUtJSb8k_j3GCYw9Tccls8_t9tYAskG0bgWtxU_Faoq2LLR5rEduPVogUDNRiAc7r7zLgXHR_55wYm2oBdWm6hiRKmoDYQukBYsw97ZUM8",
+        "q": "8HtA8d2wRk4UgF9kVetLy6WjV2RpCL4KDlsWV4POVh6XgUxUXITPegVUBSvkf3iKjaJ84G28ClBjL_UzA8jBkJeZwztLHPqiVlsxf4dInGqUdIU6JXF6M8FoRuRrcdAouDIqa-VXzBMHL6Gr01fR4A60ojsTUZKJtPyQ5QbGI10"
+      },
+      {
+        "kty": "EC",
+        "use": "sig",
+        "kid": "alpha2",
+        "crv": "P-256",
+        "x": "NTKbxqcPqk30mkxwNqTN90DYkE4baXUoonbGionNHVo",
+        "y": "zlHh5u8D7E9Sfff586he6f8Ij_WTW29vKDZ3tH_hE7E",
+        "d": "0aYtGcZHULerRRiUbmtpi0T3y5lC7o4zZEq8fpA56u0"
+      }
+    ]
+  }
+}

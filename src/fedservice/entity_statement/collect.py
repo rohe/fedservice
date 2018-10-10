@@ -62,7 +62,7 @@ class Collector(object):
 
         print('metadata API url:{}'.format(_qurl))
 
-        hres = self.httpd('GET', _qurl)
+        hres = self.httpd('GET', _qurl, verify=False)
         if hres.status_code >= 400:
             raise HTTPError(hres.text)
 

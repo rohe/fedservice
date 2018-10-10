@@ -1,0 +1,15 @@
+{
+  "openid_client": {
+    "application_type": "web",
+    "grant_types_supported": [
+      "authorization_code"
+    ],
+    "scopes": [
+      "openid",
+      "email",
+      "profile",
+      "phone"
+    ],
+    "technical_contact": "tech-support@bykoping.se"
+  }
+}

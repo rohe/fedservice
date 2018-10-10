@@ -2,7 +2,7 @@ from cryptojwt.jwt import JWT
 
 
 def create_entity_statement(metadata, iss, sub, key_jar, authority_hints=None,
-                            lifetime=86400):
+                            lifetime=86400, **kwargs):
     """
 
     :param metadata: The entity's metadata organised as a dictionary with the
@@ -20,6 +20,9 @@ def create_entity_statement(metadata, iss, sub, key_jar, authority_hints=None,
 
     if authority_hints:
         msg['authority_hints'] = authority_hints
+
+    if kwargs:
+        msg.update(kwargs)
 
     # The public signing keys of the subject
     msg['jwks'] = key_jar.export_jwks(issuer=sub)
