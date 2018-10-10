@@ -1,0 +1,18 @@
+{
+  "https://edugain.andreas.labs.uninett.no/openid": {
+    "keys": [
+      {
+        "kty": "RSA",
+        "use": "sig",
+        "alg": "RS256",
+        "n": "0ZkbNISTX9JMXhSjC0xxpdu-4QKYVF6QhDzW31T7mjuAtQoKwFRBAuNX29KEQS_YuZ79TqTBJgkS_XpnYfZRB12vuvHWUg6pi4jo-h_eIQP54H9K5GlUJj_b3wsmm9VVUH12F_kvpGiW5kanU4faBoyenE5KNTjQBQnkBP6ohlisEos-yanRwXku0CddoNyRdwg19LSmT12UTWpAFFAoK9dWqYAcPv9oOYff4iz4aIkEBYD-OzArQIFB_Tlu0lkuN_D3ylmaJJvi2RhMQEbQJ5jNf5JLddlMnRQ9sUkbeiJT755Zz_0Y-wgzu_-NgDqAEAiPYk0JGP4ZFgVFL6778Q",
+        "e": "AQAB",
+        "key_ops": [
+          "verify"
+        ],
+        "ext": true,
+        "kid": "feide"
+      }
+    ]
+  }
+}
