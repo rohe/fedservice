@@ -3,8 +3,6 @@ import argparse
 import json
 
 from cryptojwt.key_jar import KeyJar
-# from oidcservice.oidc.service import WebFinger
-# from oidcservice.service_context import ServiceContext
 
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.verify import flatten_metadata

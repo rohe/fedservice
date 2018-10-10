@@ -69,47 +69,49 @@ class Collector(object):
         print('load_entity_statement')
         print('iss:{}'.format(iss))
         print('sub:{}'.format(sub))
-        metadata_api_endpoint = ''
+
         # Use web finger to find the metadata API
-        if self.web_finger:
-            # _url = self.web_finger.query(iss)
-            p = urlparse(iss)
-            _qurl = '{}://{}/.well-known/webfinger?{}'.format(
-                p.scheme, p.netloc, urlencode({'rel': REL, 'resource': sub}))
-            print('url:{}'.format(_qurl))
+        # if self.web_finger:
+        #     metadata_api_endpoint = ''
+        #     # _url = self.web_finger.query(iss)
+        #     p = urlparse(iss)
+        #     _qurl = '{}://{}/.well-known/webfinger?{}'.format(
+        #         p.scheme, p.netloc, urlencode({'rel': REL, 'resource': sub}))
+        #     print('url:{}'.format(_qurl))
+        #
+        #     hres = self.httpd('GET', _qurl)
+        #     if hres.status_code >= 400:
+        #         raise HTTPError(hres.text)
+        #
+        #     res = self.web_finger.parse_response(hres.text)
+        #     if res['subject'] == sub:
+        #         for link in res['links']:
+        #             if link['rel'] == REL:
+        #                 metadata_api_endpoint = link['href']
+        #                 break
+        #     if not metadata_api_endpoint:
+        #         raise ValueError('No Metadata API endpoint')
+        #
+        #     print('metadata_api_endpoint: {}'.format(metadata_api_endpoint))
+        #     try:
+        #         _info = self.get_entity_statement(metadata_api_endpoint,
+        #                                           target=sub)
+        #     except HTTPError as err:
+        #         raise
+        #     else:
+        #         # JSON array
+        #         return json.loads(_info)
+        # else:
+        p = urlparse(iss)
+        _qurl = '{}://{}/.well-known/openid-federation?{}'.format(
+            p.scheme, p.netloc, urlencode({'iss': iss, 'sub': sub}))
+        print('url:{}'.format(_qurl))
 
-            hres = self.httpd('GET', _qurl)
-            if hres.status_code >= 400:
-                raise HTTPError(hres.text)
+        hres = self.httpd('GET', _qurl)
+        if hres.status_code >= 400:
+            raise HTTPError(hres.text)
 
-            res = self.web_finger.parse_response(hres.text)
-            if res['subject'] == sub:
-                for link in res['links']:
-                    if link['rel'] == REL:
-                        metadata_api_endpoint = link['href']
-                        break
-            if not metadata_api_endpoint:
-                raise ValueError('No Metadata API endpoint')
-
-            print('metadata_api_endpoint: {}'.format(metadata_api_endpoint))
-            try:
-                _info = self.get_entity_statement(metadata_api_endpoint, target=sub)
-            except HTTPError as err:
-                raise
-            else:
-                # JSON array
-                return json.loads(_info)
-        else:
-            p = urlparse(iss)
-            _qurl = '{}://{}/.well-known/openid-federation?{}'.format(
-                p.scheme, p.netloc, urlencode({'iss': iss, 'sub': sub}))
-            print('url:{}'.format(_qurl))
-
-            hres = self.httpd('GET', _qurl)
-            if hres.status_code >= 400:
-                raise HTTPError(hres.text)
-
-            return json.loads(hres.text)
+        return json.loads(hres.text)
 
     def follow_path(self, iss, sub):
         """
