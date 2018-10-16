@@ -29,6 +29,16 @@ class Issuer(object):
                     res.append(l)
             return res
 
+    def __iter__(self):
+        for path in self.paths():
+            yield path
+
+    def is_leaf(self):
+        for sup in self.superior:
+            if 'sub_is_leaf' in sup.jws:
+                return True
+        return False
+
 
 class Collector(object):
     def __init__(self, httpd=None, web_finger=None, trusted_roots=None):

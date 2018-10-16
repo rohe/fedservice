@@ -8,6 +8,11 @@ __author__ = 'roland'
 logger = logging.getLogger(__name__)
 
 
+def is_singleton(a):
+    if isinstance(a, int) or isinstance(a, str) or isinstance(a, bool):
+        return True
+
+
 def is_lesser(a, b):
     """
     Verify that a is <= then b
@@ -18,7 +23,10 @@ def is_lesser(a, b):
     """
 
     if type(a) != type(b):
-        return False
+        if isinstance(b, list) and is_singleton(a):
+            a = [a]
+        else:
+            return False
 
     if isinstance(a, str) and isinstance(b, str):
         return a == b

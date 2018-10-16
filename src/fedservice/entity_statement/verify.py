@@ -25,6 +25,34 @@ def verify_trust_chain(es_list, key_jar):
     return ves
 
 
+def sub_is_leaf(es):
+    try:
+        leaf = es['sub_is_leaf']
+    except KeyError:
+        leaf = False  # default
+
+    return leaf
+
+
+def verify_leaf_status(es_list):
+    if len(es_list) < 2:
+        ValueError('Not a trust chain')
+
+    last_entity_statement = es_list[-1]
+    if last_entity_statement['iss'] != last_entity_statement['sub']:
+        raise ValueError('Trust chain does not start with a leaf')
+
+    for es in es_list[:-2]:
+        if sub_is_leaf(es):
+            raise ValueError('Leaf in the middle of a trust chain')
+
+    # Is this valid
+    # leaf = sub_is_leaf(es_list[-2])
+    # if not leaf:
+    #     raise ValueError('')
+    return True
+
+
 def flatten_metadata(es_list, entity_type, strict=True):
     """
     Will flatten metadata for a specific entity type starting with the trust

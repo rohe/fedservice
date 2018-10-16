@@ -39,13 +39,14 @@ class MetaAPI(object):
             sub = iss
 
         _ip = urlparse(iss)
-        _iss_dir = "{}".format(_ip.path[1:])
+        _iss_dir = "{}".format('_'.join(_ip.path[1:].split('/')))
         if not os.path.isdir(_iss_dir):
             raise cherrypy.HTTPError(message='No such issuer')
 
         if iss != sub:
             _sp = urlparse(sub)
-            _sub_dir = "{}/{}".format(_ip.path[1:], _sp.path[1:])
+            _sub_dir = "{}/{}".format('_'.join(_ip.path[1:].split('/')),
+                                      '_'.join(_sp.path[1:].split('/')))
 
             if not os.path.isdir(_sub_dir):
                 raise cherrypy.HTTPError(
@@ -73,6 +74,10 @@ class MetaAPI(object):
             args = {'authority_hints': ahint}
         else:
             args = {}
+
+        leaf_file = os.path.join(_sub_dir, 'leaf')
+        if os.path.isfile(leaf_file):
+            args['sub_is_leaf'] = True
 
         jws = create_entity_statement(metadata, iss, sub, key_jar, **args)
         cherrypy.response.headers['Content-Type'] = 'application/json'

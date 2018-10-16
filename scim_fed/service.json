@@ -1,0 +1,26 @@
+{
+  "iat": 1539339770,
+  "exp": 1539343405,
+  "sub": "https://serviceA.example.com",
+  "iss": "https://serviceA.example.com",
+  "jwks": {
+    "keys": [
+      {
+        "kty": "RSA",
+        "use": "sig",
+        "kid": "beta1",
+        "e": "AQAB",
+        "n": "4EScupdUy2F4iPSOrEwhcVrFSRYQtUl9c6xH6qaPVJxKnYls-NRuCyH5I5YrRnqvYwpaHZHRnOgHLzu3AtDTdLt-r1Ejer82tUzJg3auu7yBXEW5752dhvZomODNmZ5hy-2cIzjLcR4-syCY1Ulo_9KTrv7MONX6NIKfbv6aPRq1Tm0P1IS4zgQsAQwTmrfYI1fxX9rQ7KSZiXKr4kQPpL251rrm8XKhEGaqd9URPQfaH2ZxFoY78eVdNCwdK1oM-0cW-3yEEGJkzHWuNbt2A82wMdhqjUCpKwfUKp7NqPFWx1iOvQPB-aEAVVFI3kg_WowKwJtrSQPylOa8_RPOSQ"
+      },
+      {
+        "kty": "EC",
+        "use": "sig",
+        "kid": "beta2",
+        "crv": "P-256",
+        "x": "8QRAyC_MsN8Z0hqhtObNZ6lTfXrW3OJgjDAMNtsJMWc",
+        "y": "Gb0cluUaTP4UIafnhwcn0w06u-zXRPeqvtAj-XkooDw"
+      }
+    ]
+  },
+  "consumer_endpoint": "https://serviceA.example.com/import"
+}

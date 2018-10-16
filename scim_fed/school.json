@@ -1,0 +1,25 @@
+{
+  "iat": 1539339770,
+  "exp": 1539343405,
+  "sub": "https://minerva.se",
+  "iss": "https://minerva.se",
+  "jwks": {
+    "keys": [
+      {
+        "kty": "RSA",
+        "use": "sig",
+        "kid": "delta1",
+        "e": "AQAB",
+        "n": "pPF_AAFtWzLTFp2PdOcbs484HhvaIZVCm_q8ApLauwxKY5AlcHXChxcNsxR_aT4x0kpqid7Ff_-zhPpx2n11KST7lAeC6H9tQIY22emCMSaby4h4M3wpsR7IMMT72T523dxagkRnIcWhpJmWdMrcafka6FW6E01Tx_FX2siUKQ-BJlA-BGByZrblb0TAf8B-p0nDCShXoNY1hOpN2VgiTJ0ME6o8_pkME7ZyN-j11ZahdyO9ezN6oBpbCls544u0wSZNOxAcBhcP-xsNGmT7S8LoEf6ZzLRxvJ3-xjesz3NfszbTylUj0Igr2HhDinH165xPO_dE5lP1NrwfLACUqQ"
+      },
+      {
+        "kty": "EC",
+        "use": "sig",
+        "kid": "delta2",
+        "crv": "P-256",
+        "x": "xhfpwkyzqIzPmw0I-vPlrsXf3WB3Ez3-38MWoqbTtuM",
+        "y": "EkGwf9XBZeKNBocA4Ptf3DxV7oBFNJtq1bM2TlRwL-Y"
+      }
+    ]
+  }
+}
