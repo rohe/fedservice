@@ -1,21 +1,22 @@
+import cherrypy
 import json
 import logging
 import os
-from urllib.parse import urlparse
 
-import cherrypy
-from cryptojwt.key_jar import KeyJar
 from cryptojwt.utils import as_bytes
 
-from fedservice.entity_statement.create import create_entity_statement
+from fedservice.entity_statement_api import mk_path
+
+from fedservice.metadata_api.fs import make_entity_statement
 
 logger = logging.getLogger(__name__)
 
 
 class MetaAPI(object):
-    def __init__(self, base_url, static_dir='static'):
+    def __init__(self, base_url, data_dir='.', static_dir='static'):
         self.base_url = base_url
         self.static_dir = static_dir
+        self.data_dir = data_dir
 
     @cherrypy.expose
     def index(self):
@@ -30,56 +31,41 @@ class MetaAPI(object):
         return '\n'.join(response)
 
     @cherrypy.expose
-    def entity_statement(self, **kwargs):
-        iss = kwargs['iss']
+    def resolve_metadata(self, **kwargs):
+        return "OK"
 
+    @cherrypy.expose
+    def listing(self, **kwargs):
         try:
-            sub = kwargs['sub']
+            iss = kwargs['iss']
         except KeyError:
-            sub = iss
+            raise cherrypy.HTTPError(400, 'Missing required argument')
 
-        _ip = urlparse(iss)
-        _iss_dir = "{}".format('_'.join(_ip.path[1:].split('/')))
+        _iss_dir = mk_path(self.data_dir, iss)
         if not os.path.isdir(_iss_dir):
             raise cherrypy.HTTPError(message='No such issuer')
 
-        if iss != sub:
-            _sp = urlparse(sub)
-            _sub_dir = "{}/{}".format('_'.join(_ip.path[1:].split('/')),
-                                      '_'.join(_sp.path[1:].split('/')))
+        return "OK"
 
-            if not os.path.isdir(_sub_dir):
-                raise cherrypy.HTTPError(
-                    message='Issuer do not sign for that entity')
+    @cherrypy.expose
+    def metadata_api(self, **kwargs):
+        try:
+            _op = kwargs['op']
+        except KeyError:
+            _op = "fetch"
+
+        if _op == 'fetch':
+            return self.entity_statement(**kwargs)
+        elif _op == 'resolve_metadata':
+            return self.resolve_metadata(**kwargs)
+        elif _op == 'listing':
+            return self.listing(**kwargs)
         else:
-            _sub_dir = _iss_dir
+            raise cherrypy.HTTPError(400, "Unknown operation")
 
-        metadata = json.loads(open(os.path.join(_sub_dir,
-                                                'metadata.json')).read())
-        key_jar = KeyJar()
-        iss_jwks = open(os.path.join(_iss_dir, 'jwks.json')).read()
-        key_jar.import_jwks_as_json(iss_jwks, iss)
-
-        if iss != sub:
-            sub_jwks = open(os.path.join(_sub_dir, 'jwks.json')).read()
-            key_jar.import_jwks_as_json(sub_jwks, sub)
-
-        roots_file = os.path.join(_sub_dir, 'roots.json')
-        if os.path.isfile(roots_file):
-            _roots = json.loads(open(roots_file).read())
-            ahint = {}
-            for key, val in _roots.items():
-                vals = ["{}/{}".format(self.base_url, v) for v in val]
-                ahint["{}/{}".format(self.base_url, key)] = vals
-            args = {'authority_hints': ahint}
-        else:
-            args = {}
-
-        leaf_file = os.path.join(_sub_dir, 'leaf')
-        if os.path.isfile(leaf_file):
-            args['sub_is_leaf'] = True
-
-        jws = create_entity_statement(metadata, iss, sub, key_jar, **args)
+    @cherrypy.expose
+    def entity_statement(self, **kwargs):
+        jws = make_entity_statement(self.base_url, self.data_dir, **kwargs)
         cherrypy.response.headers['Content-Type'] = 'application/json'
         return as_bytes(json.dumps([jws]))
 
@@ -94,6 +80,6 @@ class MetaAPI(object):
             a = vpath.pop(0)
             b = vpath.pop(0)
             if a == '.well-known' and b == 'openid-federation':
-                return self.entity_statement
+                return self.metadata_api
 
         return self

@@ -1,4 +1,5 @@
 import json
+import logging
 from urllib.parse import urlencode, urlparse
 
 import requests
@@ -6,6 +7,8 @@ from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
 
 REL = 'http://oauth.net/specs/federation/1.0/entity'
+
+logger = logging.getLogger(__name__)
 
 
 class HTTPError(Exception):
@@ -41,10 +44,9 @@ class Issuer(object):
 
 
 class Collector(object):
-    def __init__(self, httpd=None, web_finger=None, trusted_roots=None):
+    def __init__(self, httpd=None, trusted_roots=None):
         self.seen = []
         self.httpd = httpd or requests.request
-        self.web_finger = web_finger
         self.trusted_roots = trusted_roots
 
     def load_entity_statements(self, iss, sub, op='', aud='', prefetch=False):
@@ -70,7 +72,7 @@ class Collector(object):
         _qurl = '{}://{}/.well-known/openid-federation?{}'.format(
             p.scheme, p.netloc, urlencode(qpart))
 
-        print('metadata API url:{}'.format(_qurl))
+        logger.debug('metadata API url:{}'.format(_qurl))
 
         hres = self.httpd('GET', _qurl, verify=False)
         if hres.status_code >= 400:

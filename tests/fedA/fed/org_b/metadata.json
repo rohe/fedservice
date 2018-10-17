@@ -1,0 +1,11 @@
+{
+  "openid_provider": {
+    "organization": "B",
+    "id_token_signing_alg_values_supported": [
+      "ES256", "ES512"
+    ],
+    "authorization_endpoint": "https://example.org/b/authorization",
+    "token_endpoint": "https://example.org/b/accessToken",
+    "userinfo_endpoint": "https://example.org/b/people"
+  }
+}

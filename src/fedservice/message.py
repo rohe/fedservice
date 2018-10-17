@@ -1,7 +1,8 @@
 from oidcmsg.message import Message, msg_ser
 from oidcmsg.message import SINGLE_REQUIRED_INT
 from oidcmsg.message import SINGLE_REQUIRED_STRING
-from oidcmsg.oidc import JsonWebToken
+from oidcmsg.oidc import JsonWebToken, SINGLE_OPTIONAL_DICT, \
+    SINGLE_OPTIONAL_BOOLEAN
 from oidcmsg.oidc import ProviderConfigurationResponse
 from oidcmsg.oidc import RegistrationResponse
 from oidcmsg.oidc import deserialize_from_one_of
@@ -37,6 +38,7 @@ def provider_info_deser(val, sformat="json"):
 
 
 SINGLE_REQUIRED_METADATA = (Message, True, msg_ser, provider_info_deser, False)
+SINGLE_OPTIONAL_METADATA = (Message, False, msg_ser, provider_info_deser, False)
 
 
 class EntityStatement(JsonWebToken):
@@ -47,5 +49,9 @@ class EntityStatement(JsonWebToken):
         'exp': SINGLE_REQUIRED_INT,
         'iat': SINGLE_REQUIRED_INT,
         'authority_hints': SINGLE_REQUIRED_DICT,
-        'metadata': SINGLE_REQUIRED_METADATA
+        'metadata': SINGLE_OPTIONAL_METADATA,
+        'sub_meta': SINGLE_OPTIONAL_DICT,
+        'sub_is_leaf': SINGLE_OPTIONAL_BOOLEAN,
+        'jwks': SINGLE_OPTIONAL_DICT,
+        'signing_keys': SINGLE_OPTIONAL_DICT
     })

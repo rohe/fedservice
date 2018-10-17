@@ -4,6 +4,9 @@ import json
 import logging
 
 from cryptojwt.key_jar import KeyJar
+from pygments import highlight
+from pygments.formatters.terminal import TerminalFormatter
+from pygments.lexers.data import JsonLexer
 
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.verify import flatten_metadata
@@ -33,6 +36,8 @@ if __name__ == "__main__":
     _jarr = _collector.load_entity_statements(args.entity_id, args.entity_id)
     _node = _collector.collect_entity_statements(_jarr)
 
+    branch = {}
+
     for path in _node.paths():
         # Verify the trust chain
         path.reverse()
@@ -45,12 +50,15 @@ if __name__ == "__main__":
             if not leaf_ok:
                 continue
 
-        print("Chain length: {}".format(len(ves)))
-
         res = flatten_metadata(ves, args.entity_type, strict=False)
 
         if res:
-            print(40 * '=')
-            print(res.protected_claims())
-            print(40 * '-')
-            print(res.unprotected_and_protected_claims())
+            tr = ves[0]['iss']
+            _dict = res.unprotected_and_protected_claims()
+            try:
+                branch[tr].append(_dict)
+            except KeyError:
+                branch[tr] = [_dict]
+
+    json_str = json.dumps(branch, indent=2)
+    print(highlight(json_str, JsonLexer(), TerminalFormatter()))

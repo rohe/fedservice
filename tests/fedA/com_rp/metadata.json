@@ -1,0 +1,17 @@
+{
+  "openid_client": {
+    "redirect_uris": [
+      "https://example.com/rp/cb"
+    ],
+    "response_types": [
+      "code"
+    ],
+    "scope": [
+      "openid",
+      "profile",
+      "email",
+      "phone"
+    ],
+    "token_endpoint_auth_method": "client_secret_basic"
+  }
+}

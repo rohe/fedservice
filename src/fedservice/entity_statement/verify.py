@@ -69,12 +69,9 @@ def flatten_metadata(es_list, entity_type, strict=True):
     res = Statement()
     res.le = es_list[0]['metadata'][entity_type]
     for es in es_list[1:]:
-        print(40*'=')
-        print(json.dumps(res.le, sort_keys=True, indent=4,
-                         separators=(',', ': ')))
         res = Statement(sup=res)
         _ms = es['metadata'][entity_type]
-        print(json.dumps(_ms, sort_keys=True, indent=4, separators=(',', ': ')))
+
         if res.restrict(es['metadata'][entity_type], strict) is False:
             raise ValueError('Could not flatten')
 

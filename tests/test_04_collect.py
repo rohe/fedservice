@@ -4,9 +4,9 @@ from urllib.parse import urlparse, parse_qs
 
 from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
+from fedservice.entity_statement.collect import Collector
 
-from fedservice.entity_statement.collect import get_entity_statement, \
-    collect_entity_statements
+BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 
 class MockResponse():
@@ -23,18 +23,19 @@ class Publisher(object):
     def __call__(self, method, url, **kwargs):
         p = urlparse(url)
         _qs = parse_qs(p.query)
-        pt = urlparse(_qs['target'][0])
+        pt = urlparse(_qs['sub'][0])
         _jws = open(os.path.join(self.dir, p.netloc, pt.netloc)).read().strip()
 
-        return MockResponse(200, _jws,
+        return MockResponse(200, '["{}"]'.format(_jws),
                             headers={'content-type': "application/jws"})
 
 
 def test_get_entity_statement():
     entity_id = 'https://foodle.uninett.no'
     target = 'https://foodle.uninett.no'
-    _jws = get_entity_statement(entity_id, target, httpd=Publisher('data'))
-    _jwt = factory(_jws)
+    collector = Collector(httpd=Publisher(os.path.join(BASE_PATH,'data')))
+    _jws = collector.load_entity_statements(entity_id, target)
+    _jwt = factory(_jws[0])
 
     assert _jwt
     msg = json.loads(as_unicode(_jwt.jwt.part[1]))
@@ -45,13 +46,19 @@ def test_get_entity_statement():
 def test_collect_entity_statements():
     entity_id = 'https://foodle.uninett.no'
     target = 'https://foodle.uninett.no'
-    _jws = get_entity_statement(entity_id, target, httpd=Publisher('data'))
-    _jwt = factory(_jws)
+    collector = Collector(httpd=Publisher(os.path.join(BASE_PATH,'data')))
+    _jws = collector.load_entity_statements(entity_id, target)
+    _jwt = factory(_jws[0])
 
     assert _jwt
     es = json.loads(as_unicode(_jwt.jwt.part[1]))
-    node = collect_entity_statements(es, httpd=Publisher('data'))
+    collector = Collector(httpd=Publisher(os.path.join(BASE_PATH,'data')))
+    _jws = collector.load_entity_statements(entity_id, target)
+    node = collector.collect_entity_statements(_jws)
     paths = node.paths()
+
     assert len(paths) == 1
     assert len(paths[0]) == 3
-    assert paths[0][0]["iss"] == 'https://foodle.uninett.no'
+    _jws00 = factory(paths[0][0])
+    payload = _jws00.jwt.payload()
+    assert payload["iss"] == 'https://foodle.uninett.no'
