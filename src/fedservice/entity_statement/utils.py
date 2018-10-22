@@ -7,7 +7,7 @@ def create_authority_hints(default_hints, paths):
     """
 
     res = {}
-    for sup, fos in default_hints.items:
+    for sup, fos in default_hints.items():
         for fo, statem in paths.items():
             if fo in fos:
                 try:

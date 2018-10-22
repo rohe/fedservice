@@ -90,6 +90,9 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         possible = list(set(paths.keys()).intersection(_fe.tr_priority))
         _fe.provider_federations = possible
 
+        _fe.proposed_authority_hints = create_authority_hints(
+            _fe.authority_hints, paths)
+
         if len(possible) == 1:
             claims = paths[possible[0]][0].protected_claims()
             _sc.provider_info = self.response_cls(**claims)
@@ -155,11 +158,10 @@ class FedRegistrationRequest(Registration):
         """
 
         _fe = self.service_context.federation_entity
-        _ah = dict([(k,v) for k, v in _fe.authority_hints.items() if
-               k in _fe.provider_federations])
 
-        return _fe.create_entity_statement(request_args.to_dict(), _fe.id,
-                                           _fe.id, authority_hints=_ah)
+        return _fe.create_entity_statement(
+            request_args.to_dict(), _fe.id, _fe.id,
+            authority_hints=_fe.proposed_authority_hints)
 
     def post_parse_response(self, resp, **kwargs):
         """
@@ -179,9 +181,6 @@ class FedRegistrationRequest(Registration):
 
         # paths is a dictionary with the federation identifier as keys and
         # lists of statements as values
-
-        _fe.proposed_authority_hints = create_authority_hints(
-            _fe.authority_hints, paths)
 
         fid, claims = _fe.pick_metadata(paths)
         return claims
