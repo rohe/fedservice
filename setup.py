@@ -64,7 +64,7 @@ setup(
     install_requires=[
         "cryptojwt>=0.4.4",
         'oidcmsg>=0.6.2',
-        'oidcservice>=0.5.13'
+        'oidcservice>=0.5.13', 'oidcendpoint'
     ],
     tests_require=[
         "responses",

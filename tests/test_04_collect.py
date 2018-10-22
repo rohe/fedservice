@@ -51,7 +51,7 @@ def test_collect_entity_statements():
     _jwt = factory(_jws[0])
 
     assert _jwt
-    es = json.loads(as_unicode(_jwt.jwt.part[1]))
+
     collector = Collector(httpd=Publisher(os.path.join(BASE_PATH,'data')))
     _jws = collector.load_entity_statements(entity_id, target)
     node = collector.collect_entity_statements(_jws)

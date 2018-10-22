@@ -4,35 +4,34 @@ import sys
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 
-from cryptojwt.key_jar import KeyJar
+from oidcmsg.exception import RegistrationError
+
+from fedservice.entity_statement.construct import \
+    map_configuration_to_preference
+from oidcmsg.oidc import ProviderConfigurationResponse
+from oidcmsg.oidc import RegistrationRequest
+from oidcmsg.oidc import RegistrationResponse
+
 from oidcservice.oidc import service
 from oidcservice.oidc.service import ProviderInfoDiscovery
+from oidcservice.oidc.service import Registration
 from oidcservice.service import Service
 
-from fedservice import message
-from fedservice.entity_statement.collect import Collector
-from fedservice.exception import NoSuitableFederation
 from fedservice.exception import NoTrustedClaims
 from fedservice.keybundle import KeyBundle
-from fedservice.utils import eval_paths
 
 logger = logging.getLogger(__name__)
 
 
 class FedProviderInfoDiscovery(ProviderInfoDiscovery):
-    response_cls = message.EntityStatement
+    response_cls = ProviderConfigurationResponse
 
     def __init__(self, service_context, state_db, conf=None,
                  client_authn_factory=None, **kwargs):
         ProviderInfoDiscovery.__init__(
             self, service_context, state_db, conf=conf,
             client_authn_factory=client_authn_factory)
-
-        self.collector = Collector(trusted_roots=service_context.trusted_roots)
-        self.entity_type = 'openid_provider'
-        self.tr_key_jar = KeyJar()
-        for iss, jwks in service_context.trusted_roots.items():
-            self.tr_key_jar.import_jwks(jwks, iss)
+        self.federation_entity = self.service_context.federation_entity
 
     def get_request_parameters(self, method="GET", **kwargs):
         qpart = {'iss': kwargs["iss"]}
@@ -71,7 +70,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         self.service_context.provider_info = _pi
         self.service_context.federation_entity.federation = trust_root_id
 
-    def update_service_context(self, metadata_set, **kwargs):
+    def update_service_context(self, paths, **kwargs):
         """
         The list of :py:class:`fedoidcmsg.operator.LessOrEqual` instances are
         stored in *provider_federations*.
@@ -79,42 +78,29 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         easy and the name of the federation are stored in the *federation*
         attribute while the provider info are stored in the service_context.
 
-        :param metadata_set: A dictionary with trust root entity IDs as keys and
+        :param paths: A dictionary with trust root entity IDs as keys and
             lists of Statement instances as values
         :param kwargs:
         """
-        if len(metadata_set) == 1 and \
-                len(metadata_set[list(metadata_set.keys())[0]]) == 1:
-            self.service_context.provider_info = metadata_set[
-                list(metadata_set.keys())[0]]
+
+        _sc = self.service_context
+        _fe = _sc.federation_entity
+
+        possible = list(set(paths.keys()).intersection(_fe.fo_priority))
+        _fe.provider_federations = possible
+
+        if len(possible) == 1:
+            claims = paths[possible[0]][0].protected_claims()
+            _sc.provider_info = self.response_cls(**claims)
+            self._update_service_context(_sc.provider_info)
+            _sc.behaviour = map_configuration_to_preference(
+                _sc.provider_info, _sc.client_preferences)
         else:
-            _fe = self.service_context.federation_entity
-            # Possible FO choices
-            possible = set(metadata_set.keys()).intersection(_fe.fo_priority)
-            if not possible:
-                raise NoSuitableFederation(
-                    'Available: {}'.format(metadata_set.keys()))
-
-            # At this point in time I may not know within which
-            # federation I'll be working.
-            if len(possible) == 1:
-                _fo = possible.pop()
-                self.store_federation_info(metadata_set[_fo][0], _fo)
-            else:
-                # store everything I may use of what I got for later reference
-                _fe.provider_federations = possible
-
-                # Go through the priority list and grab the first one that
-                # matches and store that information in *provider_info*.
-                for fo in _fe.fo_priority:
-                    if fo in possible:
-                        self.store_federation_info(metadata_set[fo][0], fo)
-                        break
-
-        if self.service_context.provider_info:
-            self._update_service_context(self.service_context.provider_info)
-            self.match_preferences(self.service_context.provider_info,
-                                   self.service_context.issuer)
+            # Not optimal but a reasonable estimate
+            claims = paths[possible[0]][0].protected_claims()
+            _pinfo = self.response_cls(**claims)
+            _sc.behaviour = map_configuration_to_preference(
+                _pinfo, _sc.client_preferences)
 
     def post_parse_response(self, response, **kwargs):
         """
@@ -127,79 +113,88 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         instance is store in the response by federation operator ID under the
         key 'fos'.
 
-        :param response: A MetadataStatement instance
+        :param response: A signed JWT containing an entity statement
         :returns: A dictionary with trust root entity IDs as keys and
             lists of Statement instances as values
         """
 
-        _node = self.collector.collect_entity_statements(response)
+        _node = self.federation_entity.collect_entity_statements(response)
 
-        return eval_paths(_node, self.tr_key_jar, self.entity_type)
+        return self.federation_entity.eval_paths(_node)
 
 
-# class FedRegistrationRequest(Registration):
-#     msg_type = ClientMetadataStatement
-#     response_cls = ClientMetadataStatement
-#
-#     def __init__(self, service_context, state_db, conf=None,
-#                  client_authn_factory=None, **kwargs):
-#         Registration.__init__(self, service_context, state_db, conf=conf,
-#                               client_authn_factory=client_authn_factory)
-#         #
-#         self.post_construct.append(self.add_federation_context)
-#
-#     @staticmethod
-#     def carry_receiver(request, **kwargs):
-#         if 'receiver' in kwargs:
-#             return request, {'receiver': kwargs['receiver']}
-#         else:
-#             return request, {}
-#
-#     def add_federation_context(self, request, service=None, receiver='',
-#                                **kwargs):
-#         _fe = self.service_context.federation_entity
-#         return _fe.update_metadata_statement(request, receiver=receiver,
-#                                              context='registration')
-#
-#     def post_parse_response(self, resp, **kwargs):
-#         """
-#         Receives a dynamic client registration response, verifies the
-#         signature and parses the compounded metadata statement.
-#         If only one federation are mentioned in the response then the name
-#         of that federation are stored in the *federation* attribute and
-#         the flattened response is handled in the normal pyoidc way.
-#         If there are more then one federation involved then the decision
-#         on which to use has to be made higher up, hence the list of
-#         :py:class:`fedoidcmsg.operator.LessOrEqual` instances are stored in the
-#         attribute *registration_federations*
-#
-#         :param resp: A MetadataStatement instance or a dictionary
-#         """
-#         _fe = self.service_context.federation_entity
-#
-#         ms_list = _fe.get_metadata_statement(
-#             resp, cls=ClientMetadataStatement)
-#
-#         if not ms_list:  # No metadata statement that I can use
-#             raise RegistrationError('No trusted metadata')
-#
-#         # response is a list of registration infos
-#
-#         # At this point in time I may not know within which
-#         # federation I'll be working.
-#         if len(ms_list) == 1:
-#             ms = ms_list[0]
-#             resp = ms.protected_claims()
-#             _fe.federation = ms.fo
-#         else:
-#             # apply FO priority
-#             _fe.registration_federations = ms_list
-#         return resp
-#
-#     def update_service_context(self, resp, state='', **kwargs):
-#         Registration.update_service_context(self, resp, state, **kwargs)
-#         _fe = self.service_context.federation_entity
-#         _fe.iss = resp['client_id']
+class FedRegistrationRequest(Registration):
+    msg_type = RegistrationRequest
+    response_cls = RegistrationResponse
+    endpoint_name = 'registration'
+    endpoint = ''
+
+    def __init__(self, service_context, state_db, conf=None,
+                 client_authn_factory=None, **kwargs):
+        Registration.__init__(self, service_context, state_db, conf=conf,
+                              client_authn_factory=client_authn_factory)
+        #
+        self.post_construct.append(self.create_entity_statement)
+
+    @staticmethod
+    def carry_receiver(request, **kwargs):
+        if 'receiver' in kwargs:
+            return request, {'receiver': kwargs['receiver']}
+        else:
+            return request, {}
+
+    def create_entity_statement(self, request_args, service=None, **kwargs):
+        """
+        Create a self signed entity statement
+
+        :param request_args:
+        :param service:
+        :param kwargs:
+        :return:
+        """
+
+        _fe = self.service_context.federation_entity
+        _ah = dict([(k,v) for k, v in _fe.authority_hints.items() if
+               k in _fe.provider_federations])
+
+        return _fe.create_entity_statement(request_args.to_dict(), _fe.id,
+            _fe.id, authority_hints=_ah)
+
+    def post_parse_response(self, resp, **kwargs):
+        """
+        Receives a dynamic client registration response, verifies the
+        signature and parses the compounded metadata statement.
+        If only one federation are mentioned in the response then the name
+        of that federation are stored in the *federation* attribute and
+        the flattened response is handled in the normal pyoidc way.
+        If there are more then one federation involved then the decision
+        on which to use has to be made higher up, hence the list of
+        :py:class:`fedoidcmsg.operator.LessOrEqual` instances are stored in the
+        attribute *registration_federations*
+
+        :param resp: A MetadataStatement instance or a dictionary
+        """
+        _fe = self.service_context.federation_entity
+
+        _node = _fe.collect_entity_statements(resp)
+        paths = self.service_context.federation_entity.eval_paths(_node)
+        if not paths:  # No metadata statement that I can use
+            raise RegistrationError('No trusted metadata')
+
+        # response is a dictionary with the federation identifier as keys and
+        # lists of statements as values
+
+        # At this point in time I may not know within which
+        # federation I'll be working.
+        fid, claims = _fe.pick_metadata(paths)
+        if not fid:
+            _fe.registration_federations = paths
+        return claims
+
+    def update_service_context(self, resp, state='', **kwargs):
+        Registration.update_service_context(self, resp, state, **kwargs)
+        _fe = self.service_context.federation_entity
+        _fe.iss = resp['client_id']
 
 
 def factory(req_name, **kwargs):
