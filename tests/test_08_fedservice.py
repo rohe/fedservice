@@ -75,9 +75,12 @@ class TestRpService(object):
         trusted_roots = json.loads(
             open(os.path.join(BASE_PATH, 'trust_roots_wt.json')).read())
 
-        federation_entity = FederationEntity(
-            trusted_roots=trusted_roots, authority_hints={},
-            httpd=Publisher(os.path.join(BASE_PATH, 'data')))
+        federation_entity = FederationEntity('https://127.0.0.1:6000/org/rp',
+                                             trusted_roots=trusted_roots,
+                                             authority_hints={},
+                                             httpd=Publisher(
+                                                 os.path.join(BASE_PATH,
+                                                              'data')))
 
         federation_entity.collector = DummyCollector(
             httpd=Publisher(os.path.join(BASE_PATH, 'data')),

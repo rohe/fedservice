@@ -10,7 +10,7 @@ __version__ = '0.1.0'
 
 class FederationEntity(object):
     def __init__(self, id, trusted_roots, authority_hints, key_jar=None,
-                 default_lifetime=86400, httpd=None, fed_priority=None):
+                 default_lifetime=86400, httpd=None, tr_priority=None):
         self.collector = Collector(trusted_roots=trusted_roots, httpd=httpd)
         self.id = id
         self.opponent_entity_type = 'openid_provider'
@@ -19,7 +19,7 @@ class FederationEntity(object):
             self.key_jar.import_jwks(jwks, iss)
         self.authority_hints = authority_hints
         self.default_lifetime = default_lifetime
-        self.fed_priority = fed_priority or sorted(set(trusted_roots.keys()))
+        self.tr_priority = tr_priority or sorted(set(trusted_roots.keys()))
 
     def collect_entity_statements(self, response):
         return self.collector.collect_entity_statements(response)
@@ -58,9 +58,14 @@ class FederationEntity(object):
             statement = paths[fid][0]
             return fid, statement.protected_claims()
         else:
-            for fid in self.fed_priority:
+            for fid in self.tr_priority:
                 try:
                     return fid, paths[fid][0]
                 except KeyError:
                     pass
-        return '', None
+
+        # Can only arrive here if the federations I got back and trust are not
+        # in the priority list. So, just pick one
+        fid = list(paths.keys())[0]
+        statement = paths[fid][0]
+        return fid, statement.protected_claims()

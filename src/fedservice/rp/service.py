@@ -17,6 +17,7 @@ from oidcservice.oidc.service import ProviderInfoDiscovery
 from oidcservice.oidc.service import Registration
 from oidcservice.service import Service
 
+from fedservice.entity_statement.utils import create_authority_hints
 from fedservice.exception import NoTrustedClaims
 from fedservice.keybundle import KeyBundle
 
@@ -86,7 +87,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         _sc = self.service_context
         _fe = _sc.federation_entity
 
-        possible = list(set(paths.keys()).intersection(_fe.fo_priority))
+        possible = list(set(paths.keys()).intersection(_fe.tr_priority))
         _fe.provider_federations = possible
 
         if len(possible) == 1:
@@ -158,21 +159,14 @@ class FedRegistrationRequest(Registration):
                k in _fe.provider_federations])
 
         return _fe.create_entity_statement(request_args.to_dict(), _fe.id,
-            _fe.id, authority_hints=_ah)
+                                           _fe.id, authority_hints=_ah)
 
     def post_parse_response(self, resp, **kwargs):
         """
-        Receives a dynamic client registration response, verifies the
-        signature and parses the compounded metadata statement.
-        If only one federation are mentioned in the response then the name
-        of that federation are stored in the *federation* attribute and
-        the flattened response is handled in the normal pyoidc way.
-        If there are more then one federation involved then the decision
-        on which to use has to be made higher up, hence the list of
-        :py:class:`fedoidcmsg.operator.LessOrEqual` instances are stored in the
-        attribute *registration_federations*
+        Receives a dynamic client registration response,
 
-        :param resp: A MetadataStatement instance or a dictionary
+        :param resp: An entity statement instance
+        :return: A set of metadata claims
         """
         _fe = self.service_context.federation_entity
 
@@ -181,14 +175,15 @@ class FedRegistrationRequest(Registration):
         if not paths:  # No metadata statement that I can use
             raise RegistrationError('No trusted metadata')
 
-        # response is a dictionary with the federation identifier as keys and
+        _fe.trust_paths = paths
+
+        # paths is a dictionary with the federation identifier as keys and
         # lists of statements as values
 
-        # At this point in time I may not know within which
-        # federation I'll be working.
+        _fe.proposed_authority_hints = create_authority_hints(
+            _fe.authority_hints, paths)
+
         fid, claims = _fe.pick_metadata(paths)
-        if not fid:
-            _fe.registration_federations = paths
         return claims
 
     def update_service_context(self, resp, state='', **kwargs):
