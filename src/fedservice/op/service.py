@@ -2,12 +2,9 @@ import inspect
 import logging
 import sys
 
-
 from oidcendpoint.oidc import provider_config
-from oidcmsg import oidc
-from oidcendpoint import sanitize
 from oidcendpoint.oidc import registration
-from oidcmsg.oauth2 import ResponseMessage
+from oidcmsg import oidc
 from oidcmsg.oidc import ProviderConfigurationResponse
 from oidcservice.oidc import service
 from oidcservice.service import Service
@@ -42,30 +39,21 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
 
         _fe = self.endpoint_context.federation_entity
         return _fe.create_entity_statement(request_args.to_dict(), _fe.id,
-            _fe.id)
+                                           _fe.id)
 
 
-# class Registration(registration.Registration):
-#
-#     @staticmethod
-#     def is_federation_request(req):
-#         if 'metadata_statements' in req or 'metadata_statement_uris' in req:
-#             return True
-#         else:
-#             return False
-#
-#     def process_request(self, request=None, **kwargs):
-#         if not self.is_federation_request(request):
-#             try:
-#                 allow_anonymous = self.kwargs['allow_anonymous']
-#             except KeyError:
-#                 allow_anonymous = False
-#
-#             if allow_anonymous:
-#                 return registration.Registration.process_request(self,
-#                                                                  request,
-#                                                                  authn=None,
-#                                                                  **kwargs)
+class Registration(registration.Registration):
+    def process_request(self, request=None, **kwargs):
+        _fe = self.endpoint_context.federation_entity
+        _node = _fe.collect_entity_statements(request)
+        fid, claims = _fe.pick_metadata(_fe.eval_paths(_node))
+        request = registration.Registration.process_request(self, claims,
+                                                            authn=None,
+                                                            **kwargs)
+        result = {}
+        return {'response_args': result}
+
+
 #             else:
 #                 return {'error': 'access_denied',
 #                         'error_description': 'Anonymous client registration '
@@ -112,7 +100,6 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
 #             result['signed_jwks_uri'] = _pc['signed_jwks_uri']
 #
 #         result = _fe.update_metadata_statement(result, context='response')
-#         return {'response_args': result}
 
 
 def factory(req_name, **kwargs):

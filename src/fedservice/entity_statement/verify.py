@@ -14,12 +14,19 @@ def verify_trust_chain(es_list, key_jar):
     :return: A sequence of verified entity statements
     """
     ves = []
+    n = len(es_list) -1
     for es in es_list:
         _jwt = factory(es)
         if _jwt:
             keys = key_jar.get_jwt_verify_keys(_jwt.jwt)
             res = _jwt.verify_compact(keys=keys)
-            key_jar.import_jwks(res['jwks'], res['sub'])
+            try:
+                _jwks = res['jwks']
+            except KeyError:
+                if len(ves) != n:
+                    raise ValueError('Missing signing JWKS')
+            else:
+                key_jar.import_jwks(_jwks, res['sub'])
             ves.append(res)
 
     return ves
@@ -64,7 +71,7 @@ def flatten_metadata(es_list, entity_type, strict=True):
         issued by the entity itself is reached.
     :param entity_type:
     :param strict:
-    :return:
+    :return: A Statement instance
     """
     res = Statement()
     res.le = es_list[0]['metadata'][entity_type]
@@ -72,7 +79,7 @@ def flatten_metadata(es_list, entity_type, strict=True):
         res = Statement(sup=res)
         _ms = es['metadata'][entity_type]
 
-        if res.restrict(es['metadata'][entity_type], strict) is False:
+        if res.flatten(es['metadata'][entity_type], strict) is False:
             raise ValueError('Could not flatten')
 
     return res

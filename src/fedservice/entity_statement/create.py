@@ -2,7 +2,8 @@ from cryptojwt.jwt import JWT
 
 
 def create_entity_statement(metadata, iss, sub, key_jar, authority_hints=None,
-                            lifetime=86400, **kwargs):
+                            lifetime=86400, aud='', include_jwks=True,
+                            **kwargs):
     """
 
     :param metadata: The entity's metadata organised as a dictionary with the
@@ -13,6 +14,7 @@ def create_entity_statement(metadata, iss, sub, key_jar, authority_hints=None,
     :param authority_hints: A dictionary with immediate superiors in the
         trust chains as keys and lists of identifier of trust roots as values.
     :param lifetime: The life time of the signed JWT.
+    :param aud: Possible audience for the JWT
     :return: A signed JSON Web Token
     """
 
@@ -21,11 +23,15 @@ def create_entity_statement(metadata, iss, sub, key_jar, authority_hints=None,
     if authority_hints:
         msg['authority_hints'] = authority_hints
 
+    if aud:
+        msg['aud'] = aud
+
     if kwargs:
         msg.update(kwargs)
 
-    # The public signing keys of the subject
-    msg['jwks'] = key_jar.export_jwks(issuer=sub)
+    if include_jwks:
+        # The public signing keys of the subject
+        msg['jwks'] = key_jar.export_jwks(issuer=sub)
 
     packer = JWT(key_jar=key_jar, iss=iss, lifetime=lifetime)
 

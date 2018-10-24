@@ -18,7 +18,7 @@ def test_eval_paths():
     assert set(res.keys()) == {"https://127.0.0.1:6000/fed"}
 
     statement = res["https://127.0.0.1:6000/fed"][0]
-    claims = statement.unprotected_and_protected_claims()
+    claims = statement.claims()
     assert set(claims.keys()) == {'response_types', 'contacts', 'organization',
                                   'application_type', 'redirect_uris', 'scope',
                                   'token_endpoint_auth_method'}

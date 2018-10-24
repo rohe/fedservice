@@ -67,7 +67,7 @@ class Statement(object):
         """
         :param iss: Issuer ID
         :param sup: Superior
-        :type sup: LessOrEqual instance
+        :type sup: Statement instance
         :param exp: Expiration time
         """
         if sup:
@@ -106,7 +106,7 @@ class Statement(object):
         else:
             return {}
 
-    def restrict(self, orig, strict=True):
+    def flatten(self, orig, strict=True):
         """
         Apply the less or equal algorithm on the ordered list of metadata
         statements
@@ -145,28 +145,11 @@ class Statement(object):
         else:
             return True
 
-    def protected_claims(self):
+    def claims(self):
         """
-        Someone in the list of signers has said this information is OK
+        The result after flattening the statements
         """
-        if self.sup:
-            return self.sup.le
-
-    def unprotected_and_protected_claims(self):
-        """
-        This is both verified and self asserted information. As expected
-        verified information beats self-asserted so if there is both
-        self-asserted and verified values for a claim then only the verified
-        will be returned.
-        """
-        if self.sup:
-            res = copy(self.le)
-            for k, v in self.sup.le.items():
-                if k not in self.le:
-                    res[k] = v
-            return res
-        else:
-            return self.le
+        return self.le
 
     def is_expired(self):
         now = utc_time_sans_frac()

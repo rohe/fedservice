@@ -75,12 +75,12 @@ class TestRpService(object):
         trusted_roots = json.loads(
             open(os.path.join(BASE_PATH, 'trust_roots_wt.json')).read())
 
-        federation_entity = FederationEntity('https://127.0.0.1:6000/org/rp',
-                                             trusted_roots=trusted_roots,
-                                             authority_hints={},
-                                             httpd=Publisher(
-                                                 os.path.join(BASE_PATH,
-                                                              'data')))
+        federation_entity = FederationEntity(
+            'https://127.0.0.1:6000/org/rp', trusted_roots=trusted_roots,
+            authority_hints={},
+            httpd=Publisher(os.path.join(BASE_PATH, 'data')),
+            entity_type='openid_client', opponent_entity_type='openid_provider'
+        )
 
         federation_entity.collector = DummyCollector(
             httpd=Publisher(os.path.join(BASE_PATH, 'data')),
@@ -124,7 +124,7 @@ class TestRpService(object):
         res = self.fedent.eval_paths(_node)
         assert list(res.keys()) == ['https://127.0.0.1:6000/fed']
         statement = res['https://127.0.0.1:6000/fed'][0]
-        claims = statement.protected_claims()
+        claims = statement.claims()
         assert set(claims.keys()) == {'token_endpoint', 'organization',
                                       'id_token_signing_alg_values_supported',
                                       'authorization_endpoint',

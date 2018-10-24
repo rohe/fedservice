@@ -1,5 +1,7 @@
 import logging
 
+from fedservice.entity_statement.statement import Statement
+
 from fedservice.entity_statement.verify import flatten_metadata
 from fedservice.entity_statement.verify import verify_leaf_status
 from fedservice.entity_statement.verify import verify_trust_chain
@@ -8,7 +10,7 @@ from fedservice.entity_statement.verify import verify_trust_chain
 logger = logging.getLogger(__name__)
 
 
-def eval_paths(node, key_jar, entity_type):
+def eval_paths(node, key_jar, entity_type, flatten=True):
     """
 
     :param node: The starting point a Statement instance
@@ -31,7 +33,12 @@ def eval_paths(node, key_jar, entity_type):
             if not leaf_ok:
                 continue
 
-        res = flatten_metadata(ves, entity_type, strict=False)
+        if flatten:
+            res = flatten_metadata(ves, entity_type, strict=False)
+        else:
+            # accept what's ever is in the statement provided by the OP
+            res = Statement()
+            res.le = ves[-1]
 
         if res:
             tr = ves[0]['iss']

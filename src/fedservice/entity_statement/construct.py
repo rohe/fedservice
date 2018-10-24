@@ -65,9 +65,9 @@ def map_configuration_to_preference(provider_configuration, client_preference):
     _provider = Statement()
     _provider.le = _allowed
     _statem = Statement(sup=_provider)
-    _statem.restrict(client_preference)
+    _statem.flatten(client_preference)
 
-    args = _statem.unprotected_and_protected_claims()
+    args = _statem.claims()
     args = list_to_singleton(args, RegistrationRequest)
     _cls = RegistrationRequest(**args)
     _cls.weed()

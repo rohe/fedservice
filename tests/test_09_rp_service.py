@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 import pytest
 from cryptojwt.jws.jws import factory
-from cryptojwt.key_jar import build_keyjar
+from cryptojwt.key_jar import KeyJar, build_keyjar
 from oidcservice.service_context import ServiceContext
 from oidcservice.state_interface import InMemoryStateDataBase
 from oidcservice.state_interface import State
@@ -55,16 +55,20 @@ class DummyCollector(Collector):
 class TestRpService(object):
     @pytest.fixture(autouse=True)
     def rp_service_setup(self):
-        service_context = ServiceContext(client_id='client_id',
-                                         issuer='https://127.0.0.1:6000/org/op')
+        entity_id = 'https://127.0.0.1:6000/org/rp'
+        service_context = ServiceContext(issuer=entity_id)
         trusted_roots = json.loads(
             open(os.path.join(BASE_PATH, 'trust_roots_wt.json')).read())
 
-        key_jar = build_keyjar(KEYSPEC, owner='abcdefghi')
-        self.federation_entity = FederationEntity(key_jar=key_jar,
-                                                  id='abcdefghi',
-                                                  trusted_roots=trusted_roots,
-                                                  authority_hints={})
+        key_jar = build_keyjar(KEYSPEC, owner=entity_id)
+        self.federation_entity = FederationEntity(
+            key_jar=key_jar, id=entity_id, trusted_roots=trusted_roots,
+            authority_hints={
+                'https://127.0.0.1:6000/org/a': ['https://127.0.0.1:6000/fed']
+            },
+            entity_type='openid_client', opponent_entity_type='openid_provider'
+        )
+
         self.federation_entity.collector = DummyCollector(
             trusted_roots=trusted_roots,
             root_dir=ROOT_DIR, base_url=BASE_URL)
@@ -104,11 +108,15 @@ class TestRpService(object):
             'id_token_signed_response_alg', 'token_endpoint_auth_method'}
 
     def test_create_request(self):
+        # construct the entity statement the OP should return
         jws = make_entity_statement(BASE_URL, ROOT_DIR,
                                     iss='https://127.0.0.1:6000/org/op')
+        # parse the response and collect the trust chains
         res = self.service['discovery'].post_parse_response(jws)
+
         self.service['discovery'].update_service_context(res)
 
+        # construct the client registration request
         req_args = {'entity_id': self.federation_entity.id}
         jws = self.service['registration'].construct(request_args=req_args)
         assert jws
@@ -118,6 +126,7 @@ class TestRpService(object):
         _sc.provider_info['federation_registration_endpoint'] = endp
         self.service['registration'].endpoint = endp
 
+        # construct the information needed to send the request
         _info = self.service['registration'].get_request_parameters(
             request_body_type="jose", method="POST")
 
@@ -130,7 +139,54 @@ class TestRpService(object):
         _jwt = factory(_jws)
         payload = _jwt.jwt.payload()
         assert set(payload.keys()) == {'iss', 'jwks', 'kid', 'exp', 'metadata',
-                                       'iat', 'sub'}
-        assert set(payload['metadata'].keys()) == {
+                                       'iat', 'sub', 'authority_hints'}
+        assert set(payload['metadata']['openid_client'].keys()) == {
             'grant_types', 'token_endpoint_auth_method', 'application_type',
             'response_types', 'id_token_signed_response_alg'}
+
+    def test_parse_reg_response(self):
+        # construct the entity statement the OP should return
+        jws = make_entity_statement(BASE_URL, ROOT_DIR,
+                                    iss='https://127.0.0.1:6000/org/op')
+        # parse the response and collect the trust chains
+        res = self.service['discovery'].post_parse_response(jws)
+
+        self.service['discovery'].update_service_context(res)
+
+        _sc = self.service['registration'].service_context
+        endp = 'https://127.0.0.1:6000/org/op/fedreg'
+        _sc.provider_info['federation_registration_endpoint'] = endp
+        self.service['registration'].endpoint = endp
+
+        # construct the client registration request
+        req_args = {'entity_id': self.federation_entity.id}
+        jws = self.service['registration'].construct(request_args=req_args)
+        assert jws
+
+        # construct the information needed to send the request
+        _info = self.service['registration'].get_request_parameters(
+            request_body_type="jose", method="POST")
+
+        _jwt = factory(_info['body'])
+        payload = _jwt.jwt.payload()
+
+        _md = payload['metadata']['openid_client']
+        _md.update({'client_id': 'aaaaaaaaa', 'client_secret': 'bbbbbbbbbb'})
+        _fe = _sc.federation_entity
+        key_jar = KeyJar()
+        key_jar.import_jwks_as_json(
+            open(os.path.join(ROOT_DIR, 'org_op', 'jwks.json')).read(),
+            'https://127.0.0.1:6000/org/op'
+        )
+        _jwt = _fe.create_entity_statement(
+            {_fe.entity_type: _md}, 'https://127.0.0.1:6000/org/op',
+            'https://127.0.0.1:6000/org/rp', key_jar,
+            authority_hints={
+                'https://127.0.0.1:6000/org/b': [
+                    'https://127.0.0.1:6000/org/op/fedreg']
+            }, include_jwks=False)
+
+        claims = self.service['registration'].post_parse_response(_jwt)
+        assert set(claims.keys()) == {'authorization_endpoint', 'organization',
+                                      'id_token_signing_alg_values_supported',
+                                      'token_endpoint', 'userinfo_endpoint'}

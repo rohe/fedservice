@@ -10,10 +10,12 @@ __version__ = '0.1.0'
 
 class FederationEntity(object):
     def __init__(self, id, trusted_roots, authority_hints, key_jar=None,
-                 default_lifetime=86400, httpd=None, tr_priority=None):
+                 default_lifetime=86400, httpd=None, tr_priority=None,
+                 entity_type='', opponent_entity_type=''):
         self.collector = Collector(trusted_roots=trusted_roots, httpd=httpd)
         self.id = id
-        self.opponent_entity_type = 'openid_provider'
+        self.entity_type = entity_type
+        self.opponent_entity_type = opponent_entity_type
         self.key_jar = key_jar or KeyJar()
         for iss, jwks in trusted_roots.items():
             self.key_jar.import_jwks(jwks, iss)
@@ -24,11 +26,11 @@ class FederationEntity(object):
     def collect_entity_statements(self, response):
         return self.collector.collect_entity_statements(response)
 
-    def eval_paths(self, node, entity_type=''):
+    def eval_paths(self, node, entity_type='', flatten=True):
         if not entity_type:
             entity_type = self.opponent_entity_type
 
-        return eval_paths(node, self.key_jar, entity_type)
+        return eval_paths(node, self.key_jar, entity_type, flatten)
 
     def create_entity_statement(self, metadata, iss, sub, key_jar=None,
                                 authority_hints=None, lifetime=0, **kwargs):
@@ -42,7 +44,7 @@ class FederationEntity(object):
         return create_entity_statement(metadata, iss, sub, key_jar,
                                        authority_hints, lifetime, **kwargs)
 
-    def load_entity_statements(self,iss, sub, op='', aud='', prefetch=False):
+    def load_entity_statements(self, iss, sub, op='', aud='', prefetch=False):
         return self.collector.load_entity_statements(iss, sub, op, aud,
                                                      prefetch)
 
@@ -56,7 +58,7 @@ class FederationEntity(object):
             fid = list(paths.keys())[0]
             # right now just pick the first:
             statement = paths[fid][0]
-            return fid, statement.protected_claims()
+            return fid, statement.claims()
         else:
             for fid in self.tr_priority:
                 try:
@@ -68,4 +70,4 @@ class FederationEntity(object):
         # in the priority list. So, just pick one
         fid = list(paths.keys())[0]
         statement = paths[fid][0]
-        return fid, statement.protected_claims()
+        return fid, statement.claims()
