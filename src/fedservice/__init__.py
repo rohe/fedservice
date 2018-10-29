@@ -1,19 +1,19 @@
-from cryptojwt.key_jar import KeyJar
+from cryptojwt.key_jar import KeyJar, init_key_jar
 
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.create import create_entity_statement
-from fedservice.utils import eval_paths
+from fedservice.utils import eval_paths, load_json
 
 __author__ = 'Roland Hedberg'
 __version__ = '0.1.0'
 
 
 class FederationEntity(object):
-    def __init__(self, id, trusted_roots, authority_hints, key_jar=None,
-                 default_lifetime=86400, httpd=None, tr_priority=None,
-                 entity_type='', opponent_entity_type=''):
+    def __init__(self, entity_id, trusted_roots, authority_hints=None, 
+                 key_jar=None, default_lifetime=86400, httpd=None, 
+                 priority=None, entity_type='', opponent_entity_type=''):
         self.collector = Collector(trusted_roots=trusted_roots, httpd=httpd)
-        self.id = id
+        self.entity_id = entity_id
         self.entity_type = entity_type
         self.opponent_entity_type = opponent_entity_type
         self.key_jar = key_jar or KeyJar()
@@ -21,7 +21,7 @@ class FederationEntity(object):
             self.key_jar.import_jwks(jwks, iss)
         self.authority_hints = authority_hints
         self.default_lifetime = default_lifetime
-        self.tr_priority = tr_priority or sorted(set(trusted_roots.keys()))
+        self.tr_priority = priority or sorted(set(trusted_roots.keys()))
 
     def collect_entity_statements(self, response):
         return self.collector.collect_entity_statements(response)
@@ -71,3 +71,24 @@ class FederationEntity(object):
         fid = list(paths.keys())[0]
         statement = paths[fid][0]
         return fid, statement.claims()
+
+
+def create_federation_entity(entity_id, **kwargs):
+    args = {}
+    for param in ['trusted_roots', 'authority_hints']:
+        try:
+            args[param] = load_json(kwargs[param])
+        except KeyError:
+            pass
+
+    if 'signing_keys' in kwargs:
+        args['key_jar'] = init_key_jar(**kwargs['signing_keys'],
+                                       owner=entity_id)
+
+    for param in ['entity_type', 'priority', 'opponent_entity_type']:
+        try:
+            args[param] = kwargs[param]
+        except KeyError:
+            pass
+
+    return FederationEntity(entity_id, **args)

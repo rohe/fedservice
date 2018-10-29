@@ -2,10 +2,13 @@ import inspect
 import logging
 import sys
 
+from oidcendpoint.client_authn import UnknownOrNoAuthnMethod
+
+from fedservice.entity_statement.utils import create_authority_hints
 from oidcendpoint.oidc import provider_config
 from oidcendpoint.oidc import registration
 from oidcmsg import oidc
-from oidcmsg.oidc import ProviderConfigurationResponse
+from oidcmsg.oidc import ProviderConfigurationResponse, RegistrationRequest
 from oidcservice.oidc import service
 from oidcservice.service import Service
 
@@ -38,68 +41,57 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
         """
 
         _fe = self.endpoint_context.federation_entity
-        return _fe.create_entity_statement(request_args.to_dict(), _fe.id,
-                                           _fe.id)
+        _md = {_fe.entity_type: request_args.to_dict()}
+        return _fe.create_entity_statement(_md, _fe.entity_id, _fe.entity_id)
 
 
 class Registration(registration.Registration):
+    request_format = 'jose'
+    request_placement = 'body'
+    response_format = 'jose'
+
+    def __init__(self, endpoint_context, **kwargs):
+        registration.Registration.__init__(self, endpoint_context, **kwargs)
+        self.post_construct.append(self.create_entity_statement)
+
+    def parse_request(self, request, auth=None, **kwargs):
+        return request
+
     def process_request(self, request=None, **kwargs):
         _fe = self.endpoint_context.federation_entity
+        # collect trust chains
         _node = _fe.collect_entity_statements(request)
-        fid, claims = _fe.pick_metadata(_fe.eval_paths(_node))
-        request = registration.Registration.process_request(self, claims,
-                                                            authn=None,
-                                                            **kwargs)
-        result = {}
-        return {'response_args': result}
 
+        # verify the trust paths
+        paths = _fe.eval_paths(_node, flatten=False)
 
-#             else:
-#                 return {'error': 'access_denied',
-#                         'error_description': 'Anonymous client registration '
-#                                              'not allowed'}
-#
-#         try:
-#             request.verify()
-#         except Exception as err:
-#             logger.exception(err)
-#             return ResponseMessage(error='Invalid request')
-#
-#         logger.info(
-#             "registration_request:{}".format(sanitize(request.to_dict())))
-#
-#         _fe = self.endpoint_context.federation_entity
-#
-#         les = _fe.get_metadata_statement(request, context='registration')
-#
-#         if les:
-#             ms = _fe.pick_by_priority(les)
-#             _fe.federation = ms.fo
-#         else:  # Nothing I can use
-#             return ResponseMessage(
-#                 error='invalid_request',
-#                 error_description='No signed metadata statement I could use')
-#
-#         _pc = ClientMetadataStatement(**ms.protected_claims())
-#
-#         if _pc:
-#             resp = self.client_registration_setup(_pc)
-#         else:
-#             resp = self.client_registration_setup(
-#                 ms.unprotected_and_protected_claims())
-#
-#         result = ClientMetadataStatement(**resp.to_dict())
-#
-#         if 'signed_jwks_uri' in _pc:
-#             _kb = KeyBundle(source=_pc['signed_jwks_uri'],
-#                             verify_keys=ms.signing_keys,
-#                             verify_ssl=False)
-#             _kb.do_remote()
-#             replace_jwks_key_bundle(self.endpoint_context.keyjar,
-#                                     result['client_id'], _kb)
-#             result['signed_jwks_uri'] = _pc['signed_jwks_uri']
-#
-#         result = _fe.update_metadata_statement(result, context='response')
+        _fe.proposed_authority_hints = create_authority_hints(
+            _fe.authority_hints, paths)
+
+        fid, statement = _fe.pick_metadata(paths)
+        # handle the registration request as in the non-federation case.
+        req = RegistrationRequest(
+            **statement['metadata'][_fe.opponent_entity_type])
+        return registration.Registration.process_request(
+            self, req, authn=None, **kwargs)
+
+    @staticmethod
+    def create_entity_statement(response_args, request, endpoint_context,
+                                **kwargs):
+        """
+        wrap the non-federation response in a federation response
+
+        :param response_args:
+        :param request:
+        :param endpoint_context:
+        :param kwargs:
+        :return:
+        """
+        _fe = endpoint_context.federation_entity
+        _md = {_fe.opponent_entity_type: response_args.to_dict()}
+        return _fe.create_entity_statement(
+            _md, _fe.entity_id, _fe.entity_id,
+            authority_hints=_fe.proposed_authority_hints)
 
 
 def factory(req_name, **kwargs):

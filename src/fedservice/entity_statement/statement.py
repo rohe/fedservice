@@ -1,5 +1,4 @@
 import logging
-from copy import copy
 
 from cryptojwt.jwt import utc_time_sans_frac
 

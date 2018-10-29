@@ -1,3 +1,4 @@
+import json
 import logging
 
 from fedservice.entity_statement.statement import Statement
@@ -48,3 +49,9 @@ def eval_paths(node, key_jar, entity_type, flatten=True):
                 trust_path[tr] = [res]
 
     return trust_path
+
+
+def load_json(file_name):
+    with open(file_name) as fp:
+        js = json.load(fp)
+    return js

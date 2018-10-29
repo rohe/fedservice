@@ -117,7 +117,7 @@ class TestRpService(object):
         self.service['discovery'].update_service_context(res)
 
         # construct the client registration request
-        req_args = {'entity_id': self.federation_entity.id}
+        req_args = {'entity_id': self.federation_entity.entity_id}
         jws = self.service['registration'].construct(request_args=req_args)
         assert jws
 
@@ -159,7 +159,7 @@ class TestRpService(object):
         self.service['registration'].endpoint = endp
 
         # construct the client registration request
-        req_args = {'entity_id': self.federation_entity.id}
+        req_args = {'entity_id': self.federation_entity.entity_id}
         jws = self.service['registration'].construct(request_args=req_args)
         assert jws
 

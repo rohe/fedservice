@@ -26,23 +26,30 @@ logger = logging.getLogger(__name__)
 
 class FedProviderInfoDiscovery(ProviderInfoDiscovery):
     response_cls = ProviderConfigurationResponse
+    request_body_type = 'jose'
+    response_body_type = 'jose'
 
     def __init__(self, service_context, state_db, conf=None,
                  client_authn_factory=None, **kwargs):
         ProviderInfoDiscovery.__init__(
             self, service_context, state_db, conf=conf,
             client_authn_factory=client_authn_factory)
-        self.federation_entity = self.service_context.federation_entity
 
     def get_request_parameters(self, method="GET", **kwargs):
-        qpart = {'iss': kwargs["iss"]}
+        try:
+            _iss = kwargs["iss"]
+        except KeyError:
+            _iss = self.service_context.issuer
+
+        qpart = {'iss': _iss}
+
         for param in ['sub', 'aud', 'prefetch']:
             try:
                 qpart[param] = kwargs[param]
             except KeyError:
                 pass
 
-        p = urlparse(kwargs["iss"])
+        p = urlparse(_iss)
         _qurl = '{}://{}/.well-known/openid-federation?{}'.format(
             p.scheme, p.netloc, urlencode(qpart))
 
@@ -123,16 +130,19 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
             lists of Statement instances as values
         """
 
-        _node = self.federation_entity.collect_entity_statements(response)
+        _fe = self.service_context.federation_entity
+        _node = _fe.collect_entity_statements(response)
 
-        return self.federation_entity.eval_paths(_node)
+        return _fe.eval_paths(_node)
 
 
 class FedRegistrationRequest(Registration):
     msg_type = RegistrationRequest
     response_cls = RegistrationResponse
-    endpoint_name = 'registration'
-    endpoint = ''
+    endpoint_name = 'registration_endpoint'
+    endpoint = 'registration'
+    request_body_type = 'jose'
+    response_body_type = 'jose'
 
     def __init__(self, service_context, state_db, conf=None,
                  client_authn_factory=None, **kwargs):
@@ -161,7 +171,7 @@ class FedRegistrationRequest(Registration):
         _fe = self.service_context.federation_entity
         _md = {_fe.entity_type: request_args.to_dict()}
         return _fe.create_entity_statement(
-            _md, _fe.id, _fe.id,
+            _md, _fe.entity_id, _fe.entity_id,
             authority_hints=_fe.proposed_authority_hints)
 
     def post_parse_response(self, resp, **kwargs):
@@ -186,13 +196,13 @@ class FedRegistrationRequest(Registration):
         # paths is a dictionary with the federation identifier as keys and
         # lists of statements as values
 
-        fid, claims = _fe.pick_metadata(paths)
+        fid, rp_claims = _fe.pick_metadata(paths)
 
         # based on the Federation ID, conclude which OP config to use
-        claims = _fe.op_paths[fid][0].claims()
-        self.service_context.provider_info = self.response_cls(**claims)
+        op_claims = _fe.op_paths[fid][0].claims()
+        self.service_context.provider_info = self.response_cls(**op_claims)
 
-        return claims
+        return rp_claims['metadata'][_fe.entity_type]
 
     def update_service_context(self, resp, state='', **kwargs):
         Registration.update_service_context(self, resp, state, **kwargs)

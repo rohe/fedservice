@@ -40,7 +40,7 @@ def list_to_singleton(args, cls):
             try:
                 _typ = ci.c_param[key][0]
             except KeyError:
-                pass
+                res[key] = val
             else:
                 if isinstance(_typ, list):
                     res[key] = val
@@ -68,7 +68,4 @@ def map_configuration_to_preference(provider_configuration, client_preference):
     _statem.flatten(client_preference)
 
     args = _statem.claims()
-    args = list_to_singleton(args, RegistrationRequest)
-    _cls = RegistrationRequest(**args)
-    _cls.weed()
-    return _cls.to_dict()
+    return list_to_singleton(args, RegistrationRequest)

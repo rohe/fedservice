@@ -1,6 +1,6 @@
 import json
 import os
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote_plus
 
 from cryptojwt.key_jar import KeyJar
 
@@ -11,7 +11,7 @@ from fedservice.exception import DbFault
 def mk_path(*args):
     _part = []
     for arg in args:
-        if arg.startswith('http'):
+        if arg.startswith('https://') or arg.startswith('http://'):
             _ip = urlparse(arg)
             _part.append(format('_'.join(_ip.path[1:].split('/'))))
         else:
@@ -44,7 +44,11 @@ def get_authority_hints(base_url, sub_dir):
 
 def make_entity_statement(base_url, root_dir='.', **kwargs):
     iss = kwargs['iss']
-    _iss_dir = mk_path(root_dir, iss)
+    if iss.startswith(base_url):
+        _iss_dir = mk_path(root_dir, iss)
+    else:
+        _iss_dir = mk_path(root_dir, quote_plus(iss))
+
     if not _iss_dir:
         raise DbFault('No such issuer')
 
@@ -54,9 +58,13 @@ def make_entity_statement(base_url, root_dir='.', **kwargs):
         sub = iss
         _sub_dir = _iss_dir
     else:
-        _sub_dir = mk_path(root_dir, iss, sub)
-        if not _sub_dir:
-            raise DbFault('Issuer do not sign for that entity')
+        if sub.startswith(base_url):
+            _sub_dir = mk_path(root_dir, iss, sub)
+        else:
+            _sub_dir = mk_path(root_dir, iss, quote_plus(sub))
+
+    if not _sub_dir:
+        raise DbFault('Issuer do not sign for that entity')
 
     # Load subjects metadata
     metadata = read_metadata(_sub_dir)

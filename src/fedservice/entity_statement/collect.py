@@ -78,7 +78,11 @@ class Collector(object):
         if hres.status_code >= 400:
             raise HTTPError(hres.text)
 
-        return json.loads(hres.text)
+        _msg = hres.text.strip('"')
+        if _msg.startswith('['):
+            return json.loads(_msg)
+        else:
+            return _msg
 
     def follow_path(self, iss, sub):
         """
@@ -100,13 +104,19 @@ class Collector(object):
         :return: A tree of entity statements
         """
 
-        _jwt = factory(jarr[0])
+        if isinstance(jarr, list):
+            _token = jarr[0]
+        else:
+            _token = jarr
+
+        _jwt = factory(_token)
+
         if _jwt:
             entity_statement = json.loads(as_unicode(_jwt.jwt.part[1]))
         else:
             return None
 
-        node = Issuer(jarr[0])
+        node = Issuer(_token)
         if 'authority_hints' not in entity_statement:
             return node
 

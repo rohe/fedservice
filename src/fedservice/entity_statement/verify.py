@@ -1,5 +1,3 @@
-import json
-
 from cryptojwt.jws.jws import factory
 
 from fedservice.entity_statement.statement import Statement
@@ -47,7 +45,7 @@ def verify_leaf_status(es_list):
 
     last_entity_statement = es_list[-1]
     if last_entity_statement['iss'] != last_entity_statement['sub']:
-        raise ValueError('Trust chain does not start with a leaf')
+        raise ValueError('Trust chain does not end with a leaf')
 
     for es in es_list[:-2]:
         if sub_is_leaf(es):
