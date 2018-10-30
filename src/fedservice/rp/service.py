@@ -139,7 +139,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
 class FedRegistrationRequest(Registration):
     msg_type = RegistrationRequest
     response_cls = RegistrationResponse
-    endpoint_name = 'registration_endpoint'
+    endpoint_name = 'federation_registration_endpoint'
     endpoint = 'registration'
     request_body_type = 'jose'
     response_body_type = 'jose'

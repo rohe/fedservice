@@ -3,7 +3,6 @@ import logging
 from urllib.parse import urlencode, urlparse
 
 import requests
-from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
 
 REL = 'http://oauth.net/specs/federation/1.0/entity'
@@ -112,7 +111,7 @@ class Collector(object):
         _jwt = factory(_token)
 
         if _jwt:
-            entity_statement = json.loads(as_unicode(_jwt.jwt.part[1]))
+            entity_statement = _jwt.jwt.payload()
         else:
             return None
 
