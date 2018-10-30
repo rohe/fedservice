@@ -5,7 +5,8 @@ import os
 
 from cryptojwt.utils import as_bytes
 
-from fedservice.metadata_api.fs import make_entity_statement, mk_path
+from fedservice.metadata_api.fs import make_entity_statement
+from fedservice.metadata_api.fs import mk_path
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +31,24 @@ class MetaAPI(object):
 
     @cherrypy.expose
     def resolve_metadata(self, **kwargs):
+        """
+        Evaluate a trust path of another entity
+        TODO implement
+
+        :param kwargs:
+        :return:
+        """
         return "OK"
 
     @cherrypy.expose
     def listing(self, **kwargs):
+        """
+        List the subordinates of this intermediate
+        TODO implement
+
+        :param kwargs:
+        :return:
+        """
         try:
             iss = kwargs['iss']
         except KeyError:
@@ -65,7 +80,6 @@ class MetaAPI(object):
     def entity_statement(self, **kwargs):
         jws = make_entity_statement(self.base_url, self.data_dir, **kwargs)
         cherrypy.response.headers['Content-Type'] = 'application/json'
-        #return as_bytes(json.dumps([jws]))
         return as_bytes(json.dumps(jws))
 
     def _cp_dispatch(self, vpath):

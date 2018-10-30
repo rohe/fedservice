@@ -4,6 +4,7 @@ import logging
 import os
 import re
 from html import entities as htmlentitydefs
+from time import localtime, strftime
 from urllib.parse import parse_qs
 
 import cherrypy
@@ -161,6 +162,11 @@ class Consumer(Root):
         res = self.rph.finalize(iss, kwargs)
 
         if res:
+            fid, statement = rp.service_context.trust_path
+            _st = localtime(statement.exp)
+            time_str = strftime('%a, %d %b %Y %H:%M:%S')
+            res.update({'federation':fid, 'fe_expires':time_str})
+
             fname = os.path.join(self.html_home, 'opresult.html')
             _pre_html = open(fname, 'r').read()
             _html = _pre_html.format(

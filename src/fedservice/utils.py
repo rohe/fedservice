@@ -3,7 +3,8 @@ import logging
 
 from fedservice.entity_statement.statement import Statement
 
-from fedservice.entity_statement.verify import flatten_metadata
+from fedservice.entity_statement.verify import flatten_metadata, \
+    trust_path_expires_at
 from fedservice.entity_statement.verify import verify_leaf_status
 from fedservice.entity_statement.verify import verify_trust_chain
 
@@ -26,6 +27,7 @@ def eval_paths(node, key_jar, entity_type, flatten=True):
         # Verify the trust chain
         path.reverse()
         ves = verify_trust_chain(path, key_jar)
+        tp_exp = trust_path_expires_at(ves)
         try:
             leaf_ok = verify_leaf_status(ves)
         except ValueError as err:
@@ -42,6 +44,7 @@ def eval_paths(node, key_jar, entity_type, flatten=True):
             res.le = ves[-1]
 
         if res:
+            res.exp = tp_exp
             tr = ves[0]['iss']
             try:
                 trust_path[tr].append(res)

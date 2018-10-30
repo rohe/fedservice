@@ -81,3 +81,14 @@ def flatten_metadata(es_list, entity_type, strict=True):
             raise ValueError('Could not flatten')
 
     return res
+
+
+def trust_path_expires_at(ves):
+    exp = -1
+    for v in ves:
+        if exp >= 0:
+            if v['exp'] < exp:
+                exp = v['exp']
+        else:
+            exp = v['exp']
+    return exp

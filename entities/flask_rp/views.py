@@ -1,5 +1,6 @@
 import logging
 import os
+from time import localtime, strftime
 
 import werkzeug
 from flask import Blueprint
@@ -94,9 +95,13 @@ def authz_cb(op_hash):
                 endp = endp.capitalize()
                 endpoints[endp] = v
 
+        fid, statement = rp.service_context.trust_path
+        _st = localtime(statement.exp)
+        time_str = strftime('%a, %d %b %Y %H:%M:%S')
         return render_template('opresult.html', endpoints=endpoints,
                                userinfo=res['userinfo'],
-                               access_token=res['token'])
+                               access_token=res['token'],
+                               federation=fid, fe_expires=time_str)
     else:
         return make_response(res['error'], 400)
 

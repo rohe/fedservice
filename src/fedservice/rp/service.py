@@ -108,7 +108,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
             _sc.behaviour = map_configuration_to_preference(
                 _sc.provider_info, _sc.client_preferences)
         else:
-            # Not optimal but a reasonable estimate
+            # Not optimal but a reasonable estimate for now
             claims = paths[possible[0]][0].claims()
             _pinfo = self.response_cls(**claims)
             _sc.behaviour = map_configuration_to_preference(
@@ -181,11 +181,12 @@ class FedRegistrationRequest(Registration):
         :param resp: An entity statement instance
         :return: A set of metadata claims
         """
-        _fe = self.service_context.federation_entity
+        _sc = self.service_context
+        _fe = _sc.federation_entity
 
         _node = _fe.collect_entity_statements(resp)
-        paths = self.service_context.federation_entity.eval_paths(
-            _node, entity_type=_fe.entity_type, flatten=False)
+        paths = _fe.eval_paths(_node, entity_type=_fe.entity_type,
+                               flatten=False)
 
         if not paths:  # No metadata statement that I can use
             raise RegistrationError('No trusted metadata')
@@ -200,7 +201,8 @@ class FedRegistrationRequest(Registration):
 
         # based on the Federation ID, conclude which OP config to use
         op_claims = _fe.op_paths[fid][0].claims()
-        self.service_context.provider_info = self.response_cls(**op_claims)
+        _sc.trust_path = (fid, _fe.op_paths[fid][0])
+        _sc.provider_info = self.response_cls(**op_claims)
 
         return rp_claims['metadata'][_fe.entity_type]
 
