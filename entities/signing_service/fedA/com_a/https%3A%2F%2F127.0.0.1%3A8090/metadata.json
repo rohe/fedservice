@@ -1,0 +1,18 @@
+{
+  "openid_client": {
+    "application_type": "web",
+    "contacts": [
+      "com_a@example.org"
+    ],
+    "response_types": [
+      "code"
+    ],
+    "scope": [
+      "openid",
+      "profile",
+      "email"
+    ],
+    "token_endpoint_auth_method": "client_secret_basic"
+  }
+}
+
