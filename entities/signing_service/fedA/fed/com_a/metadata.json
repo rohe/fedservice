@@ -1,5 +1,8 @@
 {
   "openid_client": {
     "organization": "A"
+  },
+  "openid_provider": {
+    "organization": "A"
   }
 }

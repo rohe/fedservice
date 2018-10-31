@@ -2,9 +2,9 @@ import logging
 
 import cherrypy
 from cryptojwt.utils import as_bytes
+from oidcendpoint.authn_event import AuthnEvent
 from oidcmsg.oauth2 import AuthorizationRequest
 from oidcmsg.oauth2 import ResponseMessage
-from oidcendpoint.sdb import AuthnEvent
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +74,8 @@ class OpenIDProvider(object):
         :param kwargs: response arguments
         :return: HTTP redirect
         """
-        authn_method = self.endpoint_context.endpoint_to_authn_method[url_endpoint]
-
+        authn_method = self.endpoint_context.endpoint_to_authn_method[
+            url_endpoint]
 
         username = authn_method.verify(**kwargs)
         if not username:
@@ -84,15 +84,14 @@ class OpenIDProvider(object):
         auth_args = authn_method.unpack_token(kwargs['token'])
         request = AuthorizationRequest().from_urlencoded(auth_args['query'])
 
-        # uid, salt, valid=3600, authn_info=None, time_stamp=0, authn_time=None,
-        # valid_until=None
-        authn_event = AuthnEvent(username, 'salt',
+        authn_event = AuthnEvent(uid=username, salt='salt',
                                  authn_info=auth_args['authn_class_ref'],
                                  authn_time=auth_args['iat'])
 
         endpoint = self.endpoint_context.endpoint['authorization']
         args = endpoint.post_authentication(request,
                                             user=username,
+                                            sid=request['state'],
                                             authn_event=authn_event)
 
         return self.do_response(endpoint, request, **args)
