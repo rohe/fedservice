@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from urllib.parse import urlparse, quote_plus
 
@@ -6,6 +7,9 @@ from cryptojwt.key_jar import KeyJar
 
 from fedservice.entity_statement.create import create_entity_statement
 from fedservice.exception import DbFault
+
+
+logger = logging.getLogger(__name__)
 
 
 def mk_path(*args):
@@ -64,6 +68,7 @@ def make_entity_statement(base_url, root_dir='.', **kwargs):
             _sub_dir = mk_path(root_dir, iss, quote_plus(sub))
 
     if not _sub_dir:
+        logger.warning('Unknown sub: "{}" for iss: {}'.format(sub, iss))
         raise DbFault('Issuer do not sign for that entity')
 
     # Load subjects metadata
