@@ -13,7 +13,9 @@ from flask import request
 from flask.helpers import make_response
 from flask.helpers import send_from_directory
 from oidcendpoint.authn_event import create_authn_event
+from oidcendpoint.oidc.token import AccessToken
 from oidcmsg.oauth2 import ResponseMessage
+from oidcmsg.oidc import AccessTokenRequest
 from oidcmsg.oidc import AuthorizationRequest
 
 logger = logging.getLogger(__name__)
@@ -23,7 +25,12 @@ oidc_op_views = Blueprint('oidc_rp', __name__, url_prefix='')
 
 def add_cookie(resp, cookie_spec):
     for key, _morsel in cookie_spec.items():
-        resp.set_cookie(key, _morsel)
+        kwargs = {'value':_morsel.value}
+        for param in ['expires','path','comment','domain','max-age','secure',
+                      'version']:
+            if _morsel[param]:
+                kwargs[param] = _morsel[param]
+        resp.set_cookie(key, **kwargs)
 
 
 @oidc_op_views.route('/static/<path:path>')
@@ -78,7 +85,7 @@ def do_response(endpoint, req_args, error='', **args):
     return resp
 
 
-@oidc_op_views.route('/verify/<method>')
+@oidc_op_views.route('/verify/<method>', methods=['POST'])
 def authn_verify(method):
     """
     Authentication verification
@@ -91,11 +98,12 @@ def authn_verify(method):
     authn_method = current_app.endpoint_context.endpoint_to_authn_method[
         url_endpoint]
 
-    username = authn_method.verify(**request.args)
+    kwargs = dict([(k, v) for k, v in request.form.items()])
+    username = authn_method.verify(**kwargs)
     if not username:
         return make_response('Authentication failed', 403)
 
-    auth_args = authn_method.unpack_token(request.args['token'])
+    auth_args = authn_method.unpack_token(kwargs['token'])
     authz_request = AuthorizationRequest().from_urlencoded(auth_args['query'])
 
     authn_event = create_authn_event(
@@ -127,7 +135,7 @@ def well_known(service):
     return service_endpoint(_endpoint)
 
 
-@oidc_op_views.route('/registration')
+@oidc_op_views.route('/registration', methods=['POST'])
 def registration():
     return service_endpoint(current_app.endpoint_context.endpoint[
                                 'federation_registration'])
@@ -139,13 +147,13 @@ def authorization():
                                 'authorization'])
 
 
-@oidc_op_views.route('/token')
+@oidc_op_views.route('/token', methods=['GET', 'POST'])
 def token():
     return service_endpoint(current_app.endpoint_context.endpoint[
                                 'token'])
 
 
-@oidc_op_views.route('/userinfo')
+@oidc_op_views.route('/userinfo', methods=['GET', 'POST'])
 def userinfo():
     return service_endpoint(current_app.endpoint_context.endpoint[
                                 'userinfo'])
@@ -161,17 +169,28 @@ def service_endpoint(endpoint):
     else:
         pr_args = {'auth': authn}
 
-    req_args = endpoint.parse_request(request.args.to_dict(), **pr_args)
-    logger.info('request: {}'.format(req_args))
-
-    if isinstance(req_args, ResponseMessage) and 'error' in req_args:
-        return make_response(req_args.to_json(), 400)
+    if request.method == 'GET':
+        req_args = endpoint.parse_request(request.args.to_dict(), **pr_args)
+        logger.info('request: {}'.format(req_args))
+        if isinstance(req_args, ResponseMessage) and 'error' in req_args:
+            return make_response(req_args.to_json(), 400)
+    else:
+        if request.data:
+            req_args = request.data
+        else:
+            req_args = dict([(k, v) for k, v in request.form.items()])
 
     try:
         if request.cookies:
-            args = endpoint.process_request(req_args, cookie=request.cookies)
+            kwargs = {'cookie': request.cookies}
         else:
-            args = endpoint.process_request(req_args)
+            kwargs = {}
+
+        if isinstance(endpoint, AccessToken):
+            args = endpoint.process_request(AccessTokenRequest(**req_args),
+                                            **kwargs)
+        else:
+            args = endpoint.process_request(req_args, **kwargs)
     except Exception:
         message = traceback.format_exception(*sys.exc_info())
         # cherrypy.response.headers['Content-Type'] = 'text/html'

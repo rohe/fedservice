@@ -48,9 +48,9 @@ client_config = {
     'federation': {
         'entity_id': BASEURL,
         'signing_keys':{
-            'private_path': './entity_keys',
+            'private_path': './entity_keys.json',
             'key_defs': KEYDEFS,
-            'public_path': './pub_entity_keys'
+            'public_path': './pub_entity_keys.json'
         },
         'authority_hints': 'authority_hints.json',
         'trusted_roots': 'trusted_roots.json',
