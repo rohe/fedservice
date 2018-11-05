@@ -139,9 +139,9 @@ CONFIG = {
         'federation': {
             'entity_id': BASE_URL,
             'signing_keys': {
-                'private_path': 'fed_keys',
+                'private_path': 'fed_keys.json',
                 'key_defs': KEY_DEF,
-                'public_path': 'pub_fed_keys'
+                'public_path': 'pub_fed_keys.json'
             },
             'authority_hints': 'authority_hints.json',
             'trusted_roots': 'trusted_roots.json',
