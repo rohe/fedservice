@@ -43,8 +43,12 @@ def eval_paths(node, key_jar, entity_type, flatten=True):
             res = Statement()
             res.le = ves[-1]
 
+        iss_path = [x['iss'] for x in ves]
+        iss_path.reverse()
+
         if res:
             res.exp = tp_exp
+            res.iss_path = iss_path
             tr = ves[0]['iss']
             try:
                 trust_path[tr].append(res)
