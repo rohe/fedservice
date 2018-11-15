@@ -127,7 +127,7 @@ def well_known(service):
     return service_endpoint(_endpoint)
 
 
-@oidc_op_views.route('/registration')
+@oidc_op_views.route('/registration', methods=['POST'])
 def registration():
     return service_endpoint(current_app.endpoint_context.endpoint[
                                 'federation_registration'])

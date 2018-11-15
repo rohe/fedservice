@@ -80,22 +80,22 @@ CONFIG = {
                 'kwargs': {'client_authn_method': None}
             },
             'federation_registration': {
-                'path': 'registration',
+                'path': '/registration',
                 'class': service.Registration,
                 'kwargs': {'client_authn_method': None}
             },
             'authorization': {
-                'path': 'authorization',
+                'path': '/authorization',
                 'class': Authorization,
                 'kwargs': {'client_authn_method': None}
             },
             'token': {
-                'path': 'token',
+                'path': '/token',
                 'class': AccessToken,
                 'kwargs': {}
             },
             'userinfo': {
-                'path': 'userinfo',
+                'path': '/userinfo',
                 'class': UserInfo,
             }
         },
