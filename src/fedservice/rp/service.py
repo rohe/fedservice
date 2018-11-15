@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 from urllib.parse import urlparse
 
 from oidcmsg.exception import RegistrationError
+from oidcservice.exception import ResponseError
 
 from fedservice.entity_statement.construct import \
     map_configuration_to_preference
@@ -114,7 +115,16 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
             _sc.behaviour = map_configuration_to_preference(
                 _pinfo, _sc.client_preferences)
 
-    def post_parse_response(self, response, **kwargs):
+    def parse_response(self, info, sformat="", state="", **kwargs):
+        resp = self.parse_federation_response(info, state=state)
+
+        if not resp:
+            logger.error('Missing or faulty response')
+            raise ResponseError("Missing or faulty response")
+
+        return resp
+
+    def parse_federation_response(self, response, **kwargs):
         """
         Takes a provider info response and parses it.
         If according to the info the OP has more then one federation
@@ -174,7 +184,16 @@ class FedRegistrationRequest(Registration):
             _md, _fe.entity_id, _fe.entity_id,
             authority_hints=_fe.proposed_authority_hints)
 
-    def post_parse_response(self, resp, **kwargs):
+    def parse_response(self, info, sformat="", state="", **kwargs):
+        resp = self.parse_federation_response(info, state=state)
+
+        if not resp:
+            logger.error('Missing or faulty response')
+            raise ResponseError("Missing or faulty response")
+
+        return resp
+
+    def parse_federation_response(self, resp, **kwargs):
         """
         Receives a dynamic client registration response,
 
