@@ -1,44 +1,10 @@
 import logging
 
 from fedservice.entity_statement.utils import create_authority_hints
-from oidcendpoint.oidc import authorization
-from oidcendpoint.oidc import provider_config
 from oidcendpoint.oidc import registration
-from oidcmsg import oidc
-from oidcmsg.oidc import ProviderConfigurationResponse
 from oidcmsg.oidc import RegistrationRequest
 
 logger = logging.getLogger(__name__)
-
-
-class ProviderConfiguration(provider_config.ProviderConfiguration):
-    request_cls = oidc.Message
-    response_cls = ProviderConfigurationResponse
-    request_format = 'jws'
-    response_format = 'jws'
-    endpoint_name = 'discovery'
-
-    def __init__(self, endpoint_context, **kwargs):
-        provider_config.ProviderConfiguration.__init__(self, endpoint_context,
-                                                       **kwargs)
-        self.post_construct.append(self.create_entity_statement)
-
-    def process_request(self, request=None, **kwargs):
-        return {'response_args': self.endpoint_context.provider_info.copy()}
-
-    def create_entity_statement(self, request_args, request=None, **kwargs):
-        """
-        Create a self signed entity statement
-
-        :param request_args:
-        :param request:
-        :param kwargs:
-        :return:
-        """
-
-        _fe = self.endpoint_context.federation_entity
-        _md = {_fe.entity_type: request_args.to_dict()}
-        return _fe.create_entity_statement(_md, _fe.entity_id, _fe.entity_id)
 
 
 class Registration(registration.Registration):
@@ -88,16 +54,3 @@ class Registration(registration.Registration):
         return _fe.create_entity_statement(
             _md, _fe.entity_id, _fe.entity_id,
             authority_hints=_fe.proposed_authority_hints)
-
-
-class Authorization(authorization.Authorization):
-    msg_type = oidc.AuthorizationRequest
-    response_cls = oidc.AuthorizationResponse
-    error_msg = oidc.ResponseMessage
-
-    def __init__(self, endpoint_context, **kwargs):
-        authorization.Authorization.__init__(self, endpoint_context, **kwargs)
-        # self.pre_construct.append(self._pre_construct)
-        # self.post_parse_request.append(self._post_parse_request)
-
-
