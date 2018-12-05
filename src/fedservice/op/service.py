@@ -1,16 +1,12 @@
-import inspect
 import logging
-import sys
-
-from oidcendpoint.client_authn import UnknownOrNoAuthnMethod
 
 from fedservice.entity_statement.utils import create_authority_hints
+from oidcendpoint.oidc import authorization
 from oidcendpoint.oidc import provider_config
 from oidcendpoint.oidc import registration
 from oidcmsg import oidc
-from oidcmsg.oidc import ProviderConfigurationResponse, RegistrationRequest
-from oidcservice.oidc import service
-from oidcservice.service import Service
+from oidcmsg.oidc import ProviderConfigurationResponse
+from oidcmsg.oidc import RegistrationRequest
 
 logger = logging.getLogger(__name__)
 
@@ -94,14 +90,14 @@ class Registration(registration.Registration):
             authority_hints=_fe.proposed_authority_hints)
 
 
-def factory(req_name, **kwargs):
-    for name, obj in inspect.getmembers(sys.modules[__name__]):
-        if inspect.isclass(obj) and issubclass(obj, Service):
-            try:
-                if obj.__name__ == req_name:
-                    return obj(**kwargs)
-            except AttributeError:
-                pass
+class Authorization(authorization.Authorization):
+    msg_type = oidc.AuthorizationRequest
+    response_cls = oidc.AuthorizationResponse
+    error_msg = oidc.ResponseMessage
 
-    # If not here look at oidcservice.oidc.service
-    return service.factory(req_name, **kwargs)
+    def __init__(self, endpoint_context, **kwargs):
+        authorization.Authorization.__init__(self, endpoint_context, **kwargs)
+        # self.pre_construct.append(self._pre_construct)
+        # self.post_parse_request.append(self._post_parse_request)
+
+

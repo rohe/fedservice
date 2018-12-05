@@ -25,8 +25,9 @@ oidc_op_views = Blueprint('oidc_rp', __name__, url_prefix='')
 
 def add_cookie(resp, cookie_spec):
     for key, _morsel in cookie_spec.items():
-        kwargs = {'value':_morsel.value}
-        for param in ['expires','path','comment','domain','max-age','secure',
+        kwargs = {'value': _morsel.value}
+        for param in ['expires', 'path', 'comment', 'domain', 'max-age',
+                      'secure',
                       'version']:
             if _morsel[param]:
                 kwargs[param] = _morsel[param]
@@ -171,14 +172,16 @@ def service_endpoint(endpoint):
 
     if request.method == 'GET':
         req_args = endpoint.parse_request(request.args.to_dict(), **pr_args)
-        logger.info('request: {}'.format(req_args))
-        if isinstance(req_args, ResponseMessage) and 'error' in req_args:
-            return make_response(req_args.to_json(), 400)
     else:
         if request.data:
             req_args = request.data
         else:
             req_args = dict([(k, v) for k, v in request.form.items()])
+        req_args = endpoint.parse_request(req_args, **pr_args)
+
+    logger.info('request: {}'.format(req_args))
+    if isinstance(req_args, ResponseMessage) and 'error' in req_args:
+        return make_response(req_args.to_json(), 400)
 
     try:
         if request.cookies:

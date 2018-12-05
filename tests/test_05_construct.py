@@ -123,5 +123,7 @@ def test_map_configuration_to_preference():
         'grant_types': ['authorization_code', 'implicit',
                         'urn:ietf:params:oauth:grant-type:jwt-bearer',
                         'refresh_token'],
-        'contacts': ['ops@example.com']
+        'contacts': ['ops@example.com'],
+        'application_name': 'rphandler',
+        'scope': ['openid', 'profile', 'email', 'address', 'phone']
     }

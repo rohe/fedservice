@@ -116,7 +116,8 @@ class TestEndpoint(object):
         payload = _jwt.jwt.payload()
         assert set(payload.keys()) == {'exp', 'jwks', 'sub', 'kid', 'iat',
                                        'metadata', 'iss'}
-        assert set(payload['metadata'].keys()) == {
+        assert set(payload['metadata'].keys()) == {'openid_client'}
+        assert set(payload['metadata']['openid_client'].keys()) == {
             'response_types_supported', 'claims_supported',
             'claims_parameter_supported', 'grant_types_supported',
             'token_endpoint_auth_signing_alg_values_supported',

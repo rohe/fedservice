@@ -86,7 +86,7 @@ class TestEndpoint(object):
             owner=entity_id)
 
         self.rp_federation_entity = FederationEntity(
-            key_jar=key_jar, id=entity_id, trusted_roots=trusted_roots,
+            key_jar=key_jar, entity_id=entity_id, trusted_roots=trusted_roots,
             authority_hints={
                 'https://127.0.0.1:6000/com/a': ['https://127.0.0.1:6000/fed']
             },
@@ -140,7 +140,7 @@ class TestEndpoint(object):
                 'https://127.0.0.1:6000/org/b': ['https://127.0.0.1:6000/fed']
             }, entity_type='openid_client',
             httpd=Publisher(os.path.join(BASE_PATH, 'data')),
-            opponent_entity_type='openid_provider')
+            opponent_entity_type='openid_client')
 
         federation_entity.collector = DummyCollector(
             httpd=Publisher(os.path.join(BASE_PATH, 'data')),
@@ -152,7 +152,7 @@ class TestEndpoint(object):
     def test_request(self):
         # construct the client registration request
         req_args = {
-            'entity_id': self.rp_federation_entity.id,
+            'entity_id': self.rp_federation_entity.entity_id,
             'redirect_uris': ['https://127.0.0.1:6000/com/rp/cb']
         }
         self.rp_federation_entity.proposed_authority_hints = {

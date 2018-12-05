@@ -129,6 +129,12 @@ class TestRpService(object):
                                       'id_token_signing_alg_values_supported',
                                       'authorization_endpoint',
                                       'userinfo_endpoint'}
+        _fid, _ms = self.fedent.pick_metadata(res)
+        assert _fid == 'https://127.0.0.1:6000/fed'
+        assert set(_ms.keys()) == {'token_endpoint', 'organization',
+                                   'id_token_signing_alg_values_supported',
+                                   'authorization_endpoint',
+                                   'userinfo_endpoint'}
 
     def test_create_self_signed(self):
         metadata = {

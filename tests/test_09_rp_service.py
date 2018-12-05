@@ -62,7 +62,7 @@ class TestRpService(object):
 
         key_jar = build_keyjar(KEYSPEC, owner=entity_id)
         self.federation_entity = FederationEntity(
-            key_jar=key_jar, id=entity_id, trusted_roots=trusted_roots,
+            key_jar=key_jar, entity_id=entity_id, trusted_roots=trusted_roots,
             authority_hints={
                 'https://127.0.0.1:6000/org/a': ['https://127.0.0.1:6000/fed']
             },
@@ -99,20 +99,20 @@ class TestRpService(object):
         jws = make_entity_statement(BASE_URL, ROOT_DIR,
                                     iss='https://127.0.0.1:6000/org/op')
 
-        res = _dserv.post_parse_response(jws)
+        res = _dserv.parse_response(jws)
         assert set(res.keys()) == {"https://127.0.0.1:6000/fed"}
         assert len(res["https://127.0.0.1:6000/fed"]) == 1
         _dserv.update_service_context(res)
         assert set(_dserv.service_context.behaviour.keys()) == {
-            'application_type', 'response_types', 'grant_types',
-            'id_token_signed_response_alg', 'token_endpoint_auth_method'}
+            'grant_types', 'id_token_signed_response_alg',
+            'token_endpoint_auth_method'}
 
     def test_create_request(self):
         # construct the entity statement the OP should return
         jws = make_entity_statement(BASE_URL, ROOT_DIR,
                                     iss='https://127.0.0.1:6000/org/op')
         # parse the response and collect the trust chains
-        res = self.service['discovery'].post_parse_response(jws)
+        res = self.service['discovery'].parse_response(jws)
 
         self.service['discovery'].update_service_context(res)
 
@@ -149,7 +149,7 @@ class TestRpService(object):
         jws = make_entity_statement(BASE_URL, ROOT_DIR,
                                     iss='https://127.0.0.1:6000/org/op')
         # parse the response and collect the trust chains
-        res = self.service['discovery'].post_parse_response(jws)
+        res = self.service['discovery'].parse_response(jws)
 
         self.service['discovery'].update_service_context(res)
 
@@ -186,7 +186,8 @@ class TestRpService(object):
                     'https://127.0.0.1:6000/org/op/fedreg']
             }, include_jwks=False)
 
-        claims = self.service['registration'].post_parse_response(_jwt)
-        assert set(claims.keys()) == {'authorization_endpoint', 'organization',
-                                      'id_token_signing_alg_values_supported',
-                                      'token_endpoint', 'userinfo_endpoint'}
+        claims = self.service['registration'].parse_response(_jwt)
+        assert set(claims.keys()) == {
+            'id_token_signed_response_alg', 'application_type', 'client_secret',
+            'client_id', 'response_types', 'token_endpoint_auth_method',
+            'grant_types'}
