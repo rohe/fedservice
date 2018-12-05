@@ -5,7 +5,7 @@ from fedservice.entity_statement.create import create_entity_statement
 from fedservice.utils import eval_paths, load_json
 
 __author__ = 'Roland Hedberg'
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 
 class FederationEntity(object):
