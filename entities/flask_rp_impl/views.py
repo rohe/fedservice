@@ -27,6 +27,11 @@ def index():
     return render_template('opbyuid.html', providers=_providers)
 
 
+@oidc_rp_views.route('/irp')
+def irp():
+    return send_from_directory('entity_statements', 'irp.jws')
+
+
 @oidc_rp_views.route('/rp')
 def rp():
     try:

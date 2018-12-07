@@ -54,12 +54,11 @@ CLIENT_CONFIG = {
                            "code id_token", "code id_token token",
                            "code token"],
         "scope": ["openid", "profile", "email", "address", "phone"],
-        "token_endpoint_auth_method": ["client_secret_basic",
-                                       'client_secret_post']
+        "token_endpoint_auth_method": "private_key_jwt"
         },
     'issuer': 'https://catalogix.se',
     'federation': {
-        'entity_id': BASEURL,
+        'entity_id': '{}/irp'.format(BASEURL),
         'signing_keys': {
             'private_path': 'fed_keys.json',
             'key_defs': KEYDEFS,
