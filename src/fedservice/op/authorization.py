@@ -36,17 +36,14 @@ class Authorization(authorization.Authorization):
         fid, statement = _fe.pick_metadata(paths)
 
         # handle the registration request as in the non-federation case.
-        req = RegistrationRequest(
-            **statement['metadata'][_fe.opponent_entity_type])
-        return self.endpoint_context.endpoint['registration'].process_request(
-            self, req, authn=None)
+        req = RegistrationRequest(**statement)
+        req['client_id'] = entity_id
+        enp = self.endpoint_context.endpoint['registration']
+        res = enp.process_request(req, new_id=False, set_secret=False)
+        resp_args = res['response_args']
+        return True
 
-    def process_request(self, request=None, **kwargs):
-        """ The AuthorizationRequest endpoint
-
-        :param request: The client request as a dictionary
-        :return: res
-        """
+    def client_authentication(self, request, auth=None, **kwargs):
 
         _cid = request["client_id"]
 
@@ -57,6 +54,6 @@ class Authorization(authorization.Authorization):
                 return {'error': 'unauthorized_client',
                         'error_description': 'Unknown client'}
 
-        # Now I can do normal authorization
-        return authorization.Authorization.process_request(self, request,
-                                                           **kwargs)
+        # then do client authentication
+        return authorization.Authorization.client_authentication(self, request,
+                                                                 auth)

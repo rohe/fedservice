@@ -14,8 +14,8 @@ from fedservice import FederationEntity
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.collect import Issuer
 from fedservice.metadata_api.fs import make_entity_statement
-from fedservice.rp.service import FedProviderInfoDiscovery
-from fedservice.rp.service import FedRegistrationRequest
+from fedservice.rp.provider_info_discovery import FedProviderInfoDiscovery
+from fedservice.rp.registration import FedRegistration
 from .utils import build_path
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
@@ -79,8 +79,8 @@ class TestRpService(object):
         self.service = {
             'discovery': FedProviderInfoDiscovery(service_context,
                                                   state_db=db),
-            'registration': FedRegistrationRequest(service_context,
-                                                   state_db=db)
+            'registration': FedRegistration(service_context,
+                                            state_db=db)
         }
 
     def test_1(self):

@@ -3,7 +3,7 @@ import cherrypy
 import logging
 import os
 
-from fedservice.meta_api import MetaAPI
+from fedservice.meta_api import MetaAPIFS
 
 logger = logging.getLogger("")
 LOGFILE_NAME = 'farp.log'
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     else:
         base_url = "http://{}:{}".format(args.netloc, args.port)
 
-    cherrypy.tree.mount(MetaAPI(base_url, args.dir), '/', provider_config)
+    cherrypy.tree.mount(MetaAPIFS(base_url, args.dir), '/', provider_config)
 
     # If HTTPS
     if args.tls:

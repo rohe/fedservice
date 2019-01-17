@@ -1,7 +1,7 @@
 from oidcmsg.oidc import RegistrationRequest
+from oidcservice.oidc.provider_info_discovery import PROVIDER2PREFERENCE
 
 from fedservice.entity_statement.statement import Statement
-from oidcservice.oidc.service import PROVIDER2PREFERENCE
 
 
 def translate_configuration(conf):

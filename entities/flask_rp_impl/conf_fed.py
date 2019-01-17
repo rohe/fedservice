@@ -41,8 +41,8 @@ CLIENT_PREFS = {
 
 # Default set if nothing else is specified
 SERVICES = {
-    'FedProviderInfoDiscovery': {}, 'FedRegistrationRequest': {},
-    'Authorization': {}, 'AccessToken': {},
+    'FedProviderInfoDiscovery': {},
+    'FedAuthorization': {}, 'AccessToken': {},
     'RefreshAccessToken': {}, 'UserInfo': {}
 }
 
@@ -54,10 +54,13 @@ CLIENT_CONFIG = {
                            "code id_token", "code id_token token",
                            "code token"],
         "scope": ["openid", "profile", "email", "address", "phone"],
-        "token_endpoint_auth_method": "private_key_jwt"
+        "token_endpoint_auth_method": "private_key_jwt",
+        "jwks_uri": "{}/static/jwks.json".format(BASEURL),
+        "redirect_uris": ['{}/authz_cb'.format(BASEURL)]
         },
     'issuer': 'https://catalogix.se',
     'federation': {
+        'registration_type': 'implicit',
         'entity_id': '{}/irp'.format(BASEURL),
         'signing_keys': {
             'private_path': 'fed_keys.json',
@@ -73,7 +76,7 @@ CLIENT_CONFIG = {
     },
     'services': {
         'FedProviderInfoDiscovery': {},
-        'Authorization': {}, 'AccessToken': {}, 'WebFinger': {},
+        'FedAuthorization': {}, 'AccessToken': {}, 'WebFinger': {},
         'RefreshAccessToken': {}, 'UserInfo': {}
     }
 }

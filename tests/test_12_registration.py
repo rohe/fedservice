@@ -12,9 +12,9 @@ from oidcservice.state_interface import InMemoryStateDataBase, State
 
 from fedservice import Collector, FederationEntity
 from fedservice.entity_statement.collect import Issuer
-from fedservice.op.service import Registration
-from fedservice.rp.service import FedProviderInfoDiscovery, \
-    FedRegistrationRequest
+from fedservice.op.registration import Registration
+from fedservice.rp.provider_info_discovery import FedProviderInfoDiscovery
+from fedservice.rp.registration import FedRegistration
 from .utils import build_path
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
@@ -103,8 +103,8 @@ class TestEndpoint(object):
         self.service = {
             'discovery': FedProviderInfoDiscovery(service_context,
                                                   state_db=db),
-            'registration': FedRegistrationRequest(service_context,
-                                                   state_db=db)
+            'registration': FedRegistration(service_context,
+                                            state_db=db)
         }
 
         op_entity_id = "https://127.0.0.1:6000/org/op"
@@ -170,5 +170,5 @@ class TestEndpoint(object):
 
         # parse response
         args = self.service['registration'].post_parse_response(reg_resp[
-                                                                'response'])
+                                                                    'response'])
         assert args

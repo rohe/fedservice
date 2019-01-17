@@ -1,13 +1,16 @@
 from oidcendpoint import user_info
-from oidcendpoint.oidc.authorization import Authorization
+
 from oidcendpoint.oidc.discovery import Discovery
+from oidcendpoint.oidc.registration import Registration
 from oidcendpoint.oidc.token import AccessToken
 from oidcendpoint.oidc.userinfo import UserInfo
 from oidcendpoint.user_authn.authn_context import INTERNETPROTOCOLPASSWORD
 
 from oidcop.util import JSONDictDB
 
-from fedservice.op import service
+from fedservice.op import authorization
+from fedservice.op import provider_config
+from fedservice.op import registration as fed_registration
 
 SESSION_COOKIE_NAME = 'floop'
 
@@ -76,17 +79,22 @@ CONFIG = {
             },
             'provider_info': {
                 'path': '.well-known/openid-federation',
-                'class': service.ProviderConfiguration,
+                'class': provider_config.ProviderConfiguration,
+                'kwargs': {'client_authn_method': None}
+            },
+            'registration': {
+                'path': '/registration',
+                'class': Registration,
                 'kwargs': {'client_authn_method': None}
             },
             'federation_registration': {
-                'path': '/registration',
-                'class': service.Registration,
+                'path': '/fed_registration',
+                'class': fed_registration.Registration,
                 'kwargs': {'client_authn_method': None}
             },
             'authorization': {
                 'path': '/authorization',
-                'class': Authorization,
+                'class': authorization.Authorization,
                 'kwargs': {'client_authn_method': None}
             },
             'token': {

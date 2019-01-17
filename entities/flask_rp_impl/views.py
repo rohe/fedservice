@@ -32,6 +32,23 @@ def irp():
     return send_from_directory('entity_statements', 'irp.jws')
 
 
+@oidc_rp_views.route('/.well-known/openid-federation')
+def wkof():
+    iss = request.args['iss']
+    try:
+        sub = request.args['sub']
+    except KeyError:
+        pass
+    else:
+        if iss != sub:
+            return make_response("Only self-signed", 400)
+
+    if iss == current_app.rph.federation_entity.entity_id:
+        return send_from_directory('entity_statements', 'irp.jws')
+    else:
+        return make_response("No such file", 400)
+
+
 @oidc_rp_views.route('/rp')
 def rp():
     try:
@@ -80,9 +97,9 @@ def get_rp(op_hash):
     return rp
 
 
-@oidc_rp_views.route('/authz_cb/<op_hash>')
-def authz_cb(op_hash):
-    rp = get_rp(op_hash)
+@oidc_rp_views.route('/authz_cb')
+def authz_cb():
+    rp = None
 
     try:
         iss = rp.session_interface.get_iss(request.args['state'])

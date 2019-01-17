@@ -1,5 +1,6 @@
+#!/usr/bin/env python3
+
 from cryptojwt.key_jar import init_key_jar
-from oidcservice.oidc.service import Registration
 
 from fedservice.rp import RPHandler
 from fedservice.rp.service import factory
@@ -58,9 +59,10 @@ if __name__ == '__main__':
 
     _fe = rph.federation_entity
     iss = sub = _fe.entity_id
-    jws = _fe.create_entity_statement(metadata.to_dict(), iss, sub,
-                                      authority_hints=_fe.authority_hints,
-                                      lifetime=86400)
+    jws = _fe.create_entity_statement(
+        {"openid_client": metadata.to_dict()},
+        iss, sub, authority_hints=_fe.authority_hints,
+        lifetime=86400)
 
     with open('entity_statements/irp.jws', 'w') as fp:
         fp.write(jws)

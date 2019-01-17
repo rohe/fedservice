@@ -11,7 +11,8 @@ __version__ = '0.2.0'
 class FederationEntity(object):
     def __init__(self, entity_id, trusted_roots, authority_hints=None, 
                  key_jar=None, default_lifetime=86400, httpd=None, 
-                 priority=None, entity_type='', opponent_entity_type=''):
+                 priority=None, entity_type='', opponent_entity_type='',
+                 registration_type=''):
         self.collector = Collector(trusted_roots=trusted_roots, httpd=httpd)
         self.entity_id = entity_id
         self.entity_type = entity_type
@@ -22,6 +23,7 @@ class FederationEntity(object):
         self.authority_hints = authority_hints
         self.default_lifetime = default_lifetime
         self.tr_priority = priority or sorted(set(trusted_roots.keys()))
+        self.registration_type = registration_type
 
     def collect_entity_statements(self, response):
         return self.collector.collect_entity_statements(response)
@@ -85,7 +87,8 @@ def create_federation_entity(entity_id, **kwargs):
         args['key_jar'] = init_key_jar(**kwargs['signing_keys'],
                                        owner=entity_id)
 
-    for param in ['entity_type', 'priority', 'opponent_entity_type']:
+    for param in ['entity_type', 'priority', 'opponent_entity_type',
+                  'registration_type']:
         try:
             args[param] = kwargs[param]
         except KeyError:
