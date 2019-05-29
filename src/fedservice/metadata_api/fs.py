@@ -49,9 +49,11 @@ def get_authority_hints(base_url, sub_dir):
 def make_entity_statement(base_url, root_dir='.', **kwargs):
     iss = kwargs['iss']
     if iss.startswith(base_url):
-        _iss_dir = mk_path(root_dir, iss)
+        _iss = iss
     else:
-        _iss_dir = mk_path(root_dir, quote_plus(iss))
+        _iss = quote_plus(iss)
+    
+    _iss_dir = mk_path(root_dir, _iss)
 
     if not _iss_dir:
         raise DbFault('No such issuer')
@@ -63,9 +65,9 @@ def make_entity_statement(base_url, root_dir='.', **kwargs):
         _sub_dir = _iss_dir
     else:
         if sub.startswith(base_url):
-            _sub_dir = mk_path(root_dir, iss, sub)
+            _sub_dir = mk_path(root_dir, _iss, sub)
         else:
-            _sub_dir = mk_path(root_dir, iss, quote_plus(sub))
+            _sub_dir = mk_path(root_dir, _iss, quote_plus(sub))
 
     if not _sub_dir:
         logger.warning('Unknown sub: "{}" for iss: {}'.format(sub, iss))
