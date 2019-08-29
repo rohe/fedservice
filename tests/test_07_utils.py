@@ -1,24 +1,41 @@
 import os
 
-from fedservice.utils import eval_paths
+from cryptojwt import KeyJar
 
-from .utils import build_path
-from .utils import load_trust_roots
+from fedservice.entity_statement.collect import Collector
+from fedservice.entity_statement.collect import branch2lists
+from fedservice.entity_statement.collect import verify_self_signed_signature
+from fedservice.entity_statement.verify import eval_chain
+from .utils import Publisher
+
+BASE_PATH = os.path.abspath(os.path.dirname(__file__))
+
+jwks = open(os.path.join(BASE_PATH, 'base_data', 'feide.no', 'feide.no.jwks.json')).read()
+
+ANCHOR = {'https://feide.no': jwks}
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 
-def test_eval_paths():
-    node = build_path(os.path.join(BASE_PATH, 'fedA'), "https://127.0.0.1:6000",
-                      "https://127.0.0.1:6000/com/rp")
-    key_jar = load_trust_roots(os.path.join(BASE_PATH, 'trust_roots_wt.json'))
+def test_eval_chains():
+    target = 'https://foodle.uninett.no'
+    collector = Collector(trust_anchors=ANCHOR,
+                          http_cli=Publisher(os.path.join(BASE_PATH, 'base_data')))
+    entity_config = collector.get_configuration_information(target)
+    _config = verify_self_signed_signature(entity_config)
+    assert _config
 
-    res = eval_paths(node, key_jar, 'openid_client')
+    tree = entity_config, collector.collect_superiors(target, _config)
+    chains = branch2lists(tree)
 
-    assert set(res.keys()) == {"https://127.0.0.1:6000/fed"}
+    key_jar = KeyJar()
+    key_jar.import_jwks_as_json(jwks, 'https://feide.no')
 
-    statement = res["https://127.0.0.1:6000/fed"][0]
-    claims = statement.claims()
-    assert set(claims.keys()) == {'response_types', 'contacts', 'organization',
-                                  'application_type', 'redirect_uris', 'scope',
-                                  'token_endpoint_auth_method'}
+    statements = [eval_chain(c, key_jar, 'openid_client') for c in chains]
+
+    assert len(statements) == 1
+    statement = statements[0]
+    assert statement.fo == "https://feide.no"
+    assert set(statement.metadata.keys()) == {'response_types', 'claims', 'contacts',
+                                              'application_type', 'redirect_uris',
+                                              'id_token_signing_alg_values_supported'}

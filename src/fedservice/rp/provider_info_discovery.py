@@ -2,6 +2,10 @@ import logging
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 
+from cryptojwt.jws.jws import factory
+from fedservice.entity_statement.verify import eval_chain
+
+from fedservice.entity_statement.collect import branch2lists
 from oidcservice.exception import ResponseError
 from oidcservice.oidc.provider_info_discovery import ProviderInfoDiscovery
 
@@ -54,54 +58,57 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
             :py:class:`fedservice.entity_statement.statement.Statement` instance
         """
         # Only use trusted claims
-        trusted_claims = statement.protected_claims()
+        trusted_claims = statement.metadata
         if trusted_claims is None:
             raise NoTrustedClaims()
         _pi = self.response_cls(**trusted_claims)
 
-        if 'signed_jwks_uri' in _pi:
-            _kb = KeyBundle(source=_pi['signed_jwks_uri'],
-                            verify_keys=statement.signing_keys,
-                            verify_ssl=False)
-            _kb.do_remote()
-            # Replace what was there before
-            self.service_context.keyjar[self.service_context.issuer] = _kb
+        # Temporarily (?) taken out
+        # if 'signed_jwks_uri' in _pi:
+        #     _kb = KeyBundle(source=_pi['signed_jwks_uri'],
+        #                     verify_keys=statement.signing_keys,
+        #                     verify_ssl=False)
+        #     _kb.do_remote()
+        #     # Replace what was there before
+        #     self.service_context.keyjar[self.service_context.issuer] = _kb
 
         self.service_context.provider_info = _pi
         self.service_context.federation_entity.federation = trust_root_id
 
-    def update_service_context(self, paths, **kwargs):
+    def update_service_context(self, statements, **kwargs):
         """
-        The list of :py:class:`fedoidcmsg.operator.LessOrEqual` instances are
+        The list of :py:class:`fedservice.entity_statement.statement.Statement` instances are
         stored in *provider_federations*.
         If the OP and RP only has one federation in common then the choice is
         easy and the name of the federation are stored in the *federation*
         attribute while the provider info are stored in the service_context.
 
-        :param paths: A dictionary with trust root entity IDs as keys and
-            lists of Statement instances as values
-        :param kwargs:
+        :param paths: A list of Statement instances
+        :param kwargs: Extra Keyword arguments
         """
 
         _sc = self.service_context
         _fe = _sc.federation_entity
 
-        possible = list(set(paths.keys()).intersection(_fe.tr_priority))
+        possible = list(set([s.fo for s in statements]).intersection(_fe.tr_priority))
+
         _fe.provider_federations = possible
-        _fe.op_paths = paths
+        _fe.op_statements = statements
 
         _fe.proposed_authority_hints = create_authority_hints(
-            _fe.authority_hints, paths)
+            _fe.authority_hints, statements)
 
         if len(possible) == 1:
-            claims = paths[possible[0]][0].claims()
-            _sc.provider_info = self.response_cls(**claims)
-            self._update_service_context(_sc.provider_info)
-            _sc.behaviour = map_configuration_to_preference(
-                _sc.provider_info, _sc.client_preferences)
+            for s in statements:
+                if s.fo == possible[0]:
+                    claims = s.metadata
+                    _sc.provider_info = self.response_cls(**claims)
+                    self._update_service_context(_sc.provider_info)
+                    _sc.behaviour = map_configuration_to_preference(
+                        _sc.provider_info, _sc.client_preferences)
         else:
             # Not optimal but a reasonable estimate for now
-            claims = paths[possible[0]][0].claims()
+            claims = statements[0].metadata
             _pinfo = self.response_cls(**claims)
             _sc.behaviour = map_configuration_to_preference(
                 _pinfo, _sc.client_preferences)
@@ -126,12 +133,17 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         instance is store in the response by federation operator ID under the
         key 'fos'.
 
-        :param response: A signed JWT containing an entity statement
-        :returns: A dictionary with trust root entity IDs as keys and
-            lists of Statement instances as values
+        :param response: A self-signed JWT containing an entity statement
+        :returns: A list of lists of Statement instances. The innermost lists represents
+        trust chains
         """
 
-        _fe = self.service_context.federation_entity
-        _node = _fe.collect_entity_statements(response)
+        _jwt = factory(response)
+        entity_statement = _jwt.jwt.payload()
+        entity_id = entity_statement['iss']
 
-        return _fe.eval_paths(_node)
+        _fe = self.service_context.federation_entity
+
+        _tree = _fe.collect_statement_chains(entity_id, response)
+        _chains = branch2lists(_tree)
+        return [eval_chain(c, _fe.key_jar, 'openid_provider') for c in _chains]

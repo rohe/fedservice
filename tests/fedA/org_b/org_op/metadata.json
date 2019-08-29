@@ -1,9 +1,0 @@
-{
-  "openid_provider": {
-    "organization": "B",
-    "id_token_signing_alg_values_supported": [
-      "ES256",
-      "ES512"
-    ]
-  }
-}

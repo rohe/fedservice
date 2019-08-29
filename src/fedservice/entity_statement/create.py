@@ -1,16 +1,17 @@
 from cryptojwt.jwt import JWT
 
 
-def create_entity_statement(metadata, iss, sub, key_jar, authority_hints=None,
-                            lifetime=86400, aud='', include_jwks=True,
+def create_entity_statement(iss, sub, key_jar, metadata=None, metadata_policy=None,
+                            authority_hints=None, lifetime=86400, aud='', include_jwks=True,
                             **kwargs):
     """
 
-    :param metadata: The entity's metadata organised as a dictionary with the
-        entity type as key
     :param iss: The issuer of the signed JSON Web Token
     :param sub: The subject which the metadata describes
     :param key_jar: A KeyJar instance
+    :param metadata: The entity's metadata organised as a dictionary with the
+        entity type as key
+    :param metadata_policy: Metadata policy
     :param authority_hints: A dictionary with immediate superiors in the
         trust chains as keys and lists of identifier of trust roots as values.
     :param lifetime: The life time of the signed JWT.
@@ -18,7 +19,12 @@ def create_entity_statement(metadata, iss, sub, key_jar, authority_hints=None,
     :return: A signed JSON Web Token
     """
 
-    msg = {"metadata": metadata, 'sub': sub}
+    msg = {'sub': sub}
+    if metadata:
+        msg['metadata'] = metadata
+
+    if metadata_policy:
+        msg['metadata_policy'] = metadata_policy
 
     if authority_hints:
         msg['authority_hints'] = authority_hints

@@ -1,3 +1,4 @@
+from fedservice.entity_statement.policy import apply_policy
 from oidcmsg.oidc import RegistrationRequest
 from oidcservice.oidc.provider_info_discovery import PROVIDER2PREFERENCE
 
@@ -6,21 +7,28 @@ from fedservice.entity_statement.statement import Statement
 
 def translate_configuration(conf):
     """
-    Map attributes in a Provider Configuration response into 'equivalent'
-    attributes in a client registration request
+    Map a Provider Configuration response into a metadata policy
 
     :param conf: Attribute,value pairs from a Provider Configuration response
     :return: Attribute,value pairs useful when constructing a Client
         registration requests
     """
-    res = {}
+    policy = {}
+    cls = RegistrationRequest
     for pro, pref in PROVIDER2PREFERENCE.items():
         try:
-            res[pref] = conf[pro]
+            _allow = conf[pro]
         except KeyError:
             pass
+        else:
+            if pref == "scope":
+                policy[pref] = {'subset_of': _allow}
+            elif isinstance(cls.c_param[pref][0], list):
+                policy[pref] = {'subset_of': _allow}
+            else:
+                policy[pref] = {'one_of': _allow}
 
-    return res
+    return policy
 
 
 def list_to_singleton(args, cls):
@@ -61,11 +69,6 @@ def map_configuration_to_preference(provider_configuration, client_preference):
     :return: A ClientRegistration instance
     """
     _allowed = translate_configuration(provider_configuration)
+    args = apply_policy(client_preference, _allowed)
 
-    _provider = Statement()
-    _provider.le = _allowed
-    _statem = Statement(sup=_provider)
-    _statem.flatten(client_preference)
-
-    args = _statem.claims()
     return list_to_singleton(args, RegistrationRequest)

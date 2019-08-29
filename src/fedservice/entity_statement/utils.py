@@ -1,18 +1,18 @@
-def create_authority_hints(default_hints, paths):
+def create_authority_hints(default_hints, statements):
     """
 
     :param default_hints: The authority hints provided to the entity at startup
-    :param paths: The response from an eval call
+    :param statements: A list of Statement instances
     :return: An authority_hints dictionary
     """
 
     res = {}
     for sup, fos in default_hints.items():
-        for fo, statements in paths.items():
-            if fo in fos:
+        for statement in statements:
+            if statement.fo in fos:
                 try:
-                    res[sup].append(fo)
+                    res[sup].append(statement.fo)
                 except KeyError:
-                    res[sup] = [fo]
+                    res[sup] = [statement.fo]
 
     return res

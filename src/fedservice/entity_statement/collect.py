@@ -1,145 +1,198 @@
-import json
-import logging
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode
+from urllib.parse import urlparse
 
-import requests
+from cryptojwt import JWT
+from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 
-REL = 'http://oauth.net/specs/federation/1.0/entity'
+import requests
 
-logger = logging.getLogger(__name__)
+from .cache import ESCache
 
 
-class HTTPError(Exception):
+class FailedConfigurationRetrieval(Exception):
     pass
 
 
-class Issuer(object):
-    def __init__(self, jws):
-        self.jws = jws
-        self.superior = []
+def construct_well_known_url(entity_id, typ):
+    p = urlparse(entity_id)
+    return '{}://{}/.well-known/{}'.format(p.scheme, p.netloc, typ)
 
-    def paths(self):
-        res = []
-        if not self.superior:
-            return [[self.jws]]
-        else:
-            for sup in self.superior:
-                for p in sup.paths():
-                    l = [self.jws]
-                    l.extend(p)
-                    res.append(l)
-            return res
 
-    def __iter__(self):
-        for path in self.paths():
-            yield path
+def construct_tenant_well_known_url(entity_id, typ):
+    p = urlparse(entity_id)
+    return '{}://{}/.well-known/{}'.format(p.scheme, p.netloc, typ)
 
-    def is_leaf(self):
-        for sup in self.superior:
-            if 'sub_is_leaf' in sup.jws:
-                return True
-        return False
+
+def unverified_entity_statement(signed_jwt):
+    _jws = factory(signed_jwt)
+    return _jws.jwt.payload()
+
+
+def verify_self_signed_signature(config):
+    """
+    Verify signature. Will raise exception if signature verification fails.
+
+    :param config: Signed JWT
+    :return: Payload of the signed JWT
+    """
+
+    payload = unverified_entity_statement(config)
+    keyjar = KeyJar()
+    keyjar.import_jwks(payload['jwks'], payload['iss'])
+
+    _jwt = JWT(key_jar=keyjar)
+    _val = _jwt.unpack(config)
+    return _val
+
+
+def get_api_endpoint(config):
+    return config['metadata']['federation_entity']["federation_api_endpoint"]
+
+
+def construct_entity_statement_query(api_endpoint, issuer, subject):
+    return "{}?{}".format(api_endpoint,
+                          urlencode({
+                              "iss": issuer,
+                              "sub": subject
+                          }))
+
+
+def active(config):
+    """
+    Verifies that the signature of a configuration has not timed out.
+
+    :param config:
+    :return: True/False
+    """
+    return True
 
 
 class Collector(object):
-    def __init__(self, httpd=None, trusted_roots=None):
-        self.seen = []
-        self.httpd = httpd or requests.request
-        self.trusted_roots = trusted_roots
+    def __init__(self, trust_anchors, http_cli=None):
+        self.trusted_anchors = trust_anchors
+        self.trusted_ids = set(trust_anchors.keys())
+        self.config_cache = ESCache(300)
+        self.entity_statement_cache = ESCache(300)
+        self.http_cli = http_cli or requests.request
 
-    def load_entity_statements(self, iss, sub, op='', aud='', prefetch=False):
+    def get_entity_statement(self, api_endpoint, issuer, subject):
         """
-        Fetches an entity statement from a metadata API endpoint according to
-        section 4.2.1
+        Get Entity Statement by one entity about another or about itself
 
-        :param iss: The issuer of the signed information
-        :param sub: The subject about which the information is wanted
-        :param op: The operation that should be performed.
-        :param aud: The entity identifier of the requester
-        :param prefetch: If set to "true", it indicates that the requester would
-            like the API to prefetch entity statements that may be relevant.
-        :return: A JSON encoded list of signed entity statements
+        :param api_endpoint: The federation API endpoint
+        :param issuer: Who should issue the entity statement
+        :param subject: About whom the entity statement should be
+        :return: A signed JWT
         """
-        qpart = {'iss': iss, 'sub': sub}
-        if aud:
-            qpart['aud'] = aud
-        if prefetch:
-            qpart['prefetch'] = prefetch
-
-        p = urlparse(iss)
-        _qurl = '{}://{}/.well-known/openid-federation?{}'.format(
-            p.scheme, p.netloc, urlencode(qpart))
-
-        logger.debug('metadata API url:{}'.format(_qurl))
-
-        hres = self.httpd('GET', _qurl, verify=False)
-        if hres.status_code >= 400:
-            raise HTTPError(hres.text)
-
-        _msg = hres.text.strip('"')
-        if _msg.startswith('['):
-            return json.loads(_msg)
+        _url = construct_entity_statement_query(api_endpoint, issuer, subject)
+        response = self.http_cli('GET', _url)
+        if response.status_code == 200:
+            return response.text
         else:
-            return _msg
-
-    def follow_path(self, iss, sub):
-        """
-        Unravel a branch
-
-        :param iss: The issuer I want to ask
-        :param sub: The entity I want to ask about
-        :return: An Issuer instance
-        """
-        _jarr = self.load_entity_statements(iss, sub)
-        if _jarr:
-            return self.collect_entity_statements(_jarr)
-
-    def collect_entity_statements(self, jarr):
-        """
-        Collect information from the immediate superiors
-
-        :param jarr: Array of Signed JSON Web Token
-        :return: A tree of entity statements
-        """
-
-        if isinstance(jarr, list):
-            _token = jarr[0]
-        else:
-            _token = jarr
-
-        _jwt = factory(_token)
-
-        if _jwt:
-            entity_statement = _jwt.jwt.payload()
-        else:
+            # log reason for failure
             return None
 
-        node = Issuer(_token)
-        if 'authority_hints' not in entity_statement:
-            return node
+    def get_configuration_information(self, entity_id):
+        """
+        Get configuration information about an entity from itself.
+        The configuration information is in the format of an Entity Statement
 
-        for authority, roots in entity_statement['authority_hints'].items():
-            if authority in self.seen:
-                node.superior.append(self.seen[authority])
+        :param entity_id: About whom the entity statement should be
+        :return: Configuration information
+        """
+        response = self.http_cli("GET", construct_well_known_url(entity_id,
+                                                                 "openid-federation"))
+        if response.status_code == 200:
+            self_signed_config = response.text
+        else:  # if tenant involved
+            response = self.http_cli("GET", construct_tenant_well_known_url(entity_id,
+                                                                            "openid-federation"))
+            if response.status_code == 200:
+                self_signed_config = response.text
             else:
-                if self.trusted_roots:
-                    if not roots:
-                        _node = self.follow_path(authority,
-                                                 entity_statement['iss'])
-                        if _node:
-                            node.superior.append(_node)
-                    else:
-                        for root in roots:
-                            if root in self.trusted_roots:
-                                _node = self.follow_path(
-                                    authority, entity_statement['iss'])
-                                if _node:
-                                    node.superior.append(_node)
-                                break
-                else:
-                    _node = self.follow_path(authority, entity_statement['iss'])
-                    if _node:
-                        node.superior.append(_node)
+                raise FailedConfigurationRetrieval()
 
-        return node
+        return self_signed_config
+
+    def collect_superiors(self, entity_id, statement):
+        """
+        Collect superiors one level at the time
+        
+        :param entity_id: The entity ID  
+        :param statement: Signed JWT
+        :return: Dictionary of superiors
+        """
+        superior = {}
+        
+        if 'authority_hints' not in statement:
+            return superior
+
+        for intermediate, anchor_ids in statement['authority_hints'].items():
+            if anchor_ids and (self.trusted_ids.intersection(set(anchor_ids)) is None):
+                # That way lies nothing I trust
+                continue
+            else:
+                # In cache
+                _info = self.config_cache[intermediate]
+                if _info:
+                    fed_api_endpoint = _info["metadata"]['federation_entity']['federation_api_endpoint']
+                else:
+                    fed_api_endpoint = None
+
+                if not fed_api_endpoint:
+                    entity_config = self.get_configuration_information(intermediate)
+                    _config = verify_self_signed_signature(entity_config)
+                    fed_api_endpoint = get_api_endpoint(_config)
+                    # update cache
+                    self.config_cache[intermediate] = _config
+
+                cache_key = "{}!!{}".format(intermediate, entity_id)
+                entity_statement = self.entity_statement_cache[cache_key]
+
+                if entity_statement is None:
+                    entity_statement = self.get_entity_statement(fed_api_endpoint, intermediate,
+                                                                 entity_id)
+
+                if entity_statement:
+                    statement = unverified_entity_statement(entity_statement)
+                    self.entity_statement_cache[cache_key] = statement
+                    superior[intermediate] = (entity_statement,
+                                              self.collect_superiors(intermediate, statement))
+
+        return superior
+
+
+def branch2lists(tree):
+    res = []
+    (statement, superior) = tree
+    if superior:
+        for issuer, branch in superior.items():
+            _lists = branch2lists(branch)
+            for l in _lists:
+                l.append(statement)
+            if not res:
+                res = _lists
+            else:
+                res.extend(_lists)
+    else:
+        res.append([statement])
+    return res
+
+
+def main(entity_id, anchors):
+    collector = Collector(anchors)
+    entity_config = collector.get_configuration_information(entity_id)
+    _config = verify_self_signed_signature(entity_config)
+    tree = entity_config, collector.collect_superiors(entity_id, _config)
+    return tree
+
+
+if __name__ == '__main__':
+    leaf_id = "https://example.com/rp/fed"
+    trusted_anchors = {
+        "anchor_id": []  # Known public keys for a trusted anchor
+    }
+
+    tree = main(leaf_id, trusted_anchors)
+    chains = branch2lists(tree)

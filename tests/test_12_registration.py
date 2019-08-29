@@ -1,101 +1,61 @@
 import json
 import os
-from urllib.parse import parse_qs, urlparse
 
 import pytest
-from cryptojwt.jws.jws import factory
-from cryptojwt.key_jar import build_keyjar, init_key_jar
-from oic.utils.authn.authn_context import INTERNETPROTOCOLPASSWORD
+from cryptojwt import KeyJar
+from cryptojwt.key_jar import build_keyjar
+from cryptojwt.key_jar import init_key_jar
+from fedservice.entity_statement.statement import Statement
 from oidcendpoint.endpoint_context import EndpointContext
+from oidcendpoint.user_authn.authn_context import UNSPECIFIED
+from oidcendpoint.user_authn.user import NoAuthn
 from oidcservice.service_context import ServiceContext
-from oidcservice.state_interface import InMemoryStateDataBase, State
+from oidcservice.state_interface import InMemoryStateDataBase
+from oidcservice.state_interface import State
 
-from fedservice import Collector, FederationEntity
-from fedservice.entity_statement.collect import Issuer
+from fedservice import FederationEntity
+from fedservice.metadata_api.fs import read_info
 from fedservice.op.registration import Registration
 from fedservice.rp.provider_info_discovery import FedProviderInfoDiscovery
 from fedservice.rp.registration import FedRegistration
-from .utils import build_path
+
+from .utils import Publisher
+from .utils import DummyCollector
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
+ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
 
-BASE_URL = 'https://127.0.0.1:6000'
-ROOT_DIR = os.path.join(BASE_PATH, 'fedA')
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},
     {"type": "EC", "crv": "P-256", "use": ["sig"]},
 ]
-RECEIVER = 'https://example.org/op'
 
+ENTITY_ID = 'https://foodle.uninett.no'
 
-class DummyCollector(Collector):
-    def __init__(self, httpd=None, trusted_roots=None, root_dir='.',
-                 base_url=''):
-        Collector.__init__(self, httpd, trusted_roots=trusted_roots)
-        self.root_dir = root_dir
-        self.base_url = base_url
-
-    def collect_entity_statements(self, response):
-        _jwt = factory(response)
-        if _jwt:
-            entity_statement = _jwt.jwt.payload()
-        else:
-            return None
-
-        node = Issuer(response)
-
-        for authority, roots in entity_statement['authority_hints'].items():
-            node.superior.append(
-                build_path(self.root_dir, self.base_url, authority,
-                           sub=entity_statement['iss']))
-
-        return node
-
-
-class MockResponse():
-    def __init__(self, status_code, text, headers=None):
-        self.status_code = status_code
-        self.text = text
-        self.headers = headers or {}
-
-
-class Publisher(object):
-    def __init__(self, directory):
-        self.dir = directory
-
-    def __call__(self, method, url, **kwargs):
-        p = urlparse(url)
-        _qs = parse_qs(p.query)
-        pt = urlparse(_qs['sub'][0])
-        _jws = open(os.path.join(self.dir, p.netloc, pt.netloc)).read().strip()
-
-        return MockResponse(200, '["{}"]'.format(_jws),
-                            headers={'content-type': "application/jws"})
+ANCHOR = {'https://feide.no': read_info(os.path.join(ROOT_DIR, 'feide.no'), "feide.no", "jwks")}
 
 
 class TestEndpoint(object):
     @pytest.fixture(autouse=True)
     def create_endpoint(self):
-        entity_id = 'https://127.0.0.1:6000/com/rp'
-        service_context = ServiceContext(issuer=entity_id)
-        trusted_roots = json.loads(
-            open(os.path.join(BASE_PATH, 'trust_roots_wt.json')).read())
+        service_context = ServiceContext(issuer=ENTITY_ID)
+        op_entity_id = "https://op.ntnu.no"
 
-        key_jar = init_key_jar(
-            private_path=os.path.join(BASE_PATH, 'fedA', 'com_rp', 'jwks.json'),
-            owner=entity_id)
+        key_jar = KeyJar()
+        key_jar.import_jwks(read_info(os.path.join(ROOT_DIR, 'foodle.uninett.no'),
+                                      'foodle.uninett.no', 'jwks'),
+                            issuer=ENTITY_ID)
+        key_jar.import_jwks(read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
+                            issuer=op_entity_id)
 
         self.rp_federation_entity = FederationEntity(
-            key_jar=key_jar, entity_id=entity_id, trusted_roots=trusted_roots,
-            authority_hints={
-                'https://127.0.0.1:6000/com/a': ['https://127.0.0.1:6000/fed']
-            },
+            key_jar=key_jar, entity_id=ENTITY_ID, trusted_roots=ANCHOR,
+            authority_hints={'https://ntnu.no': ['https://feide.no']},
             entity_type='openid_client', opponent_entity_type='openid_provider'
         )
 
         self.rp_federation_entity.collector = DummyCollector(
-            trusted_roots=trusted_roots,
-            root_dir=ROOT_DIR, base_url=BASE_URL)
+            trusted_roots=ANCHOR, root_dir=ROOT_DIR)
 
         service_context.federation_entity = self.rp_federation_entity
         db = InMemoryStateDataBase()
@@ -107,7 +67,6 @@ class TestEndpoint(object):
                                             state_db=db)
         }
 
-        op_entity_id = "https://127.0.0.1:6000/org/op"
         conf = {
             "issuer": op_entity_id,
             "password": "mycket hemligt",
@@ -116,36 +75,38 @@ class TestEndpoint(object):
             "refresh_token_expires_in": 86400,
             "verify_ssl": False,
             "endpoint": {},
-            "authentication": [{
-                'acr': INTERNETPROTOCOLPASSWORD,
-                'name': 'NoAuthn',
-                'kwargs': {'user': 'diana'}
-            }],
+            "jwks": {
+                "private_path": "own/jwks.json",
+                "uri_path": "static/jwks.json"
+            },
+            "authentication": {
+                "anon": {
+                    'acr': UNSPECIFIED,
+                    "class": NoAuthn,
+                    "kwargs": {"user": "diana"}
+                }
+            },
             'template_dir': 'template'
         }
         endpoint_context = EndpointContext(conf, keyjar=build_keyjar(KEYSPEC))
         self.endpoint = Registration(endpoint_context)
 
         # === Federation stuff =======
-        trusted_roots = json.loads(
-            open(os.path.join(BASE_PATH, 'trust_roots_wt.json')).read())
-
-        key_jar = init_key_jar(
-            private_path=os.path.join(BASE_PATH, 'fedA', 'org_op', 'jwks.json'),
-            owner=op_entity_id)
+        key_jar = KeyJar()
+        key_jar.import_jwks(read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
+                            issuer=op_entity_id)
 
         federation_entity = FederationEntity(
-            op_entity_id, key_jar=key_jar, trusted_roots=trusted_roots,
-            authority_hints={
-                'https://127.0.0.1:6000/org/b': ['https://127.0.0.1:6000/fed']
-            }, entity_type='openid_client',
-            httpd=Publisher(os.path.join(BASE_PATH, 'data')),
+            op_entity_id, key_jar=key_jar, trusted_roots=ANCHOR,
+            authority_hints={'https://ntnu.no': ['https://feide.no']},
+            entity_type='openid_client',
+            httpd=Publisher(ROOT_DIR),
             opponent_entity_type='openid_client')
 
         federation_entity.collector = DummyCollector(
-            httpd=Publisher(os.path.join(BASE_PATH, 'data')),
-            trusted_roots=trusted_roots,
-            root_dir=ROOT_DIR, base_url=BASE_URL)
+            httpd=Publisher(ROOT_DIR),
+            trusted_roots=ANCHOR,
+            root_dir=ROOT_DIR)
 
         self.endpoint.endpoint_context.federation_entity = federation_entity
 
@@ -153,13 +114,13 @@ class TestEndpoint(object):
         # construct the client registration request
         req_args = {
             'entity_id': self.rp_federation_entity.entity_id,
-            'redirect_uris': ['https://127.0.0.1:6000/com/rp/cb']
+            'redirect_uris': ['https://foodle.uninett.no/cb']
         }
         self.rp_federation_entity.proposed_authority_hints = {
-            'https://127.0.0.1:6000/com/a': ['https://127.0.0.1:6000/fed']
+            'https://ntnu.no': ['https://feide.no']
         }
         self.service['registration'].service_context.provider_info[
-            'registration'] = "https://127.0.0.1:6000/org/op/fedreg"
+            'registration'] = "https://op.ntnu.no/fedreg"
         jws = self.service['registration'].construct(request_args=req_args)
         assert jws
 
@@ -168,7 +129,13 @@ class TestEndpoint(object):
         reg_resp = self.endpoint.do_response(res)
         assert set(reg_resp.keys()) == {'response', 'http_headers'}
 
+        # This is cheating
+        _fe = self.service['registration'].service_context.federation_entity
+        statement = Statement()
+        statement.metadata = self.endpoint.endpoint_context.provider_info
+        statement.fo = "https://feide.no"
+        _fe.op_statements = [statement]
+
         # parse response
-        args = self.service['registration'].post_parse_response(reg_resp[
-                                                                    'response'])
-        assert args
+        args = self.service['registration'].parse_response(reg_resp['response'])
+        assert set(args.keys()) == {'response_args', 'cookie'}

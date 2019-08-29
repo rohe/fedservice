@@ -34,4 +34,4 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
 
         _fe = self.endpoint_context.federation_entity
         _md = {_fe.entity_type: request_args.to_dict()}
-        return _fe.create_entity_statement(_md, _fe.entity_id, _fe.entity_id)
+        return _fe.create_entity_statement(_fe.entity_id, sub=_fe.entity_id, metadata=_md)

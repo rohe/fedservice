@@ -1,5 +1,6 @@
 import logging
 
+from fedservice.entity_statement.collect import branch2lists
 from oidcendpoint.oidc import authorization
 from oidcmsg import oidc
 from oidcmsg.oidc import RegistrationRequest
@@ -24,10 +25,11 @@ class Authorization(authorization.Authorization):
         _jarr = _fe.load_entity_statements(entity_id, entity_id)
 
         # collect trust chains
-        _node = _fe.collect_entity_statements(_jarr)
+        tree = _fe.collect_entity_statements(_jarr)
+        chains = branch2lists(tree)
 
         # verify the trust paths
-        paths = _fe.eval_paths(_node)
+        paths = [_fe.eval_chain(c) for c in chains]
 
         # If there is more then one possible path I might be in problem.
 

@@ -1,19 +1,21 @@
-from cryptojwt.key_jar import KeyJar, init_key_jar
+from cryptojwt.key_jar import KeyJar
+from cryptojwt.key_jar import init_key_jar
 
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.create import create_entity_statement
-from fedservice.utils import eval_paths, load_json
+from fedservice.entity_statement.verify import eval_chain
+from fedservice.utils import load_json
 
 __author__ = 'Roland Hedberg'
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 
 class FederationEntity(object):
-    def __init__(self, entity_id, trusted_roots, authority_hints=None, 
-                 key_jar=None, default_lifetime=86400, httpd=None, 
+    def __init__(self, entity_id, trusted_roots, authority_hints=None,
+                 key_jar=None, default_lifetime=86400, httpd=None,
                  priority=None, entity_type='', opponent_entity_type='',
                  registration_type=''):
-        self.collector = Collector(trusted_roots=trusted_roots, httpd=httpd)
+        self.collector = Collector(trust_anchors=trusted_roots, http_cli=httpd)
         self.entity_id = entity_id
         self.entity_type = entity_type
         self.opponent_entity_type = opponent_entity_type
@@ -25,16 +27,24 @@ class FederationEntity(object):
         self.tr_priority = priority or sorted(set(trusted_roots.keys()))
         self.registration_type = registration_type
 
-    def collect_entity_statements(self, response):
-        return self.collector.collect_entity_statements(response)
+    def collect_statement_chains(self, entity_id, statement):
+        return self.collector.collect_superiors(entity_id, statement)
 
-    def eval_paths(self, node, entity_type='', flatten=True):
+    def eval_chains(self, chains, entity_type='', apply_policies=True):
+        """
+
+        :param chains: A list of lists of signed JWT
+        :param entity_type: The leafs entity type
+        :param apply_policies: Apply metadata policies from the list on the the metadata of the
+            leaf entity
+        :return: List of Statement instances
+        """
         if not entity_type:
             entity_type = self.opponent_entity_type
 
-        return eval_paths(node, self.key_jar, entity_type, flatten)
+        return [eval_chain(c, self.key_jar, entity_type, apply_policies) for c in chains]
 
-    def create_entity_statement(self, metadata, iss, sub, key_jar=None,
+    def create_entity_statement(self, iss, sub, key_jar=None, metadata=None, metadata_policy=None,
                                 authority_hints=None, lifetime=0, **kwargs):
         if not key_jar:
             key_jar = self.key_jar
@@ -43,36 +53,34 @@ class FederationEntity(object):
         if not lifetime:
             lifetime = self.default_lifetime
 
-        return create_entity_statement(metadata, iss, sub, key_jar,
-                                       authority_hints, lifetime, **kwargs)
+        return create_entity_statement(iss, sub, key_jar=key_jar, metadata=metadata,
+                                       metadata_policy=metadata_policy,
+                                       authority_hints=authority_hints, lifetime=lifetime, **kwargs)
 
-    def load_entity_statements(self, iss, sub, op='', aud='', prefetch=False):
-        return self.collector.load_entity_statements(iss, sub, op, aud,
-                                                     prefetch)
+    def get_configuration_information(self, subject_id):
+        return self.collector.get_configuration_information(subject_id)
 
-    def pick_metadata(self, paths):
+    def pick_metadata(self, statements):
         """
+        Pick one statement out of the list of possible statements
 
-        :param paths:
-        :return:
+        :param statements: A list of :py:class:`fedservice.entity_statement.statement.Statement
+            instances
+        :return: A :py:class:`fedservice.entity_statement.statement.Statement instance
         """
-        if len(paths) == 1:
-            fid = list(paths.keys())[0]
+        if len(statements) == 1:
             # right now just pick the first:
-            statement = paths[fid][0]
-            return fid, statement.claims()
+            return statements[0]
         else:
             for fid in self.tr_priority:
-                try:
-                    return fid, paths[fid][0]
-                except KeyError:
-                    pass
+                for statement in statements:
+                    if statement.fo == fid:
+                        return statement
 
         # Can only arrive here if the federations I got back and trust are not
         # in the priority list. So, just pick one
-        fid = list(paths.keys())[0]
-        statement = paths[fid][0]
-        return fid, statement.claims()
+
+        return statements[0]
 
 
 def create_federation_entity(entity_id, **kwargs):

@@ -1,13 +1,10 @@
 import logging
 
-from oidcmsg.exception import RegistrationError
-from oidcservice.exception import ResponseError
-
+from cryptojwt.jws.jws import factory
 from oidcmsg.oidc import RegistrationRequest
 from oidcmsg.oidc import RegistrationResponse
-
+from oidcservice.exception import ResponseError
 from oidcservice.oidc.registration import Registration
-
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +44,7 @@ class FedRegistration(Registration):
         _fe = self.service_context.federation_entity
         _md = {_fe.entity_type: request_args.to_dict()}
         return _fe.create_entity_statement(
-            _md, _fe.entity_id, _fe.entity_id,
+            iss=_fe.entity_id, sub=_fe.entity_id, metadata=_md, key_jar=_fe.key_jar,
             authority_hints=_fe.proposed_authority_hints)
 
     def parse_response(self, info, sformat="", state="", **kwargs):
@@ -69,27 +66,25 @@ class FedRegistration(Registration):
         _sc = self.service_context
         _fe = _sc.federation_entity
 
-        _node = _fe.collect_entity_statements(resp)
-        paths = _fe.eval_paths(_node, entity_type=_fe.entity_type,
-                               flatten=False)
+        # Can not collect trust chain. Have to verify the signed JWT with keys I have
 
-        if not paths:  # No metadata statement that I can use
-            raise RegistrationError('No trusted metadata')
+        kj = self.service_context.federation_entity.key_jar
+        _jwt = factory(resp)
+        entity_statement = _jwt.verify_compact(resp, keys=kj.get_jwt_verify_keys(_jwt.jwt))
 
-        # MUST only be one
-        _fe.trust_paths = paths
-
-        # paths is a dictionary with the federation identifier as keys and
-        # lists of statements as values
-
-        fid, rp_claims = _fe.pick_metadata(paths)
+        chosen = None
+        for sup, fos in entity_statement['authority_hints'].items():
+            for op_statement in _fe.op_statements:
+                if op_statement.fo in fos:
+                    chosen = op_statement
+                    break
 
         # based on the Federation ID, conclude which OP config to use
-        op_claims = _fe.op_paths[fid][0].claims()
-        _sc.trust_path = (fid, _fe.op_paths[fid][0])
+        op_claims = chosen.metadata
+        # _sc.trust_path = (chosen.fo, _fe.op_paths[statement.fo][0])
         _sc.provider_info = self.response_cls(**op_claims)
 
-        return rp_claims['metadata'][_fe.entity_type]
+        return entity_statement['metadata'][_fe.entity_type]
 
     def update_service_context(self, resp, state='', **kwargs):
         Registration.update_service_context(self, resp, state, **kwargs)

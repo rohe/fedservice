@@ -38,7 +38,7 @@ def test_create_self_signed():
     key_jar = build_keyjar(KEYSPEC, owner=iss)
     authority = {"https://ntnu.no": ["https://feide.no"]}
 
-    _jwt = create_entity_statement(metadata, iss, sub, key_jar, authority)
+    _jwt = create_entity_statement(iss, sub, key_jar, metadata=metadata, authority_hints=authority)
 
     assert _jwt
 
@@ -81,14 +81,15 @@ def test_signed_someone_else_metadata():
 
     iss_key_jar = build_keyjar(KEYSPEC, owner=iss)
     iss_key_jar.import_jwks_as_json(sub_key_jar.export_jwks_as_json(issuer=sub),
-                                issuer=sub)
+                                    issuer=sub)
 
     sub_key_jar.import_jwks_as_json(iss_key_jar.export_jwks_as_json(issuer=iss),
                                     issuer=iss)
 
     authority = {"https://core.example.com": ["https://federation.example.org"]}
 
-    _jwt = create_entity_statement(metadata, iss, sub, iss_key_jar, authority)
+    _jwt = create_entity_statement(iss, sub, iss_key_jar, metadata=metadata,
+                                   authority_hints=authority)
 
     assert _jwt
 
