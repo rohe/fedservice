@@ -13,7 +13,7 @@ class Statement(object):
     metadata statement.
     """
 
-    def __init__(self, exp=0, signing_keys=None):
+    def __init__(self, exp=0, signing_keys=None, verified_chain=None):
         """
         :param exp: Expiration time
         """
@@ -23,6 +23,7 @@ class Statement(object):
         self.metadata = {}
         self.exp = exp
         self.signing_keys = signing_keys
+        self.verified_chain = verified_chain
 
     def keys(self):
         return self.metadata.keys()

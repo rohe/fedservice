@@ -31,34 +31,6 @@ def verify_trust_chain(es_list, key_jar):
     return ves
 
 
-def apply_metadata_policies(es_list, entity_type):
-    """
-    Will apply metadata policies from the entity statements on the metadata of
-    the leafs metadata.
-
-    :param es_list: List of EntityStatement instances, The first one the one
-        issued by the trust root, the second the intermediate below the trust
-        root and so on through the list of intermediates until the statement
-        issued by the entity itself is reached.
-    :param entity_type: Type of entity
-    :return: A dictionary containing the metadata
-    """
-
-    # The last entity statement is the leafs self-signed entity statement
-    try:
-        metadata = es_list[-1]['metadata'][entity_type]
-    except KeyError:
-        return None
-
-    # Combine the metadata policies from the trust root and all intermediates
-    combined_policy = gather_policies(es_list[:-1], entity_type)
-
-    # apply the combined metadata policies on the metadata
-    res = apply_policy(metadata, combined_policy)
-
-    return res
-
-
 def trust_chain_expires_at(ves):
     exp = -1
     for v in ves:
@@ -82,10 +54,19 @@ def eval_chain(chain, key_jar, entity_type, apply_policies=True):
     ves = verify_trust_chain(chain, key_jar)
     tp_exp = trust_chain_expires_at(ves)
 
-    statement = Statement(exp=tp_exp)
+    statement = Statement(exp=tp_exp, verified_chain=ves)
 
     if apply_policies:
-        statement.metadata = apply_metadata_policies(ves, entity_type)
+        # Combine the metadata policies from the trust root and all intermediates
+        combined_policy = gather_policies(ves[:-1], entity_type)
+        try:
+            metadata = ves[-1]['metadata'][entity_type]
+        except KeyError:
+            statement.metadata = None
+        else:
+            # apply the combined metadata policies on the metadata
+            statement.metadata = apply_policy(metadata, combined_policy)
+            statement.combined_policy = combined_policy
     else:
         # accept what ever is in the statement provided by the leaf entity
         statement.metadata = ves[-1]

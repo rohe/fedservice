@@ -3,19 +3,15 @@ from urllib.parse import urlencode
 from urllib.parse import urlparse
 
 from cryptojwt.jws.jws import factory
-from fedservice.entity_statement.verify import eval_chain
-
-from fedservice.entity_statement.collect import branch2lists
+from oidcmsg.oidc import ProviderConfigurationResponse
 from oidcservice.exception import ResponseError
 from oidcservice.oidc.provider_info_discovery import ProviderInfoDiscovery
 
-from fedservice.entity_statement.construct import \
-    map_configuration_to_preference
-from oidcmsg.oidc import ProviderConfigurationResponse
-
+from fedservice.entity_statement.collect import branch2lists
+from fedservice.entity_statement.construct import map_configuration_to_preference
 from fedservice.entity_statement.utils import create_authority_hints
+from fedservice.entity_statement.verify import eval_chain
 from fedservice.exception import NoTrustedClaims
-from fedservice.keybundle import KeyBundle
 
 logger = logging.getLogger(__name__)
 

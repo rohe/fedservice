@@ -5,7 +5,6 @@ from urllib.parse import urlparse
 
 import pytest
 from cryptojwt.jws.jws import factory
-from cryptojwt.key_jar import KeyJar
 from cryptojwt.key_jar import init_key_jar
 from oidcservice.service_context import ServiceContext
 from oidcservice.state_interface import InMemoryStateDataBase

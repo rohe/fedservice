@@ -1,11 +1,10 @@
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 
+import requests
 from cryptojwt import JWT
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
-
-import requests
 
 from .cache import ESCache
 
@@ -21,7 +20,7 @@ def construct_well_known_url(entity_id, typ):
 
 def construct_tenant_well_known_url(entity_id, typ):
     p = urlparse(entity_id)
-    return '{}://{}/.well-known/{}'.format(p.scheme, p.netloc, typ)
+    return '{}://{}{}/.well-known/{}'.format(p.scheme, p.netloc, p.path, typ)
 
 
 def unverified_entity_statement(signed_jwt):
@@ -69,12 +68,13 @@ def active(config):
 
 
 class Collector(object):
-    def __init__(self, trust_anchors, http_cli=None):
+    def __init__(self, trust_anchors, http_cli=None, insecure=False):
         self.trusted_anchors = trust_anchors
         self.trusted_ids = set(trust_anchors.keys())
         self.config_cache = ESCache(300)
         self.entity_statement_cache = ESCache(300)
         self.http_cli = http_cli or requests.request
+        self.insecure = insecure
 
     def get_entity_statement(self, api_endpoint, issuer, subject):
         """
@@ -86,7 +86,10 @@ class Collector(object):
         :return: A signed JWT
         """
         _url = construct_entity_statement_query(api_endpoint, issuer, subject)
-        response = self.http_cli('GET', _url)
+        if self.insecure:
+            response = self.http_cli("GET", _url, verify=False)
+        else:
+            response = self.http_cli.get(_url)
         if response.status_code == 200:
             return response.text
         else:
@@ -101,13 +104,20 @@ class Collector(object):
         :param entity_id: About whom the entity statement should be
         :return: Configuration information
         """
-        response = self.http_cli("GET", construct_well_known_url(entity_id,
-                                                                 "openid-federation"))
+        if self.insecure:
+            kwargs = {"verify": False}
+        else:
+            kwargs = {}
+        response = self.http_cli('GET',
+                                 construct_well_known_url(entity_id, "openid-federation"),
+                                 **kwargs)
         if response.status_code == 200:
             self_signed_config = response.text
         else:  # if tenant involved
-            response = self.http_cli("GET", construct_tenant_well_known_url(entity_id,
-                                                                            "openid-federation"))
+            response = self.http_cli("GET",
+                                     construct_tenant_well_known_url(entity_id,
+                                                                     "openid-federation"),
+                                     **kwargs)
             if response.status_code == 200:
                 self_signed_config = response.text
             else:
@@ -124,7 +134,7 @@ class Collector(object):
         :return: Dictionary of superiors
         """
         superior = {}
-        
+
         if 'authority_hints' not in statement:
             return superior
 
@@ -136,7 +146,8 @@ class Collector(object):
                 # In cache
                 _info = self.config_cache[intermediate]
                 if _info:
-                    fed_api_endpoint = _info["metadata"]['federation_entity']['federation_api_endpoint']
+                    fed_api_endpoint = _info["metadata"]['federation_entity'][
+                        'federation_api_endpoint']
                 else:
                     fed_api_endpoint = None
 
