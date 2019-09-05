@@ -3,234 +3,247 @@ import pytest
 from fedservice.entity_statement.policy import PolicyError
 from fedservice.entity_statement.policy import combine_claim_policy
 
-
-def test_policy_subset_of():
-    superior = {
-        "response_types": {
-            "subset_of": ["code", "code token", "code id_token"]
-        }}
-
-    child = {
-        "response_types": {
-            "subset_of": ["code", "code id_token"]
+SIMPLE = {
+    "SUBSET_OF": [
+        {
+            "superior": {"subset_of": ['X', 'Y', 'Z']},
+            "subordinate": {"subset_of": ['X', 'Y']},
+            "result": {"subset_of": ['X', 'Y']}
+        },
+        {
+            "superior": {"subset_of": ['X', 'Y', 'Z']},
+            "subordinate": {"subset_of": ['X', 'Y', 'W']},
+            "result": {"subset_of": ['X', 'Y']}
+        },
+        {
+            "superior": {"subset_of": ['A', 'X', 'Y', 'Z']},
+            "subordinate": {"subset_of": ['X', 'Y', 'W']},
+            "result": {"subset_of": ['X', 'Y']}
+        },
+        {
+            "superior": {"subset_of": ['Y', 'Z']},
+            "subordinate": {"subset_of": ['X', 'Y']},
+            "result": {"subset_of": ['Y']}
+        },
+        {
+            "superior": {"subset_of": ['X', 'Y']},
+            "subordinate": {"subset_of": ['Z', 'Y']},
+            "result": {"subset_of": ['Y']}
+        },
+        {
+            "superior": {"subset_of": ['X', 'Y']},
+            "subordinate": {"subset_of": ['Z', 'W']},
+            "result": PolicyError
         }
-    }
-
-    cp = combine_claim_policy(superior["response_types"], child["response_types"])
-    assert list(cp.keys()) == ['subset_of']
-    assert set(cp['subset_of']) == {"code", "code id_token"}
-
-    child = {
-        "response_types": {
-            "subset_of": ["code", "code token", "code id_token", "token", "token id_token"]
+    ],
+    "SUPERSET_OF": [
+        {
+            "superior": {"superset_of": ['X', 'Y', 'Z']},
+            "subordinate": {"superset_of": ['X', 'Y']},
+            "result": {"superset_of": ['X', 'Y']}
+        },
+        {
+            "superior": {"superset_of": ['X', 'Y', 'Z']},
+            "subordinate": {"superset_of": ['X', 'Y', 'W']},
+            "result": {"superset_of": ['X', 'Y']}
+        },
+        {
+            "superior": {"superset_of": ['A', 'X', 'Y', 'Z']},
+            "subordinate": {"superset_of": ['X', 'Y', 'W']},
+            "result": {"superset_of": ['X', 'Y']}
+        },
+        {
+            "superior": {"superset_of": ['Y', 'Z']},
+            "subordinate": {"superset_of": ['X', 'Y']},
+            "result": {"superset_of": ['Y']}
+        },
+        {
+            "superior": {"superset_of": ['X', 'Y']},
+            "subordinate": {"superset_of": ['Z', 'Y']},
+            "result": {"superset_of": ['Y']}
+        },
+        {
+            "superior": {"superset_of": ['X', 'Y']},
+            "subordinate": {"superset_of": ['Z', 'W']},
+            "result": PolicyError
         }
-    }
-
-    cp = combine_claim_policy(superior["response_types"], child["response_types"])
-    assert list(cp.keys()) == ['subset_of']
-    assert set(cp['subset_of']) == {"code", "code id_token", "code token"}
-
-    child = {
-        "response_types": {
-            "subset_of": ["token", "token id_token"]
+    ],
+    "ONE_OF": [
+        {
+            "superior": {"one_of": ['X', 'Y', 'Z']},
+            "subordinate": {"one_of": ['X', 'Y']},
+            "result": {"one_of": ['X', 'Y']}
+        },
+        {
+            "superior": {"one_of": ['X', 'Y', 'Z']},
+            "subordinate": {"one_of": ['X', 'Y', 'W']},
+            "result": {"one_of": ['X', 'Y']}
+        },
+        {
+            "superior": {"one_of": ['A', 'X', 'Y', 'Z']},
+            "subordinate": {"one_of": ['X', 'Y', 'W']},
+            "result": {"one_of": ['X', 'Y']}
+        },
+        {
+            "superior": {"one_of": ['Y', 'Z']},
+            "subordinate": {"one_of": ['X', 'Y']},
+            "result": {"one_of": ['Y']}
+        },
+        {
+            "superior": {"one_of": ['X', 'Y']},
+            "subordinate": {"one_of": ['Z', 'Y']},
+            "result": {"one_of": ['Y']}
+        },
+        {
+            "superior": {"one_of": ['X', 'Y']},
+            "subordinate": {"one_of": ['Z', 'W']},
+            "result": PolicyError
         }
-    }
-
-    with pytest.raises(PolicyError):
-        combine_claim_policy(superior["response_types"], child["response_types"])
-
-
-def test_policy_one_of():
-    superior = {
-        "response_types": {
-            "one_of": ["code", "code token", "code id_token"]
-        }}
-
-    child = {
-        "response_types": {
-            "one_of": ["code", "code id_token"]
+    ],
+    "ADD": [
+        {
+            "superior": {"add": "X"},
+            "subordinate": {"add": "B"},
+            "result": {"add": ["X", "B"]}
+        },
+        {
+            "superior": {"add": "X"},
+            "subordinate": {"add": "X"},
+            "result": {"add": "X"}
         }
-    }
-
-    cp = combine_claim_policy(superior["response_types"], child["response_types"])
-    assert list(cp.keys()) == ['one_of']
-    assert set(cp['one_of']) == {"code", "code id_token"}
-
-    child = {
-        "response_types": {
-            "one_of": ["code", "code token", "code id_token", "token", "token id_token"]
+    ],
+    "VALUE": [
+        {
+            "superior": {"value": "X"},
+            "subordinate": {"value": "B"},
+            "result": PolicyError
+        },
+        {
+            "superior": {"value": "X"},
+            "subordinate": {"value": "X"},
+            "result": {"value": "X"}
+        },
+        {
+            "superior": {"value": ["X", "Y"]},
+            "subordinate": {"value": ["X", "Z"]},
+            "result": PolicyError
         }
-    }
-
-    cp = combine_claim_policy(superior["response_types"], child["response_types"])
-    assert list(cp.keys()) == ['one_of']
-    assert set(cp['one_of']) == {"code", "code id_token", "code token"}
-
-    child = {
-        "response_types": {
-            "one_of": ["token", "token id_token"]
+    ],
+    "DEFAULT": [
+        {
+            "superior": {"default": "X"},
+            "subordinate": {"default": "B"},
+            "result": PolicyError
+        },
+        {
+            "superior": {"default": ["X", "B"]},
+            "subordinate": {"default": ["B", "Y"]},
+            "result": PolicyError
+        },
+        {
+            "superior": {"default": "X"},
+            "subordinate": {"default": "X"},
+            "result": {"default": "X"}
         }
-    }
-
-    with pytest.raises(PolicyError):
-        combine_claim_policy(superior["response_types"], child["response_types"])
-
-
-def test_policy_add():
-    superior = {
-        "contact": {
-            "add": "info@superior.example.com"
-        }}
-
-    child = {
-        "contact": {
-            "add": "info@child.example.com"
+    ],
+    "ESSENTIAL": [
+        {
+            "superior": {"essential": True},
+            "subordinate": {"essential": False},
+            "result": {"essential": True}
+        },
+        {
+            "superior": {"essential": False},
+            "subordinate": {"essential": True},
+            "result": {"essential": True}
+        },
+        {
+            "superior": {"essential": True},
+            "subordinate": {"essential": True},
+            "result": {"essential": True}
+        },
+        {
+            "superior": {"essential": False},
+            "subordinate": {"essential": False},
+            "result": {"essential": False}
         }
+    ]
+}
+
+COMPLEX = [
+    {
+        "superior": {"essential": False},
+        "subordinate": {"default": 'A'},
+        "result": {"essential": False, "default": 'A'}
+    },
+    {
+        "subordinate": {"essential": False},
+        "superior": {"default": 'A'},
+        "result": {"essential": False, "default": 'A'}
+    },
+    {
+        "superior": {"essential": False, "default": 'A'},
+        "subordinate": {"default": 'A', "essential": True},
+        "result": {"essential": True, "default": 'A'}
+    },
+    {
+        "superior": {"essential": False, "default": 'A'},
+        "subordinate": {"default": 'B', "essential": True},
+        "result": PolicyError
+    },
+    {
+        "superior": {"essential": False},
+        "subordinate": {"subset_of": ['B']},
+        "result": {"essential": False, "subset_of": ['B']}
+    },
+    {
+        "superior": {"subset_of": ['X', 'Y', 'Z']},
+        "subordinate": {"superset_of": ['Y','Z']},
+        "result": {"subset_of": ['X', 'Y', 'Z'], "superset_of": ['Y','Z']}
+    },
+    {
+        "superior": {"subset_of": ['X', 'Y', 'Z']},
+        "subordinate": {"superset_of": ['Y', 'A']},
+        "result": PolicyError
+    },
+    {
+        "superior": {"subset_of": ['X', 'Y',]},
+        "subordinate": {"superset_of": ['X', 'Y', 'A']},
+        "result": PolicyError
     }
-
-    cp = combine_claim_policy(superior["contact"], child["contact"])
-    assert list(cp.keys()) == ['add']
-    assert set(cp['add']) == {"info@superior.example.com", "info@child.example.com"}
-
-    child = {
-        "contact": {
-            "add": ["info@child.example.com", "dev@child.example.com"]
-        }
-    }
-
-    cp = combine_claim_policy(superior["contact"], child["contact"])
-    assert list(cp.keys()) == ['add']
-    assert set(cp['add']) == {"info@superior.example.com", "info@child.example.com",
-                              "dev@child.example.com"}
+]
 
 
-def test_policy_value():
-    superior = {"value": "foo"}
-    child = {"value": "bar"}
+def assert_equal(val1, val2):
+    assert set(val1.keys()) == set(val2.keys())
 
-    with pytest.raises(PolicyError):
-        combine_claim_policy(superior, child)
-
-
-def test_policy_add_combinations():
-    superior = {
-            "add": "info@superior.example.com"
-        }
-
-    child = {
-        "add": "info@child.example.com",
-        "essential": True
-    }
-
-    cp = combine_claim_policy(superior, child)
-    assert cp
-
-    child = {
-        "add": "info@child.example.com",
-        "default": "info@child.example.com"
-    }
-
-    with pytest.raises(PolicyError):
-        combine_claim_policy(superior, child)
-
-    child = {
-        "add": "info@child.example.com",
-        "default": "info@child.example.com"
-    }
-
-    with pytest.raises(PolicyError):
-        combine_claim_policy(superior, child)
+    for key, attr in val1.items():
+        if isinstance(attr, bool):
+            return attr == val2[key]
+        elif isinstance(attr, list):
+            return set(attr) == set(val2[key])
+        else:
+            return attr == val2[key]
 
 
-def test_policy_subset_of_combinations():
-    superior = {
-            "subset_of": ["code", "code token", "code id_token"]
-        }
-
-    child = {
-        "subset_of": ["code"],
-        "essential": True
-    }
-
-    cp = combine_claim_policy(superior, child)
-    assert cp
-
-    child = {
-        "subset_of": ["code"],
-        "default": ["code"]
-    }
-
-    cp = combine_claim_policy(superior, child)
-    assert cp
-
-    child = {
-        "subset_of": ["code"],
-        "value": ["code"]
-    }
-
-    with pytest.raises(PolicyError):
-        combine_claim_policy(superior, child)
-
-    child = {
-        "one_of": ["code", "id_token"],
-    }
-
-    with pytest.raises(PolicyError):
-        combine_claim_policy(superior, child)
+def test_simple_policy_combinations():
+    for typ, _cases in SIMPLE.items():
+        for case in _cases:
+            if case["result"] in [PolicyError]:
+                with pytest.raises(case["result"]):
+                    combine_claim_policy(case["superior"], case["subordinate"])
+            else:
+                cp = combine_claim_policy(case["superior"], case["subordinate"])
+                print(case)
+                assert assert_equal(cp, case["result"])
 
 
-def test_policy_essential():
-    superior = {"essential": True}
-    child = {"essential": True}
-
-    cp = combine_claim_policy(superior, child)
-    assert set(cp.keys()) == {'essential'}
-    assert cp['essential'] is True
-
-    superior = {"essential": True}
-    child = {"essential": False}
-
-    cp = combine_claim_policy(superior, child)
-    assert set(cp.keys()) == {'essential'}
-    assert cp['essential'] is True
-
-    superior = {"essential": False}
-    child = {"essential": True}
-
-    cp = combine_claim_policy(superior, child)
-    assert set(cp.keys()) == {'essential'}
-    assert cp['essential'] is True
-
-    superior = {"essential": False}
-    child = {"essential": False}
-
-    cp = combine_claim_policy(superior, child)
-    assert set(cp.keys()) == {'essential'}
-    assert cp['essential'] is False
-
-
-def test_policy_default():
-    superior = {"default": "foo"}
-    child = {"default": "bar"}
-
-    cp = combine_claim_policy(superior, child)
-    assert set(cp.keys()) == {'default'}
-    assert cp['default'] is "foo"
-
-
-def test_policy_default_essential():
-    superior = {"default": "foo"}
-    child = {"essential": True}
-
-    cp = combine_claim_policy(superior, child)
-    assert set(cp.keys()) == {'default', "essential"}
-    assert cp['default'] is "foo"
-    assert cp['essential'] is True
-
-    superior = {"essential": True}
-    child = {"default": "foo"}
-
-    cp = combine_claim_policy(superior, child)
-    assert set(cp.keys()) == {'default', "essential"}
-    assert cp['default'] is "foo"
-    assert cp['essential'] is True
+def test_complex_policy_combinations():
+    for case in COMPLEX:
+        if case["result"] in [PolicyError]:
+            with pytest.raises(case["result"]):
+                combine_claim_policy(case["superior"], case["subordinate"])
+        else:
+            cp = combine_claim_policy(case["superior"], case["subordinate"])
+            print(case)
+            assert assert_equal(cp, case["result"])

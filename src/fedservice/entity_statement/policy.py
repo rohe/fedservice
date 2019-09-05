@@ -6,6 +6,10 @@ def combine_subset_of(s1, s2):
     return list(set(s1).intersection(set(s2)))
 
 
+def combine_superset_of(s1, s2):
+    return list(set(s1).intersection(set(s2)))
+
+
 def combine_one_of(s1, s2):
     return list(set(s1).intersection(set(s2)))
 
@@ -22,18 +26,22 @@ def combine_add(s1, s2):
     return list(set1.union(set2))
 
 
-POLICY_FUNCTIONS = {"subset_of", "one_of", "add", "value", "default", "essential"}
+POLICY_FUNCTIONS = {"subset_of", "superset_of", "one_of", "add", "value", "default", "essential"}
 
 OP2FUNC = {
     "subset_of": combine_subset_of,
+    "superset_of": combine_superset_of,
     "one_of": combine_one_of,
     "add": combine_add,
 }
 
 ALLOWED_COMBINATIONS = [
+    {"superset_of", "subset_of"},
     {"default", "one_of"},
     {"default", "subset_of"},
     {"essential", "subset_of"},
+    {"default", "superset_of"},
+    {"essential", "superset_of"},
     {"essential", "one_of"},
     {"essential", "add"},
     {"essential", "value"},
@@ -51,7 +59,7 @@ def weed(policy):
     return set(policy.keys()).difference(POLICY_FUNCTIONS)
 
 
-def do_sub_one_add(superior, child, policy):
+def do_sub_one_super_add(superior, child, policy):
     if policy in superior and policy in child:
         comb = OP2FUNC[policy](superior[policy], child[policy])
         if comb:
@@ -79,7 +87,10 @@ def do_value(superior, child, policy):
 def do_default(superior, child, policy):
     # A child's default can not override a superiors
     if policy in superior and policy in child:
-        return superior['default']
+        if superior['default'] == child['default']:
+            return superior['default']
+        else:
+            raise PolicyError("Not allowed to change default")
     elif policy in superior:
         return superior[policy]
     elif policy in child:
@@ -102,9 +113,10 @@ def do_essential(superior, child, policy):
 
 
 DO_POLICY = {
-    "subset_of": do_sub_one_add,
-    "one_of": do_sub_one_add,
-    "add": do_sub_one_add,
+    "superset_of": do_sub_one_super_add,
+    "subset_of": do_sub_one_super_add,
+    "one_of": do_sub_one_super_add,
+    "add": do_sub_one_super_add,
     "value": do_value,
     "default": do_default,
     "essential": do_essential
@@ -130,6 +142,11 @@ def combine_claim_policy(superior, child):
     rule = {}
     for policy in comb_policy:
         rule[policy] = DO_POLICY[policy](superior, child, policy)
+
+    if comb_policy == {'superset_of', 'subset_of'}:
+        # make sure the subset_of is a superset of superset_of.
+        if set(rule['superset_of']).difference(set(rule['subset_of'])):
+            raise PolicyError('superset_of not a super set of subset_of')
 
     return rule
 
@@ -201,8 +218,16 @@ def apply_policy(metadata, policy):
     # Metadata claims that there exists a policy for
     for claim in metadata_set.intersection(policy_set):
         if "subset_of" in policy[claim]:
-            metadata[claim] = list(
-                set(policy[claim]['subset_of']).intersection(set(metadata[claim])))
+            _val = set(policy[claim]['subset_of']).intersection(set(metadata[claim]))
+            if _val:
+                metadata[claim] = list(_val)
+            else:
+                raise PolicyError("{} not subset of {}".format(metadata[claim], policy[claim]))
+        elif "superset_of" in policy[claim]:
+            if set(policy[claim]['superset_of']).difference(set(metadata[claim])):
+                raise PolicyError("{} not superset of {}".format(metadata[claim], policy[claim]))
+            else:
+                pass
         elif "one_of" in policy[claim]:
             if metadata[claim] in policy[claim]['one_of']:
                 pass
