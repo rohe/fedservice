@@ -46,6 +46,8 @@ ALLOWED_COMBINATIONS = [
     {"essential", "add"},
     {"essential", "value"},
     {"essential", "default"},
+    {"default", "subset_of", "superset_of"},
+    {"essential", "subset_of", "superset_of"}
 ]
 
 
@@ -133,9 +135,9 @@ def combine_claim_policy(superior, child):
 
     comb_policy = set(superior.keys()).union(set(child.keys()))
     comb_policy = comb_policy.intersection(POLICY_FUNCTIONS)
-    if len(comb_policy) > 2:
+    if len(comb_policy) > 3:
         raise PolicyError("Not allowed combination of policies")
-    elif len(comb_policy) == 2:
+    elif len(comb_policy) in [2, 3]:
         if comb_policy not in ALLOWED_COMBINATIONS:
             raise PolicyError("Not allowed combination of policies")
 
@@ -147,7 +149,27 @@ def combine_claim_policy(superior, child):
         # make sure the subset_of is a superset of superset_of.
         if set(rule['superset_of']).difference(set(rule['subset_of'])):
             raise PolicyError('superset_of not a super set of subset_of')
-
+    elif comb_policy == {'superset_of', 'subset_of', 'default'}:
+        # make sure the subset_of is a superset of superset_of.
+        if set(rule['superset_of']).difference(set(rule['subset_of'])):
+            raise PolicyError('superset_of not a super set of subset_of')
+        if set(rule['default']).difference(set(rule['subset_of'])):
+            raise PolicyError('default not a sub set of subset_of')
+        if set(rule['superset_of']).difference(set(rule['default'])):
+            raise PolicyError('default not a super set of subset_of')
+    elif comb_policy == {'subset_of', 'default'}:
+        if set(rule['default']).difference(set(rule['subset_of'])):
+            raise PolicyError('default not a sub set of subset_of')
+    elif comb_policy == {'superset_of', 'default'}:
+        if set(rule['superset_of']).difference(set(rule['default'])):
+            raise PolicyError('default not a super set of subset_of')
+    elif comb_policy == {'one_of', 'default'}:
+        if isinstance(rule['default'], list):
+            if set(rule['default']).difference(set(rule['one_of'])):
+                raise PolicyError('default not a super set of one_of')
+        else:
+            if {rule['default']}.difference(set(rule['one_of'])):
+                raise PolicyError('default not a super set of one_of')
     return rule
 
 
@@ -196,11 +218,12 @@ def union(val1, val2):
         base = set(val1)
     else:
         base = {val1}
+
     if isinstance(val2, list):
-        ext = set(val1)
+        ext = set(val2)
     else:
-        ext = {val1}
-    return list(base.union(ext))
+        ext = {val2}
+    return base.union(ext)
 
 
 def apply_policy(metadata, policy):
@@ -222,31 +245,38 @@ def apply_policy(metadata, policy):
             if _val:
                 metadata[claim] = list(_val)
             else:
-                raise PolicyError("{} not subset of {}".format(metadata[claim], policy[claim]))
+                raise PolicyError("{} not subset of {}".format(metadata[claim],
+                                                               policy[claim]['subset_of']))
         elif "superset_of" in policy[claim]:
             if set(policy[claim]['superset_of']).difference(set(metadata[claim])):
-                raise PolicyError("{} not superset of {}".format(metadata[claim], policy[claim]))
+                raise PolicyError("{} not superset of {}".format(metadata[claim],
+                                                                 policy[claim]['superset_of']))
             else:
                 pass
         elif "one_of" in policy[claim]:
             if metadata[claim] in policy[claim]['one_of']:
                 pass
             else:
-                raise PolicyError("{} not among {}".format(metadata[claim], policy[claim]))
+                raise PolicyError("{} not among {}".format(metadata[claim], policy[claim]['one_of']))
         elif "add" in policy[claim]:
-            list(union(metadata[claim], policy[claim]))
+            metadata[claim] = list(union(metadata[claim], policy[claim]['add']))
         elif "value" in policy[claim]:
             metadata[claim] = policy[claim]
 
     # In policy but not in metadata
     for claim in policy_set.difference(metadata_set):
         if "default" in policy[claim]:
-            metadata[claim] = policy[claim]
+            metadata[claim] = policy[claim]['default']
 
         if "essential" in policy[claim] and policy[claim]["essential"]:
             raise PolicyError("Essential claim '{}' missing".format(claim))
 
         if "add" in policy[claim]:
             metadata[claim] = policy[claim]['add']
+
+        if "value" in policy[claim]:
+            metadata[claim] = policy[claim]['value']
+
+    # All that are in metadata but not in policy should just remain
 
     return metadata
