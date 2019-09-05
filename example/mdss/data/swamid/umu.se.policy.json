@@ -1,0 +1,12 @@
+{
+  "openid_client": {
+    "contacts": {
+      "add": "fed_rp@umu.se"
+    }
+  },
+  "openid_provider": {
+    "contacts": {
+      "add": "fed_op@umu.se"
+    }
+  }
+}

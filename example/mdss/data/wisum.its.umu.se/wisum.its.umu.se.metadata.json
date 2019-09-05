@@ -12,7 +12,7 @@
       "RS512"
     ],
     "redirect_uris": [
-      "https://foodle.uninett.no/callback"
+      "https://wisum.its.umu.se/callback"
     ],
     "response_types": [
       "code"
