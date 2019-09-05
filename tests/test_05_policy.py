@@ -179,7 +179,7 @@ COMPLEX = [
     {
         "subordinate": {"essential": False},
         "superior": {"default": 'A'},
-        "result": {"essential": False, "default": 'A'}
+        "result": {"essential": True, "default": 'A'}
     },
     {
         "superior": {"essential": False, "default": 'A'},

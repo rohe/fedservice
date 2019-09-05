@@ -108,8 +108,8 @@ def do_essential(superior, child, policy):
             return superior[policy]
     elif policy in superior:
         return superior[policy]
-    elif policy in child:
-        return child[policy]
+    elif policy in child:  # Not in superior is the same as essential=True
+        return True
 
 
 DO_POLICY = {
