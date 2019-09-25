@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 
@@ -7,6 +8,9 @@ from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 
 from .cache import ESCache
+
+
+logger = logging.getLogger(__name__)
 
 
 class FailedConfigurationRetrieval(Exception):
@@ -141,13 +145,22 @@ class Collector(object):
 
         return fed_api_endpoint
 
-    def collect_intermediate(self, entity_id, intermediate):
+    def collect_intermediate(self, entity_id, intermediate, seen=None, max_superiors=1):
         """
 
         :param entity_id: The ID of the starting point
         :param intermediate: The immediate superior
+        :param seen: A list of intermediates that this process has seen. This to capture
+            loops. Also used to control the allowed depth.
+        :param max_superiors: The maximum number of superiors.
         :return:
         """
+        _seen = seen[:]
+        _seen.append(intermediate)
+        if len(seen) > max_superiors:
+            logger.warning("Reached max superiors. The path here was {}".format(_seen))
+            return None
+
         fed_api_endpoint = self.get_federation_api_endpoint(intermediate)
 
         # Try to get the entity statement from the cache
@@ -162,25 +175,35 @@ class Collector(object):
         if entity_statement:
             # entity_statement is a signed JWT
             statement = unverified_entity_statement(entity_statement)
-            return entity_statement, self.collect_superiors(intermediate, statement)
+            return entity_statement, self.collect_superiors(intermediate, statement, _seen,
+                                                            max_superiors)
         else:
             return None
 
-    def collect_superiors(self, entity_id, statement):
+    def collect_superiors(self, entity_id, statement, seen=None, max_superiors=1, stop_at=""):
         """
         Collect superiors one level at the time
         
         :param entity_id: The entity ID  
         :param statement: Metadata statement
+        :param seen: A list of intermediates that this process has seen. This to capture
+            loops. Also used to control the allowed depth.
+        :param max_superiors: The maximum number of superiors.
+        :param stop_at: The ID of the trust anchor at which the trust chain should stop.
         :return: Dictionary of superiors
         """
         superior = {}
 
         if 'authority_hints' not in statement:
             return superior
+        elif statement['iss'] == stop_at:
+            return superior
 
         for intermediate in statement['authority_hints']:
-            superior[intermediate] = self.collect_intermediate(entity_id, intermediate)
+            if intermediate in seen:  # loop ?!
+                logger.warning("Loop detected at {}".format(intermediate))
+            superior[intermediate] = self.collect_intermediate(entity_id, intermediate, seen,
+                                                               max_superiors)
 
         return superior
 
