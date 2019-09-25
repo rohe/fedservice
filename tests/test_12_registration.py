@@ -1,11 +1,9 @@
-import json
 import os
 
 import pytest
 from cryptojwt import KeyJar
+from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import build_keyjar
-from cryptojwt.key_jar import init_key_jar
-from fedservice.entity_statement.statement import Statement
 from oidcendpoint.endpoint_context import EndpointContext
 from oidcendpoint.user_authn.authn_context import UNSPECIFIED
 from oidcendpoint.user_authn.user import NoAuthn
@@ -14,13 +12,13 @@ from oidcservice.state_interface import InMemoryStateDataBase
 from oidcservice.state_interface import State
 
 from fedservice import FederationEntity
+from fedservice.entity_statement.statement import Statement
 from fedservice.metadata_api.fs import read_info
 from fedservice.op.registration import Registration
 from fedservice.rp.provider_info_discovery import FedProviderInfoDiscovery
 from fedservice.rp.registration import FedRegistration
-
-from .utils import Publisher
 from .utils import DummyCollector
+from .utils import Publisher
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
@@ -50,8 +48,8 @@ class TestEndpoint(object):
 
         self.rp_federation_entity = FederationEntity(
             key_jar=key_jar, entity_id=ENTITY_ID, trusted_roots=ANCHOR,
-            authority_hints={'https://ntnu.no': ['https://feide.no']},
-            entity_type='openid_client', opponent_entity_type='openid_provider'
+            authority_hints=['https://ntnu.no'],
+            entity_type='openid_relying_party', opponent_entity_type='openid_provider'
         )
 
         self.rp_federation_entity.collector = DummyCollector(
@@ -98,10 +96,10 @@ class TestEndpoint(object):
 
         federation_entity = FederationEntity(
             op_entity_id, key_jar=key_jar, trusted_roots=ANCHOR,
-            authority_hints={'https://ntnu.no': ['https://feide.no']},
-            entity_type='openid_client',
+            authority_hints=['https://ntnu.no'],
+            entity_type='openid_relying_party',
             httpd=Publisher(ROOT_DIR),
-            opponent_entity_type='openid_client')
+            opponent_entity_type='openid_relying_party')
 
         federation_entity.collector = DummyCollector(
             httpd=Publisher(ROOT_DIR),
@@ -110,24 +108,25 @@ class TestEndpoint(object):
 
         self.endpoint.endpoint_context.federation_entity = federation_entity
 
-    def test_request(self):
+    def test_automatic_registration(self):
         # construct the client registration request
         req_args = {
             'entity_id': self.rp_federation_entity.entity_id,
             'redirect_uris': ['https://foodle.uninett.no/cb']
         }
-        self.rp_federation_entity.proposed_authority_hints = {
-            'https://ntnu.no': ['https://feide.no']
-        }
+        self.rp_federation_entity.proposed_authority_hints = ['https://ntnu.no']
         self.service['registration'].service_context.provider_info[
             'registration'] = "https://op.ntnu.no/fedreg"
         jws = self.service['registration'].construct(request_args=req_args)
         assert jws
 
+        _jwt = factory(jws)
+        payload = _jwt.jwt.payload()
+
         res = self.endpoint.process_request(jws)
         assert res
-        reg_resp = self.endpoint.do_response(res)
-        assert set(reg_resp.keys()) == {'response', 'http_headers'}
+        reg_resp = self.endpoint.do_response(**res)
+        assert set(reg_resp.keys()) == {'response', 'http_headers', "cookie"}
 
         # This is cheating
         _fe = self.service['registration'].service_context.federation_entity
@@ -137,5 +136,10 @@ class TestEndpoint(object):
         _fe.op_statements = [statement]
 
         # parse response
-        args = self.service['registration'].parse_response(reg_resp['response'])
-        assert set(args.keys()) == {'response_args', 'cookie'}
+        args = self.service['registration'].parse_response(
+            reg_resp['response'],
+            my_metadata=payload['metadata'][self.rp_federation_entity.entity_type])
+        assert set(args.keys()) == {'entity_id', 'client_id', 'contacts', 'application_type',
+                                    'redirect_uris', 'registration_access_token', 'response_types',
+                                    'registration_client_uri', 'client_id_issued_at',
+                                    'client_secret', 'grant_types', 'client_secret_expires_at'}

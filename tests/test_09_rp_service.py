@@ -11,6 +11,8 @@ from oidcservice.state_interface import InMemoryStateDataBase
 from oidcservice.state_interface import State
 
 from fedservice import FederationEntity
+from fedservice import eval_chain
+from fedservice.entity_statement.collect import branch2lists
 from fedservice.metadata_api.fs import make_entity_statement
 from fedservice.metadata_api.fs import read_info
 from fedservice.rp.provider_info_discovery import FedProviderInfoDiscovery
@@ -51,9 +53,9 @@ class TestRpService(object):
         self.federation_entity = FederationEntity(
             entity_id,
             trusted_roots=ANCHOR,
-            authority_hints={'https://ntnu.no': ['https://feide.no']},
+            authority_hints=['https://ntnu.no'],
             httpd=http_cli,
-            entity_type='openid_client',
+            entity_type='openid_relying_party',
             opponent_entity_type='openid_provider',
             key_jar=init_key_jar(key_defs=KEY_DEFS, owner=entity_id)
         )
@@ -140,7 +142,7 @@ class TestRpService(object):
         payload = _jwt.jwt.payload()
         assert set(payload.keys()) == {'iss', 'jwks', 'kid', 'exp', 'metadata',
                                        'iat', 'sub', 'authority_hints'}
-        assert set(payload['metadata']['openid_client'].keys()) == {
+        assert set(payload['metadata']['openid_relying_party'].keys()) == {
             'application_type', "id_token_signed_response_alg", 'redirect_uris', 'grant_types',
             'response_types', "token_endpoint_auth_method"}
 
@@ -169,8 +171,6 @@ class TestRpService(object):
         _jwt = factory(_info['body'])
         payload = _jwt.jwt.payload()
 
-        _md = payload['metadata']['openid_client']
-        _md.update({'client_id': 'aaaaaaaaa', 'client_secret': 'bbbbbbbbbb'})
         # The OP as federation entity
         _fe = _sc.federation_entity
         del _fe.key_jar.issuer_keys["https://op.ntnu.no"]
@@ -178,13 +178,27 @@ class TestRpService(object):
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), "op.ntnu.no", "jwks"),
             "https://op.ntnu.no"
         )
+        tree = _fe.collect_statement_chains(payload['iss'], _info['body'])
+        _node = {payload['iss']: (_info['body'], tree)}
+        chains = branch2lists(_node)
+        statements = [eval_chain(c, _fe.key_jar, 'openid_relying_party') for c in chains]
+
+        metadata_policy = {
+            "client_id": {"value": "aaaaaaaaa"},
+            "client_secret": {"value": "bbbbbbbbbb"}
+        }
+        metadata = {"trust_anchor_id": statements[0].fo}
+        # This is the registration response from the OP
         _jwt = _fe.create_entity_statement(
             'https://op.ntnu.no', 'https://foodle.uninett.no',
-            metadata={_fe.entity_type: _md},
-            authority_hints={'https://feide.no': ['https://feide.no']})
+            metadata_policy={_fe.entity_type: metadata_policy},
+            metadata={_fe.entity_type: {"trust_anchor_id": statements[0].fo}},
+            authority_hints=['https://feide.no'])
 
-        claims = self.service['registration'].parse_response(_jwt)
+        claims = self.service['registration'].parse_response(_jwt,
+                                                             my_metadata=payload['metadata'][
+                                                                 _fe.entity_type])
         assert set(claims.keys()) == {
             'id_token_signed_response_alg', 'application_type', 'client_secret',
             'client_id', 'response_types', 'token_endpoint_auth_method',
-            'grant_types', 'redirect_uris'}
+            'grant_types', 'redirect_uris', "contacts"}

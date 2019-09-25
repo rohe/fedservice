@@ -1,37 +1,37 @@
 import os
 
 from cryptojwt.jws.jws import factory
-from fedservice.entity_statement.collect import branch2lists
 
 from build.lib.fedservice.entity_statement.collect import verify_self_signed_signature
-from fedservice.entity_statement.collect import Collector
-
+from fedservice.entity_statement.collect import branch2lists
+from tests.utils import DummyCollector
 from .utils import Publisher
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
-jwks = open(os.path.join(BASE_PATH,'private', 'fed_keys.json')).read()
+jwks = open(os.path.join(BASE_PATH, 'private', 'fed_keys.json')).read()
 
 ANCHOR = {'https://feide.no': jwks}
 
 
 def test_get_configuration_information():
     target = 'https://foodle.uninett.no'
-    collector = Collector(trust_anchors=ANCHOR,
-                          http_cli=Publisher(os.path.join(BASE_PATH,'base_data')))
-    entity_config = collector.get_configuration_information(target)
-    _config = verify_self_signed_signature(entity_config)
-    assert _config
-    assert _config['iss'] == target
-    assert _config['sub'] == target
-    assert 'metadata' in _config
+    collector = DummyCollector(trusted_roots=ANCHOR,
+                               httpd=Publisher(os.path.join(BASE_PATH, 'base_data')),
+                               root_dir=os.path.join(BASE_PATH, 'base_data'))
+    entity_statement = collector.get_configuration_information(target)
+    assert entity_statement
+    assert entity_statement['iss'] == target
+    assert entity_statement['sub'] == target
+    assert 'metadata' in entity_statement
 
 
 def test_get_entity_statement():
     entity_id = 'https://foodle.uninett.no'
     target = 'https://foodle.uninett.no'
-    collector = Collector(trust_anchors=ANCHOR,
-                          http_cli=Publisher(os.path.join(BASE_PATH,'base_data')))
+    collector = DummyCollector(trusted_roots=ANCHOR,
+                               httpd=Publisher(os.path.join(BASE_PATH, 'base_data')),
+                               root_dir=os.path.join(BASE_PATH, 'base_data'))
     _jws = collector.get_entity_statement(api_endpoint='https://foodle.uninett.no/fed_api',
                                           issuer=entity_id, subject=target)
 
@@ -42,15 +42,19 @@ def test_get_entity_statement():
 
 def test_collect_superiors():
     # entity_id = 'https://feide.no'
+    entity_id = 'https://foodle.uninett.no'
     target = 'https://foodle.uninett.no'
-    collector = Collector(trust_anchors=ANCHOR,
-                          http_cli=Publisher(os.path.join(BASE_PATH,'base_data')))
-    entity_config = collector.get_configuration_information(target)
-    _config = verify_self_signed_signature(entity_config)
+    collector = DummyCollector(trusted_roots=ANCHOR,
+                               httpd=Publisher(os.path.join(BASE_PATH, 'base_data')),
+                               root_dir=os.path.join(BASE_PATH, 'base_data'))
+    entity_statement = collector.get_entity_statement(api_endpoint='https://foodle.uninett.no/fed_api',
+                                                   issuer=entity_id, subject=entity_id)
+    _config = verify_self_signed_signature(entity_statement)
     assert _config
 
-    tree = entity_config, collector.collect_superiors(target, _config)
-    chains = branch2lists(tree)
+    tree = collector.collect_superiors(_config['iss'], entity_statement)
+    node = {entity_id: (entity_statement , tree)}
+    chains = branch2lists(node)
 
     assert len(chains) == 1  # only one chain
     assert len(chains[0]) == 4  # And that chain contains 4 statements

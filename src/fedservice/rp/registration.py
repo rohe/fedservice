@@ -1,10 +1,16 @@
 import logging
 
 from cryptojwt.jws.jws import factory
+from fedservice.entity_statement.policy import combine_policy
+
+from fedservice.entity_statement.policy import apply_policy
 from oidcmsg.oidc import RegistrationRequest
 from oidcmsg.oidc import RegistrationResponse
 from oidcservice.exception import ResponseError
 from oidcservice.oidc.registration import Registration
+
+from fedservice.entity_statement.collect import branch2lists
+from fedservice.entity_statement.verify import eval_policy_chain
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +53,8 @@ class FedRegistration(Registration):
             iss=_fe.entity_id, sub=_fe.entity_id, metadata=_md, key_jar=_fe.key_jar,
             authority_hints=_fe.proposed_authority_hints)
 
-    def parse_response(self, info, sformat="", state="", **kwargs):
-        resp = self.parse_federation_response(info, state=state)
+    def parse_response(self, info, my_metadata=None, sformat="", state="", **kwargs):
+        resp = self.parse_federation_registration_response(info, my_metadata, state=state)
 
         if not resp:
             logger.error('Missing or faulty response')
@@ -56,7 +62,7 @@ class FedRegistration(Registration):
 
         return resp
 
-    def parse_federation_response(self, resp, **kwargs):
+    def parse_federation_registration_response(self, resp, my_metadata, **kwargs):
         """
         Receives a dynamic client registration response,
 
@@ -72,19 +78,34 @@ class FedRegistration(Registration):
         _jwt = factory(resp)
         entity_statement = _jwt.verify_compact(resp, keys=kj.get_jwt_verify_keys(_jwt.jwt))
 
+        _fo = entity_statement['metadata']["federation_entity"]["trust_anchor_id"]
         chosen = None
-        for sup, fos in entity_statement['authority_hints'].items():
-            for op_statement in _fe.op_statements:
-                if op_statement.fo in fos:
-                    chosen = op_statement
-                    break
+        for op_statement in _fe.op_statements:
+            if op_statement.fo == _fo:
+                chosen = op_statement
+                break
+
+        if not chosen:
+            raise ValueError('No matching federation operator')
 
         # based on the Federation ID, conclude which OP config to use
         op_claims = chosen.metadata
         # _sc.trust_path = (chosen.fo, _fe.op_paths[statement.fo][0])
         _sc.provider_info = self.response_cls(**op_claims)
 
-        return entity_statement['metadata'][_fe.entity_type]
+        # To create RPs metadata collect all the policies
+        tree = {}
+        for ah in _fe.authority_hints:
+            tree[ah] = _fe.collector.collect_intermediate(_fe.entity_id, ah)
+
+        _node = {_fe.entity_id: (resp, tree)}
+        chains = branch2lists(_node)
+        policy_chains_tup = [eval_policy_chain(c, _fe.key_jar, _fe.entity_type) for c in chains]
+        _policy = combine_policy(policy_chains_tup[0][1],
+                                 entity_statement['metadata_policy'][_fe.entity_type])
+        print("Combined policy: {}".format(_policy))
+        _sc.registration_response = apply_policy(my_metadata, _policy)
+        return _sc.registration_response
 
     def update_service_context(self, resp, state='', **kwargs):
         Registration.update_service_context(self, resp, state, **kwargs)

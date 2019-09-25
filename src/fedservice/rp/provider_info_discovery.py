@@ -141,5 +141,6 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         _fe = self.service_context.federation_entity
 
         _tree = _fe.collect_statement_chains(entity_id, response)
-        _chains = branch2lists(_tree)
+        _node = {entity_id: (response, _tree)}
+        _chains = branch2lists(_node)
         return [eval_chain(c, _fe.key_jar, 'openid_provider') for c in _chains]

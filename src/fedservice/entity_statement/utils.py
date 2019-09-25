@@ -6,13 +6,5 @@ def create_authority_hints(default_hints, statements):
     :return: An authority_hints dictionary
     """
 
-    res = {}
-    for sup, fos in default_hints.items():
-        for statement in statements:
-            if statement.fo in fos:
-                try:
-                    res[sup].append(statement.fo)
-                except KeyError:
-                    res[sup] = [statement.fo]
-
-    return res
+    intermediates = {statement.verified_chain[-1]['iss'] for statement in statements}
+    return list(set(default_hints).intersection(intermediates))

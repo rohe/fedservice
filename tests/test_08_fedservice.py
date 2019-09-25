@@ -8,6 +8,7 @@ from cryptojwt.key_jar import build_keyjar
 from fedservice import FederationEntity
 from fedservice.entity_statement.collect import branch2lists
 from fedservice.entity_statement.verify import eval_chain
+from tests.utils import DummyCollector
 from .utils import Publisher
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
@@ -25,31 +26,24 @@ jwks = open(os.path.join(BASE_PATH, 'base_data', 'feide.no', 'feide.no.jwks.json
 ANCHOR = {'https://feide.no': json.loads(jwks)}
 
 
-class MockResponse(object):
-    def __init__(self, status_code, text, headers=None):
-        self.status_code = status_code
-        self.text = text
-        self.headers = headers or {}
-
-
 class TestRpService(object):
     @pytest.fixture(autouse=True)
     def rp_service_setup(self):
         federation_entity = FederationEntity(
             RECEIVER, trusted_roots=ANCHOR, authority_hints={},
             httpd=Publisher(os.path.join(BASE_PATH, 'base_data')),
-            entity_type='openid_client', opponent_entity_type='openid_provider'
+            entity_type='openid_relying_party', opponent_entity_type='openid_provider'
         )
-
+        # Swap in the DummyCollector
+        federation_entity.collector = DummyCollector(trusted_roots=ANCHOR,
+                                                     httpd=Publisher(
+                                                         os.path.join(BASE_PATH, 'base_data')),
+                                                     root_dir=os.path.join(BASE_PATH, 'base_data'))
         self.fedent = federation_entity
 
     def test_get_configuration_information(self):
         entity_id = 'https://foodle.uninett.no'
-        _jws = self.fedent.get_configuration_information(entity_id)
-        _jwt = factory(_jws)
-
-        assert _jwt
-        msg = _jwt.jwt.payload()
+        msg = self.fedent.get_configuration_information(entity_id)
         assert msg['iss'] == entity_id
 
     def test_load_entity_statement(self):
@@ -66,23 +60,21 @@ class TestRpService(object):
 
     def test_collect_entity_statement(self):
         leaf_entity_id = 'https://foodle.uninett.no'
-        _jws = self.fedent.get_configuration_information(leaf_entity_id)
-        _jwt = factory(_jws)
-        msg = _jwt.jwt.payload()
-        tree = self.fedent.collect_statement_chains(leaf_entity_id, msg)
+        entity_statement = self.fedent.collector.get_entity_statement('', leaf_entity_id, leaf_entity_id)
+        tree = self.fedent.collect_statement_chains(leaf_entity_id, entity_statement)
         assert tree
-        chains = branch2lists((_jws, tree))
+        _node = {leaf_entity_id: (entity_statement, tree)}
+        chains = branch2lists(_node)
         assert len(chains) == 1
         assert len(chains[0]) == 4
 
     def test_eval_path(self):
         leaf_entity_id = 'https://foodle.uninett.no'
-        _jws = self.fedent.get_configuration_information(leaf_entity_id)
-        _jwt = factory(_jws)
-        msg = _jwt.jwt.payload()
-        tree = self.fedent.collect_statement_chains(leaf_entity_id, msg)
-        chains = branch2lists((_jws, tree))
-        statements = [eval_chain(c, self.fedent.key_jar, 'openid_client') for c in chains]
+        _jws = self.fedent.collector.get_entity_statement('', leaf_entity_id, leaf_entity_id)
+        tree = self.fedent.collect_statement_chains(leaf_entity_id, _jws)
+        _node = {leaf_entity_id: (_jws, tree)}
+        chains = branch2lists(_node)
+        statements = [eval_chain(c, self.fedent.key_jar, 'openid_relying_party') for c in chains]
         assert len(statements) == 1
         statement = statements[0]
         assert set(statement.metadata.keys()) == {'application_type', 'claims',

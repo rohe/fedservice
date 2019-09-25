@@ -21,7 +21,7 @@ def test_config_information():
     assert payload['sub'] == 'https://foodle.uninett.no'
 
     es = EntityStatement().from_dict(payload)
-    _item = es['metadata']['openid_client']
+    _item = es['metadata']['openid_relying_party']
     assert isinstance(_item, RegistrationResponse)
     assert _item['response_types'] == ['code']
 
@@ -38,7 +38,7 @@ def test_make_entity_statement():
     assert payload['sub'] == 'https://foodle.uninett.no'
 
     es = EntityStatement().from_dict(payload)
-    _item = es['metadata_policy']['openid_client']
+    _item = es['metadata_policy']['openid_relying_party']
     assert _item['contacts'] == {"add": 'ops@ntnu.no'}
 
 

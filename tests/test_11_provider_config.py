@@ -62,7 +62,7 @@ class TestEndpoint(object):
             ENTITY_ID, key_jar=key_jar, trusted_roots=ANCHOR,
             authority_hints={'https://ntnu.no': ['https://feide.no']},
             httpd=Publisher(ROOT_DIR),
-            entity_type='openid_client', opponent_entity_type='openid_provider')
+            entity_type='openid_relying_party', opponent_entity_type='openid_provider')
 
         federation_entity.collector = DummyCollector(
             httpd=Publisher(os.path.join(BASE_PATH, 'data')),
@@ -79,8 +79,8 @@ class TestEndpoint(object):
         payload = _jwt.jwt.payload()
         assert set(payload.keys()) == {'exp', 'jwks', 'sub', 'kid', 'iat',
                                        'metadata', 'iss', 'authority_hints'}
-        assert set(payload['metadata'].keys()) == {'openid_client'}
-        assert set(payload['metadata']['openid_client'].keys()) == {
+        assert set(payload['metadata'].keys()) == {'openid_relying_party'}
+        assert set(payload['metadata']['openid_relying_party'].keys()) == {
             'response_types_supported', 'claims_supported',
             'claims_parameter_supported', 'grant_types_supported',
             'token_endpoint_auth_signing_alg_values_supported',

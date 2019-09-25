@@ -27,11 +27,14 @@ class DummyCollector(Collector):
         self.base_url = base_url
 
     def collect_superiors(self, subject_id, statement):
-        _jwt = factory(statement)
-        if _jwt:
-            entity_statement = _jwt.jwt.payload()
+        if isinstance(statement, dict):
+            entity_statement = statement
         else:
-            return None
+            _jwt = factory(statement)
+            if _jwt:
+                entity_statement = _jwt.jwt.payload()
+            else:
+                return None
 
         super = {}
 
@@ -40,11 +43,11 @@ class DummyCollector(Collector):
         except KeyError:
             pass
         else:
-            for intermediate, roots in _hints.items():
+            for intermediate in _hints:
                 super[intermediate] = self.build_path(intermediate, self.root_dir,
                                                       entity_statement['iss'])
 
-        return statement, super
+        return super
 
     def get_configuration_information(self, subject_id):
         jws = make_entity_statement(root_dir=self.root_dir, iss=subject_id, sub=subject_id)
@@ -73,7 +76,7 @@ class DummyCollector(Collector):
         entity_statement = _jwt.jwt.payload()
 
         if 'authority_hints' in entity_statement:
-            for key, sups in entity_statement['authority_hints'].items():
+            for key in entity_statement['authority_hints']:
                 superior[key] = self.build_path(key, root_dir, intermediate)
 
         return jws, superior

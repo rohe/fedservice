@@ -26,14 +26,14 @@ def test_metadata():
         ]
     })
     metadata = Metadata()
-    metadata['openid_client'] = client_info
+    metadata['openid_relying_party'] = client_info
 
     _mj = metadata.to_json()
 
     _metadata = Metadata().from_json(_mj)
 
-    assert set(_metadata.keys()) == {'openid_client'}
-    assert set(_metadata['openid_client'].keys()) == {
+    assert set(_metadata.keys()) == {'openid_relying_party'}
+    assert set(_metadata['openid_relying_party'].keys()) == {
         'application_type', 'claims', 'id_token_signing_alg_values_supported',
         'redirect_uris', 'response_types'}
 
@@ -59,7 +59,7 @@ def test_entity_statement():
         ]
     })
     metadata = Metadata()
-    metadata['openid_client'] = client_info
+    metadata['openid_relying_party'] = client_info
 
     iat = utc_time_sans_frac()  # seconds since epoch
     exp = iat + 3600
@@ -72,7 +72,7 @@ def test_entity_statement():
 
     _es = EntityStatement().from_json(jes)
     assert set(_es.keys()) == {'metadata', 'iss', 'sub', 'iat', 'exp'}
-    assert set(_es['metadata'].keys()) == {'openid_client'}
-    assert set(_es['metadata']['openid_client'].keys()) == {
+    assert set(_es['metadata'].keys()) == {'openid_relying_party'}
+    assert set(_es['metadata']['openid_relying_party'].keys()) == {
         'application_type', 'claims', 'id_token_signing_alg_values_supported',
         'redirect_uris', 'response_types'}
