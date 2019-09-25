@@ -202,7 +202,7 @@ def gather_policies(chain, entity_type):
     except KeyError:
         combined_policy = {}
 
-    for es in chain[1:-1]:
+    for es in chain[1:]:
         try:
             child = es['metadata_policy'][entity_type]
         except KeyError:
@@ -280,3 +280,20 @@ def apply_policy(metadata, policy):
     # All that are in metadata but not in policy should just remain
 
     return metadata
+
+
+def diff2policy(new, old):
+    res = {}
+    for claim in set(new).intersection(set(old)):
+        if new[claim] == old[claim]:
+            continue
+        else:
+            res[claim] = {'value':new[claim]}
+
+    for claim in set(new).difference(set(old)):
+        if claim in ['contacts']:
+            res[claim] = {'add': new[claim]}
+        else:
+            res[claim] = {'value': new[claim]}
+
+    return res
