@@ -125,12 +125,53 @@ class Collector(object):
 
         return self_signed_config
 
+    def get_federation_api_endpoint(self, intermediate):
+        # In cache
+        _info = self.config_cache[intermediate]
+        if _info:
+            fed_api_endpoint = get_api_endpoint(_info)
+        else:
+            fed_api_endpoint = None
+
+        if not fed_api_endpoint:
+            entity_config = self.get_configuration_information(intermediate)
+            fed_api_endpoint = get_api_endpoint(entity_config)
+            # update cache
+            self.config_cache[intermediate] = entity_config
+
+        return fed_api_endpoint
+
+    def collect_intermediate(self, entity_id, intermediate):
+        """
+
+        :param entity_id: The ID of the starting point
+        :param intermediate: The immediate superior
+        :return:
+        """
+        fed_api_endpoint = self.get_federation_api_endpoint(intermediate)
+
+        # Try to get the entity statement from the cache
+        cache_key = "{}!!{}".format(intermediate, entity_id)
+        entity_statement = self.entity_statement_cache[cache_key]
+
+        if entity_statement is None:
+            entity_statement = self.get_entity_statement(fed_api_endpoint, intermediate,
+                                                         entity_id)
+            self.entity_statement_cache[cache_key] = entity_statement
+
+        if entity_statement:
+            # entity_statement is a signed JWT
+            statement = unverified_entity_statement(entity_statement)
+            return entity_statement, self.collect_superiors(intermediate, statement)
+        else:
+            return None
+
     def collect_superiors(self, entity_id, statement):
         """
         Collect superiors one level at the time
         
         :param entity_id: The entity ID  
-        :param statement: Signed JWT
+        :param statement: Metadata statement
         :return: Dictionary of superiors
         """
         superior = {}
@@ -138,56 +179,27 @@ class Collector(object):
         if 'authority_hints' not in statement:
             return superior
 
-        for intermediate, anchor_ids in statement['authority_hints'].items():
-            if anchor_ids and (self.trusted_ids.intersection(set(anchor_ids)) is None):
-                # That way lies nothing I trust
-                continue
-            else:
-                # In cache
-                _info = self.config_cache[intermediate]
-                if _info:
-                    fed_api_endpoint = _info["metadata"]['federation_entity'][
-                        'federation_api_endpoint']
-                else:
-                    fed_api_endpoint = None
-
-                if not fed_api_endpoint:
-                    entity_config = self.get_configuration_information(intermediate)
-                    _config = verify_self_signed_signature(entity_config)
-                    fed_api_endpoint = get_api_endpoint(_config)
-                    # update cache
-                    self.config_cache[intermediate] = _config
-
-                cache_key = "{}!!{}".format(intermediate, entity_id)
-                entity_statement = self.entity_statement_cache[cache_key]
-
-                if entity_statement is None:
-                    entity_statement = self.get_entity_statement(fed_api_endpoint, intermediate,
-                                                                 entity_id)
-
-                if entity_statement:
-                    statement = unverified_entity_statement(entity_statement)
-                    self.entity_statement_cache[cache_key] = statement
-                    superior[intermediate] = (entity_statement,
-                                              self.collect_superiors(intermediate, statement))
+        for intermediate in statement['authority_hints']:
+            superior[intermediate] = self.collect_intermediate(entity_id, intermediate)
 
         return superior
 
 
-def branch2lists(tree):
+def branch2lists(node):
     res = []
-    (statement, superior) = tree
-    if superior:
-        for issuer, branch in superior.items():
-            _lists = branch2lists(branch)
-            for l in _lists:
-                l.append(statement)
-            if not res:
-                res = _lists
-            else:
-                res.extend(_lists)
-    else:
-        res.append([statement])
+    for issuer, branch in node.items():
+        (statement, node) = branch
+        if not node:
+            res = [[statement]]
+            continue
+
+        _lists = branch2lists(node)
+        for l in _lists:
+            l.append(statement)
+        if not res:
+            res = _lists
+        else:
+            res.extend(_lists)
     return res
 
 
