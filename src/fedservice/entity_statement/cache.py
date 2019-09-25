@@ -1,4 +1,8 @@
+import logging
+
 from cryptojwt.jwt import utc_time_sans_frac
+
+logger = logging.getLogger(__name__)
 
 
 class ESCache(object):

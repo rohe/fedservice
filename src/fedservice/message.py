@@ -1,3 +1,5 @@
+import logging
+
 from oidcmsg.exception import MissingRequiredAttribute
 from oidcmsg.message import Message
 from oidcmsg.message import OPTIONAL_LIST_OF_SP_SEP_STRINGS
@@ -20,6 +22,9 @@ from oidcmsg.oidc import dict_deser
 from oidcmsg.oidc import msg_ser_json
 
 SINGLE_REQUIRED_DICT = (dict, True, msg_ser_json, dict_deser, False)
+
+
+logger = logging.getLogger(__name__)
 
 
 def registration_response_deser(val, sformat="json"):

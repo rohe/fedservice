@@ -1,8 +1,12 @@
-from fedservice.entity_statement.policy import apply_policy
+import logging
+
 from oidcmsg.oidc import RegistrationRequest
 from oidcservice.oidc.provider_info_discovery import PROVIDER2PREFERENCE
 
-from fedservice.entity_statement.statement import Statement
+from fedservice.entity_statement.policy import apply_policy
+
+
+logger = logging.getLogger(__name__)
 
 
 def translate_configuration(conf):
@@ -43,7 +47,7 @@ def list_to_singleton(args, cls):
     """
     ci = cls()
     res = {}
-    for key,val in args.items():
+    for key, val in args.items():
         if isinstance(val, list):
             try:
                 _typ = ci.c_param[key][0]

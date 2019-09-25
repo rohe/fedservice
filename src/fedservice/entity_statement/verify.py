@@ -1,9 +1,13 @@
+import logging
+
 from cryptojwt import KeyBundle
 from cryptojwt.jws.jws import factory
 
 from fedservice.entity_statement.policy import apply_policy
 from fedservice.entity_statement.policy import gather_policies
 from fedservice.entity_statement.statement import Statement
+
+logger = logging.getLogger(__name__)
 
 
 def verify_trust_chain(es_list, key_jar):

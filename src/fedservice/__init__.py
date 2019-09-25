@@ -1,3 +1,5 @@
+import logging
+
 from cryptojwt.key_jar import KeyJar
 from cryptojwt.key_jar import init_key_jar
 
@@ -8,6 +10,8 @@ from fedservice.utils import load_json
 
 __author__ = 'Roland Hedberg'
 __version__ = '0.3.0'
+
+logger = logging.getLogger(__name__)
 
 
 class FederationEntity(object):

@@ -1,10 +1,12 @@
 import base64
 import json
+import logging
 from urllib.parse import quote_plus
 
 import requests
 from cryptojwt.jwt import JWT
-from oidcservice.client_auth import ClientSecretBasic
+
+logger = logging.getLogger(__name__)
 
 
 def db_make_entity_statement(db_url, authn_info, key_jar, lifetime,

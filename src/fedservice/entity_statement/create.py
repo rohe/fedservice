@@ -1,4 +1,8 @@
+import logging
+
 from cryptojwt.jwt import JWT
+
+logger = logging.getLogger(__name__)
 
 
 def create_entity_statement(iss, sub, key_jar, metadata=None, metadata_policy=None,
