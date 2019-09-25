@@ -1,5 +1,5 @@
 {
-  "openid_client": {
+  "openid_relying_party": {
     "application_type": "web",
     "contacts": [
       "com_a@example.org"

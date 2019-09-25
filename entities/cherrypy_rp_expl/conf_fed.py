@@ -55,7 +55,7 @@ client_config = {
         'authority_hints': 'authority_hints.json',
         'trusted_roots': 'trusted_roots.json',
         'priority': [],
-        'entity_type': 'openid_client',
+        'entity_type': 'openid_relying_party',
         'opponent_entity_type': 'openid_provider'
         # 'default_lifetime': 86400
     },

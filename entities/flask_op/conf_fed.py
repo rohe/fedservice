@@ -155,7 +155,7 @@ CONFIG = {
             'trusted_roots': 'trusted_roots.json',
             'priority': [],
             'entity_type': 'openid_provider',
-            'opponent_entity_type': 'openid_client'
+            'opponent_entity_type': 'openid_relying_party'
             # 'default_lifetime': 86400
         }
     },

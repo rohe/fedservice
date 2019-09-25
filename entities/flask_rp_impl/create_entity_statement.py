@@ -60,7 +60,7 @@ if __name__ == '__main__':
     _fe = rph.federation_entity
     iss = sub = _fe.entity_id
     jws = _fe.create_entity_statement(
-        {"openid_client": metadata.to_dict()},
+        {"openid_relying_party": metadata.to_dict()},
         iss, sub, authority_hints=_fe.authority_hints,
         lifetime=86400)
 

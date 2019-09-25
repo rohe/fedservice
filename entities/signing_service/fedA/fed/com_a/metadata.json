@@ -1,5 +1,5 @@
 {
-  "openid_client": {
+  "openid_relying_party": {
     "organization": "A"
   },
   "openid_provider": {

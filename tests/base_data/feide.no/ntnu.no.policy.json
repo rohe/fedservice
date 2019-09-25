@@ -1,5 +1,5 @@
 {
-  "openid_client": {
+  "openid_provider": {
     "contacts": {
       "add": "fed_op@feide.no"
     }
