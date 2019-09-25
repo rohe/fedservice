@@ -1,3 +1,4 @@
+from cryptojwt import KeyBundle
 from cryptojwt.jws.jws import factory
 
 from fedservice.entity_statement.policy import apply_policy
@@ -25,7 +26,18 @@ def verify_trust_chain(es_list, key_jar):
                 if len(ves) != n:
                     raise ValueError('Missing signing JWKS')
             else:
-                key_jar.import_jwks(_jwks, res['sub'])
+                _kb = KeyBundle(keys=_jwks['keys'])
+                try:
+                    old = key_jar.get_issuer_keys(res['sub'])
+                except KeyError:
+                    key_jar.add_kb(res['sub'], _kb)
+                else:
+                    new = [k for k in _kb if k not in old]
+                    if new:
+                        # Only add keys to the KeyJar if they are not already there.
+                        _kb.set(new)
+                        key_jar.add_kb(res['sub'], _kb)
+
             ves.append(res)
 
     return ves
@@ -40,6 +52,21 @@ def trust_chain_expires_at(ves):
         else:
             exp = v['exp']
     return exp
+
+
+def eval_policy_chain(chain, key_jar, entity_type):
+    """
+
+    :param chain: A trust chain
+    :param key_jar: A key Jar
+    :param entity_type:
+    :return: tuple with federation ID, combined metadata policy and expiration time
+    """
+    ves = verify_trust_chain(chain, key_jar)
+    tp_exp = trust_chain_expires_at(ves)
+
+    # Combine the metadata policies from the trust root and all intermediates
+    return ves[0]["iss"], gather_policies(ves[:-1], entity_type), tp_exp
 
 
 def eval_chain(chain, key_jar, entity_type, apply_policies=True):
