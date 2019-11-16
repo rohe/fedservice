@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 def create_entity_statement(iss, sub, key_jar, metadata=None, metadata_policy=None,
                             authority_hints=None, lifetime=86400, aud='', include_jwks=True,
-                            **kwargs):
+                            constraints=None, **kwargs):
     """
 
     :param iss: The issuer of the signed JSON Web Token
@@ -20,6 +20,8 @@ def create_entity_statement(iss, sub, key_jar, metadata=None, metadata_policy=No
         trust chains as keys and lists of identifier of trust roots as values.
     :param lifetime: The life time of the signed JWT.
     :param aud: Possible audience for the JWT
+    :param include_jwks: Add JWKS
+    :param constraints: A dictionary with constraints.
     :return: A signed JSON Web Token
     """
 
@@ -35,6 +37,9 @@ def create_entity_statement(iss, sub, key_jar, metadata=None, metadata_policy=No
 
     if aud:
         msg['aud'] = aud
+
+    if constraints:
+        msg['constraints'] = constraints
 
     if kwargs:
         msg.update(kwargs)

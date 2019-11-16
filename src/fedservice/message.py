@@ -1,3 +1,4 @@
+""" Classes and functions used to describe information in an OpenID Connect Federation."""
 import logging
 
 from oidcmsg.exception import MissingRequiredAttribute
@@ -23,25 +24,25 @@ from oidcmsg.oidc import msg_ser_json
 
 SINGLE_REQUIRED_DICT = (dict, True, msg_ser_json, dict_deser, False)
 
-
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def registration_response_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a RegistrationResponse."""
     return deserialize_from_one_of(val, RegistrationResponse, sformat)
 
 
 def provider_info_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a ProviderConfigurationResponse."""
     return deserialize_from_one_of(val, ProviderConfigurationResponse, sformat)
 
 
-OPTIONAL_CLIENT_METADATA = (Message, False, msg_ser,
-                            registration_response_deser, False)
-OPTIONAL_PROVIDER_METADATA = (Message, False, msg_ser,
-                              provider_info_deser, False)
+OPTIONAL_CLIENT_METADATA = (Message, False, msg_ser, registration_response_deser, False)
+OPTIONAL_PROVIDER_METADATA = (Message, False, msg_ser, provider_info_deser, False)
 
 
 class AuthorizationServerMetadata(Message):
+    """Metadata for an OAuth2 Authorization Server."""
     c_param = {
         "issuer": SINGLE_REQUIRED_STRING,
         "authorization_endpoint": SINGLE_OPTIONAL_STRING,
@@ -68,14 +69,31 @@ class AuthorizationServerMetadata(Message):
 
 
 def auth_server_info_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into an AuthorizationServerMetadata."""
     return deserialize_from_one_of(val, AuthorizationServerMetadata, sformat)
 
 
-OPTIONAL_AUTH_SERVER_METADATA = (Message, False, msg_ser,
-                                 auth_server_info_deser, False)
+OPTIONAL_AUTH_SERVER_METADATA = (Message, False, msg_ser, auth_server_info_deser, False)
+
+
+class NamingConstraints(Message):
+    """Class representing naming constraints."""
+    c_param = {
+        "permitted": OPTIONAL_LIST_OF_STRINGS,
+        "excluded": OPTIONAL_LIST_OF_STRINGS
+    }
+
+
+def naming_constraints_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into an NamingConstraints."""
+    return deserialize_from_one_of(val, NamingConstraints, sformat)
+
+
+SINGLE_OPTIONAL_NAMING_CONSTRAINTS = (Message, False, msg_ser, naming_constraints_deser, False)
 
 
 class FederationEntity(Message):
+    """Class representing a Federation Entity."""
     c_param = {
         "federation_api_endpoint": SINGLE_OPTIONAL_STRING,
         "name": SINGLE_OPTIONAL_STRING,
@@ -87,6 +105,7 @@ class FederationEntity(Message):
 
 
 def federation_entity_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a FederationEntity."""
     return deserialize_from_one_of(val, FederationEntity, sformat)
 
 
@@ -95,6 +114,7 @@ OPTIONAL_FEDERATION_ENTITY_METADATA = (Message, False, msg_ser,
 
 
 class OauthClientMetadata(Message):
+    """Metadata for an OAuth2 Client."""
     c_param = {
         "redirect_uris": OPTIONAL_LIST_OF_STRINGS,
         "token_endpoint_auth_method": SINGLE_OPTIONAL_STRING,
@@ -115,6 +135,7 @@ class OauthClientMetadata(Message):
 
 
 def oauth_client_metadata_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a OauthClientMetadata."""
     return deserialize_from_one_of(val, OauthClientMetadata, sformat)
 
 
@@ -123,6 +144,7 @@ OPTIONAL_OAUTH_CLIENT_METADATA = (Message, False, msg_ser,
 
 
 class OauthClientInformationResponse(OauthClientMetadata):
+    """The information returned by a OAuth2 Server about an OAuth2 client."""
     c_param = OauthClientMetadata.c_param.copy()
     c_param.update({
         "client_id": SINGLE_REQUIRED_STRING,
@@ -139,6 +161,7 @@ class OauthClientInformationResponse(OauthClientMetadata):
 
 
 class Metadata(Message):
+    """The different types of metadata that an entity in a federation can belong to."""
     c_param = {
         'openid_relying_party': OPTIONAL_CLIENT_METADATA,
         'openid_provider': OPTIONAL_PROVIDER_METADATA,
@@ -148,25 +171,29 @@ class Metadata(Message):
     }
 
 
-def provider_info_deser(val, sformat="json"):
+def metadata_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a MetadataPolicy."""
     return deserialize_from_one_of(val, Metadata, sformat)
 
-
-SINGLE_REQUIRED_METADATA = (Message, True, msg_ser, provider_info_deser, False)
-SINGLE_OPTIONAL_METADATA = (Message, False, msg_ser, provider_info_deser, False)
+SINGLE_REQUIRED_METADATA = (Message, True, msg_ser, metadata_deser, False)
+SINGLE_OPTIONAL_METADATA = (Message, False, msg_ser, metadata_deser, False)
 
 
 class MetadataPolicy(Message):
+    """The metadata policy verbs."""
     c_param = {
         "subset_of": OPTIONAL_LIST_OF_STRINGS,
         "one_of": OPTIONAL_LIST_OF_STRINGS,
         "superset_of": OPTIONAL_LIST_OF_STRINGS,
         "add": OPTIONAL_LIST_OF_STRINGS,
-        "value": SINGLE_OPTIONAL_ANY
+        "value": SINGLE_OPTIONAL_ANY,
+        "default": SINGLE_OPTIONAL_ANY,
+        "essential": SINGLE_OPTIONAL_BOOLEAN
     }
 
 
 def metadata_policy_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a MetadataPolicy."""
     return deserialize_from_one_of(val, MetadataPolicy, sformat)
 
 
@@ -174,18 +201,38 @@ SINGLE_REQUIRED_METADATA_POLICY = (Message, True, msg_ser, metadata_policy_deser
 SINGLE_OPTIONAL_METADATA_POLICY = (Message, False, msg_ser, metadata_policy_deser, False)
 
 
+class Constraints(Message):
+    """The types of constraints that can be applied to a trust chain."""
+    c_param = {
+        "max_path_length": SINGLE_OPTIONAL_INT,
+        "naming_constraints": SINGLE_OPTIONAL_NAMING_CONSTRAINTS
+    }
+
+
+def constrains_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a Constraints."""
+    return deserialize_from_one_of(val, Constraints, sformat)
+
+
+SINGLE_REQUIRED_CONSTRAINS = (Message, True, msg_ser, constrains_deser, False)
+SINGLE_OPTIONAL_CONSTRAINS = (Message, False, msg_ser, constrains_deser, False)
+
+
 class EntityStatement(JsonWebToken):
+    """The Entity Statement"""
     c_param = JsonWebToken.c_param.copy()
     c_param.update({
         "sub": SINGLE_REQUIRED_STRING,
         'iss': SINGLE_REQUIRED_STRING,
         'exp': SINGLE_REQUIRED_INT,
         'iat': SINGLE_REQUIRED_INT,
+        "jti": SINGLE_OPTIONAL_STRING,
         'authority_hints': REQUIRED_LIST_OF_STRINGS,
         'metadata': SINGLE_OPTIONAL_METADATA,
         'metadata_policy': SINGLE_OPTIONAL_METADATA_POLICY,
+        'constraints': SINGLE_OPTIONAL_CONSTRAINS,
         'sub_meta': SINGLE_OPTIONAL_DICT,
-        'sub_is_leaf': SINGLE_OPTIONAL_BOOLEAN,
         'jwks': SINGLE_OPTIONAL_DICT,
-        'signing_keys': SINGLE_OPTIONAL_DICT
+        "crit": SINGLE_OPTIONAL_STRING,
+        "policy_language_crit": OPTIONAL_LIST_OF_STRINGS
     })

@@ -93,7 +93,7 @@ class Collector(object):
         if self.insecure:
             response = self.http_cli("GET", _url, verify=False)
         else:
-            response = self.http_cli.get(_url)
+            response = self.http_cli("GET", _url)
         if response.status_code == 200:
             return response.text
         else:
@@ -117,11 +117,13 @@ class Collector(object):
                                  **kwargs)
         if response.status_code == 200:
             self_signed_config = response.text
+            try:
+                _config = verify_self_signed_signature(self_signed_config)
+            except Exception as err:
+                raise FailedConfigurationRetrieval(str(err))
         else:  # if tenant involved
-            response = self.http_cli("GET",
-                                     construct_tenant_well_known_url(entity_id,
-                                                                     "openid-federation"),
-                                     **kwargs)
+            response = self.http_cli(
+                "GET", construct_tenant_well_known_url(entity_id, "openid-federation"), **kwargs)
             if response.status_code == 200:
                 self_signed_config = response.text
             else:
@@ -155,9 +157,13 @@ class Collector(object):
         :param max_superiors: The maximum number of superiors.
         :return:
         """
-        _seen = seen[:]
+        if seen is None:
+            _seen = []
+        else:
+            _seen = seen[:]
+
         _seen.append(intermediate)
-        if len(seen) > max_superiors:
+        if len(_seen) > max_superiors:
             logger.warning("Reached max superiors. The path here was {}".format(_seen))
             return None
 
@@ -175,16 +181,16 @@ class Collector(object):
         if entity_statement:
             # entity_statement is a signed JWT
             statement = unverified_entity_statement(entity_statement)
-            return entity_statement, self.collect_superiors(intermediate, statement, _seen,
-                                                            max_superiors)
+            return entity_statement, self.collect_superiors(intermediate, statement, seen=_seen,
+                                                            max_superiors=max_superiors)
         else:
             return None
 
     def collect_superiors(self, entity_id, statement, seen=None, max_superiors=1, stop_at=""):
         """
         Collect superiors one level at the time
-        
-        :param entity_id: The entity ID  
+
+        :param entity_id: The entity ID
         :param statement: Metadata statement
         :param seen: A list of intermediates that this process has seen. This to capture
             loops. Also used to control the allowed depth.
