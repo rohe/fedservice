@@ -8,7 +8,7 @@ from jwkest.jws import factory
 
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.collect import verify_self_signed_signature
-from fedservice.metadata_api.fs import make_entity_statement
+from fedservice.metadata_api.fs2 import FSEntityStatementAPI
 
 
 def load_trust_roots(trust_root_file):
@@ -19,6 +19,11 @@ def load_trust_roots(trust_root_file):
     return kj
 
 
+def get_netloc(url):
+    p = urlparse(url)
+    return p.netloc
+
+
 class DummyCollector(Collector):
     def __init__(self, httpd=None, trusted_roots=None, root_dir='.',
                  base_url=''):
@@ -26,7 +31,7 @@ class DummyCollector(Collector):
         self.root_dir = root_dir
         self.base_url = base_url
 
-    def collect_superiors(self, subject_id, statement):
+    def collect_superiors(self, subject_id, statement, **kwargs):
         if isinstance(statement, dict):
             entity_statement = statement
         else:
@@ -50,13 +55,15 @@ class DummyCollector(Collector):
         return super
 
     def get_configuration_information(self, subject_id):
-        jws = make_entity_statement(root_dir=self.root_dir, iss=subject_id, sub=subject_id)
+        es_api = FSEntityStatementAPI(self.root_dir, iss=get_netloc(subject_id))
+        jws = es_api.create_entity_statement(get_netloc(subject_id))
 
         config = verify_self_signed_signature(jws)
         return config
 
     def get_entity_statement(self, api_endpoint, issuer, subject):
-        return make_entity_statement(root_dir=self.root_dir, iss=issuer, sub=subject)
+        es_api = FSEntityStatementAPI(self.root_dir, iss=get_netloc(issuer))
+        return es_api.create_entity_statement(get_netloc(subject))
 
     def build_path(self, intermediate, root_dir='.', sub=''):
         """
@@ -69,7 +76,8 @@ class DummyCollector(Collector):
         :param sub: The identifier of the subject
         :return: An Issuer instance
         """
-        jws = make_entity_statement(root_dir=root_dir, iss=intermediate, sub=sub)
+        es_api = FSEntityStatementAPI(self.root_dir, iss=get_netloc(intermediate))
+        jws = es_api.create_entity_statement(get_netloc(sub))
         superior = {}
 
         _jwt = factory(jws)
@@ -96,11 +104,11 @@ class Publisher(object):
     def __call__(self, method, url, **kwargs):
         p = urlparse(url)
         if p.path == '/.well-known/openid-federation':
-            _jws = open(os.path.join(self.dir, p.netloc, p.netloc)).read().strip()
+            _jws = open(os.path.join(self.dir, p.netloc, p.netloc, 'jws')).read().strip()
         else:
             _qs = parse_qs(p.query)
             pt = urlparse(_qs['sub'][0])
-            _jws = open(os.path.join(self.dir, p.netloc, pt.netloc)).read().strip()
+            _jws = open(os.path.join(self.dir, p.netloc, pt.netloc, 'jws')).read().strip()
 
         return MockResponse(200, "{}".format(_jws),
                             headers={'content-type': "application/jws"})

@@ -10,7 +10,7 @@ from .utils import Publisher
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
-jwks = open(os.path.join(BASE_PATH, 'base_data', 'feide.no', 'feide.no.jwks.json')).read()
+jwks = open(os.path.join(BASE_PATH, 'base_data', 'feide.no', 'feide.no', 'jwks.json')).read()
 
 ANCHOR = {'https://feide.no': jwks}
 

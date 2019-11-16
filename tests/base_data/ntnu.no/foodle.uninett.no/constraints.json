@@ -1,0 +1,6 @@
+{
+  "naming_constraints": {
+    "permitted": ["https://.uninett.no", "https://.ntnu.no"]
+  },
+  "max_path_length": 0
+}

@@ -50,7 +50,7 @@ def test_create_self_signed():
     assert res['iss'] == iss
     assert res['sub'] == sub
     assert set(res.keys()) == {'metadata', 'iss', 'exp', 'sub', 'iat',
-                               'authority_hints', 'jwks', 'kid'}
+                               'authority_hints', 'jwks'}
 
 
 def test_signed_someone_else_metadata():
@@ -101,4 +101,4 @@ def test_signed_someone_else_metadata():
     assert res['iss'] == iss
     assert res['sub'] == sub
     assert set(res.keys()) == {'metadata', 'iss', 'exp', 'sub', 'iat',
-                               'authority_hints', 'jwks', 'kid'}
+                               'authority_hints', 'jwks'}

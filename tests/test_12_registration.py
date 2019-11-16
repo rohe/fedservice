@@ -13,7 +13,7 @@ from oidcservice.state_interface import State
 
 from fedservice import FederationEntity
 from fedservice.entity_statement.statement import Statement
-from fedservice.metadata_api.fs import read_info
+from fedservice.metadata_api.fs2 import read_info
 from fedservice.op.registration import Registration
 from fedservice.rp.provider_info_discovery import FedProviderInfoDiscovery
 from fedservice.rp.registration import FedRegistration
@@ -140,6 +140,5 @@ class TestEndpoint(object):
             reg_resp['response'],
             my_metadata=payload['metadata'][self.rp_federation_entity.entity_type])
         assert set(args.keys()) == {'entity_id', 'client_id', 'contacts', 'application_type',
-                                    'redirect_uris', 'registration_access_token', 'response_types',
-                                    'registration_client_uri', 'client_id_issued_at',
+                                    'redirect_uris', 'response_types', 'client_id_issued_at',
                                     'client_secret', 'grant_types', 'client_secret_expires_at'}

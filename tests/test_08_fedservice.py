@@ -21,7 +21,7 @@ KEYSPEC = [
 ]
 RECEIVER = 'https://example.org/op'
 
-jwks = open(os.path.join(BASE_PATH, 'base_data', 'feide.no', 'feide.no.jwks.json')).read()
+jwks = open(os.path.join(BASE_PATH, 'base_data', 'feide.no', 'feide.no', 'jwks.json')).read()
 
 ANCHOR = {'https://feide.no': json.loads(jwks)}
 
@@ -60,7 +60,8 @@ class TestRpService(object):
 
     def test_collect_entity_statement(self):
         leaf_entity_id = 'https://foodle.uninett.no'
-        entity_statement = self.fedent.collector.get_entity_statement('', leaf_entity_id, leaf_entity_id)
+        entity_statement = self.fedent.collector.get_entity_statement('', leaf_entity_id,
+                                                                      leaf_entity_id)
         tree = self.fedent.collect_statement_chains(leaf_entity_id, entity_statement)
         assert tree
         _node = {leaf_entity_id: (entity_statement, tree)}
@@ -126,4 +127,4 @@ class TestRpService(object):
         assert res['iss'] == iss
         assert res['sub'] == sub
         assert set(res.keys()) == {'metadata', 'iss', 'exp', 'sub', 'iat',
-                                   'authority_hints', 'jwks', 'kid'}
+                                   'authority_hints', 'jwks'}

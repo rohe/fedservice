@@ -15,6 +15,7 @@ from fedservice import eval_chain
 from fedservice.entity_statement.collect import branch2lists
 from fedservice.metadata_api.fs import make_entity_statement
 from fedservice.metadata_api.fs import read_info
+from fedservice.metadata_api.fs2 import FSEntityStatementAPI
 from fedservice.rp.provider_info_discovery import FedProviderInfoDiscovery
 from fedservice.rp.registration import FedRegistration
 from .utils import DummyCollector
@@ -30,7 +31,7 @@ KEYSPEC = [
 
 # RECEIVER = 'https://example.org/op'
 
-jwks = open(os.path.join(BASE_PATH, 'base_data', 'feide.no', 'feide.no.jwks.json')).read()
+jwks = open(os.path.join(BASE_PATH, 'base_data', 'feide.no', 'feide.no', 'jwks.json')).read()
 
 ANCHOR = {'https://feide.no': json.loads(jwks)}
 
@@ -140,7 +141,7 @@ class TestRpService(object):
         _jws = _info['body']
         _jwt = factory(_jws)
         payload = _jwt.jwt.payload()
-        assert set(payload.keys()) == {'iss', 'jwks', 'kid', 'exp', 'metadata',
+        assert set(payload.keys()) == {'iss', 'jwks', 'exp', 'metadata',
                                        'iat', 'sub', 'authority_hints'}
         assert set(payload['metadata']['openid_relying_party'].keys()) == {
             'application_type', "id_token_signed_response_alg", 'redirect_uris', 'grant_types',
@@ -148,8 +149,9 @@ class TestRpService(object):
 
     def test_parse_reg_response(self):
         # construct the entity statement the OP should return
-        jws = make_entity_statement('https://op.ntnu.no',
-                                    root_dir=os.path.join(BASE_PATH, 'base_data'))
+        es_api = FSEntityStatementAPI(os.path.join(BASE_PATH, 'base_data'), iss="op.ntnu.no")
+        jws = es_api.create_entity_statement("op.ntnu.no")
+
         # parse the response and collect the trust chains
         res = self.service['discovery'].parse_response(jws)
 
@@ -174,8 +176,9 @@ class TestRpService(object):
         # The OP as federation entity
         _fe = _sc.federation_entity
         del _fe.key_jar.issuer_keys["https://op.ntnu.no"]
+        # make sure I have the private keys
         _fe.key_jar.import_jwks(
-            read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), "op.ntnu.no", "jwks"),
+            es_api.keyjar.export_jwks(True, "https://op.ntnu.no"),
             "https://op.ntnu.no"
         )
         tree = _fe.collect_statement_chains(payload['iss'], _info['body'])
@@ -187,17 +190,17 @@ class TestRpService(object):
             "client_id": {"value": "aaaaaaaaa"},
             "client_secret": {"value": "bbbbbbbbbb"}
         }
-        metadata = {"trust_anchor_id": statements[0].fo}
+
         # This is the registration response from the OP
         _jwt = _fe.create_entity_statement(
             'https://op.ntnu.no', 'https://foodle.uninett.no',
             metadata_policy={_fe.entity_type: metadata_policy},
-            metadata={_fe.entity_type: {"trust_anchor_id": statements[0].fo}},
+            metadata={"federation_entity": {"trust_anchor_id": statements[0].fo}},
             authority_hints=['https://feide.no'])
 
-        claims = self.service['registration'].parse_response(_jwt,
-                                                             my_metadata=payload['metadata'][
-                                                                 _fe.entity_type])
+        claims = self.service['registration'].parse_response(
+            _jwt, my_metadata=payload['metadata'][_fe.entity_type])
+
         assert set(claims.keys()) == {
             'id_token_signed_response_alg', 'application_type', 'client_secret',
             'client_id', 'response_types', 'token_endpoint_auth_method',

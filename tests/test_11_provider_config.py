@@ -3,13 +3,12 @@ import os
 import pytest
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import build_keyjar
-from oidcendpoint import user_authn
 from oidcendpoint.endpoint_context import EndpointContext
 from oidcendpoint.user_authn.authn_context import UNSPECIFIED
 from oidcendpoint.user_authn.user import NoAuthn
 
 from fedservice import FederationEntity
-from fedservice.metadata_api.fs import read_info
+from fedservice.metadata_api.fs2 import read_info
 from fedservice.op.provider_config import ProviderConfiguration
 from tests.utils import DummyCollector
 from tests.utils import Publisher
@@ -77,7 +76,7 @@ class TestEndpoint(object):
         info = self.endpoint.do_response(**args)
         _jwt = factory(info['response'])
         payload = _jwt.jwt.payload()
-        assert set(payload.keys()) == {'exp', 'jwks', 'sub', 'kid', 'iat',
+        assert set(payload.keys()) == {'exp', 'jwks', 'sub', 'iat',
                                        'metadata', 'iss', 'authority_hints'}
         assert set(payload['metadata'].keys()) == {'openid_relying_party'}
         assert set(payload['metadata']['openid_relying_party'].keys()) == {

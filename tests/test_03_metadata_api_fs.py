@@ -4,17 +4,15 @@ from cryptojwt.jws.jws import factory
 from oidcmsg.oidc import RegistrationResponse
 
 from fedservice.message import EntityStatement
-from fedservice.metadata_api.fs import make_entity_statement
+from fedservice.metadata_api.fs2 import FSEntityStatementAPI
 
-BASE_PATH = os.path.abspath(os.path.dirname(__file__))
+BASE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "base_data")
 
 
 def test_config_information():
-    res = make_entity_statement(
-        root_dir=os.path.join(BASE_PATH, 'base_data'),
-        iss='foodle.uninett.no',
-        sub='foodle.uninett.no')
-    _jws = factory(res)
+    fse = FSEntityStatementAPI(BASE_PATH, iss='foodle.uninett.no')
+    _jwt = fse.create_entity_statement('foodle.uninett.no')
+    _jws = factory(_jwt)
     assert _jws
     payload = _jws.jwt.payload()
     assert payload['iss'] == 'https://foodle.uninett.no'
@@ -27,11 +25,9 @@ def test_config_information():
 
 
 def test_make_entity_statement():
-    res = make_entity_statement(
-        root_dir=os.path.join(BASE_PATH, 'base_data'),
-        iss='ntnu.no',
-        sub='foodle.uninett.no')
-    _jws = factory(res)
+    fse = FSEntityStatementAPI(BASE_PATH, iss='ntnu.no')
+    _statement = fse.create_entity_statement('foodle.uninett.no')
+    _jws = factory(_statement)
     assert _jws
     payload = _jws.jwt.payload()
     assert payload['iss'] == 'https://ntnu.no'
