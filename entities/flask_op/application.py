@@ -7,7 +7,6 @@ from cryptojwt.key_jar import init_key_jar
 from fedservice import create_federation_entity
 from fedservice.op import EndpointContext
 
-from oidcop.cookie import CookieDealer
 
 folder = os.path.dirname(os.path.realpath(__file__))
 
@@ -35,14 +34,13 @@ def init_oidc_op_endpoints(app):
     # make sure I have a set of keys under my 'real' name
     _kj.import_jwks_as_json(_kj.export_jwks_as_json(True, ''), iss)
 
-    cookie_dealer = CookieDealer(**_server_info_config['cookie_dealer'])
+    # cookie_dealer = CookieDealer(**_server_info_config['cookie_dealer'])
 
     federation_entity = create_federation_entity(**_server_info_config[
                                                      'federation'])
 
     endpoint_context = EndpointContext(_server_info_config, keyjar=_kj,
-                                       cwd=folder, cookie_dealer=cookie_dealer,
-                                       federation_entity=federation_entity)
+                                       cwd=folder, federation_entity=federation_entity)
 
     for endp in endpoint_context.endpoint.values():
         p = urlparse(endp.endpoint_path)
@@ -51,8 +49,6 @@ def init_oidc_op_endpoints(app):
             endp.vpath = _vpath[1:]
         else:
             endp.vpath = _vpath
-
-    cookie_dealer.endpoint_context = endpoint_context
 
     return endpoint_context
 

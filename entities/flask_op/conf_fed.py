@@ -1,12 +1,14 @@
 from oidcendpoint import user_info
-
+from oidcendpoint.cookie import CookieDealer
 from oidcendpoint.oidc.discovery import Discovery
 from oidcendpoint.oidc.registration import Registration
 from oidcendpoint.oidc.token import AccessToken
 from oidcendpoint.oidc.userinfo import UserInfo
 from oidcendpoint.user_authn.authn_context import INTERNETPROTOCOLPASSWORD
-
-from oidcop.util import JSONDictDB
+from oidcendpoint.user_authn.authn_context import UNSPECIFIED
+from oidcendpoint.user_authn.user import NoAuthn
+from oidcendpoint.user_authn.user import UserPassJinja2
+from oidcendpoint.util import JSONDictDB
 
 from fedservice.op import authorization
 from fedservice.op import provider_config
@@ -46,9 +48,8 @@ BASE_URL = 'https://{}'.format(SERVER_NAME)
 
 PATH = {
     'userinfo:kwargs:db_file': '{}/users.json',
-    'authentication:0:kwargs:db:kwargs:json_path': '{}/passwd.json'
+    'authentication:user:kwargs:db:kwargs:json_path': '{}/passwd.json'
 }
-
 
 CONFIG = {
     'provider': {
@@ -83,27 +84,27 @@ CONFIG = {
                 'kwargs': {'client_authn_method': None}
             },
             'registration': {
-                'path': '/registration',
+                'path': 'registration',
                 'class': Registration,
                 'kwargs': {'client_authn_method': None}
             },
             'federation_registration': {
-                'path': '/fed_registration',
+                'path': 'fed_registration',
                 'class': fed_registration.Registration,
                 'kwargs': {'client_authn_method': None}
             },
             'authorization': {
-                'path': '/authorization',
+                'path': 'authorization',
                 'class': authorization.Authorization,
-                'kwargs': {'client_authn_method': None}
+                'kwargs': {}
             },
             'token': {
-                'path': '/token',
+                'path': 'token',
                 'class': AccessToken,
                 'kwargs': {}
             },
             'userinfo': {
-                'path': '/userinfo',
+                'path': 'userinfo',
                 'class': UserInfo,
             }
         },
@@ -111,13 +112,13 @@ CONFIG = {
             'class': user_info.UserInfo,
             'kwargs': {'db_file': 'users.json'}
         },
-        'authentication': [
-            {
+        'authentication': {
+            "user": {
                 'acr': INTERNETPROTOCOLPASSWORD,
-                'name': 'UserPassJinja2',
+                'class': UserPassJinja2,
+                'verify_endpoint': 'verify/user',
                 'kwargs': {
                     'template': 'user_pass.jinja2',
-                    'sym_key': '24AA/LR6HighEnergy',
                     'db': {
                         'class': JSONDictDB,
                         'kwargs':
@@ -129,17 +130,19 @@ CONFIG = {
                     'passwd_label': "Secret sauce"
                 }
             },
-            {
-                'acr': 'anon',
-                'name': 'NoAuthn',
+            "anon": {
+                'acr': UNSPECIFIED,
+                'class': NoAuthn,
                 'kwargs': {'user': 'diana'}
             }
-        ],
+        },
         'cookie_dealer': {
-            'symkey': 'ghsNKDDLshZTPn974nOsIGhedULrsqnsGoBFBLwUKuJhE2ch',
-            'cookie': {
-                'name': 'fedoidc_op',
-                'domain': "127.0.0.1",
+            'class': CookieDealer,
+            'sign_jwk': 'private/cookie_sign_jwk.json',
+            'sign_alg': 'SHA256',
+            'default_values': {
+                'name': 'oidc_op',
+                'domain': DOMAIN,
                 'path': '/',
                 'max_age': 3600
             }
