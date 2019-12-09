@@ -1,43 +1,33 @@
 import os
 from urllib.parse import urlparse
-from flask.app import Flask
 
 from cryptojwt.key_jar import init_key_jar
+from flask.app import Flask
 
 from fedservice import create_federation_entity
 from fedservice.op import EndpointContext
-
 
 folder = os.path.dirname(os.path.realpath(__file__))
 
 
 def init_oidc_op_endpoints(app):
-    _config = app.config.get('CONFIG')
-    _provider_config = _config['provider']
+    _config = app.srv_config.op
     _server_info_config = _config['server_info']
 
-    for path,val in app.config.get('PATH').items():
-        pos = _server_info_config
-        part = path.split(':')
-        for p in part[:-1]:
-            try:
-                pos = pos[p]
-            except TypeError:
-                p = int(p)
-                pos = pos[p]
-        pos[part[-1]] = val.format(folder)
-
-    _kj = init_key_jar(**_server_info_config['jwks'])
+    _kj_args = {k: v for k, v in _server_info_config['jwks'].items() if k != 'uri_path'}
+    _kj = init_key_jar(**_kj_args)
 
     iss = _server_info_config['issuer']
 
     # make sure I have a set of keys under my 'real' name
     _kj.import_jwks_as_json(_kj.export_jwks_as_json(True, ''), iss)
-
-    # cookie_dealer = CookieDealer(**_server_info_config['cookie_dealer'])
+    try:
+        _kj.verify_ssl = _config['server_info']['verify_ssl']
+    except KeyError:
+        pass
 
     federation_entity = create_federation_entity(**_server_info_config[
-                                                     'federation'])
+        'federation'])
 
     endpoint_context = EndpointContext(_server_info_config, keyjar=_kj,
                                        cwd=folder, federation_entity=federation_entity)
@@ -53,10 +43,10 @@ def init_oidc_op_endpoints(app):
     return endpoint_context
 
 
-def oidc_provider_init_app(name=None, **kwargs):
+def oidc_provider_init_app(config, name=None, **kwargs):
     name = name or __name__
     app = Flask(name, static_url_path='', **kwargs)
-    app.config.from_pyfile(os.path.join(folder,'conf_fed.py'))
+    app.srv_config = config
 
     try:
         from .views import oidc_op_views

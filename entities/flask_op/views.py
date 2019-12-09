@@ -127,7 +127,7 @@ def well_known(service):
     # if service == 'openid-configuration':
     #     _endpoint = current_app.endpoint_context.endpoint['provider_info']
     if service == 'openid-federation':
-        _endpoint = current_app.endpoint_context.endpoint['provider_info']
+        _endpoint = current_app.endpoint_context.endpoint['provider_config']
     elif service == 'webfinger':
         _endpoint = current_app.endpoint_context.endpoint['webfinger']
     else:
@@ -139,7 +139,7 @@ def well_known(service):
 @oidc_op_views.route('/registration', methods=['POST'])
 def registration():
     return service_endpoint(current_app.endpoint_context.endpoint[
-                                'federation_registration'])
+                                'registration'])
 
 
 @oidc_op_views.route('/authorization')
@@ -194,7 +194,7 @@ def service_endpoint(endpoint):
                                             **kwargs)
         else:
             args = endpoint.process_request(req_args, **kwargs)
-    except Exception:
+    except Exception as err:
         message = traceback.format_exception(*sys.exc_info())
         # cherrypy.response.headers['Content-Type'] = 'text/html'
         return make_response(json.dumps({

@@ -1,20 +1,20 @@
 {
-  "https://127.0.0.1:6000/fed": {
+  "https://127.0.0.1:6000/eid/swamid.se": {
     "keys": [
       {
         "kty": "RSA",
         "use": "sig",
-        "kid": "SUVnVEplZ2tnMjVzdDNOaUJ0QTVUNE1BSG1wSWRnOWhfaTVEX3NUT0dFQQ",
-        "n": "vTFNHO2DDmhYucW6ZCa9EELn-gjGK76Ub1SXoX6f0ewW6i1b4T2hUqrvfkYj5P214w0mNS4jbWM_PdjWKyQWn84LrFWyMRSx-DceiWRD1D4kZAppfNZBRBjAphavX0M7-b4-CdbjsssW4vqSgQRyPR_vziKQbu6MCTRIZ3Bb1WvjO6CJw_QwD919PX29Xn697zn59rhU8XCs6AMq853d1yeYLf1i9hRT7udOcxHZpouveYZT3UYPtdv6-RbI8oyIdm18eT-GTGxZ_YV35xkCR9YY69WjAmeKXoXly3uc1C7TAGVVZFBfDeGnhZUZj-dOVdiKIztgkMRC_Pwgz8jvmw",
-        "e": "AQAB"
+        "kid": "NnB6VVBNUzZwdloxQ2Y4NWtFSEExYVktSlBKZTZNamk3SG4zMEtzSUlTMA",
+        "e": "AQAB",
+        "n": "w3hWO_bz_Vl3alMVMVeee-C2JqOVg4i2yxQyhfPmMR7hIx6IAkPxU0wCGBcDPCSpASLEMcCyOFDkhBZgfg6_ODnMrb_uJdg98YsLWeFwqF433JzXXf3dSERsaLTG2kOcIMJxdmc43Gnv5WjGwX5b1KAl6VpBA5yg1NYBzNfRF_gvYiZ4tLac6KrgXhkmqH2K8qqZQpkTgGLjqACvhU_r30FcIaEbmocR4DL2-IzPfaSXI9sHHZPJC9KAZFhgN3x7YfVHnr5GizDLpfg1-3MmVTN6Nmh5r9YkAnGUtjliXEdE4SlmslOrR_culNJMh_cbs2Mvy4wCI4gPVdCVHunTRw"
       },
       {
         "kty": "EC",
         "use": "sig",
-        "kid": "NXhZczBfbWJvWjBUQ3Bfd3o5SFhVY293Ml9VQXF5Y19SQnVFYUc0MGJSWQ",
+        "kid": "aXFuUzRTeUhMZzk4dVpKV0NGbFo5bHJPR3F6ekZIY2daVkk4SDFRU0Q3Zw",
         "crv": "P-256",
-        "x": "RQhjgeyspcGAX2aq_T9EwU9ZnxLLiIeVN7uwxzpcUPw",
-        "y": "MsjnPiTj-Ws-Ho_W7t6m3jH5ORQpzuKMSTmlhifg0xw"
+        "x": "tiIqBKL5yGeveqk6k88Ltv5AyO40WtFdM5dSPZnJGQA",
+        "y": "vrl3QBbKNy9JXe-R-Tol-vRD5YBPhGxvq07vlKcEYik"
       }
     ]
   }

@@ -21,19 +21,10 @@ RESPONSE_TYPES_SUPPORTED = [
     ["id_token", "token"], ["code", "token", "id_token"], ['none']]
 
 CAPABILITIES = {
-    "response_types_supported": [" ".join(x) for x in RESPONSE_TYPES_SUPPORTED],
-    "token_endpoint_auth_methods_supported": [
-        "client_secret_post", "client_secret_basic",
-        "client_secret_jwt", "private_key_jwt"],
-    "response_modes_supported": ['query', 'fragment', 'form_post'],
     "subject_types_supported": ["public", "pairwise"],
     "grant_types_supported": [
         "authorization_code", "implicit",
         "urn:ietf:params:oauth:grant-type:jwt-bearer", "refresh_token"],
-    "claim_types_supported": ["normal", "aggregated", "distributed"],
-    "claims_parameter_supported": True,
-    "request_parameter_supported": True,
-    "request_uri_parameter_supported": True,
 }
 
 KEY_DEF = [
@@ -68,7 +59,7 @@ CONFIG = {
         "capabilities": CAPABILITIES,
         'template_dir': 'templates',
         "jwks": {
-            'private_path': 'own/jwks.json',
+            'private_path': 'private/jwks.json',
             'key_defs': KEY_DEF,
             'public_path': 'static/jwks.json'
         },
@@ -96,16 +87,29 @@ CONFIG = {
             'authorization': {
                 'path': 'authorization',
                 'class': authorization.Authorization,
-                'kwargs': {}
+                'kwargs': {
+                    "response_types_supported": [" ".join(x) for x in RESPONSE_TYPES_SUPPORTED],
+                    "response_modes_supported": ['query', 'fragment', 'form_post'],
+                    "claims_parameter_supported": True,
+                    "request_parameter_supported": True,
+                    "request_uri_parameter_supported": True,
+                }
             },
             'token': {
                 'path': 'token',
                 'class': AccessToken,
-                'kwargs': {}
+                'kwargs': {
+                    "client_authn_method": [
+                        "client_secret_post", "client_secret_basic",
+                        "client_secret_jwt", "private_key_jwt"],
+                }
             },
             'userinfo': {
                 'path': 'userinfo',
                 'class': UserInfo,
+                "kwargs": {
+                    "claim_types_supported": ["normal", "aggregated", "distributed"],
+                }
             }
         },
         'userinfo': {
