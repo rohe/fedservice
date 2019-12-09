@@ -5,7 +5,7 @@ KEY_DEF = [
     {"type": "EC", "crv": "P-256", "use": ["sig"]}
 ]
 
-PORT = 5001
+PORT = 6000
 DOMAIN = '127.0.0.1'
 SERVER_NAME = '{}:{}'.format(DOMAIN, str(PORT))
 BASE_URL = 'https://{}'.format(SERVER_NAME)
@@ -29,6 +29,16 @@ CONFIG = {
                 'client_authn_method': None,
                 'base_path': 'base_data',
                 'iss': "umu.se",
+                "url_prefix": BASE_URL + "/eid"
+            }
+        },
+        'lu.se': {
+            'class': FSEntityStatementAPI,
+            'kwargs': {
+                'entity_id_pattern': BASE_URL + "/eid/{}",
+                'client_authn_method': None,
+                'base_path': 'base_data',
+                'iss': "lu.se",
                 "url_prefix": BASE_URL + "/eid"
             }
         }

@@ -8,7 +8,7 @@ BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 
 def make_entity_id(item):
-    return "https://127.0.0.1:5000/eid/{}".format(item)
+    return "https://127.0.0.1:6000/eid/{}".format(item)
 
 
 for iss in os.listdir(BASE_PATH):
