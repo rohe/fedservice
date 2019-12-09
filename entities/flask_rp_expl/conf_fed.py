@@ -1,4 +1,4 @@
-PORT = 8090
+PORT = 4000
 BASEURL = "https://localhost:{}".format(PORT)
 
 # If BASE is https these has to be specified

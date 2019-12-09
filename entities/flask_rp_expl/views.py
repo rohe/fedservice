@@ -23,7 +23,7 @@ def send_js(path):
 
 @oidc_rp_views.route('/')
 def index():
-    _providers = current_app.config.get('CLIENTS').keys()
+    _providers = current_app.config.get('clients').keys()
     return render_template('opbyuid.html', providers=_providers)
 
 
@@ -54,7 +54,7 @@ def rp():
         else:
             return redirect(result['url'], 303)
     else:
-        _providers = current_app.config.get('CLIENTS').keys()
+        _providers = current_app.config.get('clients').keys()
         return render_template('opbyuid.html', providers=_providers)
 
 
@@ -95,13 +95,13 @@ def authz_cb(op_hash):
                 endp = endp.capitalize()
                 endpoints[endp] = v
 
-        fid, statement = rp.service_context.trust_path
+        statement = rp.service_context.federation_entity.op_statements[0]
         _st = localtime(statement.exp)
         time_str = strftime('%a, %d %b %Y %H:%M:%S')
         return render_template('opresult.html', endpoints=endpoints,
                                userinfo=res['userinfo'],
                                access_token=res['token'],
-                               federation=fid, fe_expires=time_str)
+                               federation=statement.fo, fe_expires=time_str)
     else:
         return make_response(res['error'], 400)
 
