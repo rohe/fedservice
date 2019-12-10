@@ -15,17 +15,20 @@ class ESCache(object):
 
     def __getitem__(self, item):
         try:
-            entity_statement = self._db[item]
+            statement = self._db[item]
         except KeyError:
             return None
         else:
-            # verify that the statement is recent enough
-            _now = utc_time_sans_frac()
-            if _now < (entity_statement["exp"] - self.allowed_delta):
-                return entity_statement
+            if isinstance(statement, dict):
+                # verify that the statement is recent enough
+                _now = utc_time_sans_frac()
+                if _now < (statement["exp"] - self.allowed_delta):
+                    return statement
+                else:
+                    del self._db[item]
+                    return None
             else:
-                del self._db[item]
-                return None
+                return statement
 
     def __delitem__(self, key):
         del self._db[key]

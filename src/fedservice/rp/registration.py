@@ -1,6 +1,8 @@
 import logging
 
 from cryptojwt.jws.jws import factory
+
+from fedservice.entity_statement.collect import unverified_entity_statement
 from fedservice.entity_statement.policy import combine_policy
 
 from fedservice.entity_statement.policy import apply_policy
@@ -18,7 +20,7 @@ logger = logging.getLogger(__name__)
 class FedRegistration(Registration):
     msg_type = RegistrationRequest
     response_cls = RegistrationResponse
-    endpoint_name = 'federation_registration_endpoint'
+    endpoint_name = 'registration_endpoint'
     endpoint = 'registration'
     request_body_type = 'jose'
     response_body_type = 'jose'
@@ -53,8 +55,8 @@ class FedRegistration(Registration):
             iss=_fe.entity_id, sub=_fe.entity_id, metadata=_md, key_jar=_fe.key_jar,
             authority_hints=_fe.proposed_authority_hints)
 
-    def parse_response(self, info, my_metadata=None, sformat="", state="", **kwargs):
-        resp = self.parse_federation_registration_response(info, my_metadata, state=state)
+    def parse_response(self, info, sformat="", state="", **kwargs):
+        resp = self.parse_federation_registration_response(info, **kwargs)
 
         if not resp:
             logger.error('Missing or faulty response')
@@ -62,7 +64,7 @@ class FedRegistration(Registration):
 
         return resp
 
-    def parse_federation_registration_response(self, resp, my_metadata, **kwargs):
+    def parse_federation_registration_response(self, resp, **kwargs):
         """
         Receives a dynamic client registration response,
 
@@ -104,10 +106,11 @@ class FedRegistration(Registration):
         _policy = combine_policy(policy_chains_tup[0][1],
                                  entity_statement['metadata_policy'][_fe.entity_type])
         print("Combined policy: {}".format(_policy))
-        _sc.registration_response = apply_policy(my_metadata, _policy)
+        _query = unverified_entity_statement(kwargs["request_body"])["metadata"][_fe.entity_type]
+        _sc.registration_response = apply_policy(_query, _policy)
         return _sc.registration_response
 
-    def update_service_context(self, resp, state='', **kwargs):
-        Registration.update_service_context(self, resp, state, **kwargs)
+    def update_service_context(self, resp, **kwargs):
+        Registration.update_service_context(self, resp, **kwargs)
         _fe = self.service_context.federation_entity
         _fe.iss = resp['client_id']

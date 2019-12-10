@@ -1,5 +1,6 @@
 import logging
 
+from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
 from oidcendpoint.oidc import registration
 from oidcmsg.oidc import RegistrationRequest
@@ -33,11 +34,12 @@ class Registration(registration.Registration):
         """
         _fe = self.endpoint_context.federation_entity
 
+        request = as_unicode(request)
         _jwt = factory(request)
         payload = _jwt.jwt.payload()
 
         # collect trust chains
-        _tree = _fe.collect_statement_chains(payload['iss'], request)
+        _tree = _fe.collect_statement_chains(payload['iss'], payload)
         _node = {payload['iss']: (request, _tree)}
         _chains = branch2lists(_node)
         # verify the trust paths

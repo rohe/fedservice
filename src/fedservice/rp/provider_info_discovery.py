@@ -8,6 +8,7 @@ from oidcservice.exception import ResponseError
 from oidcservice.oidc.provider_info_discovery import ProviderInfoDiscovery
 
 from fedservice.entity_statement.collect import branch2lists
+from fedservice.entity_statement.collect import verify_self_signed_signature
 from fedservice.entity_statement.construct import map_configuration_to_preference
 from fedservice.entity_statement.utils import create_authority_hints
 from fedservice.entity_statement.verify import eval_chain
@@ -110,6 +111,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
                 _pinfo, _sc.client_preferences)
 
     def parse_response(self, info, sformat="", state="", **kwargs):
+        # returns a list of Statement instances
         resp = self.parse_federation_response(info, state=state)
 
         if not resp:
@@ -140,7 +142,10 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
 
         _fe = self.service_context.federation_entity
 
-        _tree = _fe.collect_statement_chains(entity_id, response)
+        metadata = verify_self_signed_signature(response)
+        _tree = _fe.collect_statement_chains(entity_id, metadata)
         _node = {entity_id: (response, _tree)}
         _chains = branch2lists(_node)
+        for c in _chains:
+            c.append(response)
         return [eval_chain(c, _fe.key_jar, 'openid_provider') for c in _chains]

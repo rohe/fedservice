@@ -131,9 +131,9 @@ DO_POLICY = {
 
 
 def combine_claim_policy(superior, child):
-    """ 
+    """
     Combine policy rules
-    
+
     :param superior: Superior policy
     :param child: Intermediates policy
     """
@@ -259,10 +259,24 @@ def apply_policy(metadata, policy):
             else:
                 pass
         elif "one_of" in policy[claim]:
-            if metadata[claim] in policy[claim]['one_of']:
-                pass
+            if isinstance(metadata[claim], list):
+                _claim = None
+                for c in metadata[claim]:
+                    if c in policy[claim]['one_of']:
+                        # Use the first that matches
+                        _claim = c
+                        break
+                if _claim:
+                    metadata[claim] = _claim
+                else:
+                    raise PolicyError(
+                        "None of {} among {}".format(metadata[claim], policy[claim]['one_of']))
             else:
-                raise PolicyError("{} not among {}".format(metadata[claim], policy[claim]['one_of']))
+                if metadata[claim] in policy[claim]['one_of']:
+                    pass
+                else:
+                    raise PolicyError(
+                        "{} not among {}".format(metadata[claim], policy[claim]['one_of']))
         elif "add" in policy[claim]:
             metadata[claim] = list(union(metadata[claim], policy[claim]['add']))
         elif "value" in policy[claim]:
@@ -293,7 +307,7 @@ def diff2policy(new, old):
         if new[claim] == old[claim]:
             continue
         else:
-            res[claim] = {'value':new[claim]}
+            res[claim] = {'value': new[claim]}
 
     for claim in set(new).difference(set(old)):
         if claim in ['contacts']:

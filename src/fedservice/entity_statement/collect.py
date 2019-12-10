@@ -6,6 +6,7 @@ import requests
 from cryptojwt import JWT
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
+from cryptojwt.jwt import utc_time_sans_frac
 
 from .cache import ESCache
 
@@ -72,13 +73,15 @@ def active(config):
 
 
 class Collector(object):
-    def __init__(self, trust_anchors, http_cli=None, insecure=False):
+    def __init__(self, trust_anchors, http_cli=None, insecure=False,
+                 allowed_delta=300):
         self.trusted_anchors = trust_anchors
         self.trusted_ids = set(trust_anchors.keys())
         self.config_cache = ESCache(300)
         self.entity_statement_cache = ESCache(300)
         self.http_cli = http_cli or requests.request
         self.insecure = insecure
+        self.allowed_delta = allowed_delta
 
     def get_entity_statement(self, api_endpoint, issuer, subject):
         """
@@ -106,7 +109,7 @@ class Collector(object):
         The configuration information is in the format of an Entity Statement
 
         :param entity_id: About whom the entity statement should be
-        :return: Configuration information
+        :return: Configuration information as a signed JWT
         """
         if self.insecure:
             kwargs = {"verify": False}
@@ -140,48 +143,74 @@ class Collector(object):
             fed_api_endpoint = None
 
         if not fed_api_endpoint:
-            entity_config = self.get_configuration_information(intermediate)
+            signed_entity_config = self.get_configuration_information(intermediate)
+            if signed_entity_config is None:
+                return None
+
+            entity_config = verify_self_signed_signature(signed_entity_config)
             fed_api_endpoint = get_api_endpoint(entity_config)
             # update cache
             self.config_cache[intermediate] = entity_config
 
         return fed_api_endpoint
 
-    def collect_intermediate(self, entity_id, intermediate, seen=None, max_superiors=1):
+    def collect_intermediate(self, entity_id, intermediate, seen=None, max_superiors=10):
         """
+        Collect information about an entity by another entity, the intermediate.
+        This consist of first find the fed_api_endpoint URL for the intermediate and then
+        asking the intermediate for its view of the entity.
 
-        :param entity_id: The ID of the starting point
+        :param entity_id: The ID of the entity
         :param intermediate: The immediate superior
         :param seen: A list of intermediates that this process has seen. This to capture
             loops. Also used to control the allowed depth.
         :param max_superiors: The maximum number of superiors.
         :return:
         """
+        # Should I stop when I reach the first trust anchor ?
+        if entity_id == intermediate and entity_id in self.trusted_anchors:
+            return None
+
         if seen is None:
             _seen = []
         else:
             _seen = seen[:]
 
         _seen.append(intermediate)
-        if len(_seen) > max_superiors:
-            logger.warning("Reached max superiors. The path here was {}".format(_seen))
-            return None
-
-        fed_api_endpoint = self.get_federation_api_endpoint(intermediate)
+        # if len(_seen) > max_superiors:
+        #     logger.warning("Reached max superiors. The path here was {}".format(_seen))
+        #     return None
 
         # Try to get the entity statement from the cache
         cache_key = "{}!!{}".format(intermediate, entity_id)
         entity_statement = self.entity_statement_cache[cache_key]
 
+        if entity_statement is not None:
+            _now = utc_time_sans_frac()
+            time_key = "{}!exp!{}".format(intermediate, entity_id)
+            _exp = self.entity_statement_cache[time_key]
+            if _now > (_exp - self.allowed_delta):
+                del self.entity_statement_cache[cache_key]
+                del self.entity_statement_cache[time_key]
+                entity_statement = None
+
         if entity_statement is None:
+            fed_api_endpoint = self.get_federation_api_endpoint(intermediate)
+            if fed_api_endpoint is None:
+                raise SystemError('Could not find federation_api endpoint')
             entity_statement = self.get_entity_statement(fed_api_endpoint, intermediate,
                                                          entity_id)
-            self.entity_statement_cache[cache_key] = entity_statement
-
-        if entity_statement:
             # entity_statement is a signed JWT
             statement = unverified_entity_statement(entity_statement)
-            return entity_statement, self.collect_superiors(intermediate, statement, seen=_seen,
+            self.entity_statement_cache[cache_key] = entity_statement
+            time_key = "{}!exp!{}".format(intermediate, entity_id)
+            self.entity_statement_cache[time_key] = statement["exp"]
+
+        if entity_statement:
+            intermediate_statement = self.config_cache[intermediate]
+            return entity_statement, self.collect_superiors(intermediate,
+                                                            intermediate_statement,
+                                                            seen=_seen,
                                                             max_superiors=max_superiors)
         else:
             return None
@@ -199,6 +228,8 @@ class Collector(object):
         :return: Dictionary of superiors
         """
         superior = {}
+        if seen is None:
+            seen = []
 
         if 'authority_hints' not in statement:
             return superior
@@ -217,6 +248,10 @@ class Collector(object):
 def branch2lists(node):
     res = []
     for issuer, branch in node.items():
+        if branch is None:
+            res.append([])
+            continue
+
         (statement, node) = branch
         if not node:
             res = [[statement]]
