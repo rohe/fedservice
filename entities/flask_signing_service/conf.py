@@ -5,8 +5,10 @@ KEY_DEF = [
     {"type": "EC", "crv": "P-256", "use": ["sig"]}
 ]
 
-PORT = 6000
 DOMAIN = '127.0.0.1'
+PORT = 6000
+# DOMAIN = '163.253.53.145'
+# PORT = 8080
 SERVER_NAME = '{}:{}'.format(DOMAIN, str(PORT))
 BASE_URL = 'https://{}'.format(SERVER_NAME)
 

@@ -16,7 +16,7 @@ for iss in os.listdir(BASE_PATH):
     if os.path.isdir(path):
         fse = FSEntityStatementAPI(iss, BASE_PATH)
         fse.make_entity_id = make_entity_id
-        fse.load_jwks(iss, iss)
+        fse.load_jwks(iss, iss, make_entity_id(iss))
         for sub in os.listdir(path):
             sub_path = os.path.join(path, sub)
             if os.path.isdir(sub_path):
