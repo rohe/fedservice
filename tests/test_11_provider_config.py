@@ -46,7 +46,7 @@ class TestEndpoint(object):
                 "anon": {
                     'acr': UNSPECIFIED,
                     "class": NoAuthn,
-                    "kwargs":{"user": "diana"}
+                    "kwargs": {"user": "diana"}
                 }
             },
             'template_dir': 'template'
@@ -80,22 +80,9 @@ class TestEndpoint(object):
                                        'metadata', 'iss', 'authority_hints'}
         assert set(payload['metadata'].keys()) == {'openid_relying_party'}
         assert set(payload['metadata']['openid_relying_party'].keys()) == {
-            'response_types_supported', 'claims_supported',
-            'claims_parameter_supported', 'grant_types_supported',
-            'token_endpoint_auth_signing_alg_values_supported',
-            'request_object_encryption_enc_values_supported',
-            'request_object_signing_alg_values_supported',
-            'request_uri_parameter_supported',
-            'userinfo_encryption_enc_values_supported',
-            'subject_types_supported', "jwks_uri",
-            'request_parameter_supported',
-            'id_token_encryption_alg_values_supported',
-            'require_request_uri_registration', 'acr_values_supported',
-            'claim_types_supported', 'version',
-            'userinfo_encryption_alg_values_supported',
-            'userinfo_signing_alg_values_supported',
-            'id_token_signing_alg_values_supported', 'issuer',
-            'request_object_encryption_alg_values_supported',
-            'token_endpoint_auth_methods_supported',
-            'id_token_encryption_enc_values_supported',
-            'response_modes_supported', 'scopes_supported'}
+            'acr_values_supported', 'claims_parameter_supported',
+            'claims_supported', 'grant_types_supported',
+            'id_token_encryption_alg_values_supported', 'id_token_encryption_enc_values_supported',
+            'id_token_signing_alg_values_supported', 'issuer', 'jwks_uri',
+            'request_parameter_supported', 'request_uri_parameter_supported',
+            'require_request_uri_registration', 'token_endpoint_auth_methods_supported', 'version'}

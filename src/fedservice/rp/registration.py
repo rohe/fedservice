@@ -95,13 +95,15 @@ class FedRegistration(Registration):
         # _sc.trust_path = (chosen.fo, _fe.op_paths[statement.fo][0])
         _sc.provider_info = self.response_cls(**op_claims)
 
-        # To create RPs metadata collect all the policies
+        # To create RPs metadata collect the trust chains
         tree = {}
         for ah in _fe.authority_hints:
             tree[ah] = _fe.collector.collect_intermediate(_fe.entity_id, ah)
 
         _node = {_fe.entity_id: (resp, tree)}
         chains = branch2lists(_node)
+
+        # Get the policies
         policy_chains_tup = [eval_policy_chain(c, _fe.key_jar, _fe.entity_type) for c in chains]
         _policy = combine_policy(policy_chains_tup[0][1],
                                  entity_statement['metadata_policy'][_fe.entity_type])

@@ -7,6 +7,7 @@ from cryptojwt.key_jar import build_keyjar
 
 from fedservice import FederationEntity
 from fedservice.entity_statement.collect import branch2lists
+from fedservice.entity_statement.collect import verify_self_signed_signature
 from fedservice.entity_statement.verify import eval_chain
 from tests.utils import DummyCollector
 from .utils import Publisher
@@ -43,7 +44,8 @@ class TestRpService(object):
 
     def test_get_configuration_information(self):
         entity_id = 'https://foodle.uninett.no'
-        msg = self.fedent.get_configuration_information(entity_id)
+        _jws = self.fedent.get_configuration_information(entity_id)
+        msg = verify_self_signed_signature(_jws)
         assert msg['iss'] == entity_id
 
     def test_load_entity_statement(self):

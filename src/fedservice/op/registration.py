@@ -52,8 +52,7 @@ class Registration(registration.Registration):
 
         # handle the registration request as in the non-federation case.
         req = RegistrationRequest(**statement.metadata)
-        response_info = registration.Registration.process_request(
-            self, req, authn=None, **kwargs)
+        response_info = registration.Registration.process_request(self, req, authn=None, **kwargs)
         if "response_args" in response_info:
             _policy = diff2policy(response_info['response_args'],
                                   payload['metadata'][_fe.opponent_entity_type])

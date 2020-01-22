@@ -170,8 +170,9 @@ class TestRpService(object):
         _info = self.service['registration'].get_request_parameters(
             request_body_type="jose", method="POST")
 
-        _jwt = factory(_info['body'])
-        payload = _jwt.jwt.payload()
+        # create the request
+        _req_jwt = factory(_info['body'])
+        payload = _req_jwt.jwt.payload()
 
         # The OP as federation entity
         _fe = _sc.federation_entity
@@ -198,8 +199,7 @@ class TestRpService(object):
             metadata={"federation_entity": {"trust_anchor_id": statements[0].fo}},
             authority_hints=['https://feide.no'])
 
-        claims = self.service['registration'].parse_response(
-            _jwt, my_metadata=payload['metadata'][_fe.entity_type])
+        claims = self.service['registration'].parse_response(_jwt, request_body=_info['body'])
 
         assert set(claims.keys()) == {
             'id_token_signed_response_alg', 'application_type', 'client_secret',

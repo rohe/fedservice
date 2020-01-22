@@ -19,8 +19,8 @@ def test_get_configuration_information():
     collector = DummyCollector(trusted_roots=ANCHOR,
                                httpd=Publisher(os.path.join(BASE_PATH, 'base_data')),
                                root_dir=os.path.join(BASE_PATH, 'base_data'))
-    entity_statement = collector.get_configuration_information(target)
-    assert entity_statement
+    _jws = collector.get_configuration_information(target)
+    entity_statement = verify_self_signed_signature(_jws)
     assert entity_statement['iss'] == target
     assert entity_statement['sub'] == target
     assert 'metadata' in entity_statement

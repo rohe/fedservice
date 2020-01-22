@@ -55,11 +55,16 @@ class DummyCollector(Collector):
         return super
 
     def get_configuration_information(self, subject_id):
+        """
+
+        :param subject_id:
+        :return: A signed JWT
+        """
         es_api = FSEntityStatementAPI(self.root_dir, iss=get_netloc(subject_id))
         jws = es_api.create_entity_statement(get_netloc(subject_id))
-
-        config = verify_self_signed_signature(jws)
-        return config
+        # config = verify_self_signed_signature(jws)
+        # return config
+        return jws
 
     def get_entity_statement(self, api_endpoint, issuer, subject):
         es_api = FSEntityStatementAPI(self.root_dir, iss=get_netloc(issuer))
