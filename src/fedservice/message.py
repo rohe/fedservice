@@ -1,6 +1,8 @@
 """ Classes and functions used to describe information in an OpenID Connect Federation."""
 import logging
 
+from cryptojwt.exception import Expired
+from cryptojwt.jwt import utc_time_sans_frac
 from oidcmsg.exception import MissingRequiredAttribute
 from oidcmsg.message import Message
 from oidcmsg.message import OPTIONAL_LIST_OF_SP_SEP_STRINGS
@@ -21,6 +23,8 @@ from oidcmsg.oidc import SINGLE_OPTIONAL_DICT
 from oidcmsg.oidc import deserialize_from_one_of
 from oidcmsg.oidc import dict_deser
 from oidcmsg.oidc import msg_ser_json
+
+from fedservice.exception import WrongSubject
 
 SINGLE_REQUIRED_DICT = (dict, True, msg_ser_json, dict_deser, False)
 
@@ -154,6 +158,8 @@ class OauthClientInformationResponse(OauthClientMetadata):
     })
 
     def verify(self, **kwargs):
+        super(OauthClientInformationResponse, self).verify(**kwargs)
+
         if "client_secret" in self:
             if "client_secret_expires_at" not in self:
                 raise MissingRequiredAttribute(
@@ -236,3 +242,32 @@ class EntityStatement(JsonWebToken):
         "crit": SINGLE_OPTIONAL_STRING,
         "policy_language_crit": OPTIONAL_LIST_OF_STRINGS
     })
+
+
+class TrustMark(JsonWebToken):
+    c_param = JsonWebToken.c_param.copy()
+    c_param.update({
+        "sub": SINGLE_REQUIRED_STRING,
+        'iss': SINGLE_REQUIRED_STRING,
+        'iat': SINGLE_REQUIRED_INT,
+        "id": SINGLE_REQUIRED_STRING,
+        "mark": SINGLE_OPTIONAL_STRING,
+        "exp": SINGLE_OPTIONAL_INT,
+        "ref": SINGLE_OPTIONAL_STRING
+    })
+
+    def verify(self, **kwargs):
+        super(TrustMark, self).verify(**kwargs)
+
+        entity_id = kwargs.get("entity_id")
+
+        if entity_id is not None and entity_id != self["sub"]:
+            raise WrongSubject("Mismatch between subject in trust mark and entity_id of entity")
+
+        exp = kwargs.get("exp", 0)
+        if exp:
+            _now = utc_time_sans_frac()
+            if _now > exp:  # have passed the time of expiration
+                raise Expired()
+
+        return True

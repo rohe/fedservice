@@ -1,11 +1,18 @@
 import logging
 
+from cryptojwt import as_unicode
+from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import KeyJar
 from cryptojwt.key_jar import init_key_jar
 
 from fedservice.entity_statement.collect import Collector
+from fedservice.entity_statement.collect import branch2lists
 from fedservice.entity_statement.create import create_entity_statement
+from fedservice.entity_statement.policy import apply_policy
+from fedservice.entity_statement.policy import combine_policy
+from fedservice.entity_statement.policy import gather_policies
 from fedservice.entity_statement.verify import eval_chain
+from fedservice.entity_statement.verify import eval_policy_chain
 from fedservice.utils import load_json
 
 __author__ = 'Roland Hedberg'
@@ -85,6 +92,28 @@ class FederationEntity(object):
         # in the priority list. So, just pick one
 
         return statements[0]
+
+    def get_payload(self, self_signed_statement):
+        _jws = as_unicode(self_signed_statement)
+        _jwt = factory(_jws)
+        return _jwt.jwt.payload()
+
+    def collect_metadata_statements(self, self_signed_statement, metadata_type):
+        """
+
+        :param self_signed_statement: A Self signed Entity Statement
+        :param metadata_type: One of the metadata types defined in the specification
+        :return:
+        """
+        payload = self.get_payload(self_signed_statement)
+
+        # collect trust chains
+        _tree = self.collect_statement_chains(payload['iss'], payload)
+        _node = {payload['iss']: (self_signed_statement, _tree)}
+        _chains = branch2lists(_node)
+
+        # verify the trust paths and apply policies
+        return [eval_chain(c, self.key_jar, metadata_type) for c in _chains]
 
 
 def create_federation_entity(entity_id, **kwargs):

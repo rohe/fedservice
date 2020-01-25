@@ -88,16 +88,20 @@ def eval_chain(chain, key_jar, entity_type, apply_policies=True):
     statement = Statement(exp=tp_exp, verified_chain=ves)
 
     if apply_policies:
-        # Combine the metadata policies from the trust root and all intermediates
-        combined_policy = gather_policies(ves[:-1], entity_type)
-        try:
-            metadata = ves[-1]['metadata'][entity_type]
-        except KeyError:
-            statement.metadata = None
+        if len(ves) > 1:
+            # Combine the metadata policies from the trust root and all intermediates
+            combined_policy = gather_policies(ves[:-1], entity_type)
+            try:
+                metadata = ves[-1]['metadata'][entity_type]
+            except KeyError:
+                statement.metadata = None
+            else:
+                # apply the combined metadata policies on the metadata
+                statement.metadata = apply_policy(metadata, combined_policy)
+                statement.combined_policy = combined_policy
         else:
-            # apply the combined metadata policies on the metadata
-            statement.metadata = apply_policy(metadata, combined_policy)
-            statement.combined_policy = combined_policy
+            statement.metadata = ves[0]["metadata"][entity_type]
+            statement.combined_policy = {}
     else:
         # accept what ever is in the statement provided by the leaf entity
         statement.metadata = ves[-1]

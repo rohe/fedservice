@@ -12,3 +12,11 @@ class NoTrustedClaims(FedServiceError):
 
 class DbFault(FedServiceError):
     pass
+
+
+class WrongSubject(FedServiceError):
+    pass
+
+
+class ConstraintError(FedServiceError):
+    pass

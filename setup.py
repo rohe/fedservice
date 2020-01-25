@@ -52,7 +52,8 @@ setup(
     license="Apache 2.0",
     url='https://github.com/IdentityPython/oidcservice/',
     packages=["fedservice", "fedservice/entity_statement", "fedservice/rp",
-              "fedservice/metadata_api", "fedservice/op"],
+              "fedservice/metadata_api", "fedservice/op",
+              "fedservice/op/add_on"],
     package_dir={"": "src"},
     classifiers=[
         "Development Status :: 4 - Beta",
