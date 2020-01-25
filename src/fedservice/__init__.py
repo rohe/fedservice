@@ -16,7 +16,7 @@ from fedservice.entity_statement.verify import eval_policy_chain
 from fedservice.utils import load_json
 
 __author__ = 'Roland Hedberg'
-__version__ = '0.5.0'
+__version__ = '0.6.0'
 
 logger = logging.getLogger(__name__)
 
