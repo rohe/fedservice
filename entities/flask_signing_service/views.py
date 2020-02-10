@@ -16,8 +16,10 @@ def send_js(path):
 
 @sigserv_views.route("/eid/<unit>/.well-known/openid-federation")
 def well_known(unit):
+    # self signed entity statement
     _srv = current_app.signing_service.issuer[unit]
-    return _srv.create_entity_statement(unit)
+    _x5c = current_app.signing_service.x5c
+    return _srv.create_entity_statement(unit, x5c=_x5c)
 
 
 @sigserv_views.route("/api/<unit>")

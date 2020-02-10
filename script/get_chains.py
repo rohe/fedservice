@@ -19,7 +19,7 @@ if __name__ == '__main__':
 
     trusted_roots = json.loads(open(args.trusted_roots_file).read())
 
-    # Creates an entiy that can do the collecting of information
+    # Creates an entity that can do the collecting of information
     federation_entity = FederationEntity(
         'issuer', trusted_roots=trusted_roots,
         entity_type=args.entity_type,

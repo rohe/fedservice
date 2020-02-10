@@ -87,7 +87,7 @@ class TestRpService(object):
 
     def test_1(self):
         _info = self.service['discovery'].get_request_parameters(iss='https://ntnu.no/op')
-        assert list(_info.keys()) == ['url']
+        assert set(_info.keys()) == {'url', 'iss'}
         p = urlparse(_info['url'])
         assert p.scheme == 'https'
         assert p.netloc == 'ntnu.no'

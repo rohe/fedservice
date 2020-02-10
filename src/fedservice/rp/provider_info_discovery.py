@@ -46,7 +46,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         _qurl = '{}://{}/.well-known/openid-federation?{}'.format(
             p.scheme, p.netloc, urlencode(qpart))
 
-        return {'url': _qurl}
+        return {'url': _qurl, 'iss': _iss}
 
     def store_federation_info(self, statement, trust_root_id):
         """
@@ -128,7 +128,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         For each Metadata statement that appears in the response, and was
         possible to parse, one
         :py:class:`fedservice.entity_statement.statement.Statement`
-        instance is store in the response by federation operator ID under the
+        instance is stored in the response by federation operator ID under the
         key 'fos'.
 
         :param response: A self-signed JWT containing an entity statement
@@ -149,3 +149,15 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         for c in _chains:
             c.append(response)
         return [eval_chain(c, _fe.key_jar, 'openid_provider') for c in _chains]
+
+    def get_response(self, *args, **kwargs):
+        """
+
+        :param args: Just ignore these
+        :param kwargs:
+        :return:
+        """
+
+        _fe = self.service_context.federation_entity
+        self_signed_config = _fe.collector.get_configuration_information(kwargs["iss"])
+        return self.parse_response(self_signed_config)

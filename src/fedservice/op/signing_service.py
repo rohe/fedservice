@@ -20,6 +20,7 @@ class SigningService:
     def __init__(self, conf, cwd=''):
         self.issuer = {}
         self.wd = cwd
+        self.web_cert_path = ""
         for attr, spec in conf.items():
             self.issuer[attr] = self.build_signing_service(spec)
 

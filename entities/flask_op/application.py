@@ -26,7 +26,7 @@ def init_oidc_op_endpoints(app):
     except KeyError:
         pass
 
-    federation_entity = create_federation_entity(**_server_info_config[
+    federation_entity = create_federation_entity(cwd=folder, **_server_info_config[
         'federation'])
 
     endpoint_context = EndpointContext(_server_info_config, keyjar=_kj,

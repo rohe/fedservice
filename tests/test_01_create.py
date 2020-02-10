@@ -36,7 +36,7 @@ def test_create_self_signed():
     sub = iss
 
     key_jar = build_keyjar(KEYSPEC, owner=iss)
-    authority = {"https://ntnu.no": ["https://feide.no"]}
+    authority = ["https://ntnu.no"]
 
     _jwt = create_entity_statement(iss, sub, key_jar, metadata=metadata, authority_hints=authority)
 

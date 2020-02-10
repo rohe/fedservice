@@ -15,18 +15,18 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 def init_oidc_rp_handler(app):
     oidc_keys_conf = app.config.get('OIDC_KEYS')
     _fed_conf = app.config.get('federation')
+
     verify_ssl = app.config.get('VERIFY_SSL')
+    http_args = {"verify": verify_ssl}
 
     _kj_args = {k: v for k, v in oidc_keys_conf.items() if k != 'uri_path'}
     _kj = init_key_jar(**_kj_args)
     _kj.import_jwks_as_json(_kj.export_jwks_as_json(True, ''),
                             _fed_conf['entity_id'])
-    _kj.verify_ssl = verify_ssl
+    _kj.httpc_params = http_args
 
-    federation_entity = create_federation_entity(**_fed_conf)
-    federation_entity.key_jar.verify_ssl = verify_ssl
-    if verify_ssl is False:
-        federation_entity.collector.insecure = True
+    federation_entity = create_federation_entity(http_args=http_args, **_fed_conf)
+    federation_entity.key_jar.httpc_params = http_args
 
     _path = oidc_keys_conf['uri_path']
     if _path.startswith('./'):
@@ -37,8 +37,7 @@ def init_oidc_rp_handler(app):
     rph = RPHandler(base_url=app.config.get('BASEURL'), hash_seed="BabyHoldOn",
                     keyjar=_kj, jwks_path=_path,
                     client_configs=app.config.get('clients'),
-                    services=app.config.get('SERVICES'),
-                    verify_ssl=verify_ssl,
+                    services=app.config.get('SERVICES'), http_args=http_args,
                     federation_entity=federation_entity)
 
     return rph

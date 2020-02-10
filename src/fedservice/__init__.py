@@ -4,6 +4,7 @@ from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import KeyJar
 from cryptojwt.key_jar import init_key_jar
+from oidcendpoint.util import importer
 
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.collect import branch2lists
@@ -25,8 +26,9 @@ class FederationEntity(object):
     def __init__(self, entity_id, trusted_roots, authority_hints=None,
                  key_jar=None, default_lifetime=86400, httpd=None,
                  priority=None, entity_type='', opponent_entity_type='',
-                 registration_type=''):
-        self.collector = Collector(trust_anchors=trusted_roots, http_cli=httpd)
+                 registration_type='', cwd='', http_args=None):
+        self.collector = Collector(trust_anchors=trusted_roots, http_cli=httpd, cwd=cwd,
+                                   httpc_params=http_args)
         self.entity_id = entity_id
         self.entity_type = entity_type
         self.opponent_entity_type = opponent_entity_type
@@ -116,8 +118,8 @@ class FederationEntity(object):
         return [eval_chain(c, self.key_jar, metadata_type) for c in _chains]
 
 
-def create_federation_entity(entity_id, **kwargs):
-    args = {}
+def create_federation_entity(entity_id, http_args=None, **kwargs):
+    args = {"http_args": http_args}
     for param in ['trusted_roots', 'authority_hints']:
         try:
             args[param] = load_json(kwargs[param])
@@ -129,10 +131,20 @@ def create_federation_entity(entity_id, **kwargs):
                                        owner=entity_id)
 
     for param in ['entity_type', 'priority', 'opponent_entity_type',
-                  'registration_type']:
+                  'registration_type', 'cwd']:
         try:
             args[param] = kwargs[param]
         except KeyError:
             pass
 
-    return FederationEntity(entity_id, **args)
+    federation_entity = FederationEntity(entity_id, **args)
+
+    add_ons = kwargs.get("add_on")
+    for spec in add_ons.values():
+        if isinstance(spec["function"], str):
+            _func = importer(spec["function"])
+        else:
+            _func = spec["function"]
+        _func(federation_entity, **spec["kwargs"])
+
+    return federation_entity

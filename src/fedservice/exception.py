@@ -20,3 +20,7 @@ class WrongSubject(FedServiceError):
 
 class ConstraintError(FedServiceError):
     pass
+
+
+class UnknownCertificate(FedServiceError):
+    pass

@@ -2,6 +2,7 @@
 import logging
 import os
 
+from cryptojwt.jwk import pems_to_x5c
 from flask import Flask
 
 from fedservice.op.signing_service import SigningService
@@ -60,5 +61,12 @@ if __name__ == "__main__":
     web_conf = _conf['webserver']
     ssl_context = (web_conf['cert'].format(dir_path),
                    web_conf['key'].format(dir_path))
+
+    app.signing_service.cwd = dir_path
+
+    with open(web_conf['cert'].format(dir_path), 'r') as fp:
+        pem = fp.read()
+        app.signing_service.x5c = pems_to_x5c([pem])
+
     app.run(host=app.config.get('DOMAIN'), port=app.config.get('PORT'),
             debug=True, ssl_context=ssl_context)

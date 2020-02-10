@@ -22,8 +22,9 @@ class EntityStatementAPI:
     def make_entity_id(self, netloc):
         return self.entity_id_pattern.format(netloc)
 
-    def create_entity_statement(self, sub):
+    def create_entity_statement(self, sub, **kwargs):
         _info = self.gather_info(sub)
+        _info.update(kwargs)
         if sub.startswith("https"):
             return create_entity_statement(self.make_entity_id(self.iss), unquote_plus(sub),
                                            self.keyjar, **_info)

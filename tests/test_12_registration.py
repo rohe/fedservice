@@ -188,7 +188,7 @@ class TestEndpoint(object):
                                     'client_secret', 'grant_types', 'client_secret_expires_at'}
 
     def test_automatic_registration_new_client_id(self):
-        # This is cheating. Getting the OP provider info
+        # This is cheating. Getting the OP's provider info
         _fe = self.service['registration'].service_context.federation_entity
         statement = Statement()
         statement.metadata = self.registration_endpoint.endpoint_context.provider_info
@@ -224,7 +224,7 @@ class TestEndpoint(object):
             ENTITY_ID
         )
 
-        # THe OP handles the authorization request
+        # The OP handles the authorization request
         req = self.authorization_endpoint.parse_request(authn_request.to_dict())
         assert "response_type" in req
 

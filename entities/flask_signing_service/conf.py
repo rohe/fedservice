@@ -46,8 +46,8 @@ CONFIG = {
         }
     },
     'webserver': {
-        'cert': '{}/certs/cert.pem',
-        'key': '{}/certs/key.pem',
+        'cert': '{}/certs/example.crt',
+        'key': '{}/certs/example.key',
         'cert_chain': '',
         'port': PORT,
     }
