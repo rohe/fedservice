@@ -8,7 +8,7 @@ from time import localtime, strftime
 from urllib.parse import parse_qs
 
 import cherrypy
-from jwkest import as_bytes
+from cryptojwt.utils import as_bytes
 
 logger = logging.getLogger(__name__)
 
