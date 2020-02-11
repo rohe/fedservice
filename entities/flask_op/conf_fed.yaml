@@ -1,0 +1,153 @@
+# TODO: the following four should be handled in settings.py
+session_cookie_name: floop
+base_url: &base_url 'https://127.0.0.1:5000'
+
+provider:
+  key_defs:
+  - type: RSA
+    use:
+    - sig
+  - crv: P-256
+    type: EC
+    use:
+    - sig
+
+op:
+    server_info:
+      authentication:
+        anon:
+          acr: urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified
+          class: oidcendpoint.user_authn.user.NoAuthn
+          kwargs:
+            user: diana
+        user:
+          acr: urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocolPassword
+          class: oidcendpoint.user_authn.user.UserPassJinja2
+          kwargs:
+            db:
+              class: oidcendpoint.util.JSONDictDB
+              kwargs:
+                json_path: passwd.json
+            page_header: 'Testing log in'
+            passwd_label: 'Secret sauce'
+            submit_btn: 'Get me in!'
+            template: user_pass.jinja2
+            user_label: 'Nickname'
+          verify_endpoint: 'verify/user'
+      capabilities:
+        grant_types_supported:
+        - authorization_code
+        - implicit
+        - urn:ietf:params:oauth:grant-type:jwt-bearer
+        - refresh_token
+        subject_types_supported:
+        - public
+        - pairwise
+      cookie_dealer:
+        class: oidcendpoint.cookie.CookieDealer
+        default_values:
+          domain: 127.0.0.1
+          max_age: 3600
+          name: oidc_op
+          path: /
+        sign_alg: SHA256
+        sign_jwk: private/cookie_sign_jwk.json
+      endpoint:
+        authorization:
+          class: fedservice.op.authorization.Authorization
+          kwargs:
+            claims_parameter_supported: true
+            request_parameter_supported: true
+            request_uri_parameter_supported: true
+            response_modes_supported:
+            - query
+            - fragment
+            - form_post
+            response_types_supported:
+            - code
+            - token
+            - id_token
+            - code token
+            - code id_token
+            - id_token token
+            - code token id_token
+            - none
+          path: authorization
+        federation_registration:
+          class: fedservice.op.registration.Registration
+          kwargs:
+            client_authn_method: null
+          path: fed_registration
+        provider_info:
+          class: fedservice.op.provider_config.ProviderConfiguration
+          kwargs:
+            client_authn_method: null
+          path: ".well-known/openid-federation"
+        registration:
+          class: oidcendpoint.oidc.registration.Registration
+          kwargs:
+            client_authn_method: null
+          path: registration
+        token:
+          class: oidcendpoint.oidc.token.AccessToken
+          kwargs:
+            client_authn_method:
+            - client_secret_post
+            - client_secret_basic
+            - client_secret_jwt
+            - private_key_jwt
+          path: token
+        userinfo:
+          class: oidcendpoint.oidc.userinfo.UserInfo
+          kwargs:
+            claim_types_supported:
+            - normal
+            - aggregated
+            - distributed
+          path: userinfo
+        webfinger:
+          class: oidcendpoint.oidc.discovery.Discovery
+          kwargs:
+            client_authn_method: null
+          path: ".well-known/webfinger"
+      federation:
+        authority_hints: authority_hints.json
+        entity_id: https://127.0.0.1:5000
+        entity_type: openid_provider
+        opponent_entity_type: openid_relying_party
+        priority: []
+        signing_keys:
+          key_defs: &id001
+          - type: RSA
+            use:
+            - sig
+          - crv: P-256
+            type: EC
+            use:
+            - sig
+          private_path: fed_keys.json
+          public_path: pub_fed_keys.json
+        trusted_roots: trusted_roots.json
+      grant_expires_in: 300
+      issuer: "https://127.0.0.1:5000"
+      jwks:
+        key_defs: *id001
+        private_path: private/jwks.json
+        public_path: static/jwks.json
+      password: "mycket hemlig information"
+      refresh_token_expires_in: 86400
+      template_dir: templates
+      token_expires_in: 600
+      userinfo:
+        class: oidcendpoint.user_info.UserInfo
+        kwargs:
+          db_file: users.json
+      verify_ssl: false
+
+webserver:
+  domain: '127.0.0.1'
+  debug: true
+  cert: 'certs/cert.pem'
+  cert_chain: ''
+  key: 'certs/key.pem'
+  port: 5000

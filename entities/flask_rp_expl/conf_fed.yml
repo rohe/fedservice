@@ -1,0 +1,171 @@
+PORT: 4000
+BASEURL: https://localhost:4000
+
+SERVER_CERT: certs/cert.pem
+SERVER_KEY: certs/key.pem
+CA_BUNDLE: ''
+
+SESSION_COOKIE_NAME: florp_session
+HTML_HOME: html
+PREFERRED_URL_SCHEME: https
+PUBLIC_JWKS_PATH: https://localhost:4000/./static/jwks.json
+SECRET_KEY: secret_key
+
+VERIFY_SSL: false
+
+KEYDEFS:
+- key: ''
+  type: RSA
+  use:
+  - sig
+- crv: P-256
+  type: EC
+  use:
+  - sig
+
+
+RP_KEYS:
+  key_defs:
+  - key: ''
+    type: RSA
+    use:
+    - sig
+  - crv: P-256
+    type: EC
+    use:
+    - sig
+  private_path: ./priv/jwks.json
+  public_path: ./static/jwks.json
+
+services: &services
+  AccessToken: {}
+  Authorization: {}
+  FedProviderInfoDiscovery: {}
+  FedRegistrationRequest: {}
+  RefreshAccessToken: {}
+  UserInfo: {}
+
+USERINFO: true
+
+# information used when registering the client, this may be the same for all OPs
+CLIENT_CONFIG:
+    client_preferences: &prefs
+      application_name: rphandler
+      application_type: web
+      contacts:
+      - ops@example.com
+      response_types:
+      - code
+      - id_token
+      - id_token token
+      - code id_token
+      - code id_token token
+      - code token
+      scope:
+      - openid
+      - profile
+      - email
+      - address
+      - phone
+      token_endpoint_auth_method:
+      - client_secret_basic
+      - client_secret_post
+    federation:
+      authority_hints: authority_hints.json
+      entity_id: https://localhost:4000
+      entity_type: openid_relying_party
+      opponent_entity_type: openid_provider
+      priority: []
+      signing_keys:
+        key_defs:
+        - key: ''
+          type: RSA
+          use:
+          - sig
+        - crv: P-256
+          type: EC
+          use:
+          - sig
+        private_path: fed_keys.json
+        public_path: pub_fed_keys.json
+      trusted_roots: trusted_roots.json
+    issuer: https://catalogix.se
+    services:
+      AccessToken: {}
+      Authorization: {}
+      FedProviderInfoDiscovery: {}
+      FedRegistrationRequest: {}
+      RefreshAccessToken: {}
+      UserInfo: {}
+      WebFinger: {}
+
+CLIENTS:
+  # The ones that support webfinger, OP discovery and client registration
+  # This is the default, any client that is not listed here is expected to
+  # support dynamic discovery and registration.
+  "":
+    client_preferences: *prefs
+    application_name: rphandler
+    application_type: web
+    contacts:
+      - ops@example.com
+    response_types:
+      - code
+      - id_token
+      - id_token token
+      - code id_token
+      - code id_token token
+      - code token
+    scope:
+      - openid
+      - profile
+      - email
+      - address
+      - phone
+    token_endpoint_auth_method:
+      - client_secret_basic
+      - client_secret_post
+    federation:
+      authority_hints: authority_hints.json
+      entity_id: https://localhost:4000
+      entity_type: openid_relying_party
+      opponent_entity_type: openid_provider
+      priority: []
+      signing_keys:
+        key_defs:
+        - key: ''
+          type: RSA
+          use:
+          - sig
+        - crv: P-256
+          type: EC
+          use:
+          - sig
+        private_path: fed_keys.json
+        public_path: pub_fed_keys.json
+      trusted_roots: trusted_roots.json
+    issuer: https://catalogix.se
+    services: *services
+
+
+# CLIENT_PREFS:
+  # application_name: rphandler
+  # application_type: web
+  # contacts:
+  # - ops@example.com
+  # response_types:
+  # - code
+  # - id_token
+  # - id_token token
+  # - code id_token
+  # - code id_token token
+  # - code token
+  # scope:
+  # - openid
+  # - profile
+  # - email
+  # - address
+  # - phone
+  # token_endpoint_auth_method:
+  # - client_secret_basic
+  # - client_secret_post

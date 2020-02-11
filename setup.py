@@ -66,8 +66,7 @@ setup(
         "cryptojwt>=0.7.13",
         'oidcmsg>=0.6.6',
         'oidcservice>=0.6.7',
-        'oidcendpoint>=0.12.2',
-        'pyjwkest>=1.4.0'
+        'oidcendpoint>=0.12.2'
     ],
     tests_require=[
         "responses",

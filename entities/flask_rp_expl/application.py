@@ -13,14 +13,15 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
 def init_oidc_rp_handler(app):
-    oidc_keys_conf = app.config.get('OIDC_KEYS')
-    _fed_conf = app.config.get('federation')
+    oidc_keys_conf = app.config.get('RP_KEYS')
+    _fed_conf = app.config['CLIENT_CONFIG'].get('federation')
 
     verify_ssl = app.config.get('VERIFY_SSL')
     http_args = {"verify": verify_ssl}
 
-    _kj_args = {k: v for k, v in oidc_keys_conf.items() if k != 'uri_path'}
+    _kj_args = {k: v for k, v in oidc_keys_conf.items() if k != 'public_path'}
     _kj = init_key_jar(**_kj_args)
+
     _kj.import_jwks_as_json(_kj.export_jwks_as_json(True, ''),
                             _fed_conf['entity_id'])
     _kj.httpc_params = http_args
@@ -28,7 +29,7 @@ def init_oidc_rp_handler(app):
     federation_entity = create_federation_entity(http_args=http_args, **_fed_conf)
     federation_entity.key_jar.httpc_params = http_args
 
-    _path = oidc_keys_conf['uri_path']
+    _path = oidc_keys_conf['public_path']
     if _path.startswith('./'):
         _path = _path[2:]
     elif _path.startswith('/'):
@@ -47,7 +48,7 @@ def oidc_provider_init_app(config_file, name=None, **kwargs):
     name = name or __name__
     app = Flask(name, static_url_path='', **kwargs)
 
-    if config_file.endswith('.yaml'):
+    if config_file.endswith('.yml'):
         app.config.update(load_yaml_config(config_file))
     elif config_file.endswith('.py'):
         app.config.from_pyfile(os.path.join(dir_path, config_file))

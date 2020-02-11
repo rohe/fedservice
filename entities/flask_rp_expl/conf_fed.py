@@ -18,13 +18,13 @@ SESSION_COOKIE_NAME = 'florp_session'
 
 PREFERRED_URL_SCHEME = 'https'
 
-OIDC_KEYS = {
+RP_KEYS = {
     'private_path': "./priv/jwks.json",
     'key_defs': KEYDEFS,
     'public_path': './static/jwks.json'
 }
 
-PUBLIC_JWKS_PATH = '{}/{}'.format(BASEURL, OIDC_KEYS['public_path'])
+PUBLIC_JWKS_PATH = '{}/{}'.format(BASEURL, RP_KEYS['public_path'])
 
 # information used when registering the client, this may be the same for all OPs
 

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import logging
 import os
 import ssl
@@ -11,7 +13,7 @@ try:
 except ImportError:
     import application
 
-logger = logging.getLogger("")
+logger = logging.getLogger(__name__)
 LOGFILE_NAME = 'florp.log'
 hdlr = logging.FileHandler(LOGFILE_NAME)
 base_formatter = logging.Formatter(

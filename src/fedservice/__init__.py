@@ -139,7 +139,7 @@ def create_federation_entity(entity_id, http_args=None, **kwargs):
 
     federation_entity = FederationEntity(entity_id, **args)
 
-    add_ons = kwargs.get("add_on")
+    add_ons = kwargs.get("add_on", {})
     for spec in add_ons.values():
         if isinstance(spec["function"], str):
             _func = importer(spec["function"])
