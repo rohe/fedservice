@@ -1,18 +1,14 @@
 import os
 
+from cryptojwt.key_jar import init_key_jar
+from flask.app import Flask
+from oidcrp.util import get_http_params
 from oidcservice.util import load_yaml_config
 
+from fedservice import create_federation_entity
 from fedservice.rp import RPHandler
 
-from fedservice import create_federation_entity
-from flask.app import Flask
-
-from cryptojwt.key_jar import init_key_jar
-
-from fedservice.utils import get_http_params
-
 dir_path = os.path.dirname(os.path.realpath(__file__))
-
 
 
 def init_oidc_rp_handler(app):

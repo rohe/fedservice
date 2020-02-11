@@ -4,11 +4,12 @@ import json
 import logging
 import os
 import ssl
-import sys
 
 import OpenSSL
 import werkzeug
 from oidcop.configure import Configuration
+from oidcop.utils import create_context
+from oidcop.utils import lower_or_upper
 
 try:
     from .application import oidc_provider_init_app
@@ -16,7 +17,6 @@ except (ModuleNotFoundError, ImportError):
     from application import oidc_provider_init_app
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-
 
 logger = logging.getLogger(__name__)
 
@@ -59,33 +59,9 @@ def main(config_file, args):
 
     web_conf = config.webserver
 
+    context = create_context(dir_path, web_conf, purpose=ssl.Purpose.CLIENT_AUTH)
+
     kwargs = {}
-    _cert = web_conf['cert'].format(dir_path)
-    _key = web_conf['key'].format(dir_path)
-
-    context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
-
-    _verify_user = web_conf.get("verify_user")
-    if _verify_user:
-        if _verify_user == "required":
-            context.verify_mode = ssl.CERT_REQUIRED
-        elif _verify_user == "optional":
-            context.verify_mode = ssl.CERT_OPTIONAL
-        else:
-            sys.exit("Unknown verify_user option. Details: {}".format(e))
-
-        kwargs["request_handler"] = PeerCertWSGIRequestHandler
-
-        _ca_bundle = app.config.get("cert_chain")
-        if _ca_bundle:
-            context.load_verify_locations(_ca_bundle)
-    else:
-        context.verify_mode = ssl.CERT_NONE
-
-    try:
-        context.load_cert_chain(_cert, _key)
-    except Exception as e:
-        sys.exit("Error starting flask server. Missing cert or key. Details: {}".format(e))
 
     if args.display:
         print(json.dumps(app.endpoint_context.provider_info, indent=4, sort_keys=True))
@@ -94,8 +70,8 @@ def main(config_file, args):
     if args.insecure:
         app.endpoint_context.federation_entity.collector.insecure = True
 
-    app.endpoint_context.federation_entity.collector.web_cert_path = web_conf['cert'].format(
-        dir_path)
+    _cert = "{}/{}".format(dir_path, lower_or_upper(web_conf, "server_cert"))
+    app.endpoint_context.federation_entity.collector.web_cert_path = _cert
 
     app.run(host=web_conf['domain'], port=web_conf['port'],
             debug=web_conf['debug'], ssl_context=context,

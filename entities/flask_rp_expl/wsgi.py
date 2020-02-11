@@ -1,13 +1,11 @@
 import logging
 import os
-import ssl
 import sys
 
 import OpenSSL
 import werkzeug
-
-from fedservice.utils import create_context
-from fedservice.utils import lower_or_upper
+from oidcrp.util import create_context
+from oidcrp.util import lower_or_upper
 
 try:
     from . import application

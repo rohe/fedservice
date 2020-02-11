@@ -5,11 +5,11 @@ import sys
 
 from cryptojwt.jwk import pems_to_x5c
 from flask import Flask
+from oidcop.utils import create_context
 from oidcop.utils import load_yaml_config
+from oidcop.utils import lower_or_upper
 
 from fedservice.op.signing_service import SigningService
-from fedservice.utils import create_context
-from fedservice.utils import lower_or_upper
 
 NAME = 'sign_serv'
 

@@ -35,7 +35,7 @@ key_def: &key_def
     use:
       - sig
 
-OIDC_KEYS: &oidc_keys
+oidc_keys: &oidc_keys
   private_path: "private/jwks.json"
   key_defs: *key_def
   public_path: 'static/jwks.json'
@@ -47,7 +47,8 @@ OIDC_KEYS: &oidc_keys
 op:
   server_info:
     issuer: *base_url
-    verify_ssl: False
+    http_params:
+      verify_ssl: false
     session_key:
       filename: private/session_jwk.json
       type: OCT
@@ -251,12 +252,12 @@ op:
       entity_type: openid_provider
       opponent_entity_type: openid_relying_party
       add_on:
-        mtls:
-          function: fedservice.op.add_on.mtls.add_mtls_support
+        ssc:
+          function: fedservice.op.add_on.ssc.add_ssc_support
           kwargs:
-            mtls_dir: mtls
-            client_cert: '{}/certs/example.crt'
-            client_key: '{}/certs/example.key'
+            ssc_dir: ssc
+#            client_cert: '{}/certs/example.crt'
+#            client_key: '{}/certs/example.key'
     # this adds PKCE support as mandatory - disable if needed
     add_on:
       pkce:
@@ -288,4 +289,3 @@ webserver:
   port: *port
   domain: *domain
   debug: true
-  verify_user: false

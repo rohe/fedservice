@@ -1,7 +1,7 @@
 baseurl: &base "https://localhost:4001"
 
 http_params:
-  verify_ssl: False
+  verify_ssk: False
 
 keydefs: &keydef
   -
@@ -57,7 +57,7 @@ services: &services
     kwargs: {}
 
 federation: &federation
-  entity_id: "https://127.0.0.1:4000"
+  entity_id: *base
   signing_keys:
     private_path: 'private/fed_keys.json'
     key_defs: *keydef
@@ -68,7 +68,6 @@ federation: &federation
   priority: []
   entity_type: openid_relying_party
   opponent_entity_type: openid_provider
-
   add_on:
     ssc:
       function: fedservice.op.add_on.ssc.add_ssc_support
@@ -87,25 +86,11 @@ clients:
     client_preferences: *prefs
     redirect_uris: None
     services: *services
-    add_on:
-      pushed_auth:
-        function: oidcservice.oidc.add_on.pushed_authorization.add_pushed_authorization_support
-        kwargs:
-          body_format: jws
-          signing_algorthm: RS256
-          merge_rule: strict
   # Supports OP information lookup but not client registration
   local:
     issuer: "https://127.0.0.1:5000"
     client_preferences: *prefs
     services: *services
-    add_on:
-      pushed_auth:
-        function: oidcservice.oidc.add_on.pushed_authorization.add_pushed_authorization_support
-        kwargs:
-          body_format: jws
-          signing_algorthm: RS256
-          merge_rule: strict
 
 webserver:
   port: 4001
