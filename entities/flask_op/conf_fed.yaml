@@ -283,8 +283,8 @@ op:
             - eduperson_scoped_affiliation
 
 webserver:
-  cert: '{}/certs/example.crt'
-  key: '{}/certs/example.key'
+  server_cert: 'certs/cert.pem'
+  server_key: 'certs/key.pem'
   cert_chain: null
   port: *port
   domain: *domain
