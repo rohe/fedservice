@@ -72,7 +72,8 @@ if __name__ == "__main__":
     context = create_context(dir_path, _web_conf)
     _cert = "{}/{}".format(dir_path, lower_or_upper(_web_conf, "server_cert"))
 
-    
+
     app.rph.federation_entity.collector.web_cert_path = _cert
-    app.run(host='127.0.0.1', port=app.config['webserver'].get('port'), debug=True, ssl_context=context,
+    app.run(host='127.0.0.1', port=app.config['webserver'].get('port', 4000),
+            debug=True, ssl_context=context,
             request_handler=PeerCertWSGIRequestHandler)

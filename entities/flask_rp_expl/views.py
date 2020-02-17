@@ -46,7 +46,6 @@ def rp():
             args = {'user_id': uid}
         else:
             args = {}
-
         try:
             result = current_app.rph.begin(link, **args)
         except Exception as err:
