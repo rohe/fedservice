@@ -1,7 +1,7 @@
 baseurl: &base "https://localhost:4000"
 
 http_params:
-  verify_ssl: False
+  verify: false
 
 keydefs: &keydef
   -
@@ -108,4 +108,3 @@ webserver:
   server_key: "certs/key.pem"
   ca_bundle: ''
   domain: '127.0.0.1'
-

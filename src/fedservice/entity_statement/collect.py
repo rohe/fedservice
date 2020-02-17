@@ -164,7 +164,13 @@ class Collector(object):
         :return: Signed EntityStatement
         """
 
-        response = self.http_cli("GET", url, **httpc_args)
+        try:
+            response = self.http_cli("GET", url, **httpc_args)
+        except requests.exceptions.SSLError:
+            logger.warn("{} it's a self-signed certificate. The SSL verification is disabled".format(httpc_args['verify']))
+            httpc_args['verify'] = False
+            response = self.http_cli("GET", url, **httpc_args)
+
         if response.status_code == 200:
             return response.text
         elif response.status_code == 404:
@@ -185,7 +191,6 @@ class Collector(object):
         :return:
         """
         httpc_args = self.httpc_params.copy()
-
         # have I seen it before
         cert_path = self.get_cert_path(entity_id)
 
@@ -200,10 +205,14 @@ class Collector(object):
                 # to verify the HTTPS certificate
                 cert_path = self.store_ssc_cert(unverified_entity_statement(_signed_entity_statement),
                                                  entity_id)
+                logger.debug("Cert path created {} ".format(cert_path))
             else:  # out of luck
                 raise UnknownCertificate(entity_id)
 
-        httpc_args["verify"] = cert_path
+        if self_signed:
+            httpc_args["verify"] = False
+        else:
+            httpc_args["verify"] = cert_path
         _signed_entity_statement = self.get_signed_entity_statement(url, httpc_args)
 
         return _signed_entity_statement
