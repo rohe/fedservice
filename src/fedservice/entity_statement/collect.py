@@ -164,12 +164,13 @@ class Collector(object):
         :return: Signed EntityStatement
         """
 
-        try:
-            response = self.http_cli("GET", url, **httpc_args)
-        except requests.exceptions.SSLError:
-            logger.warn("{} it's a self-signed certificate. The SSL verification is disabled".format(httpc_args['verify']))
-            httpc_args['verify'] = False
-            response = self.http_cli("GET", url, **httpc_args)
+        response = self.http_cli("GET", url, **httpc_args)
+        # try:
+            # response = self.http_cli("GET", url, **httpc_args)
+        # except requests.exceptions.SSLError:
+            # logger.warn("{} it's a self-signed certificate. The SSL verification is disabled".format(httpc_args['verify']))
+            # httpc_args['verify'] = False
+            # response = self.http_cli("GET", url, **httpc_args)
 
         if response.status_code == 200:
             return response.text
