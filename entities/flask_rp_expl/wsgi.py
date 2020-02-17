@@ -1,10 +1,13 @@
+#!/usr/bin/env python3
+
 import logging
 import os
-import ssl
 import sys
 
 import OpenSSL
 import werkzeug
+from oidcrp.util import create_context
+from oidcrp.util import lower_or_upper
 
 try:
     from . import application
@@ -65,27 +68,11 @@ if __name__ == "__main__":
     app = application.oidc_provider_init_app(conf, name,
                                              template_folder=template_dir)
 
-    _cert = "{}/{}".format(dir_path, app.config["SERVER_CERT"])
-    _key = "{}/{}".format(dir_path, app.config["SERVER_KEY"])
+    _web_conf = app.config.get("webserver")
+    context = create_context(dir_path, _web_conf)
+    _cert = "{}/{}".format(dir_path, lower_or_upper(_web_conf, "server_cert"))
 
-    context = ssl.SSLContext()  # PROTOCOL_TLS by default
-
-    _verify_user = app.config.get("VERIFY_USER")
-    if _verify_user:
-        context.verify_mode = ssl.CERT_REQUIRED
-        _ca_bundle = app.config.get("CA_BUNDLE", "")
-        if _ca_bundle:
-            context.load_verify_locations(_ca_bundle)
-    else:
-        context.verify_mode = ssl.CERT_NONE
-
-    try:
-        context.load_cert_chain(_cert, _key)
-    except Exception as e:
-        sys.exit("Error starting flask server. " +
-                 "Missing cert or key. Details: {}"
-                 .format(e))
-
+    
     app.rph.federation_entity.collector.web_cert_path = _cert
-    app.run(host='127.0.0.1', port=app.config.get('PORT'), debug=True, ssl_context=context,
+    app.run(host='127.0.0.1', port=app.config['webserver'].get('port'), debug=True, ssl_context=context,
             request_handler=PeerCertWSGIRequestHandler)

@@ -1,5 +1,9 @@
 import logging
 import os
+import sys
+
+from oidcrp.util import create_context
+from oidcrp.util import lower_or_upper
 
 try:
     from . import application
@@ -15,16 +19,22 @@ base_formatter = logging.Formatter(
 hdlr.setFormatter(base_formatter)
 logger.addHandler(hdlr)
 logger.setLevel(logging.DEBUG)
-
-dir_path = os.path.dirname(os.path.realpath(__file__))
-
-template_dir = os.path.join(dir_path, 'templates')
-
-name = 'oidc_rp'
-app = application.oidc_provider_init_app(name, template_folder=template_dir)
 logging.basicConfig(level=logging.DEBUG)
 
+
 if __name__ == "__main__":
-    app.run(host='127.0.0.1', port=app.config.get('PORT'),
-            debug=True, ssl_context=('{}/certs/cert.pem'.format(dir_path),
-                                     '{}/certs/key.pem'.format(dir_path)))
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    conf = sys.argv[1]
+    name = 'oidc_auto_rp'
+    template_dir = os.path.join(dir_path, 'templates')
+    app = application.oidc_provider_init_app(conf, name,
+                                             template_folder=template_dir)
+
+    _web_conf = app.config.get("webserver")
+    context = create_context(dir_path, _web_conf)
+    _cert = "{}/{}".format(dir_path, lower_or_upper(_web_conf, "server_cert"))
+
+    app.rph.federation_entity.collector.web_cert_path = _cert
+    app.run(host=_web_conf.get('domain'), port=_web_conf.get('port'), debug=True,
+            ssl_context=context)
+

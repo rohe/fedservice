@@ -3,11 +3,10 @@ import os
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
+from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import KeyJar
-from jwkest.jws import factory
 
 from fedservice.entity_statement.collect import Collector
-from fedservice.entity_statement.collect import verify_self_signed_signature
 from fedservice.metadata_api.fs2 import FSEntityStatementAPI
 
 

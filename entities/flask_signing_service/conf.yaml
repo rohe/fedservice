@@ -1,0 +1,40 @@
+keydefs:
+  - 'type': 'RSA'
+    'key': ''
+    'use': ['sig']
+  - 'type': 'EC'
+    'crv': 'P-256'
+    'use': ['sig']
+
+server_info:
+  swamid.se:
+    class: fedservice.metadata_api.fs2.FSEntityStatementAPI
+    kwargs:
+      entity_id_pattern: 'https://127.0.0.1:6000/eid/{}'
+      base_path: 'base_data'
+      iss: 'swamid.se'
+      url_prefix: 'https://127.0.0.1:6000/eid'
+  umu.se:
+    class: fedservice.metadata_api.fs2.FSEntityStatementAPI
+    kwargs:
+      entity_id_pattern: 'https://127.0.0.1:6000/eid/{}'
+      base_path: 'base_data'
+      iss: 'umu.se'
+      url_prefix: 'https://127.0.0.1:6000/eid'
+  lu.se:
+    class: fedservice.metadata_api.fs2.FSEntityStatementAPI
+    kwargs:
+      entity_id_pattern: 'https://127.0.0.1:6000/eid/{}'
+      base_path: 'base_data'
+      iss: 'lu.se'
+      url_prefix: 'https://127.0.0.1:6000/eid'
+
+http_params:
+  verify_ssl: False
+
+webserver:
+  server_cert: 'certs/example.crt'
+  server_key: 'certs/example.key'
+  port: 6000
+  domain: '127.0.0.1'
+

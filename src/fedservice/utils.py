@@ -1,5 +1,7 @@
 import json
 import logging
+import ssl
+import sys
 
 from oidcservice.exception import ResponseError
 
@@ -13,7 +15,7 @@ def load_json(file_name):
 
 
 def fed_parse_response(instance, info, sformat="", state="", **kwargs):
-    if sformat in ['jose','jws','jwe']:
+    if sformat in ['jose', 'jws', 'jwe']:
         resp = instance.post_parse_response(info, state=state)
 
         if not resp:
