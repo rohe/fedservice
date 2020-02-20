@@ -26,13 +26,13 @@ class FederationEntity(object):
     def __init__(self, entity_id, trusted_roots, authority_hints=None,
                  key_jar=None, default_lifetime=86400, httpd=None,
                  priority=None, entity_type='', opponent_entity_type='',
-                 registration_type='', cwd='', http_args=None):
+                 registration_type='', cwd='', httpc_params=None):
         self.collector = Collector(trust_anchors=trusted_roots, http_cli=httpd, cwd=cwd,
-                                   httpc_params=http_args)
+                                   httpc_params=httpc_params)
         self.entity_id = entity_id
         self.entity_type = entity_type
         self.opponent_entity_type = opponent_entity_type
-        self.key_jar = key_jar or KeyJar()
+        self.key_jar = key_jar or KeyJar(httpc_params=httpc_params)
         for iss, jwks in trusted_roots.items():
             self.key_jar.import_jwks(jwks, iss)
         self.authority_hints = authority_hints
@@ -118,8 +118,8 @@ class FederationEntity(object):
         return [eval_chain(c, self.key_jar, metadata_type) for c in _chains]
 
 
-def create_federation_entity(entity_id, http_args=None, **kwargs):
-    args = {"http_args": http_args}
+def create_federation_entity(entity_id, httpc_params=None, **kwargs):
+    args = {"httpc_params": httpc_params}
     for param in ['trusted_roots', 'authority_hints']:
         try:
             args[param] = load_json(kwargs[param])
@@ -129,6 +129,7 @@ def create_federation_entity(entity_id, http_args=None, **kwargs):
     if 'signing_keys' in kwargs:
         args['key_jar'] = init_key_jar(**kwargs['signing_keys'],
                                        owner=entity_id)
+        args['key_jar'].httpc_params = httpc_params
 
     for param in ['entity_type', 'priority', 'opponent_entity_type',
                   'registration_type', 'cwd']:

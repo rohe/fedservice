@@ -13,7 +13,7 @@ The players:
 To run the different components you run these commands:
 
 $ cd flask_signing_service 
-$ ./server.py
+$ ./server.py conf.yaml
 
 $ cd ../flask_op
 $ ./server.py -t -k conf_fed.yaml
@@ -24,5 +24,5 @@ $ ./wsgi.py conf_fed.yaml
 When all are up and running you should use your web browser of choice 
 and access https://127.0.0.1:4000/ .
 
-From the dropdown list at the bottom-left chose **umu** and hit start.
+From the dropdown list at the bottom-left chose **local** and hit start.
 Use diana/krall as username/password.

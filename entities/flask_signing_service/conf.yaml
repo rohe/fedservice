@@ -1,3 +1,29 @@
+logging:
+  version: 1
+  root:
+    handlers:
+      - default
+      - console
+    level: DEBUG
+  loggers:
+    idp:
+      level: DEBUG
+  handlers:
+    default:
+      class: logging.FileHandler
+      filename: 'debug.log'
+      formatter: default
+    console:
+      class: logging.StreamHandler
+      stream: 'ext://sys.stdout'
+      formatter: default
+  formatters:
+    default:
+      format: '%(asctime)s %(name)s %(levelname)s %(message)s'
+
+port: &port 6000
+domain: &domain '127.0.0.1'
+
 keydefs:
   - 'type': 'RSA'
     'key': ''
@@ -10,24 +36,24 @@ server_info:
   swamid.se:
     class: fedservice.metadata_api.fs2.FSEntityStatementAPI
     kwargs:
-      entity_id_pattern: 'https://127.0.0.1:6000/eid/{}'
+      entity_id_pattern: 'https://{domain}:{port}/eid/{{}}'
       base_path: 'base_data'
       iss: 'swamid.se'
-      url_prefix: 'https://127.0.0.1:6000/eid'
+      url_prefix: 'https://{domain}:{port}/eid'
   umu.se:
     class: fedservice.metadata_api.fs2.FSEntityStatementAPI
     kwargs:
-      entity_id_pattern: 'https://127.0.0.1:6000/eid/{}'
+      entity_id_pattern: 'https://{domain}:{port}/eid/{{}}'
       base_path: 'base_data'
       iss: 'umu.se'
-      url_prefix: 'https://127.0.0.1:6000/eid'
+      url_prefix: 'https://{domain}:{port}/eid'
   lu.se:
     class: fedservice.metadata_api.fs2.FSEntityStatementAPI
     kwargs:
-      entity_id_pattern: 'https://127.0.0.1:6000/eid/{}'
+      entity_id_pattern: 'https://{domain}:{port}/eid/{{}}'
       base_path: 'base_data'
       iss: 'lu.se'
-      url_prefix: 'https://127.0.0.1:6000/eid'
+      url_prefix: 'https://{domain}:{port}/eid'
 
 http_params:
   verify_ssl: False
@@ -35,6 +61,6 @@ http_params:
 webserver:
   server_cert: 'certs/example.crt'
   server_key: 'certs/example.key'
-  port: 6000
-  domain: '127.0.0.1'
+  port: *port
+  domain: *domain
 
