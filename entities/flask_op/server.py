@@ -70,7 +70,7 @@ def main(config_file, args):
     if args.insecure:
         app.endpoint_context.federation_entity.collector.insecure = True
 
-    _cert = "{}/{}".format(dir_path, lower_or_upper(web_conf, "server_cert"))
+    _cert = os.path.join(dir_path, lower_or_upper(web_conf, "server_cert"))
     app.endpoint_context.federation_entity.collector.web_cert_path = _cert
 
     app.run(host=web_conf['domain'], port=web_conf['port'],

@@ -1,7 +1,33 @@
-baseurl: &base "https://localhost:4001"
+logging:
+  version: 1
+  root:
+    handlers:
+      - default
+      - console
+    level: DEBUG
+  loggers:
+    bobcat_idp:
+      level: DEBUG
+  handlers:
+    default:
+      class: logging.FileHandler
+      filename: 'debug.log'
+      formatter: default
+    console:
+      class: logging.StreamHandler
+      stream: 'ext://sys.stdout'
+      formatter: default
+  formatters:
+    default:
+      format: '%(asctime)s %(name)s %(levelname)s %(message)s'
+
+domain: &domain 127.0.0.1
+port: &port 4001
+
+base_url: &base "https://{domain}:{port}"
 
 http_params:
-  verify_ssk: False
+  verify_ssl: False
 
 keydefs: &keydef
   -
@@ -18,10 +44,10 @@ secret_key: 'secret_key'
 session_cookie_name: 'florp_expl'
 preferred_url_scheme: 'https'
 
-oidc_keys:
-    private_path: './private/jwks.json'
+rp_keys:
+    private_path: 'private/jwks.json'
     key_defs: *keydef
-    public_path: './static/jwks.json'
+    public_path: 'static/jwks.json'
     # this will create the jwks files if they absent
     read_only: False
     uri_path: 'static/jwks.json'
@@ -68,6 +94,7 @@ federation: &federation
   priority: []
   entity_type: openid_relying_party
   opponent_entity_type: openid_provider
+  registration_type: automatic
   add_on:
     ssc:
       function: fedservice.op.add_on.ssc.add_ssc_support
@@ -93,8 +120,8 @@ clients:
     services: *services
 
 webserver:
-  port: 4001
+  port: *port
   server_cert: "certs/cert.pem"
   server_key: "certs/key.pem"
   ca_bundle: ''
-  domain: '127.0.0.1'
+  domain: *domain

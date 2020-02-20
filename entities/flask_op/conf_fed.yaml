@@ -1,5 +1,6 @@
 logging:
   version: 1
+  disable_existing_loggers: False
   root:
     handlers:
       - default
@@ -23,8 +24,8 @@ logging:
 
 port: &port 5000
 domain: &domain 127.0.0.1
-server_name: 127.0.0.1:5000
-base_url: &base_url https://127.0.0.1:5000
+server_name: '{domain}:{port}'
+base_url: &base_url 'https://{domain}:{port}'
 
 key_def: &key_def
   - type: RSA
@@ -50,7 +51,7 @@ op:
     http_params:
       verify_ssl: false
     session_key:
-      filename: private/session_jwk.json
+      filename: 'private/session_jwk.json'
       type: OCT
       use: sig
     capabilities:
@@ -196,7 +197,7 @@ op:
           frontchannel_logout_session_supported: True
           backchannel_logout_supported: True
           backchannel_logout_session_supported: True
-          check_session_iframe: https://127.0.0.1:5000/check_session_iframe
+          check_session_iframe: 'check_session_iframe'
     userinfo:
       class: oidcendpoint.user_info.UserInfo
       kwargs:
@@ -206,7 +207,7 @@ op:
         acr: oidcendpoint.user_authn.authn_context.INTERNETPROTOCOLPASSWORD
         class: oidcendpoint.user_authn.user.UserPassJinja2
         kwargs:
-          verify_endpoint: '/verify/user'
+          verify_endpoint: 'verify/user'
           template: user_pass.jinja2
           db:
             class: oidcendpoint.util.JSONDictDB
@@ -283,8 +284,8 @@ op:
             - eduperson_scoped_affiliation
 
 webserver:
-  cert: '{}/certs/example.crt'
-  key: '{}/certs/example.key'
+  server_cert: 'certs/example.crt'
+  server_key: 'certs/example.key'
   cert_chain: null
   port: *port
   domain: *domain

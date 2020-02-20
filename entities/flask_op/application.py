@@ -14,6 +14,8 @@ folder = os.path.dirname(os.path.realpath(__file__))
 def init_oidc_op_endpoints(app):
     _config = app.srv_config.op
     _server_info_config = _config['server_info']
+    _server_info_config['issuer'] = _server_info_config.get('issuer').format(
+        domain=app.srv_config.domain, port=app.srv_config.port)
 
     httpc_params = get_http_params(app.srv_config.http_params)
 
@@ -26,7 +28,10 @@ def init_oidc_op_endpoints(app):
     _kj.import_jwks_as_json(_kj.export_jwks_as_json(True, ''), iss)
     _kj.httpc_params = httpc_params
 
-    federation_entity = create_federation_entity(cwd=folder, **_server_info_config['federation'])
+    _fed_conf = _server_info_config.get('federation')
+    _fed_conf["entity_id"] = app.srv_config.base_url
+
+    federation_entity = create_federation_entity(cwd=folder, **_fed_conf)
     federation_entity.key_jar.httpc_params = httpc_params
 
     endpoint_context = EndpointContext(_server_info_config, keyjar=_kj,

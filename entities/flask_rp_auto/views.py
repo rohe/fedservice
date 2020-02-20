@@ -23,30 +23,8 @@ def send_js(path):
 
 @oidc_rp_views.route('/')
 def index():
-    _providers = current_app.config.get('CLIENTS').keys()
+    _providers = current_app.rp_config.clients.keys()
     return render_template('opbyuid.html', providers=_providers)
-
-
-@oidc_rp_views.route('/irp')
-def irp():
-    return send_from_directory('entity_statements', 'irp.jws')
-
-
-@oidc_rp_views.route('/.well-known/openid-federation')
-def wkof():
-    iss = request.args['iss']
-    try:
-        sub = request.args['sub']
-    except KeyError:
-        pass
-    else:
-        if iss != sub:
-            return make_response("Only self-signed", 400)
-
-    if iss == current_app.rph.federation_entity.entity_id:
-        return send_from_directory('entity_statements', 'irp.jws')
-    else:
-        return make_response("No such file", 400)
 
 
 @oidc_rp_views.route('/rp')
@@ -76,7 +54,7 @@ def rp():
         else:
             return redirect(result['url'], 303)
     else:
-        _providers = current_app.config.get('CLIENTS').keys()
+        _providers = current_app.rp_config.clients.keys()
         return render_template('opbyuid.html', providers=_providers)
 
 
@@ -97,9 +75,9 @@ def get_rp(op_hash):
     return rp
 
 
-@oidc_rp_views.route('/authz_cb')
-def authz_cb():
-    rp = None
+@oidc_rp_views.route('/authz_cb/<op_hash>')
+def authz_cb(op_hash):
+    rp = get_rp(op_hash)
 
     try:
         iss = rp.session_interface.get_iss(request.args['state'])
@@ -117,13 +95,13 @@ def authz_cb():
                 endp = endp.capitalize()
                 endpoints[endp] = v
 
-        fid, statement = rp.service_context.trust_path
+        statement = rp.service_context.federation_entity.op_statements[0]
         _st = localtime(statement.exp)
         time_str = strftime('%a, %d %b %Y %H:%M:%S')
         return render_template('opresult.html', endpoints=endpoints,
                                userinfo=res['userinfo'],
                                access_token=res['token'],
-                               federation=fid, fe_expires=time_str)
+                               federation=statement.fo, fe_expires=time_str)
     else:
         return make_response(res['error'], 400)
 

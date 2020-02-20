@@ -116,3 +116,46 @@ class FedRegistration(Registration):
         Registration.update_service_context(self, resp, **kwargs)
         _fe = self.service_context.federation_entity
         _fe.iss = resp['client_id']
+
+    def get_response_ext(self, url, method="GET", body=None, response_body_type="",
+                     headers=None, **kwargs):
+        """
+
+        :param url:
+        :param method:
+        :param body:
+        :param response_body_type:
+        :param headers:
+        :param kwargs:
+        :return:
+        """
+
+        _collector = self.service_context.federation_entity.collector
+
+        httpc_args = {}
+        # have I seen it before
+        cert_path = _collector.get_cert_path(self.service_context.provider_info["issuer"])
+        if cert_path:
+            httpc_args["verify"] = cert_path
+
+        try:
+            resp = _collector.http_cli(method, url, data=body, headers=headers, **httpc_args)
+        except Exception as err:
+            logger.error('Exception on request: {}'.format(err))
+            raise
+
+        if 300 <= resp.status_code < 400:
+            return {'http_response': resp}
+
+        if "keyjar" not in kwargs:
+            kwargs["keyjar"] = self.service_context.keyjar
+        if not response_body_type:
+            response_body_type = self.response_body_type
+
+        if response_body_type == 'html':
+            return resp.text
+
+        if body:
+            kwargs['request_body'] = body
+
+        return self.parse_response(resp, response_body_type, **kwargs)

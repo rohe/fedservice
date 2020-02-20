@@ -95,7 +95,7 @@ def authn_verify(method):
     :param kwargs: response arguments
     :return: HTTP redirect
     """
-    url_endpoint = '/verify/{}'.format(method)
+    url_endpoint = 'verify/{}'.format(method)
     authn_method = current_app.endpoint_context.endpoint_to_authn_method[
         url_endpoint]
 
