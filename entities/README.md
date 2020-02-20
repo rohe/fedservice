@@ -14,12 +14,15 @@ The players:
 To run the different components you run these commands:
 
 $ cd flask_signing_service 
+
 $ ./server.py conf.yaml
 
 $ cd ../flask_op
+
 $ ./server.py -t -k conf_fed.yaml
 
 $ cd ../flask_rp
+
 $ ./wsgi.py conf_fed.yaml
 
 When all are up and running you should use your web browser of choice 
