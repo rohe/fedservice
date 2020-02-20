@@ -1,4 +1,4 @@
-import logging
+# import logging
 import os
 import sys
 
@@ -12,15 +12,15 @@ try:
 except ImportError:
     import application
 
-logger = logging.getLogger("")
-LOGFILE_NAME = 'florp.log'
-hdlr = logging.FileHandler(LOGFILE_NAME)
-base_formatter = logging.Formatter(
-    "%(asctime)s %(name)s:%(levelname)s %(message)s")
-
-hdlr.setFormatter(base_formatter)
-logger.addHandler(hdlr)
-logger.setLevel(logging.DEBUG)
+# logger = logging.getLogger("")
+# LOGFILE_NAME = 'florp.log'
+# hdlr = logging.FileHandler(LOGFILE_NAME)
+# base_formatter = logging.Formatter(
+#     "%(asctime)s %(name)s:%(levelname)s %(message)s")
+#
+# hdlr.setFormatter(base_formatter)
+# logger.addHandler(hdlr)
+# logger.setLevel(logging.DEBUG)
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -65,11 +65,10 @@ if __name__ == "__main__":
     template_dir = os.path.join(dir_path, 'templates')
     app = application.oidc_provider_init_app(conf, name,
                                              template_folder=template_dir)
-
-    _web_conf = app.config.get("webserver")
+    _web_conf = app.rp_config.web_conf
     context = create_context(dir_path, _web_conf)
     _cert = "{}/{}".format(dir_path, lower_or_upper(_web_conf, "server_cert"))
 
     app.rph.federation_entity.collector.web_cert_path = _cert
-    app.run(host='127.0.0.1', port=app.config.get('PORT'), debug=True, ssl_context=context,
-            request_handler=PeerCertWSGIRequestHandler)
+    app.run(host=app.rp_config.domain, port=app.rp_config.port,
+            debug=_web_conf.get("debug"), ssl_context=context)
