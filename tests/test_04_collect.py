@@ -3,18 +3,16 @@ import os
 import pytest
 import requests
 import responses
-from cryptojwt import as_unicode
 from cryptojwt.jwk import pems_to_x5c
 from cryptojwt.jwk import x5c_to_pems
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import build_keyjar
-from fedservice.entity_statement.create import create_entity_statement
 from oidcmsg.exception import MissingPage
 
 from fedservice.entity_statement.collect import Collector
-
-from build.lib.fedservice.entity_statement.collect import verify_self_signed_signature
 from fedservice.entity_statement.collect import branch2lists
+from fedservice.entity_statement.collect import verify_self_signed_signature
+from fedservice.entity_statement.create import create_entity_statement
 from tests.utils import DummyCollector
 from .utils import Publisher
 
@@ -62,13 +60,14 @@ def test_collect_superiors():
     collector = DummyCollector(trusted_roots=ANCHOR,
                                httpd=Publisher(os.path.join(BASE_PATH, 'base_data')),
                                root_dir=os.path.join(BASE_PATH, 'base_data'))
-    entity_statement = collector.get_entity_statement(api_endpoint='https://foodle.uninett.no/fed_api',
-                                                   issuer=entity_id, subject=entity_id)
+    entity_statement = collector.get_entity_statement(
+        api_endpoint='https://foodle.uninett.no/fed_api',
+        issuer=entity_id, subject=entity_id)
     _config = verify_self_signed_signature(entity_statement)
     assert _config
 
     tree = collector.collect_superiors(_config['iss'], entity_statement)
-    node = {entity_id: (entity_statement , tree)}
+    node = {entity_id: (entity_statement, tree)}
     chains = branch2lists(node)
 
     assert len(chains) == 1  # only one chain
