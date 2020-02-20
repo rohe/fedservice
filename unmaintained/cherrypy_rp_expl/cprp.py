@@ -225,8 +225,7 @@ class Consumer(Root):
     @cherrypy.expose
     def implicit_hybrid_flow(self, op_hash='', **kwargs):
         logger.debug('implicit_hybrid_flow kwargs: {}'.format(kwargs))
-        return self._load_HTML_page_from_file("html/repost_fragment.html",
-                                              op_hash)
+        return self._load_HTML_page_from_file("html/repost_fragment.html", op_hash)
 
     def _load_HTML_page_from_file(self, path, value):
         if not path.startswith("/"): # relative path
