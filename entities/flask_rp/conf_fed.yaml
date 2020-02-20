@@ -27,7 +27,7 @@ port: &port 4000
 base_url: &base "https://{domain}:{port}"
 
 http_params:
-  verify_ssl: False
+  verify: False
 
 keydefs: &keydef
   -
