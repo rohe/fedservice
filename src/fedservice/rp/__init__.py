@@ -9,12 +9,12 @@ class RPHandler(oidcrp.RPHandler):
     def __init__(self, base_url='', hash_seed="", keyjar=None, verify_ssl=True,
                  services=None, service_factory=None, client_configs=None,
                  client_authn_factory=None, client_cls=None,
-                 state_db=None, federation_entity=None, http_args=None, **kwargs):
+                 state_db=None, federation_entity=None, httpc_params=None, **kwargs):
         oidcrp.RPHandler.__init__(self, base_url=base_url, hash_seed=hash_seed, keyjar=keyjar,
                                   verify_ssl=verify_ssl, services=services,
                                   service_factory=service_factory, client_configs=client_configs,
                                   client_authn_factory=client_authn_factory, client_cls=client_cls,
-                                  state_db=state_db, http_args=http_args, **kwargs)
+                                  state_db=state_db, httpc_params=httpc_params, **kwargs)
 
         self.federation_entity = federation_entity
 
