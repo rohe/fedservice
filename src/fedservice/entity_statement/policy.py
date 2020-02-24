@@ -280,7 +280,7 @@ def apply_policy(metadata, policy):
         elif "add" in policy[claim]:
             metadata[claim] = list(union(metadata[claim], policy[claim]['add']))
         elif "value" in policy[claim]:
-            metadata[claim] = policy[claim]
+            metadata[claim] = policy[claim]["value"]
 
     # In policy but not in metadata
     for claim in policy_set.difference(metadata_set):
