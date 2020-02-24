@@ -53,7 +53,7 @@ class PeerCertWSGIRequestHandler(werkzeug.serving.WSGIRequestHandler):
             x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_ASN1, x509_binary)
             environ['peercert'] = x509
         else:
-            logger.warning('No peer certificate')
+            # logger.warning('No peer certificate')
             environ['peercert'] = ''
 
         return environ
