@@ -58,9 +58,8 @@ setup(
     classifiers=[
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: Apache Software License",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries :: Python Modules"],
     install_requires=[
         "cryptojwt>=0.7.13",
@@ -71,6 +70,7 @@ setup(
     tests_require=[
         "responses",
         "testfixtures",
+        "oidcrp",
     ],
     zip_safe=False,
     cmdclass={'test': PyTest},

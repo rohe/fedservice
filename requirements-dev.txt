@@ -1,0 +1,6 @@
+pytest
+pytest-localserver
+responses
+testfixtures
+oidcrp
+#requests_mock
