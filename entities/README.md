@@ -11,19 +11,21 @@ The players:
 
 1,2 and 3 are all handled by a signing service.
 
-To run the different components you run these commands:
+To run the different components you run these commands in this order:
 
-$ cd flask_signing_service 
-
-$ ./server.py conf.yaml
-
-$ cd ../flask_op
+```
+$ cd entities/flask_op
 
 $ ./server.py -t -k conf_fed.yaml
 
 $ cd ../flask_rp
 
 $ ./wsgi.py conf_fed.yaml
+
+$ cd ../flask_signing_service 
+
+$ ./server.py conf.yaml
+```
 
 When all are up and running you should use your web browser of choice 
 and access https://127.0.0.1:4000/ .

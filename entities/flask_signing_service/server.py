@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 
+from cryptojwt import KeyJar
 from cryptojwt.jwk import pems_to_x5c
 from flask import Flask
 from oidcop.utils import create_context
@@ -56,6 +57,19 @@ def init_app(config_file, name=None, **kwargs):
 
 
 if __name__ == "__main__":
+    # Copy dynamically created files to there places in the base_data information tree.
+    key_jar = KeyJar()
+    key_jar.import_jwks_from_file("../flask_op/static/fed_keys.json", "")
+    _jwks = key_jar.export_jwks_as_json(issuer="")
+    with open('base_data/umu.se/https%3A%2F%2F127.0.0.1%3A5000/jwks.json', "w") as fp:
+        fp.write(_jwks)
+
+    key_jar = KeyJar()
+    key_jar.import_jwks_from_file("../flask_rp/static/fed_keys.json", "")
+    _jwks = key_jar.export_jwks_as_json(issuer="")
+    with open('base_data/lu.se/https%3A%2F%2F127.0.0.1%3A4000/jwks.json', "w") as fp:
+        fp.write(_jwks)
+
     app = init_app(sys.argv[1], NAME)
     logging.basicConfig(level=logging.DEBUG)
 
