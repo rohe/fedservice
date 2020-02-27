@@ -132,7 +132,7 @@ class FedRegistration(Registration):
 
         _collector = self.service_context.federation_entity.collector
 
-        httpc_args = {}
+        httpc_args = _collector.httpc_parms.copy()
         # have I seen it before
         cert_path = _collector.get_cert_path(self.service_context.provider_info["issuer"])
         if cert_path:
