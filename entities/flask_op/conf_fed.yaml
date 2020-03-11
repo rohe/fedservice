@@ -49,7 +49,7 @@ op:
   server_info:
     issuer: *base_url
     http_params:
-      verify_ssl: false
+      verify: false
     session_key:
       filename: 'private/session_jwk.json'
       type: OCT
@@ -282,6 +282,10 @@ op:
             - sub
             - iss
             - eduperson_scoped_affiliation
+      automatic_registration:
+        function: fedservice.op.add_on.automatic_registration.add_automatic_registration_support
+        kwargs:
+          new_id: False  # default False
 
 webserver:
   server_cert: 'certs/example.crt'

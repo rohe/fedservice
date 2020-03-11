@@ -251,12 +251,10 @@ op:
       entity_type: openid_provider
       opponent_entity_type: openid_relying_party
       add_on:
-        mtls:
-          function: fedservice.op.add_on.mtls.add_mtls_support
+        ssc:
+          function: fedservice.op.add_on.ssc.add_ssc_support
           kwargs:
-            mtls_dir: mtls
-            client_cert: '{}/certs/example.crt'
-            client_key: '{}/certs/example.key'
+            ssc_dir: ssc
     # this adds PKCE support as mandatory - disable if needed
     add_on:
       pkce:

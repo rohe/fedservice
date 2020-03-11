@@ -6,7 +6,7 @@ logging:
       - console
     level: DEBUG
   loggers:
-    bobcat_idp:
+    idp:
       level: DEBUG
   handlers:
     default:
@@ -27,7 +27,7 @@ port: &port 4001
 base_url: &base "https://{domain}:{port}"
 
 http_params:
-  verify_ssl: False
+  verify: False
 
 keydefs: &keydef
   -
@@ -60,7 +60,7 @@ client_preferences: &prefs
     contacts: [ops@example.com]
     response_types: [code]
     scope: [openid, profile, email, address, phone]
-    token_endpoint_auth_method: [client_secret_basic, client_secret_post]
+    token_endpoint_auth_method: [private_key_jwt]
 
 services: &services
   discovery:
@@ -98,7 +98,6 @@ federation: &federation
       kwargs:
         ssc_dir: ssc
 
-
 # The keys in this dictionary are the OPs short user friendly name
 # not the issuer (iss) name.
 
@@ -114,6 +113,7 @@ clients:
   local:
     issuer: "https://127.0.0.1:5000"
     client_preferences: *prefs
+    redirect_uris: ["https://127.0.0.1:4001/authz_cb/local"]
     services: *services
 
 webserver:

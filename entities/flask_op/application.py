@@ -17,7 +17,7 @@ def init_oidc_op_endpoints(app):
     _server_info_config['issuer'] = _server_info_config.get('issuer').format(
         domain=app.srv_config.domain, port=app.srv_config.port)
 
-    httpc_params = get_http_params(app.srv_config.http_params)
+    httpc_params = get_http_params(_server_info_config.get("http_params"))
 
     _kj_args = {k: v for k, v in _server_info_config['jwks'].items() if k != 'uri_path'}
     _kj = init_key_jar(**_kj_args)

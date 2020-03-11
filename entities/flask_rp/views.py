@@ -33,20 +33,20 @@ def irp():
     return send_from_directory('entity_statements', 'irp.jws')
 
 
-@oidc_rp_views.route('/.well-known/openid-federation')
-def wkof():
+@oidc_rp_views.route('/<string:op_hash>/.well-known/openid-federation')
+def wkof(op_hash):
     _rph = current_app.rph
-    cli = _rph.init_client('')
+    cli = _rph.issuer2rp[_rph.hash2issuer[op_hash]]
     _asrv = cli.service['authorization']
-    reg_srv= Registration(service_context=_asrv.service_context,
-                             state_db=_asrv.state_db, conf= _asrv.conf)
-    callbacks = _rph.create_callback()
+    reg_srv = Registration(service_context=_asrv.service_context,
+                           state_db=_asrv.state_db, conf=_asrv.conf)
+
     metadata = reg_srv.construct()
     _fe = current_app.rph.federation_entity
     iss = sub = _fe.entity_id
     _jws = _fe.create_entity_statement(
-        {"openid_relying_party": metadata.to_dict()},
-        iss, sub, authority_hints=_fe.authority_hints,
+        metadata={"openid_relying_party": metadata.to_dict()},
+        iss=iss, sub=sub, authority_hints=_fe.authority_hints,
         lifetime=86400)
 
     return _jws

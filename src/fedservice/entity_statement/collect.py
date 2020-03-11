@@ -189,6 +189,7 @@ class Collector(object):
         # have I seen it before
         cert_path = self.get_cert_path(entity_id)
 
+        _signed_entity_statement = ''
         if cert_path is None:
             if self_signed:  # This only works for the self-signed entity statements
                 # First get the Entity Statement without verifying the entity certificate
@@ -203,8 +204,9 @@ class Collector(object):
             else:  # out of luck
                 raise UnknownCertificate(entity_id)
 
-        httpc_args["verify"] = cert_path
-        _signed_entity_statement = self.get_signed_entity_statement(url, httpc_args)
+        if cert_path:
+            httpc_args["verify"] = cert_path
+            _signed_entity_statement = self.get_signed_entity_statement(url, httpc_args)
 
         return _signed_entity_statement
 
