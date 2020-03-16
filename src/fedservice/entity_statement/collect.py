@@ -220,6 +220,7 @@ class Collector(object):
         """
 
         _url = construct_well_known_url(entity_id, "openid-federation")
+        logger.debug("Config URL: %s", _url)
         try:
             if self.use_ssc:
                 self_signed_config = self.do_ssc_seq(_url, entity_id)
@@ -227,6 +228,7 @@ class Collector(object):
                 self_signed_config = self.get_signed_entity_statement(_url, self.httpc_params)
         except MissingPage:  # if tenant involved
             _tenant_url = construct_tenant_well_known_url(entity_id, "openid-federation")
+            logger.debug("Tenant config URL: %s", _tenant_url)
             if _tenant_url != _url:
                 if self.use_ssc:
                     self_signed_config = self.do_ssc_seq(_tenant_url, entity_id)
