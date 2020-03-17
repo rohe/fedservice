@@ -124,7 +124,7 @@ clients:
   local:
     issuer: "https://127.0.0.1:5000"
     client_preferences: *prefs
-    redirect_uris: ["https://127.0.0.1:4001/authz_cb/local"]
+    redirect_uris: ["https://{domain}:{port}/authz_cb/local"]
     services: *services
 
 webserver:

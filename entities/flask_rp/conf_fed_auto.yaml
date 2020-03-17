@@ -1,5 +1,6 @@
 logging:
   version: 1
+  disable_existing_loggers: False
   root:
     handlers:
       - default
@@ -38,11 +39,6 @@ keydefs: &keydef
     "type": "EC"
     "crv": "P-256"
     "use": ["sig"]
-
-html_home: 'html'
-secret_key: 'secret_key'
-session_cookie_name: 'florp_expl'
-preferred_url_scheme: 'https'
 
 rp_keys:
     private_path: 'private/jwks_auto.json'
