@@ -22,8 +22,12 @@ def verify_trust_chain(es_list, key_jar):
     for es in es_list:
         _jwt = factory(es)
         if _jwt:
+            logger.debug("JWS header: %s", _jwt.headers())
             keys = key_jar.get_jwt_verify_keys(_jwt.jwt)
+            _key_spec = ['{}:{}:{}'.format(k.kty, k.use, k.kid) for k in keys]
+            logger.debug("Possible verification keys: %s", _key_spec)
             res = _jwt.verify_compact(keys=keys)
+            logger.debug(("Verified entity statement: %s", res))
             try:
                 _jwks = res['jwks']
             except KeyError:
@@ -38,6 +42,8 @@ def verify_trust_chain(es_list, key_jar):
                 else:
                     new = [k for k in _kb if k not in old]
                     if new:
+                        _key_spec = ['{}:{}:{}'.format(k.kty, k.use, k.kid) for k in new]
+                        logger.debug("New keys added to the key jar: %s", _key_spec)
                         # Only add keys to the KeyJar if they are not already there.
                         _kb.set(new)
                         key_jar.add_kb(res['sub'], _kb)
@@ -82,6 +88,7 @@ def eval_chain(chain, key_jar, entity_type, apply_policies=True):
     :param apply_policies: Apply policies to the metadata or not
     :returns: A Statement instances
     """
+    logger.debug("Evaluate trust chain")
     ves = verify_trust_chain(chain, key_jar)
     tp_exp = trust_chain_expires_at(ves)
 
@@ -91,6 +98,7 @@ def eval_chain(chain, key_jar, entity_type, apply_policies=True):
         if len(ves) > 1:
             # Combine the metadata policies from the trust root and all intermediates
             combined_policy = gather_policies(ves[:-1], entity_type)
+            logger.debug("Combined policy: %s", combined_policy)
             try:
                 metadata = ves[-1]['metadata'][entity_type]
             except KeyError:

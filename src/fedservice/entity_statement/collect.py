@@ -184,6 +184,7 @@ class Collector(object):
         :param entity_id: The ID for the entity I want the information on.
         :return:
         """
+        logger.debug("Self-signed certification sequence")
         httpc_args = self.httpc_params.copy()
 
         # have I seen it before
@@ -191,6 +192,7 @@ class Collector(object):
 
         _signed_entity_statement = ''
         if cert_path is None:
+            logger.debug("No saved certificate")
             if self_signed:  # This only works for the self-signed entity statements
                 # First get the Entity Statement without verifying the entity certificate
                 httpc_args["verify"] = False
@@ -201,6 +203,8 @@ class Collector(object):
                 # to verify the HTTPS certificate
                 cert_path = self.store_ssc_cert(unverified_entity_statement(_signed_entity_statement),
                                                  entity_id)
+                if not cert_path:
+                    logger.debug('No SSL certificate in the entity metadata')
             else:  # out of luck
                 raise UnknownCertificate(entity_id)
 
@@ -299,6 +303,7 @@ class Collector(object):
             time_key = "{}!exp!{}".format(intermediate, entity_id)
             _exp = self.entity_statement_cache[time_key]
             if _now > (_exp - self.allowed_delta):
+                logger.debug("Cached entity statement timed out")
                 del self.entity_statement_cache[cache_key]
                 del self.entity_statement_cache[time_key]
                 entity_statement = None
@@ -307,10 +312,14 @@ class Collector(object):
             fed_api_endpoint = self.get_federation_api_endpoint(intermediate)
             if fed_api_endpoint is None:
                 raise SystemError('Could not find federation_api endpoint')
+            logger.debug("Federation API endpoint: '{}' for '{}'".format(fed_api_endpoint,
+                                                                        intermediate))
             entity_statement = self.get_entity_statement(fed_api_endpoint, intermediate,
                                                          entity_id)
             # entity_statement is a signed JWT
             statement = unverified_entity_statement(entity_statement)
+            logger.debug("Unverified entity statement from {} about {}: {}".format(
+                fed_api_endpoint, intermediate, statement))
             self.entity_statement_cache[cache_key] = entity_statement
             time_key = "{}!exp!{}".format(intermediate, entity_id)
             self.entity_statement_cache[time_key] = statement["exp"]
@@ -348,6 +357,7 @@ class Collector(object):
         for intermediate in statement['authority_hints']:
             if intermediate in seen:  # loop ?!
                 logger.warning("Loop detected at {}".format(intermediate))
+            logger.debug("Collect intermediate: %s", intermediate)
             superior[intermediate] = self.collect_intermediate(entity_id, intermediate, seen,
                                                                max_superiors)
 
