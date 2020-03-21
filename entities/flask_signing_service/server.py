@@ -64,11 +64,15 @@ if __name__ == "__main__":
     with open('base_data/umu.se/https%3A%2F%2F127.0.0.1%3A5000/jwks.json', "w") as fp:
         fp.write(_jwks)
 
-    key_jar = KeyJar()
-    key_jar.import_jwks_from_file("../flask_rp/static/fed_keys.json", "")
-    _jwks = key_jar.export_jwks_as_json(issuer="")
-    with open('base_data/lu.se/https%3A%2F%2F127.0.0.1%3A4000/jwks.json', "w") as fp:
-        fp.write(_jwks)
+    for _key_file, _port in [("../flask_rp/static/fed_keys.json", 4000),
+                             ("../flask_rp/static/fed_keys_auto.json", 4001)]:
+        if os.path.isfile(_key_file):
+            key_jar = KeyJar()
+            key_jar.import_jwks_from_file(_key_file, "")
+            _jwks = key_jar.export_jwks_as_json(issuer="")
+            _file = 'base_data/lu.se/https%3A%2F%2F127.0.0.1%3A{}/jwks.json'.format(_port)
+            with open(_file, "w") as fp:
+                fp.write(_jwks)
 
     app = init_app(sys.argv[1], NAME)
     logging.basicConfig(level=logging.DEBUG)
