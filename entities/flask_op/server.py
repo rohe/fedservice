@@ -59,7 +59,7 @@ def main(config_file, args):
 
     web_conf = config.webserver
 
-    context = create_context(dir_path, web_conf, purpose=ssl.Purpose.CLIENT_AUTH)
+    context = create_context(dir_path, web_conf)
 
     kwargs = {}
 
