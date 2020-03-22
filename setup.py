@@ -60,10 +60,11 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Software Development :: Libraries :: Python Modules"],
     install_requires=[
         'oidcservice>=0.6.9',
-        'oidcendpoint>=0.13.0'
+        'oidcendpoint>=0.13.1'
     ],
     tests_require=[
         "responses",
