@@ -20,8 +20,8 @@ from oidcservice.state_interface import State
 from fedservice import FederationEntity
 from fedservice.entity_statement.statement import Statement
 from fedservice.metadata_api.fs2 import read_info
-from fedservice.op.pushed_authorization import PushedAuthorization
 from fedservice.op.authorization import Authorization
+from fedservice.op.pushed_authorization import PushedAuthorization
 from fedservice.rp.authorization import FedAuthorization
 from fedservice.rp.provider_info_discovery import FedProviderInfoDiscovery
 from fedservice.rp.registration import FedRegistration
@@ -133,15 +133,17 @@ class TestEndpoint(object):
                 "code": {"lifetime": 600},
                 "token": {
                     "class": "oidcendpoint.jwt_token.JWTToken",
-                    "lifetime": 3600,
-                    "add_claims": [
-                        "email",
-                        "email_verified",
-                        "phone_number",
-                        "phone_number_verified",
-                    ],
-                    "add_claim_by_scope": True,
-                    "aud": ["https://example.org/appl"],
+                    "kwargs": {
+                        "lifetime": 3600,
+                        "add_claims": [
+                            "email",
+                            "email_verified",
+                            "phone_number",
+                            "phone_number_verified",
+                        ],
+                        "add_claim_by_scope": True,
+                        "aud": ["https://example.org/appl"]
+                    },
                 },
                 "refresh": {"lifetime": 86400},
             },
@@ -408,7 +410,8 @@ class TestEndpoint(object):
         #         "aud": [self.authorization_endpoint.endpoint_context.provider_info[
         #                     "authorization_endpoint"]]
         #     })
-        # authn_request.update({"client_assertion": _assertion, "client_assertion_type": JWT_BEARER})
+        # authn_request.update({"client_assertion": _assertion, "client_assertion_type":
+        # JWT_BEARER})
 
         _req = self.authorization_endpoint.parse_request(authn_request)
 
