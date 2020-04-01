@@ -64,7 +64,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules"],
     install_requires=[
         'oidcservice>=0.6.9',
-        'oidcendpoint>=0.13.1'
+        'oidcendpoint>=0.13.2'
     ],
     tests_require=[
         "responses",
