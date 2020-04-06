@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+root="/Users/roland/code/fedservice/entities"
+cd $root/flask_rp/uwsgi_setup/automatic || exit 1
+cp uwsgi.ini.example uwsgi.ini
+cd $root/flask_rp/uwsgi_setup/explicit || exit 1
+cp uwsgi.ini.example uwsgi.ini
+cd $root/flask_op/uwsgi_setup || exit 1
+cp uwsgi.ini.example uwsgi.ini
+cd $root/flask_signing_service/uwsgi_setup || exit 1
+cp uwsgi.ini.example uwsgi.ini
+cd $root || exit 1
+cp nginx.fed.conf.example nginx.fed.conf
