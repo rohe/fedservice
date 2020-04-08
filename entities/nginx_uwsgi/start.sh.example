@@ -8,5 +8,5 @@ cd $root/flask_op/uwsgi_setup || exit 1
 nohup uwsgi --ini uwsgi.ini &
 cd $root/flask_signing_service/uwsgi_setup || exit 1
 nohup uwsgi --ini uwsgi.ini &
-cd $root || exit 1
-nginx -p /usr/local/etc/nginx -c complete_fedserv.conf
+cd $root/nginx_uwsgi || exit 1
+nginx -p /usr/local/etc/nginx -c federation.conf

@@ -1,7 +1,7 @@
 [uwsgi]
-project = flask_sigserv
+project = flask_signing_service
 relpath = fedservice/entities
-base = /Users/roland/www/fedservice
+base = /Users/roland/code
 
 chdir = %(base)/%(relpath)/%(project)
 

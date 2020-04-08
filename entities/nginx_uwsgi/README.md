@@ -22,9 +22,7 @@ $ cp setup.sh.example setup.sh
 ```
 
 edit the root specification in setup.sh to where you have the 
-software
-
-Then
+software. Then
 
 ```
 $ ./setup.sh
@@ -35,20 +33,34 @@ This should produce a set of local configuration file copies.
 You have to go through all of them to make them work in your environment.
 There are 3 sets of files.
 
-The uwsgi.ini files. Here you have to change the 'base' specification.
+The uwsgi.ini files. There are 4 of them:
+
+* flask_op/uwsgi_setup/uwsgi.ini 
+* flask_rp/uwsgi_setup/automatic/uwsgi.ini 
+* flask_rp/uwsgi_setup/explicit/uwsgi.ini 
+* flask_signing_service/uwsgi_setup/uwsgi.ini 
+
+In all of them you have to at least change the 'base' specification.
 
 The conf*.yaml files:
-flask_op/conf_uwsgi.yaml
-flask_rp/conf_fed.yaml
-flask_rp/conf_fed_auto.yaml
-flask_signing_service/conf.yaml 
+
+* flask_op/conf_uwsgi.yaml
+* flask_rp/conf_fed.yaml
+* flask_rp/conf_fed_auto.yaml
+* flask_signing_service/conf.yaml 
 
 In all of these you should only have to change the 'domain' specification.
 
-And lastly the nginx config file (nginx.fed.conf).
+And lastly the nginx config file (federation.conf).
 Here you have to change the values all the uwsgi_pass parameters.
 You probably have to change where the SSL certificates reside.
 The http/include value might also have to be changed. 
+And finally you have to copy the configuration file to where ever the 
+nginx configuration files resides on your machine.
+
+Before going further you make sure that the uid you are going to run the 
+whole thing as has write permission to all the log and pid files that will
+be used.
 
 Now for the start script.
 

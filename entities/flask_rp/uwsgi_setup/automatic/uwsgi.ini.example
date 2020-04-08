@@ -1,7 +1,7 @@
 [uwsgi]
 project     = flask_rp
 relpath     = fedservice/entities
-base        = /Users/roland/www/fedservice
+base        = /Users/roland/code
 mode        = automatic
 
 chdir       = %(base)/%(relpath)/%(project)

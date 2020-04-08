@@ -8,5 +8,5 @@ cd $root/flask_op/uwsgi_setup || exit 1
 cp uwsgi.ini.example uwsgi.ini
 cd $root/flask_signing_service/uwsgi_setup || exit 1
 cp uwsgi.ini.example uwsgi.ini
-cd $root || exit 1
-cp nginx.fed.conf.example nginx.fed.conf
+cd $root/nginx_uwsgi || exit 1
+cp federation.conf.example federation.conf
