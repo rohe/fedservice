@@ -63,8 +63,8 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Topic :: Software Development :: Libraries :: Python Modules"],
     install_requires=[
-        'oidcservice>=0.6.9',
-        'oidcendpoint>=0.13.2'
+        'oidcservice>=0.6.10',
+        'oidcendpoint>=0.13.4'
     ],
     tests_require=[
         "responses",

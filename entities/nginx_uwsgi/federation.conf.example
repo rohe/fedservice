@@ -1,7 +1,7 @@
 #user  roland staff;  ## Default: nobody
 worker_processes  5;  ## Default: 1
-error_log  logs/rp_explicit_error.log;
-pid        logs/rp_explicit_nginx.pid;
+error_log  /var/log/project_error.log;
+pid        /var/log/project.pid;
 worker_rlimit_nofile 8192;
 
 events {
@@ -18,7 +18,7 @@ http {
   log_format   main '$remote_addr - $remote_user [$time_local]  $status '
     '"$request" $body_bytes_sent "$http_referer" '
     '"$http_user_agent" "$http_x_forwarded_for"';
-  access_log   logs/rp_explicit_access.log  main;
+  access_log   /var/logs/project_http.log  main;
   sendfile     on;
   tcp_nopush   on;
   server_names_hash_bucket_size 128; # this seems to be required for some vhosts

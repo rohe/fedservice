@@ -1,5 +1,18 @@
 # A test setup of a simple federation using uwsgi and nginx
 
+To install it all first create a virtual environment,
+then download fedservice from github and install it in the 
+virtual environment. You will have to install flask and oidcop from pip.
+
+```
+$ git clone https://github.com/rohe/fedservice.git
+$ pip install flask
+$ pip install oidcop
+$ pip install oidcrp
+$ cd fedservice
+$ python setup.py install 
+```
+
 The players:
 
 1) The federation 
@@ -18,6 +31,7 @@ To run the different components you have to modify a couple of
 configuration files. Start by making local copies
 
 ```
+$ cd entities/nginx_uwsgi
 $ cp setup.sh.example setup.sh
 ```
 
