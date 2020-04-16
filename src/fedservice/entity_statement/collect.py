@@ -227,6 +227,7 @@ class Collector(object):
         logger.debug("Config URL: %s", _url)
         try:
             if self.use_ssc:
+                logger.debug("Use SelfSignedCert support")
                 self_signed_config = self.do_ssc_seq(_url, entity_id)
             else:
                 self_signed_config = self.get_signed_entity_statement(_url, self.httpc_params)
@@ -243,6 +244,9 @@ class Collector(object):
                 raise MissingPage("No such page: '{}'".format(_url))
         except SSLError as err:
             logger.error(err)
+            raise
+        except Exception as err:
+            logger.exception(err)
             raise
 
         return self_signed_config

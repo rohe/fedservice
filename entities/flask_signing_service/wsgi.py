@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import logging
 import os
-import sys
 
 from cryptojwt import KeyJar
 from cryptojwt.jwk import pems_to_x5c
@@ -28,17 +27,18 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 template_dir = os.path.join(dir_path, 'templates')
 
+_root, _ = os.path.split(dir_path)
 
 def key_setup():
     # Copy dynamically created files to there places in the base_data information tree.
     key_jar = KeyJar()
-    key_jar.import_jwks_from_file("../flask_op/static/fed_keys.json", "")
+    key_jar.import_jwks_from_file(os.path.join(dir_path, "flask_op/static/fed_keys.json"), "")
     _jwks = key_jar.export_jwks_as_json(issuer="")
     with open('base_data/umu.se/https%3A%2F%2F127.0.0.1%3A5000/jwks.json', "w") as fp:
         fp.write(_jwks)
 
-    for _key_file, _port in [("../flask_rp/static/fed_keys.json", 4000),
-                             ("../flask_rp/static/fed_keys_auto.json", 4001)]:
+    for _key_file, _port in [(os.path.join(dir_path, "flask_rp/static/fed_keys.json"), 4000),
+                             (os.path.join(dir_path, "flask_rp/static/fed_keys_auto.json"), 4001)]:
         if os.path.isfile(_key_file):
             key_jar = KeyJar()
             key_jar.import_jwks_from_file(_key_file, "")
@@ -46,6 +46,7 @@ def key_setup():
             _file = 'base_data/lu.se/https%3A%2F%2F127.0.0.1%3A{}/jwks.json'.format(_port)
             with open(_file, "w") as fp:
                 fp.write(_jwks)
+
 
 try:
     from .views import sigserv_views
@@ -68,12 +69,13 @@ app.signing_service = SigningService(_server_info_config, cwd=dir_path)
 web_conf = app.fss_config.web_conf
 
 app.signing_service.cwd = dir_path
-_cert = "{}/{}".format(dir_path, lower_or_upper(web_conf, "server_cert"))
+cert_file = lower_or_upper(web_conf, "server_cert")
+if not cert_file.startswith("/"):
+    _cert = "{}/{}".format(dir_path, cert_file)
 
-with open(_cert.format(dir_path), 'r') as fp:
+with open(cert_file, 'r') as fp:
     pem = fp.read()
     app.signing_service.x5c = pems_to_x5c([pem])
-
 
 if __name__ == "__main__":
     web_conf = app.fss_config.web_conf

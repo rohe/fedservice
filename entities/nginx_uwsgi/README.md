@@ -65,6 +65,9 @@ The conf*.yaml files:
 
 In all of these you should only have to change the 'domain' specification.
 
+You also have to modify trusted_roots.json and authority_hints.json 
+in flask_rp and flask_op.
+
 And lastly the nginx config file (federation.conf).
 Here you have to change the values all the uwsgi_pass parameters.
 You probably have to change where the SSL certificates reside.
