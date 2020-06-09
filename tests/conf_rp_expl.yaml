@@ -1,0 +1,114 @@
+logging:
+  version: 1
+  disable_existing_loggers: False
+  root:
+    handlers:
+      - default
+      - console
+    level: DEBUG
+  loggers:
+    idp:
+      level: DEBUG
+  handlers:
+    default:
+      class: logging.FileHandler
+      filename: 'debug_auto.log'
+      formatter: default
+    console:
+      class: logging.StreamHandler
+      stream: 'ext://sys.stdout'
+      formatter: default
+  formatters:
+    default:
+      format: '%(asctime)s %(name)s %(levelname)s %(message)s'
+
+domain: &domain 127.0.0.1
+port: &port 4001
+
+base_url: &base "https://{domain}:{port}"
+
+http_params:
+  verify: False
+
+keydefs: &keydef
+  -
+    "type": "RSA"
+    "key": ''
+    "use": ["sig"]
+  -
+    "type": "EC"
+    "crv": "P-256"
+    "use": ["sig"]
+
+rp_keys:
+    private_path: 'private/jwks_auto.json'
+    key_defs: *keydef
+    public_path: 'static/jwks_auto.json'
+    # this will create the jwks files if they absent
+    read_only: False
+    uri_path: 'static/jwks_auto.json'
+
+# information used when registering the client, this may be the same for all OPs
+
+client_preferences: &prefs
+    application_name: rphandler
+    application_type: web
+    contacts: [ops@example.com]
+    response_types: [code]
+    scope: [openid, profile, email, address, phone]
+    token_endpoint_auth_method: [private_key_jwt]
+
+services: &services
+  discovery:
+    class: fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery
+    kwargs: {}
+  authorization:
+    class: oidcservice.oidc.authorization.Authorization
+    kwargs: {}
+  accesstoken:
+    class: oidcservice.oidc.access_token.AccessToken
+    kwargs: {}
+  userinfo:
+    class: oidcservice.oidc.userinfo.UserInfo
+    kwargs: {}
+  end_session:
+    class: oidcservice.oidc.end_session.EndSession
+    kwargs: {}
+
+federation: &federation
+  entity_id: *base
+  signing_keys:
+    private_path: 'private/fed_keys_auto.json'
+    key_defs: *keydef
+    public_path: 'static/fed_keys_auto.json'
+    read_only: false
+  authority_hints: authority_hints.json
+  trusted_roots: trusted_roots.json
+  priority: []
+  entity_type: openid_relying_party
+  opponent_entity_type: openid_provider
+  registration_type: explicit
+
+# The keys in this dictionary are the OPs short user friendly name
+# not the issuer (iss) name.
+clients:
+  # The ones that support webfinger, OP discovery and client registration
+  # This is the default, any client that is not listed here is expected to
+  # support dynamic discovery and registration.
+  "":
+    client_preferences: *prefs
+    redirect_uris: None
+    services: *services
+  # Supports OP information lookup but not client registration
+  ntnu:
+    issuer: "https://op.ntnu.no"
+    client_preferences: *prefs
+    redirect_uris: ["https://{domain}:{port}/authz_cb/local"]
+    services: *services
+
+webserver:
+  port: *port
+  server_cert: "certs/cert_auto.pem"
+  server_key: "certs/key_auto.pem"
+  ca_bundle: ''
+  domain: *domain

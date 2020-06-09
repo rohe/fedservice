@@ -47,7 +47,6 @@ class Registration(registration.Registration):
             entity_statement = _fe.create_entity_statement(
                 _fe.entity_id,
                 payload['iss'],
-                _fe.key_jar,
                 metadata={'federation_entity': {"trust_anchor_id": statement.fo}},
                 metadata_policy={_fe.opponent_entity_type: _policy},
                 aud=payload['iss']

@@ -24,3 +24,4 @@ class ConstraintError(FedServiceError):
 
 class UnknownCertificate(FedServiceError):
     pass
+

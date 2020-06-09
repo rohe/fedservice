@@ -37,6 +37,7 @@ class TestEndpoint(object):
             "grant_expires_in": 300,
             "refresh_token_expires_in": 86400,
             "verify_ssl": False,
+            'keys': {'key_defs': KEYSPEC},
             "endpoint": {},
             "jwks": {
                 "private_path": "own/jwks.json",
@@ -51,16 +52,18 @@ class TestEndpoint(object):
             },
             'template_dir': 'template'
         }
-        endpoint_context = EndpointContext(conf, keyjar=build_keyjar(KEYSPEC))
+        endpoint_context = EndpointContext(conf)
         self.endpoint = ProviderConfiguration(endpoint_context)
 
         # === Federation stuff =======
-        key_jar = build_keyjar(KEYSPEC, owner=ENTITY_ID)
+        fe_conf = {
+            'keys': {'key_defs': KEYSPEC}
+        }
 
         federation_entity = FederationEntity(
-            ENTITY_ID, key_jar=key_jar, trusted_roots=ANCHOR,
+            ENTITY_ID, trusted_roots=ANCHOR,
             authority_hints={'https://ntnu.no': ['https://feide.no']},
-            httpd=Publisher(ROOT_DIR),
+            httpd=Publisher(ROOT_DIR), config=fe_conf,
             entity_type='openid_relying_party', opponent_entity_type='openid_provider')
 
         federation_entity.collector = DummyCollector(
@@ -81,7 +84,7 @@ class TestEndpoint(object):
         assert set(payload['metadata'].keys()) == {'openid_relying_party'}
         assert set(payload['metadata']['openid_relying_party'].keys()) == {
             'acr_values_supported', 'claims_parameter_supported',
-            'claims_supported', 'grant_types_supported',
+            'claims_supported', 'grant_types_supported', 'scopes_supported',
             'id_token_encryption_alg_values_supported', 'id_token_encryption_enc_values_supported',
             'id_token_signing_alg_values_supported', 'issuer', 'jwks_uri',
             'request_parameter_supported', 'request_uri_parameter_supported',

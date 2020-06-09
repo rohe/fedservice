@@ -22,17 +22,15 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
     request_body_type = 'jose'
     response_body_type = 'jose'
 
-    def __init__(self, service_context, state_db, conf=None,
-                 client_authn_factory=None, **kwargs):
+    def __init__(self, service_context, conf=None, client_authn_factory=None, **kwargs):
         ProviderInfoDiscovery.__init__(
-            self, service_context, state_db, conf=conf,
-            client_authn_factory=client_authn_factory)
+            self, service_context, conf=conf, client_authn_factory=client_authn_factory)
 
     def get_request_parameters(self, method="GET", **kwargs):
         try:
             _iss = kwargs["iss"]
         except KeyError:
-            _iss = self.service_context.issuer
+            _iss = self.service_context.get('issuer')
 
         qpart = {'iss': _iss}
 
@@ -69,7 +67,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         #     # Replace what was there before
         #     self.service_context.keyjar[self.service_context.issuer] = _kb
 
-        self.service_context.provider_info = _pi
+        self.service_context.set('provider_info', _pi)
         self.service_context.federation_entity.federation = trust_root_id
 
     def update_service_context(self, statements, **kwargs):
@@ -99,16 +97,18 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
             for s in statements:
                 if s.fo == possible[0]:
                     claims = s.metadata
-                    _sc.provider_info = self.response_cls(**claims)
-                    self._update_service_context(_sc.provider_info)
-                    _sc.behaviour = map_configuration_to_preference(
-                        _sc.provider_info, _sc.client_preferences)
+                    _pi = self.response_cls(**claims)
+                    _sc.set('provider_info', _pi)
+                    self._update_service_context(_pi)
+                    _sc.set('behaviour',
+                            map_configuration_to_preference(_pi, _sc.client_preferences))
+                    break
         else:
             # Not optimal but a reasonable estimate for now
             claims = statements[0].metadata
             _pinfo = self.response_cls(**claims)
-            _sc.behaviour = map_configuration_to_preference(
-                _pinfo, _sc.client_preferences)
+            _sc.set('provider_info', _pinfo)
+            _sc.set('behaviour', map_configuration_to_preference(_pinfo, _sc.client_preferences))
 
     def parse_response(self, info, sformat="", state="", **kwargs):
         # returns a list of Statement instances
@@ -148,7 +148,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         _chains = branch2lists(_node)
         for c in _chains:
             c.append(response)
-        return [eval_chain(c, _fe.key_jar, 'openid_provider') for c in _chains]
+        return [eval_chain(c, _fe.keyjar, 'openid_provider') for c in _chains]
 
     def get_response(self, *args, **kwargs):
         """

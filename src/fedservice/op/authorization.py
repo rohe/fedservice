@@ -44,9 +44,9 @@ class Authorization(authorization.Authorization):
 
         _cid = request["client_id"]
 
-        try:  # If this is a registered client then this should return some info
-            self.endpoint_context.cdb[_cid]
-        except KeyError:  # else go the federation way
+        # If this is a registered client then this should return some info
+        client_info = self.endpoint_context.cdb.get(_cid)
+        if client_info is None:  # else try the federation way
             registered_client_id = self.do_automatic_registration(_cid)
             if registered_client_id is None:
                 return {
@@ -54,8 +54,13 @@ class Authorization(authorization.Authorization):
                     'error_description': 'Unknown client'
                 }
             else:
-                request["client_id"] = registered_client_id
-                kwargs["also_known_as"] = {_cid: registered_client_id}
+                if registered_client_id != _cid:
+                    request["client_id"] = registered_client_id
+                    kwargs["also_known_as"] = {_cid: registered_client_id}
+                    client_info = self.endpoint_context.cdb.get(registered_client_id)
+                    self.endpoint_context.cdb.set(_cid, client_info)
+                    client_info['entity_id'] = _cid
+                    self.endpoint_context.cdb.set(registered_client_id, client_info)
 
         # then do client authentication
         return authorization.Authorization.client_authentication(

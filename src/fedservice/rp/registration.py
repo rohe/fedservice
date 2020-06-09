@@ -25,9 +25,8 @@ class FedRegistration(Registration):
     request_body_type = 'jose'
     response_body_type = 'jose'
 
-    def __init__(self, service_context, state_db, conf=None,
-                 client_authn_factory=None, **kwargs):
-        Registration.__init__(self, service_context, state_db, conf=conf,
+    def __init__(self, service_context, conf=None, client_authn_factory=None, **kwargs):
+        Registration.__init__(self, service_context, conf=conf,
                               client_authn_factory=client_authn_factory)
         #
         self.post_construct.append(self.create_entity_statement)
@@ -52,7 +51,7 @@ class FedRegistration(Registration):
         _fe = self.service_context.federation_entity
         _md = {_fe.entity_type: request_args.to_dict()}
         return _fe.create_entity_statement(
-            iss=_fe.entity_id, sub=_fe.entity_id, metadata=_md, key_jar=_fe.key_jar,
+            iss=_fe.entity_id, sub=_fe.entity_id, metadata=_md, key_jar=_fe.keyjar,
             authority_hints=_fe.proposed_authority_hints)
 
     def parse_response(self, info, sformat="", state="", **kwargs):
@@ -76,7 +75,7 @@ class FedRegistration(Registration):
 
         # Can not collect trust chain. Have to verify the signed JWT with keys I have
 
-        kj = self.service_context.federation_entity.key_jar
+        kj = self.service_context.federation_entity.keyjar
         _jwt = factory(resp)
         entity_statement = _jwt.verify_compact(resp, keys=kj.get_jwt_verify_keys(_jwt.jwt))
 
@@ -104,7 +103,7 @@ class FedRegistration(Registration):
         chains = branch2lists(_node)
 
         # Get the policies
-        policy_chains_tup = [eval_policy_chain(c, _fe.key_jar, _fe.entity_type) for c in chains]
+        policy_chains_tup = [eval_policy_chain(c, _fe.keyjar, _fe.entity_type) for c in chains]
         _policy = combine_policy(policy_chains_tup[0][1],
                                  entity_statement['metadata_policy'][_fe.entity_type])
         print("Combined policy: {}".format(_policy))

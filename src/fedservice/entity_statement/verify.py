@@ -27,7 +27,7 @@ def verify_trust_chain(es_list, key_jar):
             _key_spec = ['{}:{}:{}'.format(k.kty, k.use, k.kid) for k in keys]
             logger.debug("Possible verification keys: %s", _key_spec)
             res = _jwt.verify_compact(keys=keys)
-            logger.debug(("Verified entity statement: %s", res))
+            logger.debug("Verified entity statement: %s", res)
             try:
                 _jwks = res['jwks']
             except KeyError:
@@ -43,7 +43,10 @@ def verify_trust_chain(es_list, key_jar):
                     new = [k for k in _kb if k not in old]
                     if new:
                         _key_spec = ['{}:{}:{}'.format(k.kty, k.use, k.kid) for k in new]
-                        logger.debug("New keys added to the key jar: %s", _key_spec)
+                        logger.debug(
+                            "New keys added to the federation key jar for '{}': {}".format(
+                                res['sub'], _key_spec)
+                            )
                         # Only add keys to the KeyJar if they are not already there.
                         _kb.set(new)
                         key_jar.add_kb(res['sub'], _kb)

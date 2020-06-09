@@ -11,6 +11,8 @@ from cryptojwt.jwk import x5c_to_pems
 from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import utc_time_sans_frac
 from oidcmsg.exception import MissingPage
+from oidcmsg.storage.init import get_storage_class
+from oidcmsg.storage.init import init_storage
 from requests.exceptions import SSLError
 
 from fedservice.exception import UnknownCertificate
@@ -79,7 +81,7 @@ def active(config):
 
 class Collector(object):
     def __init__(self, trust_anchors, http_cli=None, insecure=False,
-                 allowed_delta=300, httpc_params=None, cwd=''):
+                 allowed_delta=300, httpc_params=None, cwd='', db_conf=None):
         """
 
         :param trust_anchors:
@@ -90,8 +92,12 @@ class Collector(object):
         """
         self.trusted_anchors = trust_anchors
         self.trusted_ids = set(trust_anchors.keys())
-        self.config_cache = ESCache(300)
-        self.entity_statement_cache = ESCache(300)
+
+        self.config_cache = ESCache(db=init_storage(db_conf, 'config'),
+                                    allowed_delta=allowed_delta)
+        self.entity_statement_cache = ESCache(db=init_storage(db_conf, 'entity_statement'),
+                                              allowed_delta=allowed_delta)
+
         self.http_cli = http_cli or requests.request
         self.allowed_delta = allowed_delta
         self.web_cert_path = None
@@ -119,7 +125,7 @@ class Collector(object):
         else:
             signed_entity_statement = self.get_signed_entity_statement(_url, self.httpc_params)
 
-        return  signed_entity_statement
+        return signed_entity_statement
 
     def _cert_path(self, entity_id):
         return os.path.join(self.ssc_dir, "{}.pem".format(quote_plus(entity_id)))
@@ -201,8 +207,9 @@ class Collector(object):
 
                 # The get the Entity Statement while using the certificate from the entity statement
                 # to verify the HTTPS certificate
-                cert_path = self.store_ssc_cert(unverified_entity_statement(_signed_entity_statement),
-                                                 entity_id)
+                cert_path = self.store_ssc_cert(
+                    unverified_entity_statement(_signed_entity_statement),
+                    entity_id)
                 if not cert_path:
                     logger.debug('No SSL certificate in the entity metadata')
             else:  # out of luck
@@ -317,7 +324,7 @@ class Collector(object):
             if fed_api_endpoint is None:
                 raise SystemError('Could not find federation_api endpoint')
             logger.debug("Federation API endpoint: '{}' for '{}'".format(fed_api_endpoint,
-                                                                        intermediate))
+                                                                         intermediate))
             entity_statement = self.get_entity_statement(fed_api_endpoint, intermediate,
                                                          entity_id)
             # entity_statement is a signed JWT
@@ -388,21 +395,3 @@ def branch2lists(node):
         else:
             res.extend(_lists)
     return res
-
-
-def main(entity_id, anchors):
-    collector = Collector(anchors)
-    entity_config = collector.get_configuration_information(entity_id)
-    _config = verify_self_signed_signature(entity_config)
-    tree = entity_config, collector.collect_superiors(entity_id, _config)
-    return tree
-
-
-if __name__ == '__main__':
-    leaf_id = "https://example.com/rp/fed"
-    trusted_anchors = {
-        "anchor_id": []  # Known public keys for a trusted anchor
-    }
-
-    tree = main(leaf_id, trusted_anchors)
-    chains = branch2lists(tree)

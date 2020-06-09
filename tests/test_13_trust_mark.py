@@ -9,7 +9,6 @@ from fedservice.entity_statement.trust_mark import get_trust_mark
 from fedservice.entity_statement.trust_mark import unpack_trust_mark
 from fedservice.message import TrustMark
 from fedservice.metadata_api.fs2 import read_info
-
 from .utils import DummyCollector
 from .utils import Publisher
 
@@ -22,6 +21,7 @@ BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
 ANCHOR = {'https://feide.no': read_info(os.path.join(ROOT_DIR, 'feide.no'), "feide.no", "jwks")}
 
+
 def test_create_trust_mark_self_signed():
     _entity_id = "https://example.com/op"
     _tm = TrustMark(
@@ -33,7 +33,7 @@ def test_create_trust_mark_self_signed():
             "-Basic-26-Sept-2015.zip"
     )
 
-    _key_jar = build_keyjar(KEYSPEC, owner=_entity_id)
+    _key_jar = build_keyjar(KEYSPEC, issuer_id=_entity_id)
 
     # Create the Signed JWT representing the Trust Mark
     _jwt0 = JWT(key_jar=_key_jar, iss=_entity_id, lifetime=3600)
@@ -50,7 +50,7 @@ def test_create_trust_mark_self_signed():
 
 def test_create_unpack_trust_mark_self_signed():
     _entity_id = "https://example.com/op"
-    _key_jar = build_keyjar(KEYSPEC, owner=_entity_id)
+    _key_jar = build_keyjar(KEYSPEC, issuer_id=_entity_id)
 
     _tm = create_trust_mark(_entity_id, _key_jar,
                             trust_mark_id="https://openid.net/certification/op",
@@ -66,7 +66,7 @@ def test_create_unpack_trust_mark_self_signed():
 def test_create_unpack_trust_3rd_party():
     _iss = "https://feide.no"
     _sub = "https://op.ntnu.no"
-    _key_jar = build_keyjar(KEYSPEC, owner=_iss)
+    _key_jar = build_keyjar(KEYSPEC, issuer_id=_iss)
 
     _tm = create_trust_mark(_iss, _key_jar, subject=_sub,
                             trust_mark_id="https://openid.net/certification/op",
@@ -81,10 +81,10 @@ def test_create_unpack_trust_3rd_party():
 
 def test_get_trust_mark_self_signed():
     _entity_id = "https://op.ntnu.no"
-    _key_jar = build_keyjar(KEYSPEC, owner=_entity_id)
+    config = {'keys': {'key_defs': KEYSPEC}}
 
     federation_entity = FederationEntity(
-        _entity_id, key_jar=_key_jar, trusted_roots=ANCHOR,
+        _entity_id, trusted_roots=ANCHOR, config=config,
         authority_hints=['https://ntnu.no'],
         entity_type='openid_relying_party',
         httpd=Publisher(ROOT_DIR),
@@ -105,7 +105,7 @@ def test_get_trust_mark_self_signed():
     )
 
     # Create the Signed JWT representing the Trust Mark
-    _jwt0 = JWT(key_jar=_key_jar, iss=_entity_id, lifetime=3600)
+    _jwt0 = JWT(key_jar=federation_entity.keyjar, iss=_entity_id, lifetime=3600)
     _jws = _jwt0.pack(_tm)
 
     trust_anchor_id = list(ANCHOR.keys())[0]
@@ -119,10 +119,10 @@ def test_get_trust_mark_3rd_party():
     _iss = "https://feide.no"
     _sub = "https://op.ntnu.no"
 
-    _key_jar = build_keyjar(KEYSPEC, owner=_iss)
+    config = {'keys': {'key_defs': KEYSPEC}}
 
     federation_entity = FederationEntity(
-        _iss, key_jar=_key_jar, trusted_roots=ANCHOR,
+        _iss, trusted_roots=ANCHOR, config=config,
         authority_hints=['https://ntnu.no'],
         entity_type='openid_relying_party',
         httpd=Publisher(ROOT_DIR),
@@ -139,7 +139,7 @@ def test_get_trust_mark_3rd_party():
     )
 
     # Create the Signed JWT representing the Trust Mark
-    _jwt0 = JWT(key_jar=_key_jar, iss=_iss, lifetime=3600)
+    _jwt0 = JWT(key_jar=federation_entity.keyjar, iss=_iss, lifetime=3600)
     _jws = _jwt0.pack(_tm)
 
     trust_anchor_id = list(ANCHOR.keys())[0]

@@ -77,17 +77,19 @@ class TestRpService(object):
         tree = self.fedent.collect_statement_chains(leaf_entity_id, _jws)
         _node = {leaf_entity_id: (_jws, tree)}
         chains = branch2lists(_node)
-        statements = [eval_chain(c, self.fedent.key_jar, 'openid_relying_party') for c in chains]
+        statements = [eval_chain(c, self.fedent.keyjar, 'openid_relying_party') for c in chains]
         assert len(statements) == 1
         statement = statements[0]
         assert set(statement.metadata.keys()) == {'application_type', 'claims',
                                                   'id_token_signing_alg_values_supported',
-                                                  'redirect_uris', 'contacts', 'response_types'}
+                                                  'redirect_uris', 'contacts', 'response_types',
+                                                  'jwks_uri'}
         statement = self.fedent.pick_metadata(statements)
         assert statement.fo == 'https://feide.no'
         assert set(statement.metadata.keys()) == {'application_type', 'claims',
                                                   'id_token_signing_alg_values_supported',
-                                                  'redirect_uris', 'contacts', 'response_types'}
+                                                  'redirect_uris', 'contacts', 'response_types',
+                                                  'jwks_uri'}
 
     def test_create_self_signed(self):
         metadata = {
@@ -113,7 +115,7 @@ class TestRpService(object):
         iss = "https://example.com"
         sub = iss
 
-        key_jar = build_keyjar(KEYSPEC, owner=iss)
+        key_jar = build_keyjar(KEYSPEC, issuer_id=iss)
         authority = {"https://ntnu.no": ["https://feide.no"]}
 
         _jwt = self.fedent.create_entity_statement(iss, sub, key_jar=key_jar, metadata=metadata,

@@ -117,7 +117,7 @@ class MetaAPIDb(MetaAPI):
         MetaAPI.__init__(self, static_dir)
         self.authn_info = authn_info
         self.db_uri = db_uri
-        self.key_jar = key_jar
+        self.keyjar = keyjar
         self.issuer = issuer
         self.lifetime = lifetime
         self.sign_alg = sign_alg
@@ -131,7 +131,7 @@ class MetaAPIDb(MetaAPI):
         else:
             kwargs['iss'] = self.issuer
 
-        jws = db_make_entity_statement(self.db_uri, key_jar=self.key_jar,
+        jws = db_make_entity_statement(self.db_uri, key_jar=self.keyjar,
                                        lifetime=self.lifetime,
                                        sign_lag=self.sign_alg,
                                        authn_info=self.authn_info, **kwargs)

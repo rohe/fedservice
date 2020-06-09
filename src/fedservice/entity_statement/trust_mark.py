@@ -47,7 +47,7 @@ def unpack_trust_mark(token, keyjar, entity_id):
 
 
 def get_trust_mark(federation_entity, token, entity_id, trust_anchor_id):
-    _tm = unpack_trust_mark(token, federation_entity.key_jar, entity_id)
+    _tm = unpack_trust_mark(token, federation_entity.keyjar, entity_id)
 
     # Get the self-signed entity statement
     entity_config = federation_entity.get_configuration_information(_tm["iss"])

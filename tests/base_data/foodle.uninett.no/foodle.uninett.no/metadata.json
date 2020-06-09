@@ -16,6 +16,7 @@
     ],
     "response_types": [
       "code"
-    ]
+    ],
+    "jwks_uri": "https://foodle.uninett.no/jwks.json"
   }
 }

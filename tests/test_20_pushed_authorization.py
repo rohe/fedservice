@@ -4,7 +4,6 @@ import os
 import pytest
 import yaml
 from cryptojwt import JWT
-from cryptojwt import KeyJar
 from cryptojwt.key_jar import build_keyjar
 from oidcendpoint.cookie import CookieDealer
 from oidcendpoint.endpoint_context import EndpointContext
@@ -14,8 +13,6 @@ from oidcendpoint.oidc.registration import Registration
 from oidcmsg.oauth2 import AuthorizationRequest
 from oidcservice import JWT_BEARER
 from oidcservice.service_context import ServiceContext
-from oidcservice.state_interface import InMemoryStateDataBase
-from oidcservice.state_interface import State
 
 from fedservice import FederationEntity
 from fedservice.entity_statement.statement import Statement
@@ -84,36 +81,26 @@ class TestEndpoint(object):
         # First the RP
         service_context = ServiceContext(issuer=RP_ENTITY_ID, keyjar=build_keyjar(KEYSPEC))
 
-        # the federation part of the RP
-        fed_key_jar = KeyJar()
-        fed_key_jar.import_jwks(read_info(os.path.join(ROOT_DIR, 'foodle.uninett.no'),
-                                          'foodle.uninett.no', 'jwks'),
-                                issuer=RP_ENTITY_ID)
-        # key_jar.import_jwks(read_info(os.path.join(ROOT_DIR, 'ntnu.no'), 'ntnu.no', 'jwks'),
-        #                     issuer=ENTITY_ID)
-
         self.rp_federation_entity = FederationEntity(
-            key_jar=fed_key_jar, entity_id=RP_ENTITY_ID, trusted_roots=ANCHOR,
-            authority_hints=['https://ntnu.no'],
+            entity_id=RP_ENTITY_ID, trusted_roots=ANCHOR, authority_hints=['https://ntnu.no'],
             entity_type='openid_relying_party', opponent_entity_type='openid_provider'
         )
+
+        self.rp_federation_entity.keyjar.import_jwks(
+            read_info(os.path.join(ROOT_DIR, 'foodle.uninett.no'),
+                      'foodle.uninett.no', 'jwks'), issuer_id=RP_ENTITY_ID)
 
         self.rp_federation_entity.collector = DummyCollector(
             trusted_roots=ANCHOR, root_dir=ROOT_DIR)
 
         # add the federation part to the service context
         service_context.federation_entity = self.rp_federation_entity
-        db = InMemoryStateDataBase()
-        db.set('state', State(iss='Issuer').to_json())
 
         # The RP has/supports 2 services
         self.service = {
-            'discovery': FedProviderInfoDiscovery(service_context,
-                                                  state_db=db),
-            'registration': FedRegistration(service_context,
-                                            state_db=db),
-            'authorization': FedAuthorization(service_context,
-                                              state_db=db),
+            'discovery': FedProviderInfoDiscovery(service_context),
+            'registration': FedRegistration(service_context),
+            'authorization': FedAuthorization(service_context),
         }
 
         # and now for the OP
@@ -149,7 +136,7 @@ class TestEndpoint(object):
             },
             "verify_ssl": False,
             "capabilities": CAPABILITIES,
-            "jwks": {"uri_path": "static/jwks.json", "key_defs": KEYSPEC},
+            "keys": {"uri_path": "static/jwks.json", "key_defs": KEYSPEC},
             "id_token": {
                 "class": IDToken,
                 "kwargs": {
@@ -238,16 +225,17 @@ class TestEndpoint(object):
         self.authorization_endpoint = endpoint_context.endpoint["authorization"]
         self.registration_endpoint = endpoint_context.endpoint["registration"]
 
-        key_jar = KeyJar()
-        key_jar.import_jwks(read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
-                            issuer=op_entity_id)
-
         federation_entity = FederationEntity(
-            op_entity_id, key_jar=key_jar, trusted_roots=ANCHOR,
+            op_entity_id, trusted_roots=ANCHOR,
             authority_hints=['https://ntnu.no'],
             entity_type='openid_relying_party',
             httpd=Publisher(ROOT_DIR),
             opponent_entity_type='openid_relying_party')
+
+        federation_entity.keyjar.import_jwks(
+            read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'),
+                      'op.ntnu.no', 'jwks'),
+            issuer_id=op_entity_id)
 
         federation_entity.collector = DummyCollector(
             httpd=Publisher(ROOT_DIR),
@@ -264,13 +252,13 @@ class TestEndpoint(object):
         statement.fo = "https://feide.no"
         _fe.op_statements = [statement]
         # and the OP's federation keys
-        self.rp_federation_entity.key_jar.import_jwks(
+        self.rp_federation_entity.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
-            issuer=self.registration_endpoint.endpoint_context.provider_info['issuer'])
+            issuer_id=self.registration_endpoint.endpoint_context.provider_info['issuer'])
 
         # Add RP's keys to the OP's keyjar.
         self.registration_endpoint.endpoint_context.keyjar.import_jwks(
-            self.service["discovery"].service_context.keyjar.export_jwks(issuer=""), RP_ENTITY_ID
+            self.service["discovery"].service_context.keyjar.export_jwks(issuer_id=""), RP_ENTITY_ID
         )
 
         authn_request = AuthorizationRequest(
@@ -344,13 +332,13 @@ class TestEndpoint(object):
         statement.fo = "https://feide.no"
         _fe.op_statements = [statement]
         # and the OP's federation keys
-        self.rp_federation_entity.key_jar.import_jwks(
+        self.rp_federation_entity.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
-            issuer=self.registration_endpoint.endpoint_context.provider_info['issuer'])
+            issuer_id=self.registration_endpoint.endpoint_context.provider_info['issuer'])
 
         # Add RP's keys to the OP's keyjar.
         self.registration_endpoint.endpoint_context.keyjar.import_jwks(
-            self.service["discovery"].service_context.keyjar.export_jwks(issuer=""), RP_ENTITY_ID
+            self.service["discovery"].service_context.keyjar.export_jwks(issuer_id=""), RP_ENTITY_ID
         )
 
         authn_request = AuthorizationRequest(

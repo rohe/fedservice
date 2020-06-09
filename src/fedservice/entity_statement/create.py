@@ -46,7 +46,7 @@ def create_entity_statement(iss, sub, key_jar, metadata=None, metadata_policy=No
 
     if include_jwks:
         # The public signing keys of the subject
-        msg['jwks'] = key_jar.export_jwks(issuer=sub)
+        msg['jwks'] = key_jar.export_jwks(issuer_id=sub)
 
     packer = JWT(key_jar=key_jar, iss=iss, lifetime=lifetime)
 

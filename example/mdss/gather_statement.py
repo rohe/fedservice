@@ -27,7 +27,7 @@ def main(fedent, entity_id, entity_type):
     msg = _jwt.jwt.payload()
     tree = fedent.collect_statement_chains(entity_id, msg)
     chains = branch2lists((_jws, tree))
-    statements = [eval_chain(c, fedent.key_jar, entity_type) for c in chains]
+    statements = [eval_chain(c, fedent.keyjar, entity_type) for c in chains]
     return statements
 
 
@@ -49,12 +49,11 @@ if __name__ == "__main__":
         trusted_roots=ANCHOR,
         authority_hints={'https://ntnu.no': ['https://feide.no']},
         entity_type="",
-        opponent_entity_type=args.entity_type,
-        key_jar=init_key_jar(key_defs=KEY_DEFS, owner=my_entity_id)
+        opponent_entity_type=args.entity_type
     )
 
     if args.insecure:
-        fedent.key_jar.verify_ssl = False
+        fedent.keyjar.verify_ssl = False
         fedent.collector.insecure = True
 
     for statement in main(fedent, args.entity_id, args.entity_type):

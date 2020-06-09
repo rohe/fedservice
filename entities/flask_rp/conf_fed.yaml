@@ -107,7 +107,29 @@ federation: &federation
       function: fedservice.op.add_on.ssc.add_ssc_support
       kwargs:
         ssc_dir: ssc
-
+  db_conf:
+    abstract_storage_cls: abstorage.base.LabeledAbstractStorage
+    default:
+      handler: abstorage.storages.abfile.AbstractFileSystem
+      fdir: 'storage/{issuer}/exp/fed'
+      key_conv: abstorage.converter.QPKey
+      value_conv: abstorage.converter.JSON
+    config:
+      handler: abstorage.storages.abfile.AbstractFileSystem
+      fdir: 'storage/{issuer}/exp/fed/config'
+      key_conv: abstorage.converter.QPKey
+      value_conv: abstorage.converter.JSON
+    entity_statement:
+      handler: abstorage.storages.abfile.AbstractFileSystem
+      fdir: 'storage/{issuer}/exp/fed/entity_statement'
+      key_conv: abstorage.converter.QPKey
+      value_conv: abstorage.converter.JSON
+    keyjar:
+      handler: abstorage.storages.abfile.AbstractFileSystem
+      fdir: 'storage/{issuer}/exp/fed/keyjar'
+      key_conv: abstorage.converter.QPKey
+      value_conv: cryptojwt.serialize.item.KeyIssuer
+      label: x
 
 # The keys in this dictionary are the OPs short user friendly name
 # not the issuer (iss) name.
@@ -120,12 +142,48 @@ clients:
     client_preferences: *prefs
     redirect_uris: null
     services: *services
+    db_conf:
+      abstract_storage_cls: abstorage.base.LabeledAbstractStorage
+      keyjar:
+        handler: abstorage.storages.abfile.AbstractFileSystem
+        fdir: 'storage/{issuer}/keyjar'
+        key_conv: abstorage.converter.QPKey
+        value_conv: cryptojwt.serialize.item.KeyIssuer
+        label: keyjar
+      default:
+        handler: abstorage.storages.abfile.AbstractFileSystem
+        fdir: 'storage/{issuer}'
+        key_conv: abstorage.converter.QPKey
+        value_conv: abstorage.converter.JSON
+      state:
+        handler: abstorage.storages.abfile.AbstractFileSystem
+        fdir: 'storage/{issuer}/state'
+        key_conv: abstorage.converter.QPKey
+        value_conv: abstorage.converter.JSON
   # Supports OP information lookup but not client registration
   local:
     issuer: "https://{domain}:5000"
     client_preferences: *prefs
     redirect_uris: ["https://{domain}:{port}/authz_cb/local"]
     services: *services
+    db_conf:
+      abstract_storage_cls: abstorage.base.LabeledAbstractStorage
+      keyjar:
+        handler: abstorage.storages.abfile.AbstractFileSystem
+        fdir: 'storage/local/keyjar'
+        key_conv: abstorage.converter.QPKey
+        value_conv: cryptojwt.serialize.item.KeyIssuer
+        label: keyjar
+      default:
+        handler: abstorage.storages.abfile.AbstractFileSystem
+        fdir: 'storage/local'
+        key_conv: abstorage.converter.QPKey
+        value_conv: abstorage.converter.JSON
+      state:
+        handler: abstorage.storages.abfile.AbstractFileSystem
+        fdir: 'storage/local/state'
+        key_conv: abstorage.converter.QPKey
+        value_conv: abstorage.converter.JSON
 
 webserver:
   port: *port

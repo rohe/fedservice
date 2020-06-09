@@ -102,7 +102,7 @@ def entity_statement_with_x5c():
     iss = "https://example.com"
     sub = iss
 
-    key_jar = build_keyjar(KEYSPEC, owner=iss)
+    key_jar = build_keyjar(KEYSPEC, issuer_id=iss)
     authority = ["https://ntnu.no"]
 
     with open(os.path.join(BASE_PATH, "cert.pem")) as fp:
