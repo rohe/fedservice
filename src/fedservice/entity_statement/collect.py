@@ -229,7 +229,7 @@ class Collector(object):
         :param entity_id: About whom the entity statement should be
         :return: Configuration information as a signed JWT
         """
-
+        logger.debug("--get_configuration_information(%s)", entity_id)
         _url = construct_well_known_url(entity_id, "openid-federation")
         logger.debug("Get config info from: %s", _url)
         try:
@@ -261,9 +261,10 @@ class Collector(object):
 
     def get_federation_api_endpoint(self, intermediate):
         # In cache
-        logger.debug('--get_federation_api_endpoint--')
+        logger.debug('--get_federation_api_endpoint(%s)', intermediate)
         _info = self.config_cache[intermediate]
         if _info:
+            logger.debug('Cached info: %s', _info)
             fed_api_endpoint = get_api_endpoint(_info)
         else:
             fed_api_endpoint = None
@@ -374,7 +375,6 @@ class Collector(object):
         for intermediate in statement['authority_hints']:
             if intermediate in seen:  # loop ?!
                 logger.warning("Loop detected at {}".format(intermediate))
-            logger.debug("Collect intermediate: %s", intermediate)
             superior[intermediate] = self.collect_intermediate(entity_id, intermediate, seen,
                                                                max_superiors)
 
