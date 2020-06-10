@@ -330,7 +330,7 @@ class Collector(object):
             # entity_statement is a signed JWT
             statement = unverified_entity_statement(entity_statement)
             logger.debug("Unverified entity statement from {} about {}: {}".format(
-                fed_api_endpoint, intermediate, statement))
+                fed_api_endpoint, entity_id, statement))
             self.entity_statement_cache[cache_key] = entity_statement
             time_key = "{}!exp!{}".format(intermediate, entity_id)
             self.entity_statement_cache[time_key] = statement["exp"]
