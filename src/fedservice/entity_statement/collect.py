@@ -108,6 +108,7 @@ class Collector(object):
         self.httpc_params = httpc_params or {}
         if insecure:
             self.httpc_params["verify"] = False
+        logger.debug('httpc_params: %s', httpc_params)
 
     def get_entity_statement(self, api_endpoint, issuer, subject):
         """
