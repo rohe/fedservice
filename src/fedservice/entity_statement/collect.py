@@ -356,6 +356,7 @@ class Collector(object):
         if seen is None:
             seen = []
 
+        logger.debug('Collect superiors on: %s', statement)
         if 'authority_hints' not in statement:
             return superior
         elif statement['iss'] == stop_at:
