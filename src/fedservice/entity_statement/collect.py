@@ -231,7 +231,7 @@ class Collector(object):
         """
 
         _url = construct_well_known_url(entity_id, "openid-federation")
-        logger.debug("Get config infor from: %s", _url)
+        logger.debug("Get config info from: %s", _url)
         try:
             if self.use_ssc:
                 logger.debug("Use SelfSignedCert support")
@@ -274,6 +274,7 @@ class Collector(object):
                 return None
 
             entity_config = verify_self_signed_signature(signed_entity_config)
+            logger.debug('Verified self signed statement: %s', entity_config)
             fed_api_endpoint = get_api_endpoint(entity_config)
             # update cache
             self.config_cache[intermediate] = entity_config
@@ -293,6 +294,7 @@ class Collector(object):
         :param max_superiors: The maximum number of superiors.
         :return:
         """
+        logger.debug('Collect intermediate "%s"', intermediate)
         # Should I stop when I reach the first trust anchor ?
         if entity_id == intermediate and entity_id in self.trusted_anchors:
             return None
@@ -362,6 +364,8 @@ class Collector(object):
         if seen is None:
             seen = []
 
+        logger.debug('Collect superiors to: %s', entity_id)
+        logger.debug('Collect based on: %s', statement)
         if 'authority_hints' not in statement:
             return superior
         elif statement['iss'] == stop_at:
