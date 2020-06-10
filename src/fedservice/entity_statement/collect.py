@@ -64,7 +64,7 @@ def construct_entity_statement_query(api_endpoint, issuer, subject):
                           urlencode({
                               "iss": issuer,
                               "sub": subject
-                          }))
+                              }))
 
 
 def active(config):
@@ -119,7 +119,7 @@ class Collector(object):
         else:
             signed_entity_statement = self.get_signed_entity_statement(_url, self.httpc_params)
 
-        return  signed_entity_statement
+        return signed_entity_statement
 
     def _cert_path(self, entity_id):
         return os.path.join(self.ssc_dir, "{}.pem".format(quote_plus(entity_id)))
@@ -201,8 +201,9 @@ class Collector(object):
 
                 # The get the Entity Statement while using the certificate from the entity statement
                 # to verify the HTTPS certificate
-                cert_path = self.store_ssc_cert(unverified_entity_statement(_signed_entity_statement),
-                                                 entity_id)
+                cert_path = self.store_ssc_cert(
+                    unverified_entity_statement(_signed_entity_statement),
+                    entity_id)
                 if not cert_path:
                     logger.debug('No SSL certificate in the entity metadata')
             else:  # out of luck
@@ -224,7 +225,7 @@ class Collector(object):
         """
 
         _url = construct_well_known_url(entity_id, "openid-federation")
-        logger.debug("Config URL: %s", _url)
+        logger.debug("Get configuration from: '%s'", _url)
         try:
             if self.use_ssc:
                 logger.debug("Use SelfSignedCert support")
@@ -233,13 +234,14 @@ class Collector(object):
                 self_signed_config = self.get_signed_entity_statement(_url, self.httpc_params)
         except MissingPage:  # if tenant involved
             _tenant_url = construct_tenant_well_known_url(entity_id, "openid-federation")
-            logger.debug("Tenant config URL: %s", _tenant_url)
+            logger.debug("Get configuration from (tenant): '%s'", _tenant_url)
             if _tenant_url != _url:
                 if self.use_ssc:
                     self_signed_config = self.do_ssc_seq(_tenant_url, entity_id)
                 else:
                     self_signed_config = self.get_signed_entity_statement(_tenant_url,
                                                                           self.httpc_params)
+                logger.debug('Self signed statement: %s', self_signed_config)
             else:
                 raise MissingPage("No such page: '{}'".format(_url))
         except SSLError as err:
@@ -265,6 +267,7 @@ class Collector(object):
                 return None
 
             entity_config = verify_self_signed_signature(signed_entity_config)
+            logger.debug('Verified entity config: %s', entity_config)
             fed_api_endpoint = get_api_endpoint(entity_config)
             # update cache
             self.config_cache[intermediate] = entity_config
@@ -317,13 +320,13 @@ class Collector(object):
             if fed_api_endpoint is None:
                 raise SystemError('Could not find federation_api endpoint')
             logger.debug("Federation API endpoint: '{}' for '{}'".format(fed_api_endpoint,
-                                                                        intermediate))
+                                                                         intermediate))
             entity_statement = self.get_entity_statement(fed_api_endpoint, intermediate,
                                                          entity_id)
             # entity_statement is a signed JWT
             statement = unverified_entity_statement(entity_statement)
             logger.debug("Unverified entity statement from {} about {}: {}".format(
-                fed_api_endpoint, intermediate, statement))
+                fed_api_endpoint, entity_id, statement))
             self.entity_statement_cache[cache_key] = entity_statement
             time_key = "{}!exp!{}".format(intermediate, entity_id)
             self.entity_statement_cache[time_key] = statement["exp"]
@@ -402,7 +405,7 @@ if __name__ == '__main__':
     leaf_id = "https://example.com/rp/fed"
     trusted_anchors = {
         "anchor_id": []  # Known public keys for a trusted anchor
-    }
+        }
 
     tree = main(leaf_id, trusted_anchors)
     chains = branch2lists(tree)
