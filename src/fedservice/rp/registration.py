@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 class FedRegistration(Registration):
     msg_type = RegistrationRequest
     response_cls = RegistrationResponse
-    endpoint_name = 'registration_endpoint'
-    endpoint = 'registration'
+    endpoint_name = 'federation_registration_endpoint'
+    endpoint = 'federation_registration'
     request_body_type = 'jose'
     response_body_type = 'jose'
 
