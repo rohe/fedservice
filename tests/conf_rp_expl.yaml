@@ -62,6 +62,9 @@ services: &services
   discovery:
     class: fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery
     kwargs: {}
+  registration:
+    class: fedservice.rp.registration.Registration
+    kwargs: {}
   authorization:
     class: oidcservice.oidc.authorization.Authorization
     kwargs: {}

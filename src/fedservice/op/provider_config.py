@@ -13,7 +13,7 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
     response_cls = ProviderConfigurationResponse
     request_format = 'jws'
     response_format = 'jws'
-    endpoint_name = 'discovery'
+
 
     def __init__(self, endpoint_context, **kwargs):
         provider_config.ProviderConfiguration.__init__(self, endpoint_context,

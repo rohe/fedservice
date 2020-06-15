@@ -1,16 +1,15 @@
 import os
+import shutil
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
 import pytest
 import responses
-from fedservice.entity_statement.collect import unverified_entity_statement
-
-from fedservice.rp import RPHandler
 from oidcrp.configure import Configuration
 
-from fedservice import create_federation_entity
+from fedservice.entity_statement.collect import unverified_entity_statement
 from fedservice.metadata_api.fs2 import FSEntityStatementAPI
+from fedservice.rp import RPHandler
 from tests.utils import get_netloc
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
@@ -31,10 +30,6 @@ def init_rp_handler(config):
     _fed_conf['keys'] = rp_keys_conf
     _httpc_params = config.httpc_params
 
-    _fed_conf['entity_id'] = _fed_conf['entity_id'].format(domain=config.domain, port=config.port)
-    federation_entity = create_federation_entity(httpc_params=_httpc_params, **_fed_conf)
-    federation_entity.keyjar.httpc_params = _httpc_params
-
     _path = rp_keys_conf['uri_path']
     if _path.startswith('./'):
         _path = _path[2:]
@@ -44,12 +39,17 @@ def init_rp_handler(config):
     return RPHandler(base_url=config.base_url, hash_seed=config.hash_seed,
                      jwks_path=_path, client_configs=config.clients,
                      services=config.services, httpc_params=_httpc_params,
-                     federation_entity=federation_entity)
+                     federation_entity_config=_fed_conf)
 
 
 class TestEndpointPersistence(object):
     @pytest.fixture(autouse=True)
     def create_rph(self):
+        try:
+            shutil.rmtree('storage')
+        except FileNotFoundError:
+            pass
+
         _file = os.path.join(BASE_PATH, "conf_rp_auto.yaml")
         config = Configuration.create_from_config_file(_file)
         # Have to make it absolute, not relative
@@ -57,8 +57,11 @@ class TestEndpointPersistence(object):
                                                           config.federation['trusted_roots'])
         config.federation['authority_hints'] = os.path.join(BASE_PATH,
                                                             config.federation['authority_hints'])
+        config.federation['entity_id'] = config.federation['entity_id'].format(
+            domain=config.domain, port=config.port)
 
-        self.rph = init_rp_handler(config)
+        self.rph1 = init_rp_handler(config)
+        self.rph2 = init_rp_handler(config)
 
         self.subject = 'https://op.ntnu.no'
         self.intermediate = 'https://ntnu.no'
@@ -103,13 +106,22 @@ class TestEndpointPersistence(object):
             _url = 'https://feide.no/api?iss=https%3A%2F%2Ffeide.no&sub=https%3A%2F%2Fntnu.no'
             rsps.add("GET", _url, body=stmts['fedop_on_inter'], status=200)
 
-            auth_req = self.rph.begin('ntnu')
+            auth_req = self.rph1.begin('ntnu')
 
-        iss = self.rph.hash2issuer['ntnu']
-        rp = self.rph.issuer2rp[iss]
+        iss = self.rph1.hash2issuer['ntnu']
+        rp = self.rph1.issuer2rp[iss]
         assert set(auth_req.keys()) == {'state', 'url'}
         p = urlparse(auth_req['url'])
         info = parse_qs(p.query)
         payload = unverified_entity_statement(info["request"][0])
         assert payload['client_id'] == rp.service_context.federation_entity.entity_id
         assert iss in payload['aud']
+
+        # Only persistent storage when it comes to federation information
+        rp2 = self.rph2.init_client(iss)
+        c = rp2.service_context.federation_entity.collector
+        assert set(c.config_cache.keys()) == {'https://ntnu.no', 'https://feide.no'}
+        assert set(c.entity_statement_cache.keys()) == {'https://ntnu.no!!https://op.ntnu.no',
+                                                        'https://feide.no!!https://ntnu.no',
+                                                        'https://ntnu.no!exp!https://op.ntnu.no',
+                                                        'https://feide.no!exp!https://ntnu.no'}

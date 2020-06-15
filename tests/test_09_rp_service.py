@@ -5,7 +5,6 @@ from urllib.parse import urlparse
 
 import pytest
 from cryptojwt.jws.jws import factory
-from cryptojwt.key_jar import init_key_jar
 from oidcservice.service_context import ServiceContext
 
 from fedservice import FederationEntity
@@ -13,7 +12,7 @@ from fedservice import eval_chain
 from fedservice.entity_statement.collect import branch2lists
 from fedservice.metadata_api.fs2 import FSEntityStatementAPI
 from fedservice.rp.provider_info_discovery import FedProviderInfoDiscovery
-from fedservice.rp.registration import FedRegistration
+from fedservice.rp.registration import Registration
 from .utils import DummyCollector
 from .utils import Publisher
 
@@ -72,12 +71,13 @@ class TestRpService(object):
         service_context.client_preferences = {
             "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
             "id_token_signed_response_alg": "ES256",
-            "token_endpoint_auth_method": "client_secret_basic"
+            "token_endpoint_auth_method": "client_secret_basic",
+            "federation_type": ['automatic']
         }
 
         self.service = {
             'discovery': FedProviderInfoDiscovery(service_context),
-            'registration': FedRegistration(service_context)
+            'registration': Registration(service_context)
         }
 
     def test_1(self):
@@ -90,7 +90,7 @@ class TestRpService(object):
         _q = parse_qs(p.query)
         assert list(_q.keys()) == ['iss']
 
-    def test_parse_response(self):
+    def test_parse_discovery_response(self):
         _dserv = self.service['discovery']
         _info = _dserv.get_request_parameters(iss='https://op.ntnu.no')
         http_response = self.federation_entity.collector.http_cli('GET', _info['url'])
@@ -102,9 +102,9 @@ class TestRpService(object):
         _dserv.update_service_context(statements)
         assert set(_dserv.service_context.get('behaviour').keys()) == {
             'grant_types', 'id_token_signed_response_alg',
-            'token_endpoint_auth_method'}
+            'token_endpoint_auth_method', 'federation_type'}
 
-    def test_create_request(self):
+    def test_create_reqistration_request(self):
         # get the entity statement from the OP
         _dserv = self.service['discovery']
         _info = _dserv.get_request_parameters(iss='https://op.ntnu.no')
@@ -140,9 +140,9 @@ class TestRpService(object):
                                        'iat', 'sub', 'authority_hints'}
         assert set(payload['metadata']['openid_relying_party'].keys()) == {
             'application_type', "id_token_signed_response_alg", 'grant_types',
-            'response_types', "token_endpoint_auth_method"}
+            'response_types', "token_endpoint_auth_method", 'federation_type'}
 
-    def test_parse_reg_response(self):
+    def test_parse_registration_response(self):
         # construct the entity statement the OP should return
         es_api = FSEntityStatementAPI(os.path.join(BASE_PATH, 'base_data'), iss="op.ntnu.no")
         jws = es_api.create_entity_statement("op.ntnu.no")
@@ -199,4 +199,4 @@ class TestRpService(object):
         assert set(claims.keys()) == {
             'id_token_signed_response_alg', 'application_type', 'client_secret',
             'client_id', 'response_types', 'token_endpoint_auth_method',
-            'grant_types', "contacts"}
+            'grant_types', "contacts", 'federation_type'}

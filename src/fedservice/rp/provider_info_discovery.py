@@ -112,13 +112,13 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
 
     def parse_response(self, info, sformat="", state="", **kwargs):
         # returns a list of Statement instances
-        resp = self.parse_federation_response(info, state=state)
+        statements = self.parse_federation_response(info, state=state)
 
-        if not resp:
+        if not statements:
             logger.error('Missing or faulty response')
             raise ResponseError("Missing or faulty response")
 
-        return resp
+        return statements
 
     def parse_federation_response(self, response, **kwargs):
         """
@@ -142,8 +142,8 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
 
         _fe = self.service_context.federation_entity
 
-        metadata = verify_self_signed_signature(response)
-        _tree = _fe.collect_statement_chains(entity_id, metadata)
+        statement = verify_self_signed_signature(response)
+        _tree = _fe.collect_statement_chains(entity_id, statement)
         _node = {entity_id: (response, _tree)}
         _chains = branch2lists(_node)
         for c in _chains:

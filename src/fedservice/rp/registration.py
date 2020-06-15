@@ -1,33 +1,30 @@
 import logging
 
 from cryptojwt.jws.jws import factory
-
-from fedservice.entity_statement.collect import unverified_entity_statement
-from fedservice.entity_statement.policy import combine_policy
-
-from fedservice.entity_statement.policy import apply_policy
 from oidcmsg.oidc import RegistrationRequest
 from oidcmsg.oidc import RegistrationResponse
 from oidcservice.exception import ResponseError
-from oidcservice.oidc.registration import Registration
+from oidcservice.oidc import registration
 
 from fedservice.entity_statement.collect import branch2lists
+from fedservice.entity_statement.collect import unverified_entity_statement
+from fedservice.entity_statement.policy import apply_policy
+from fedservice.entity_statement.policy import combine_policy
 from fedservice.entity_statement.verify import eval_policy_chain
 
 logger = logging.getLogger(__name__)
 
 
-class FedRegistration(Registration):
+class Registration(registration.Registration):
     msg_type = RegistrationRequest
     response_cls = RegistrationResponse
-    endpoint_name = 'registration_endpoint'
-    endpoint = 'registration'
+    endpoint_name = 'federation_registration_endpoint'
     request_body_type = 'jose'
     response_body_type = 'jose'
 
     def __init__(self, service_context, conf=None, client_authn_factory=None, **kwargs):
-        Registration.__init__(self, service_context, conf=conf,
-                              client_authn_factory=client_authn_factory)
+        registration.Registration.__init__(self, service_context, conf=conf,
+                                           client_authn_factory=client_authn_factory)
         #
         self.post_construct.append(self.create_entity_statement)
 
@@ -117,7 +114,7 @@ class FedRegistration(Registration):
         _fe.iss = resp['client_id']
 
     def get_response_ext(self, url, method="GET", body=None, response_body_type="",
-                     headers=None, **kwargs):
+                         headers=None, **kwargs):
         """
 
         :param url:

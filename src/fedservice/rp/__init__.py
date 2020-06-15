@@ -26,9 +26,9 @@ class RPHandler(oidcrp.RPHandler):
         return client
 
     def init_federation_entity(self, issuer):
-        args = {k: v for k, v in self.federation_entity_config.items() if k != 'entity_id'}
-        entity_id = self.federation_entity_config['entity_id'].format(issuer)
-        _federation_entity = create_federation_entity(entity_id, httpc_params=self.httpc_params,
+        args = {k: v for k, v in self.federation_entity_config.items()}
+        # entity_id = self.federation_entity_config['issuer'].format(issuer)
+        _federation_entity = create_federation_entity(httpc_params=self.httpc_params,
                                                       issuer=issuer, **args)
         _federation_entity.keyjar.httpc_params = self.httpc_params
         _federation_entity.collector.web_cert_path = self.federation_entity_config.get(

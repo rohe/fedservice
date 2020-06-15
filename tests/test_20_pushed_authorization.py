@@ -4,12 +4,11 @@ import os
 import pytest
 import yaml
 from cryptojwt import JWT
-from cryptojwt.key_jar import build_keyjar
 from oidcendpoint.cookie import CookieDealer
 from oidcendpoint.endpoint_context import EndpointContext
 from oidcendpoint.id_token import IDToken
 from oidcendpoint.oidc.provider_config import ProviderConfiguration
-from oidcendpoint.oidc.registration import Registration
+from oidcendpoint.oidc.registration import Registration as OPRegistration
 from oidcmsg.oauth2 import AuthorizationRequest
 from oidcservice import JWT_BEARER
 from oidcservice.service_context import ServiceContext
@@ -21,7 +20,7 @@ from fedservice.op.authorization import Authorization
 from fedservice.op.pushed_authorization import PushedAuthorization
 from fedservice.rp.authorization import FedAuthorization
 from fedservice.rp.provider_info_discovery import FedProviderInfoDiscovery
-from fedservice.rp.registration import FedRegistration
+from fedservice.rp.registration import Registration as RPRegistration
 from .utils import DummyCollector
 from .utils import Publisher
 
@@ -79,7 +78,13 @@ class TestEndpoint(object):
     @pytest.fixture(autouse=True)
     def create_setup(self):
         # First the RP
-        service_context = ServiceContext(issuer=RP_ENTITY_ID, keyjar=build_keyjar(KEYSPEC))
+        service_context = ServiceContext(config={
+                                             'behaviour': {
+                                                 'federation_types_supported': ['automatic']
+                                             },
+                                             'issuer': "https://op.ntnu.no",
+                                             'keys': {'key_defs': KEYSPEC}
+                                         })
 
         self.rp_federation_entity = FederationEntity(
             entity_id=RP_ENTITY_ID, trusted_roots=ANCHOR, authority_hints=['https://ntnu.no'],
@@ -99,7 +104,7 @@ class TestEndpoint(object):
         # The RP has/supports 2 services
         self.service = {
             'discovery': FedProviderInfoDiscovery(service_context),
-            'registration': FedRegistration(service_context),
+            'registration': RPRegistration(service_context),
             'authorization': FedAuthorization(service_context),
         }
 
@@ -154,7 +159,7 @@ class TestEndpoint(object):
                 },
                 "registration": {
                     "path": "registration",
-                    "class": Registration,
+                    "class": OPRegistration,
                     "kwargs": {},
                 },
                 "authorization": {
@@ -208,7 +213,10 @@ class TestEndpoint(object):
                     "function":
                         "fedservice.op.add_on.automatic_registration"
                         ".add_automatic_registration_support",
-                    "kwargs": {"new_id": False}  # default False
+                    "kwargs": {
+                        "new_id": False,  # default False
+                        "where": ["pushed_authorization"]
+                    }
                 }
             }
         }
@@ -250,7 +258,9 @@ class TestEndpoint(object):
         statement = Statement()
         statement.metadata = self.registration_endpoint.endpoint_context.provider_info
         statement.fo = "https://feide.no"
-        _fe.op_statements = [statement]
+        statement.verified_chain = [{'iss': "https://ntnu.no"}]
+
+        self.service['discovery'].update_service_context([statement])
         # and the OP's federation keys
         self.rp_federation_entity.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
@@ -299,38 +309,16 @@ class TestEndpoint(object):
         # Should have a registered client now
         assert set(self.authorization_endpoint.endpoint_context.cdb.keys()) == {RP_ENTITY_ID}
 
-    # def test_pushed_auth_request(self):
-    #     _msg = Message().from_urlencoded(AUTHN_REQUEST)
-    #     _jwt = JWT(key_jar=self.rp_keyjar, iss="s6BhdRkqt3")
-    #     _jws = _jwt.pack(_msg.to_dict())
-    #
-    #     authn_request = "request={}".format(_jws)
-    #
-    #     _req = self.pushed_authorization_endpoint.parse_request(
-    #         authn_request, auth="Basic czZCaGRSa3F0Mzo3RmpmcDBaQnIxS3REUmJuZlZkbUl3"
-    #     )
-    #
-    #     assert isinstance(_req, AuthorizationRequest)
-    #     _req = remove_jwt_parameters(_req)
-    #     assert set(_req.keys()) == {
-    #         "state",
-    #         "redirect_uri",
-    #         "response_type",
-    #         "scope",
-    #         "code_challenge_method",
-    #         "client_id",
-    #         "code_challenge",
-    #         "request",
-    #         "__verified_request",
-    #     }
-    #
+
     def test_pushed_auth_urlencoded_process(self):
         # This is cheating. Getting the OP's provider info
         _fe = self.service['registration'].service_context.federation_entity
         statement = Statement()
         statement.metadata = self.registration_endpoint.endpoint_context.provider_info
         statement.fo = "https://feide.no"
-        _fe.op_statements = [statement]
+        statement.verified_chain = [{'iss': "https://ntnu.no"}]
+
+        self.service['discovery'].update_service_context([statement])
         # and the OP's federation keys
         self.rp_federation_entity.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
@@ -386,20 +374,6 @@ class TestEndpoint(object):
         for parameter in ["code_challenge", "code_challenge_method", "client_assertion",
                           "client_assertion_type"]:
             del authn_request[parameter]
-
-        # # A new private_key_jwt since it's aimed at another endpoint
-        # # Create the private_key_jwt assertion
-        # _jwt = JWT(self.service['registration'].service_context.keyjar,
-        #            iss=RP_ENTITY_ID,
-        #            sign_alg="RS256")
-        # _jwt.with_jti = True
-        # _assertion = _jwt.pack(
-        #     {
-        #         "aud": [self.authorization_endpoint.endpoint_context.provider_info[
-        #                     "authorization_endpoint"]]
-        #     })
-        # authn_request.update({"client_assertion": _assertion, "client_assertion_type":
-        # JWT_BEARER})
 
         _req = self.authorization_endpoint.parse_request(authn_request)
 
