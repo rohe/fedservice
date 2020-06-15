@@ -108,6 +108,7 @@ class Collector(object):
         self.httpc_params = httpc_params or {}
         if insecure:
             self.httpc_params["verify"] = False
+        logger.debug('httpc_params: %s', httpc_params)
 
     def get_entity_statement(self, api_endpoint, issuer, subject):
         """
@@ -229,9 +230,9 @@ class Collector(object):
         :param entity_id: About whom the entity statement should be
         :return: Configuration information as a signed JWT
         """
-
+        logger.debug("--get_configuration_information(%s)", entity_id)
         _url = construct_well_known_url(entity_id, "openid-federation")
-        logger.debug("Config URL: %s", _url)
+        logger.debug("Get config info from: %s", _url)
         try:
             if self.use_ssc:
                 logger.debug("Use SelfSignedCert support")
@@ -240,7 +241,7 @@ class Collector(object):
                 self_signed_config = self.get_signed_entity_statement(_url, self.httpc_params)
         except MissingPage:  # if tenant involved
             _tenant_url = construct_tenant_well_known_url(entity_id, "openid-federation")
-            logger.debug("Tenant config URL: %s", _tenant_url)
+            logger.debug("Get config info from (tenant): %s", _tenant_url)
             if _tenant_url != _url:
                 if self.use_ssc:
                     self_signed_config = self.do_ssc_seq(_tenant_url, entity_id)
@@ -256,12 +257,15 @@ class Collector(object):
             logger.exception(err)
             raise
 
+        logger.debug('SelfSigned statement: %s', self_signed_config)
         return self_signed_config
 
     def get_federation_api_endpoint(self, intermediate):
         # In cache
+        logger.debug('--get_federation_api_endpoint(%s)', intermediate)
         _info = self.config_cache[intermediate]
         if _info:
+            logger.debug('Cached info: %s', _info)
             fed_api_endpoint = get_api_endpoint(_info)
         else:
             fed_api_endpoint = None
@@ -272,6 +276,7 @@ class Collector(object):
                 return None
 
             entity_config = verify_self_signed_signature(signed_entity_config)
+            logger.debug('Verified self signed statement: %s', entity_config)
             fed_api_endpoint = get_api_endpoint(entity_config)
             # update cache
             self.config_cache[intermediate] = entity_config
@@ -291,6 +296,7 @@ class Collector(object):
         :param max_superiors: The maximum number of superiors.
         :return:
         """
+        logger.debug('Collect intermediate "%s"', intermediate)
         # Should I stop when I reach the first trust anchor ?
         if entity_id == intermediate and entity_id in self.trusted_anchors:
             return None
@@ -360,6 +366,8 @@ class Collector(object):
         if seen is None:
             seen = []
 
+        logger.debug('Collect superiors to: %s', entity_id)
+        logger.debug('Collect based on: %s', statement)
         if 'authority_hints' not in statement:
             return superior
         elif statement['iss'] == stop_at:
@@ -368,7 +376,6 @@ class Collector(object):
         for intermediate in statement['authority_hints']:
             if intermediate in seen:  # loop ?!
                 logger.warning("Loop detected at {}".format(intermediate))
-            logger.debug("Collect intermediate: %s", intermediate)
             superior[intermediate] = self.collect_intermediate(entity_id, intermediate, seen,
                                                                max_superiors)
 
