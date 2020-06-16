@@ -48,7 +48,7 @@ oidc_keys: &oidc_keys
 op:
   server_info:
     issuer: *base_url
-    http_params:
+    httpc_params:
       verify: false
     session_key:
       filename: 'private/session_jwk.json'
@@ -141,7 +141,6 @@ op:
         path: authorization
         class: fedservice.op.authorization.Authorization
         kwargs:
-          client_authn_method: null
           claims_parameter_supported: True
           request_parameter_supported: True
           request_uri_parameter_supported: True
@@ -158,6 +157,9 @@ op:
             - query
             - fragment
             - form_post
+          client_authn_method:
+            - request_param
+            - none
       pushed_authorization:
           path: pushed_authorization
           class: fedservice.op.pushed_authorization.PushedAuthorization
@@ -307,6 +309,10 @@ op:
         function: fedservice.op.add_on.automatic_registration.add_automatic_registration_support
         kwargs:
           new_id: False  # default False
+          automatic_registration_client_authn_methods_supported:
+            - request_param
+          where:
+            - authorization
     db_conf:
       abstract_storage_cls: oidcmsg.storage.extension.LabeledAbstractStorage
       keyjar:

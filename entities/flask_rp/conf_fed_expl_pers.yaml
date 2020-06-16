@@ -4,7 +4,6 @@ logging:
   root:
     handlers:
       - default
-      - console
     level: DEBUG
   loggers:
     idp:
@@ -13,10 +12,6 @@ logging:
     default:
       class: logging.FileHandler
       filename: 'debug_expl.log'
-      formatter: default
-    console:
-      class: logging.StreamHandler
-      stream: 'ext://sys.stdout'
       formatter: default
   formatters:
     default:
@@ -27,7 +22,7 @@ port: &port 4000
 
 base_url: &base "https://{domain}:{port}"
 
-http_params:
+httpc_params:
   verify: False
 
 keydefs: &keydef
@@ -63,7 +58,7 @@ services: &services
     class: fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery
     kwargs: {}
   registration:
-    class: fedservice.rp.registration.FedRegistration
+    class: fedservice.rp.registration.Registration
     kwargs: {}
   authorization:
     class: oidcservice.oidc.authorization.Authorization
