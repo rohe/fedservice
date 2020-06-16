@@ -56,6 +56,7 @@ class Authorization(authorization.Authorization):
                         'error_description': 'Unknown client'
                     }
                 else:
+                    logger.debug('Automatic registration done')
                     if registered_client_id != _cid:
                         request["client_id"] = registered_client_id
                         kwargs["also_known_as"] = {_cid: registered_client_id}
