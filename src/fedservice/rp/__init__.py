@@ -27,7 +27,13 @@ class RPHandler(oidcrp.RPHandler):
 
     def init_federation_entity(self, issuer):
         args = {k: v for k, v in self.federation_entity_config.items()}
-        # entity_id = self.federation_entity_config['issuer'].format(issuer)
+        _entity_id = self.federation_entity_config['entity_id']
+        if '{}' in _entity_id:
+            _entity_id = _entity_id.format(issuer)
+            args['entity_id'] = _entity_id
+
+        logger.debug('Entity ID: %s', _entity_id)
+
         _federation_entity = create_federation_entity(httpc_params=self.httpc_params,
                                                       issuer=issuer, **args)
         _federation_entity.keyjar.httpc_params = self.httpc_params
