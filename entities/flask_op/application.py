@@ -19,7 +19,8 @@ def init_oidc_op_endpoints(app):
     _fed_conf = _server_info_config.get('federation')
     _fed_conf["entity_id"] = app.srv_config.base_url
     if 'httpc_params' not in _fed_conf:
-        _fed_conf['httpc_params'] = get_http_params(_server_info_config.get("http_params"))
+        _fed_conf['httpc_params'] = get_http_params(_server_info_config.get(
+            "httpc_params"))
 
     federation_entity = create_federation_entity(cwd=folder, **_fed_conf)
 
