@@ -109,7 +109,7 @@ class Registration(registration.Registration):
         return _sc.registration_response
 
     def update_service_context(self, resp, **kwargs):
-        Registration.update_service_context(self, resp, **kwargs)
+        registration.Registration.update_service_context(self, resp, **kwargs)
         _fe = self.service_context.federation_entity
         _fe.iss = resp['client_id']
 
