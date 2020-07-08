@@ -31,32 +31,30 @@ httpc_params:
   verify: False
 
 keydefs: &keydef
-  -
-    "type": "RSA"
+  - "type": "RSA"
     "key": ''
     "use": ["sig"]
-  -
-    "type": "EC"
+  - "type": "EC"
     "crv": "P-256"
     "use": ["sig"]
 
 rp_keys:
-    private_path: 'private/jwks_auto.json'
-    key_defs: *keydef
-    public_path: 'static/jwks_auto.json'
-    # this will create the jwks files if they absent
-    read_only: False
-    uri_path: 'static/jwks_auto.json'
+  private_path: 'private/jwks_auto.json'
+  key_defs: *keydef
+  public_path: 'static/jwks_auto.json'
+  # this will create the jwks files if they absent
+  read_only: False
+  uri_path: 'static/jwks_auto.json'
 
 # information used when registering the client, this may be the same for all OPs
 
 client_preferences: &prefs
-    application_name: rphandler
-    application_type: web
-    contacts: [ops@example.com]
-    response_types: [code]
-    scope: [openid, profile, email, address, phone]
-    token_endpoint_auth_method: [private_key_jwt]
+  application_name: rphandler
+  application_type: web
+  contacts: [ops@example.com]
+  response_types: [code]
+  scope: [openid, profile, email, address, phone]
+  token_endpoint_auth_method: [private_key_jwt]
 
 services: &services
   discovery:
@@ -64,7 +62,8 @@ services: &services
     kwargs: {}
   authorization:
     class: oidcservice.oidc.authorization.Authorization
-    kwargs: {}
+    kwargs: {'conf':{'post_construct':{'request_param': 'request'}}}
+  #    kwargs: {}
   accesstoken:
     class: oidcservice.oidc.access_token.AccessToken
     kwargs: {}
@@ -77,7 +76,7 @@ services: &services
 
 federation: &federation
   entity_id: *base
-  signing_keys:
+  keys:
     private_path: 'private/fed_keys_auto.json'
     key_defs: *keydef
     public_path: 'static/fed_keys_auto.json'
@@ -88,15 +87,22 @@ federation: &federation
   entity_type: openid_relying_party
   opponent_entity_type: openid_provider
   registration_type: automatic
-  add_on:
-    ssc:
-      function: fedservice.op.add_on.ssc.add_ssc_support
-      kwargs:
-        ssc_dir: ssc
+  db_conf:
+    abstract_storage_cls: 'oidcmsg.storage.extension.LabeledAbstractStorage'
+    config:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: 'storage/config'
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: oidcmsg.storage.converter.JSON
+    entity_statement:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: 'storage/entity'
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: oidcmsg.storage.converter.JSON
+
 
 # The keys in this dictionary are the OPs short user friendly name
 # not the issuer (iss) name.
-
 clients:
   # The ones that support webfinger, OP discovery and client registration
   # This is the default, any client that is not listed here is expected to
@@ -106,8 +112,8 @@ clients:
     redirect_uris: None
     services: *services
   # Supports OP information lookup but not client registration
-  local:
-    issuer: "https://{domain}:5000"
+  ntnu:
+    issuer: "https://op.ntnu.no"
     client_preferences: *prefs
     redirect_uris: ["https://{domain}:{port}/authz_cb/local"]
     services: *services

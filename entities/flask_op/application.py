@@ -1,7 +1,6 @@
 import os
 from urllib.parse import urlparse
 
-from cryptojwt.key_jar import init_key_jar
 from flask.app import Flask
 from oidcendpoint.util import get_http_params
 
@@ -17,25 +16,16 @@ def init_oidc_op_endpoints(app):
     _server_info_config['issuer'] = _server_info_config.get('issuer').format(
         domain=app.srv_config.domain, port=app.srv_config.port)
 
-    httpc_params = get_http_params(_server_info_config.get("http_params"))
-
-    _kj_args = {k: v for k, v in _server_info_config['jwks'].items() if k != 'uri_path'}
-    _kj = init_key_jar(**_kj_args)
-
-    iss = _server_info_config['issuer']
-
-    # make sure I have a set of keys under my 'real' name
-    _kj.import_jwks_as_json(_kj.export_jwks_as_json(True, ''), iss)
-    _kj.httpc_params = httpc_params
-
     _fed_conf = _server_info_config.get('federation')
     _fed_conf["entity_id"] = app.srv_config.base_url
+    if 'httpc_params' not in _fed_conf:
+        _fed_conf['httpc_params'] = get_http_params(_server_info_config.get(
+            "httpc_params"))
 
     federation_entity = create_federation_entity(cwd=folder, **_fed_conf)
-    federation_entity.key_jar.httpc_params = httpc_params
 
-    endpoint_context = EndpointContext(_server_info_config, keyjar=_kj,
-                                       cwd=folder, federation_entity=federation_entity)
+    endpoint_context = EndpointContext(_server_info_config, cwd=folder,
+                                       federation_entity=federation_entity)
 
     for endp in endpoint_context.endpoint.values():
         p = urlparse(endp.endpoint_path)

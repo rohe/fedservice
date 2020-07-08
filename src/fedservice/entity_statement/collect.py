@@ -11,6 +11,8 @@ from cryptojwt.jwk import x5c_to_pems
 from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import utc_time_sans_frac
 from oidcmsg.exception import MissingPage
+from oidcmsg.storage.init import get_storage_class
+from oidcmsg.storage.init import init_storage
 from requests.exceptions import SSLError
 
 from fedservice.exception import UnknownCertificate
@@ -79,7 +81,7 @@ def active(config):
 
 class Collector(object):
     def __init__(self, trust_anchors, http_cli=None, insecure=False,
-                 allowed_delta=300, httpc_params=None, cwd=''):
+                 allowed_delta=300, httpc_params=None, cwd='', db_conf=None):
         """
 
         :param trust_anchors:
@@ -90,8 +92,12 @@ class Collector(object):
         """
         self.trusted_anchors = trust_anchors
         self.trusted_ids = set(trust_anchors.keys())
-        self.config_cache = ESCache(300)
-        self.entity_statement_cache = ESCache(300)
+
+        self.config_cache = ESCache(db=init_storage(db_conf, 'config'),
+                                    allowed_delta=allowed_delta)
+        self.entity_statement_cache = ESCache(db=init_storage(db_conf, 'entity_statement'),
+                                              allowed_delta=allowed_delta)
+
         self.http_cli = http_cli or requests.request
         self.allowed_delta = allowed_delta
         self.web_cert_path = None
@@ -102,6 +108,7 @@ class Collector(object):
         self.httpc_params = httpc_params or {}
         if insecure:
             self.httpc_params["verify"] = False
+        logger.debug('httpc_params: %s', httpc_params)
 
     def get_entity_statement(self, api_endpoint, issuer, subject):
         """
@@ -223,7 +230,7 @@ class Collector(object):
         :param entity_id: About whom the entity statement should be
         :return: Configuration information as a signed JWT
         """
-
+        logger.debug("--get_configuration_information(%s)", entity_id)
         _url = construct_well_known_url(entity_id, "openid-federation")
         logger.debug("Get configuration from: '%s'", _url)
         try:
@@ -251,12 +258,15 @@ class Collector(object):
             logger.exception(err)
             raise
 
+        logger.debug('SelfSigned statement: %s', self_signed_config)
         return self_signed_config
 
     def get_federation_api_endpoint(self, intermediate):
         # In cache
+        logger.debug('--get_federation_api_endpoint(%s)', intermediate)
         _info = self.config_cache[intermediate]
         if _info:
+            logger.debug('Cached info: %s', _info)
             fed_api_endpoint = get_api_endpoint(_info)
         else:
             fed_api_endpoint = None
@@ -267,7 +277,7 @@ class Collector(object):
                 return None
 
             entity_config = verify_self_signed_signature(signed_entity_config)
-            logger.debug('Verified entity config: %s', entity_config)
+            logger.debug('Verified self signed statement: %s', entity_config)
             fed_api_endpoint = get_api_endpoint(entity_config)
             # update cache
             self.config_cache[intermediate] = entity_config
@@ -287,6 +297,7 @@ class Collector(object):
         :param max_superiors: The maximum number of superiors.
         :return:
         """
+        logger.debug('Collect intermediate "%s"', intermediate)
         # Should I stop when I reach the first trust anchor ?
         if entity_id == intermediate and entity_id in self.trusted_anchors:
             return None
@@ -356,7 +367,8 @@ class Collector(object):
         if seen is None:
             seen = []
 
-        logger.debug('Collect superiors on: %s', statement)
+        logger.debug('Collect superiors to: %s', entity_id)
+        logger.debug('Collect based on: %s', statement)
         if 'authority_hints' not in statement:
             return superior
         elif statement['iss'] == stop_at:
@@ -365,7 +377,6 @@ class Collector(object):
         for intermediate in statement['authority_hints']:
             if intermediate in seen:  # loop ?!
                 logger.warning("Loop detected at {}".format(intermediate))
-            logger.debug("Collect intermediate: %s", intermediate)
             superior[intermediate] = self.collect_intermediate(entity_id, intermediate, seen,
                                                                max_superiors)
 
@@ -392,21 +403,3 @@ def branch2lists(node):
         else:
             res.extend(_lists)
     return res
-
-
-def main(entity_id, anchors):
-    collector = Collector(anchors)
-    entity_config = collector.get_configuration_information(entity_id)
-    _config = verify_self_signed_signature(entity_config)
-    tree = entity_config, collector.collect_superiors(entity_id, _config)
-    return tree
-
-
-if __name__ == '__main__':
-    leaf_id = "https://example.com/rp/fed"
-    trusted_anchors = {
-        "anchor_id": []  # Known public keys for a trusted anchor
-        }
-
-    tree = main(leaf_id, trusted_anchors)
-    chains = branch2lists(tree)

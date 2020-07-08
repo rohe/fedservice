@@ -12,6 +12,10 @@ socket = %(project).sock
 chmod-socket = 666
 master      = true
 processes   = 4
+strict      = true
+single-interpreter = true
+die-on-term = true
+need-app = true
 #threads     = 2
 
 #plugins    = python
@@ -19,6 +23,9 @@ pythonpath     = %(base)/%(relpath)/%(project)
 
 virtualenv  = %(base)/.env
 
+# disable-logging = true
+# log-4xx = true
+# log-5xx = true
 logto = /var/log/uwsgi/%(project).log
 log-maxsize = 100000000
 log-backupname = /var/log/uwsgi/%(project).old.log
@@ -31,9 +38,15 @@ listen = 128
 
 # respawn processes after serving ... requests
 max-requests    = 1000
+max-worker-lifetime = 3600           ; Restart workers after this many seconds
+reload-on-rss = 2048                 ; Restart workers after this much resident memory
+worker-reload-mercy = 60
 
-# respawn processes taking more than takes more then ... seconds (12 minutes!!)
+# respawn processes taking more then ... seconds (12 minutes!!)
 harakiri = 20
+
+auto-procname = true
+procname-prefix = "op "
 
 #
 buffer-size=32768

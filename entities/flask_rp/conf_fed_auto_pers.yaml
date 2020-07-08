@@ -27,7 +27,7 @@ port: &port 4001
 
 base_url: &base "https://{domain}:{port}"
 
-httpc_params:
+http_params:
   verify: False
 
 keydefs: &keydef
@@ -76,8 +76,8 @@ services: &services
     kwargs: {}
 
 federation: &federation
-  entity_id: *base
-  signing_keys:
+  entity_id: "https://{domain}:{port}/{{}}"
+  keys:
     private_path: 'private/fed_keys_auto.json'
     key_defs: *keydef
     public_path: 'static/fed_keys_auto.json'
@@ -88,11 +88,53 @@ federation: &federation
   entity_type: openid_relying_party
   opponent_entity_type: openid_provider
   registration_type: automatic
+  db_conf:
+    abstract_storage_cls: oidcmsg.storage.extension.LabeledAbstractStorage
+    keyjar:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: storage/auto/fed/{issuer}/keyjar
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: cryptojwt.serialize.item.KeyIssuer
+      label: 'x'
+    default:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: storage/auto/fed/{issuer}
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: oidcmsg.storage.converter.JSON
+    entity_statement:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: storage/auto/fed/{issuer}/entity_statement
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: oidcmsg.storage.converter.JSON
+    config:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: storage/auto/fed/{issuer}/config
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: oidcmsg.storage.converter.JSON
   add_on:
     ssc:
       function: fedservice.op.add_on.ssc.add_ssc_support
       kwargs:
         ssc_dir: ssc
+
+rp_db_conf: &db_conf
+      abstract_storage_cls: oidcmsg.storage.extension.LabeledAbstractStorage
+      keyjar:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: storage/auto/{issuer}/keyjar
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: cryptojwt.serialize.item.KeyIssuer
+        label: keyjar
+      default:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: storage/auto/{issuer}
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: oidcmsg.storage.converter.JSON
+      state:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: storage/auto/{issuer}/state
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: oidcmsg.storage.converter.JSON
 
 # The keys in this dictionary are the OPs short user friendly name
 # not the issuer (iss) name.
@@ -105,12 +147,15 @@ clients:
     client_preferences: *prefs
     redirect_uris: None
     services: *services
+    db_conf: *db_conf
   # Supports OP information lookup but not client registration
   local:
     issuer: "https://{domain}:5000"
+    entity_id: "https://{domain}:{port}/local"
     client_preferences: *prefs
     redirect_uris: ["https://{domain}:{port}/authz_cb/local"]
     services: *services
+    db_conf: *db_conf
 
 webserver:
   port: *port

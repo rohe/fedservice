@@ -1,34 +1,30 @@
 import logging
 
 from cryptojwt.jws.jws import factory
-
-from fedservice.entity_statement.collect import unverified_entity_statement
-from fedservice.entity_statement.policy import combine_policy
-
-from fedservice.entity_statement.policy import apply_policy
 from oidcmsg.oidc import RegistrationRequest
 from oidcmsg.oidc import RegistrationResponse
 from oidcservice.exception import ResponseError
-from oidcservice.oidc.registration import Registration
+from oidcservice.oidc import registration
 
 from fedservice.entity_statement.collect import branch2lists
+from fedservice.entity_statement.collect import unverified_entity_statement
+from fedservice.entity_statement.policy import apply_policy
+from fedservice.entity_statement.policy import combine_policy
 from fedservice.entity_statement.verify import eval_policy_chain
 
 logger = logging.getLogger(__name__)
 
 
-class FedRegistration(Registration):
+class Registration(registration.Registration):
     msg_type = RegistrationRequest
     response_cls = RegistrationResponse
-    endpoint_name = 'registration_endpoint'
-    endpoint = 'registration'
+    endpoint_name = 'federation_registration_endpoint'
     request_body_type = 'jose'
     response_body_type = 'jose'
 
-    def __init__(self, service_context, state_db, conf=None,
-                 client_authn_factory=None, **kwargs):
-        Registration.__init__(self, service_context, state_db, conf=conf,
-                              client_authn_factory=client_authn_factory)
+    def __init__(self, service_context, conf=None, client_authn_factory=None, **kwargs):
+        registration.Registration.__init__(self, service_context, conf=conf,
+                                           client_authn_factory=client_authn_factory)
         #
         self.post_construct.append(self.create_entity_statement)
 
@@ -52,7 +48,7 @@ class FedRegistration(Registration):
         _fe = self.service_context.federation_entity
         _md = {_fe.entity_type: request_args.to_dict()}
         return _fe.create_entity_statement(
-            iss=_fe.entity_id, sub=_fe.entity_id, metadata=_md, key_jar=_fe.key_jar,
+            iss=_fe.entity_id, sub=_fe.entity_id, metadata=_md, key_jar=_fe.keyjar,
             authority_hints=_fe.proposed_authority_hints)
 
     def parse_response(self, info, sformat="", state="", **kwargs):
@@ -76,7 +72,7 @@ class FedRegistration(Registration):
 
         # Can not collect trust chain. Have to verify the signed JWT with keys I have
 
-        kj = self.service_context.federation_entity.key_jar
+        kj = self.service_context.federation_entity.keyjar
         _jwt = factory(resp)
         entity_statement = _jwt.verify_compact(resp, keys=kj.get_jwt_verify_keys(_jwt.jwt))
 
@@ -104,7 +100,7 @@ class FedRegistration(Registration):
         chains = branch2lists(_node)
 
         # Get the policies
-        policy_chains_tup = [eval_policy_chain(c, _fe.key_jar, _fe.entity_type) for c in chains]
+        policy_chains_tup = [eval_policy_chain(c, _fe.keyjar, _fe.entity_type) for c in chains]
         _policy = combine_policy(policy_chains_tup[0][1],
                                  entity_statement['metadata_policy'][_fe.entity_type])
         print("Combined policy: {}".format(_policy))
@@ -113,12 +109,12 @@ class FedRegistration(Registration):
         return _sc.registration_response
 
     def update_service_context(self, resp, **kwargs):
-        Registration.update_service_context(self, resp, **kwargs)
+        registration.Registration.update_service_context(self, resp, **kwargs)
         _fe = self.service_context.federation_entity
         _fe.iss = resp['client_id']
 
     def get_response_ext(self, url, method="GET", body=None, response_body_type="",
-                     headers=None, **kwargs):
+                         headers=None, **kwargs):
         """
 
         :param url:

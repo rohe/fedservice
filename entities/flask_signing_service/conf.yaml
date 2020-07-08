@@ -55,7 +55,7 @@ server_info:
       iss: 'lu.se'
       url_prefix: 'https://{domain}:{port}/eid'
 
-http_params:
+httpc_params:
   verify_ssl: False
 
 webserver:

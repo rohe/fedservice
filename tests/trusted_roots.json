@@ -1,0 +1,13 @@
+{
+  "https://feide.no": {
+    "keys": [
+      {
+        "kty": "RSA",
+        "kid": "YWdDU3BDU0ZRRDA0bkhsODRsVDRpb19kNnoxUl9iZXFqNS1aRjllZE55QQ",
+        "e": "AQAB",
+        "n": "tlEoSbeWkRR67I4czPEa8kRAS5At-gpb6wxYxuhyUrkJw_s3PoePc32Xvl2qKycReXx5CwVKV7zjFdNwvQDCBLvaaqC46_H4J2jcZdcoR7DAaaJzIutrrOk5IjhjJOsmaUZ78En9q6-TID5bJeQa-X6EbU8g_Yi5u8GW6qKbehHCzH4ORpYV7Zxt2wtYiZuZp-TtPFOgnp1IyceGUrPEJUsN9RwYgGLYyALxVxz_LlUk8bMAxqeu7EE110z_Rjo_S8e86wdEXaGw0wH_bn6AjmuSZFXBnHdZj5f16OYXfk5jsJ6a7ZhQr5XfCxxDTmxj_WSJeqG3FjiLlqGZuT1DYQ",
+        "d": "T0lqIOzzUPK8JqYDBmmQU221HGd-ZzAcG1NKRG6QUUNhaNaWht4DV7F1zXcEazHZWqD0LwPE-fUOOM60R63NsqtTaG2vHgUj61eiCbQRM2Q9uXLJaZVCRXdDvosRKtwM31mkyrIS3JhFfo8_qnHR_VC1HKh962SLiYi-Lho7TVEyH5wpI_bZ7HPapPYNm6lpRaxqSrPSf-gmejHTSJ6wMWpsOFGUBsnwhXEc2s9eXDPKGCcXjm74YEX33ItIblmcYTO_Z6OLvECLnDKqUvJbwE_G6z7Praj75zUJKA0xbi2hKJUyH9-JS3ZYvBHmJD4eSlOWTJhI89S6CzrVU_FsJQ"
+      }
+    ]
+  }
+}

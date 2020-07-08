@@ -1,14 +1,22 @@
 import logging
 
 from cryptojwt.jwt import utc_time_sans_frac
+from oidcendpoint.util import importer
 
 logger = logging.getLogger(__name__)
 
 
 class ESCache(object):
-    def __init__(self, allowed_delta=300):
-        self._db = {}
+    def __init__(self, db, allowed_delta=300):
+        self._db = db
         self.allowed_delta = allowed_delta
+
+    # def get_db(self, db_conf=None):
+    #     if db_conf:
+    #         _kwargs = db_conf.get("kwargs", {})
+    #         return importer(db_conf["class"])(**_kwargs)
+    #     else:
+    #         return {}
 
     def __setitem__(self, key, value):
         self._db[key] = value
@@ -39,3 +47,6 @@ class ESCache(object):
             return True
         else:
             return False
+
+    def keys(self):
+        return self._db.keys()

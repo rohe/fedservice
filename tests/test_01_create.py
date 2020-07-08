@@ -35,7 +35,7 @@ def test_create_self_signed():
     iss = "https://example.com"
     sub = iss
 
-    key_jar = build_keyjar(KEYSPEC, owner=iss)
+    key_jar = build_keyjar(KEYSPEC, issuer_id=iss)
     authority = ["https://ntnu.no"]
 
     _jwt = create_entity_statement(iss, sub, key_jar, metadata=metadata, authority_hints=authority)
@@ -77,14 +77,14 @@ def test_signed_someone_else_metadata():
     iss = "https://example.com"
     sub = "https://foo.example.org/rp"
 
-    sub_key_jar = build_keyjar(KEYSPEC, owner=sub)
+    sub_key_jar = build_keyjar(KEYSPEC, issuer_id=sub)
 
-    iss_key_jar = build_keyjar(KEYSPEC, owner=iss)
-    iss_key_jar.import_jwks_as_json(sub_key_jar.export_jwks_as_json(issuer=sub),
-                                    issuer=sub)
+    iss_key_jar = build_keyjar(KEYSPEC, issuer_id=iss)
+    iss_key_jar.import_jwks_as_json(sub_key_jar.export_jwks_as_json(issuer_id=sub),
+                                    issuer_id=sub)
 
-    sub_key_jar.import_jwks_as_json(iss_key_jar.export_jwks_as_json(issuer=iss),
-                                    issuer=iss)
+    sub_key_jar.import_jwks_as_json(iss_key_jar.export_jwks_as_json(issuer_id=iss),
+                                    issuer_id=iss)
 
     authority = {"https://core.example.com": ["https://federation.example.org"]}
 

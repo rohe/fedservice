@@ -24,7 +24,7 @@ class Configuration:
         self.port = lower_or_upper(conf, "port")
 
         # HTTP params
-        _params = get_http_params(conf.get("http_params"))
+        _params = get_http_params(conf.get("httpc_params"))
         if _params:
             self.httpc_params = _params
         else:

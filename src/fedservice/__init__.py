@@ -5,6 +5,9 @@ from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import KeyJar
 from cryptojwt.key_jar import init_key_jar
 from oidcendpoint.util import importer
+from oidcmsg.context import OidcContext
+from oidcmsg.storage.init import get_storage_class
+from oidcmsg.storage.init import get_storage_conf
 
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.collect import branch2lists
@@ -17,24 +20,26 @@ from fedservice.entity_statement.verify import eval_policy_chain
 from fedservice.utils import load_json
 
 __author__ = 'Roland Hedberg'
-__version__ = '0.6.0'
+__version__ = '1.0.0'
 
 logger = logging.getLogger(__name__)
 
 
-class FederationEntity(object):
+class FederationEntity(OidcContext):
     def __init__(self, entity_id, trusted_roots, authority_hints=None,
-                 key_jar=None, default_lifetime=86400, httpd=None,
-                 priority=None, entity_type='', opponent_entity_type='',
-                 registration_type='', cwd='', httpc_params=None):
+                 default_lifetime=86400, httpd=None, priority=None, entity_type='',
+                 opponent_entity_type='', registration_type='', cwd='', httpc_params=None,
+                 config=None):
+        OidcContext.__init__(self, config, entity_id=entity_id)
         self.collector = Collector(trust_anchors=trusted_roots, http_cli=httpd, cwd=cwd,
-                                   httpc_params=httpc_params)
+                                   httpc_params=httpc_params, db_conf=self.db_conf)
         self.entity_id = entity_id
         self.entity_type = entity_type
         self.opponent_entity_type = opponent_entity_type
-        self.key_jar = key_jar or KeyJar(httpc_params=httpc_params)
+
         for iss, jwks in trusted_roots.items():
-            self.key_jar.import_jwks(jwks, iss)
+            self.keyjar.import_jwks(jwks, iss)
+
         self.authority_hints = authority_hints
         self.default_lifetime = default_lifetime
         self.tr_priority = priority or sorted(set(trusted_roots.keys()))
@@ -55,12 +60,12 @@ class FederationEntity(object):
         if not entity_type:
             entity_type = self.opponent_entity_type
 
-        return [eval_chain(c, self.key_jar, entity_type, apply_policies) for c in chains]
+        return [eval_chain(c, self.keyjar, entity_type, apply_policies) for c in chains]
 
     def create_entity_statement(self, iss, sub, key_jar=None, metadata=None, metadata_policy=None,
                                 authority_hints=None, lifetime=0, **kwargs):
         if not key_jar:
-            key_jar = self.key_jar
+            key_jar = self.keyjar
         if not authority_hints:
             authority_hints = self.authority_hints
         if not lifetime:
@@ -115,7 +120,7 @@ class FederationEntity(object):
         _chains = branch2lists(_node)
 
         # verify the trust paths and apply policies
-        return [eval_chain(c, self.key_jar, metadata_type) for c in _chains]
+        return [eval_chain(c, self.keyjar, metadata_type) for c in _chains]
 
 
 def create_federation_entity(entity_id, httpc_params=None, **kwargs):
@@ -126,11 +131,6 @@ def create_federation_entity(entity_id, httpc_params=None, **kwargs):
         except KeyError:
             pass
 
-    if 'signing_keys' in kwargs:
-        args['key_jar'] = init_key_jar(**kwargs['signing_keys'],
-                                       owner=entity_id)
-        args['key_jar'].httpc_params = httpc_params
-
     for param in ['entity_type', 'priority', 'opponent_entity_type',
                   'registration_type', 'cwd']:
         try:
@@ -138,14 +138,24 @@ def create_federation_entity(entity_id, httpc_params=None, **kwargs):
         except KeyError:
             pass
 
+    _conf = {}
+    for _key in ['keys', 'db_conf', 'issuer']:
+        _value = kwargs.get(_key)
+        if _value:
+            _conf[_key] = _value
+    if _conf:
+        _conf['httpc_params'] = args['httpc_params']
+        args['config'] = _conf
+
     federation_entity = FederationEntity(entity_id, **args)
 
     add_ons = kwargs.get("add_on")
-    for spec in add_ons.values():
-        if isinstance(spec["function"], str):
-            _func = importer(spec["function"])
-        else:
-            _func = spec["function"]
-        _func(federation_entity, **spec["kwargs"])
+    if add_ons:
+        for spec in add_ons.values():
+            if isinstance(spec["function"], str):
+                _func = importer(spec["function"])
+            else:
+                _func = spec["function"]
+            _func(federation_entity, **spec["kwargs"])
 
     return federation_entity

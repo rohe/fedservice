@@ -1,8 +1,11 @@
 import json
+import logging
 import os
 from urllib.parse import unquote_plus
 
 from fedservice.metadata_api import EntityStatementAPI
+
+logger = logging.getLogger(__name__)
 
 
 def read_info(dir, sub, typ='metadata'):
@@ -30,6 +33,7 @@ class FSEntityStatementAPI(EntityStatementAPI):
 
     def gather_info(self, sub):
         iss_id = self.make_entity_id(self.iss)
+        logger.debug('Statement Issuer ID: %s', iss_id)
         if iss_id not in self.keyjar:
             self.load_jwks(self.iss, self.iss, self.make_entity_id(sub))
 
@@ -38,6 +42,7 @@ class FSEntityStatementAPI(EntityStatementAPI):
         else:
             sub_id = self.make_entity_id(sub)
 
+        logger.debug('Subject ID: %s', sub_id)
         if sub_id not in self.keyjar:
             self.load_jwks(self.iss, sub, sub_id)
 
@@ -50,4 +55,5 @@ class FSEntityStatementAPI(EntityStatementAPI):
             if os.path.isfile(metadata_file):
                 data[name] = json.loads(open(metadata_file).read())
 
+        logger.debug("Entity statement: %s", data)
         return data

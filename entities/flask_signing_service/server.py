@@ -57,20 +57,24 @@ def init_app(config_file, name=None, **kwargs):
 
 
 if __name__ == "__main__":
+    domain = '127.0.0.1'
+    op_port = 5000
+    rp_spec = [("../flask_rp/static/fed_keys.json", 4000),
+               ("../flask_rp/static/fed_keys_auto.json", 4001)]
+
     # Copy dynamically created files to there places in the base_data information tree.
     key_jar = KeyJar()
     key_jar.import_jwks_from_file("../flask_op/static/fed_keys.json", "")
-    _jwks = key_jar.export_jwks_as_json(issuer="")
-    with open('base_data/umu.se/https%3A%2F%2F127.0.0.1%3A5000/jwks.json', "w") as fp:
+    _jwks = key_jar.export_jwks_as_json(issuer_id="")
+    with open('base_data/umu.se/https%3A%2F%2F{}%3A{}/jwks.json'.format(domain,op_port), "w") as fp:
         fp.write(_jwks)
 
-    for _key_file, _port in [("../flask_rp/static/fed_keys.json", 4000),
-                             ("../flask_rp/static/fed_keys_auto.json", 4001)]:
+    for _key_file, _port in rp_spec:
         if os.path.isfile(_key_file):
             key_jar = KeyJar()
             key_jar.import_jwks_from_file(_key_file, "")
-            _jwks = key_jar.export_jwks_as_json(issuer="")
-            _file = 'base_data/lu.se/https%3A%2F%2F127.0.0.1%3A{}/jwks.json'.format(_port)
+            _jwks = key_jar.export_jwks_as_json(issuer_id="")
+            _file = 'base_data/lu.se/https%3A%2F%2F{}%3A{}%2Flocal/jwks.json'.format(domain,_port)
             with open(_file, "w") as fp:
                 fp.write(_jwks)
 
@@ -86,7 +90,7 @@ if __name__ == "__main__":
 
     with open(_cert.format(dir_path), 'r') as fp:
         pem = fp.read()
-        app.signing_service.x5c = pems_to_x5c([pem])
+    app.signing_service.x5c = pems_to_x5c([pem])
 
     app.run(host=web_conf.get('domain'), port=web_conf.get('port'),
-            debug=web_conf.get('domain', True), ssl_context=ssl_context)
+            debug=web_conf.get('debug', True), ssl_context=ssl_context)

@@ -4,7 +4,6 @@ logging:
   root:
     handlers:
       - default
-      - console
     level: DEBUG
   loggers:
     idp:
@@ -12,18 +11,14 @@ logging:
   handlers:
     default:
       class: logging.FileHandler
-      filename: 'debug_auto.log'
-      formatter: default
-    console:
-      class: logging.StreamHandler
-      stream: 'ext://sys.stdout'
+      filename: 'debug_expl.log'
       formatter: default
   formatters:
     default:
       format: '%(asctime)s %(name)s %(levelname)s %(message)s'
 
 domain: &domain 127.0.0.1
-port: &port 4001
+port: &port 4000
 
 base_url: &base "https://{domain}:{port}"
 
@@ -41,12 +36,12 @@ keydefs: &keydef
     "use": ["sig"]
 
 rp_keys:
-    private_path: 'private/jwks_auto.json'
+    private_path: 'private/jwks_expl.json'
     key_defs: *keydef
-    public_path: 'static/jwks_auto.json'
+    public_path: 'static/jwks_expl.json'
     # this will create the jwks files if they absent
     read_only: False
-    uri_path: 'static/jwks_auto.json'
+    uri_path: 'static/jwks_expl.json'
 
 # information used when registering the client, this may be the same for all OPs
 
@@ -62,6 +57,9 @@ services: &services
   discovery:
     class: fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery
     kwargs: {}
+  registration:
+    class: fedservice.rp.registration.Registration
+    kwargs: {}
   authorization:
     class: oidcservice.oidc.authorization.Authorization
     kwargs: {}
@@ -76,23 +74,65 @@ services: &services
     kwargs: {}
 
 federation: &federation
-  entity_id: *base
-  signing_keys:
-    private_path: 'private/fed_keys_auto.json'
+  entity_id: "https://{domain}:{port}/{{}}"
+  keys:
+    private_path: 'private/fed_keys_expl.json'
     key_defs: *keydef
-    public_path: 'static/fed_keys_auto.json'
+    public_path: 'static/fed_keys_expl.json'
     read_only: false
   authority_hints: authority_hints.json
   trusted_roots: trusted_roots.json
   priority: []
   entity_type: openid_relying_party
   opponent_entity_type: openid_provider
-  registration_type: automatic
+  registration_type: explicit
+  db_conf:
+    abstract_storage_cls: oidcmsg.storage.extension.LabeledAbstractStorage
+    keyjar:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: storage/expl/fed/{issuer}/keyjar
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: cryptojwt.serialize.item.KeyIssuer
+      label: 'x'
+    default:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: storage/expl/fed/{issuer}
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: oidcmsg.storage.converter.JSON
+    entity_statement:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: storage/expl/fed/{issuer}/entity_statement
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: oidcmsg.storage.converter.JSON
+    config:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: storage/expl/fed/{issuer}/config
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: oidcmsg.storage.converter.JSON
   add_on:
     ssc:
       function: fedservice.op.add_on.ssc.add_ssc_support
       kwargs:
         ssc_dir: ssc
+
+rp_db_conf: &db_conf
+  abstract_storage_cls: oidcmsg.storage.extension.LabeledAbstractStorage
+  keyjar:
+    handler: oidcmsg.storage.abfile.AbstractFileSystem
+    fdir: storage/expl/{issuer}/keyjar
+    key_conv: oidcmsg.storage.converter.QPKey
+    value_conv: cryptojwt.serialize.item.KeyIssuer
+    label: keyjar
+  default:
+    handler: oidcmsg.storage.abfile.AbstractFileSystem
+    fdir: storage/expl/{issuer}
+    key_conv: oidcmsg.storage.converter.QPKey
+    value_conv: oidcmsg.storage.converter.JSON
+  state:
+    handler: oidcmsg.storage.abfile.AbstractFileSystem
+    fdir: storage/expl/{issuer}/state
+    key_conv: oidcmsg.storage.converter.QPKey
+    value_conv: oidcmsg.storage.converter.JSON
 
 # The keys in this dictionary are the OPs short user friendly name
 # not the issuer (iss) name.
@@ -105,16 +145,18 @@ clients:
     client_preferences: *prefs
     redirect_uris: None
     services: *services
+    db_conf: *db_conf
   # Supports OP information lookup but not client registration
   local:
     issuer: "https://{domain}:5000"
     client_preferences: *prefs
     redirect_uris: ["https://{domain}:{port}/authz_cb/local"]
     services: *services
+    db_conf: *db_conf
 
 webserver:
   port: *port
-  server_cert: "certs/cert_auto.pem"
-  server_key: "certs/key_auto.pem"
+  server_cert: "certs/cert.pem"
+  server_key: "certs/key.pem"
   ca_bundle: ''
   domain: *domain

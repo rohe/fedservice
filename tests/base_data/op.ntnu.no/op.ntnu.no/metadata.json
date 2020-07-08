@@ -1,11 +1,13 @@
 {
   "openid_provider": {
+    "issuer": "https://op.ntnu.no",
     "id_token_signing_alg_values_supported": [
       "ES256", "ES512"
     ],
     "authorization_endpoint": "https://op.ntnu.no/authorization",
     "token_endpoint": "https://op.ntnu.no/accessToken",
     "userinfo_endpoint": "https://op.ntnu.no/people",
-    "federation_registration_endpoint": "https://op.ntnu.no/fedreg"
+    "federation_registration_endpoint": "https://op.ntnu.no/fedreg",
+    "token_endpoint_auth_methods_supported": ["private_key_jwt", "client_secret_basic"]
   }
 }

@@ -40,6 +40,6 @@ def test_eval_chains():
     assert len(statements) == 1
     statement = statements[0]
     assert statement.fo == "https://feide.no"
-    assert set(statement.metadata.keys()) == {'response_types', 'claims', 'contacts',
-                                              'application_type', 'redirect_uris',
-                                              'id_token_signing_alg_values_supported'}
+    assert set(statement.metadata.keys()) == {
+        'response_types', 'claims', 'contacts', 'application_type', 'redirect_uris',
+        'id_token_signing_alg_values_supported', 'jwks_uri'}

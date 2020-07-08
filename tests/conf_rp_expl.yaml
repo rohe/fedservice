@@ -27,7 +27,7 @@ port: &port 4001
 
 base_url: &base "https://{domain}:{port}"
 
-httpc_params:
+http_params:
   verify: False
 
 keydefs: &keydef
@@ -62,6 +62,9 @@ services: &services
   discovery:
     class: fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery
     kwargs: {}
+  registration:
+    class: fedservice.rp.registration.Registration
+    kwargs: {}
   authorization:
     class: oidcservice.oidc.authorization.Authorization
     kwargs: {}
@@ -87,16 +90,10 @@ federation: &federation
   priority: []
   entity_type: openid_relying_party
   opponent_entity_type: openid_provider
-  registration_type: automatic
-  add_on:
-    ssc:
-      function: fedservice.op.add_on.ssc.add_ssc_support
-      kwargs:
-        ssc_dir: ssc
+  registration_type: explicit
 
 # The keys in this dictionary are the OPs short user friendly name
 # not the issuer (iss) name.
-
 clients:
   # The ones that support webfinger, OP discovery and client registration
   # This is the default, any client that is not listed here is expected to
@@ -106,8 +103,8 @@ clients:
     redirect_uris: None
     services: *services
   # Supports OP information lookup but not client registration
-  local:
-    issuer: "https://{domain}:5000"
+  ntnu:
+    issuer: "https://op.ntnu.no"
     client_preferences: *prefs
     redirect_uris: ["https://{domain}:{port}/authz_cb/local"]
     services: *services

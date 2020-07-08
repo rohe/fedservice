@@ -74,12 +74,16 @@ def do_response(endpoint, req_args, error='', **args):
         if _response_placement == 'body':
             logger.info('Response: {}'.format(info['response']))
             resp = make_response(info['response'], 200)
+            _headers = info.get('http_headers')
+            if _headers:
+                for k,v in _headers:
+                    resp.headers[k] = v
         else:  # _response_placement == 'url':
             logger.info('Redirect to: {}'.format(info['response']))
             return redirect(info['response'])
 
-    for key, value in info['http_headers']:
-        resp.headers[key] = value
+    # for key, value in info['http_headers']:
+    #     resp.headers[key] = value
 
     if 'cookie' in info:
         add_cookie(resp, info['cookie'])
@@ -134,7 +138,9 @@ def well_known(service):
     else:
         return make_response('Not supported', 400)
 
-    return service_endpoint(_endpoint)
+    response = service_endpoint(_endpoint)
+    response.headers['Content-Type'] = 'application/jose; charset=UTF-8'
+    return response
 
 
 @oidc_op_views.route('/registration', methods=['POST'])

@@ -141,7 +141,6 @@ op:
         path: authorization
         class: fedservice.op.authorization.Authorization
         kwargs:
-          client_authn_method: null
           claims_parameter_supported: True
           request_parameter_supported: True
           request_uri_parameter_supported: True
@@ -158,6 +157,9 @@ op:
             - query
             - fragment
             - form_post
+          client_authn_method:
+            - request_param
+            - none
       pushed_authorization:
           path: pushed_authorization
           class: fedservice.op.pushed_authorization.PushedAuthorization
@@ -250,11 +252,34 @@ op:
       priority: []
       entity_type: openid_provider
       opponent_entity_type: openid_relying_party
-#      add_on:
-#        ssc:
-#          function: fedservice.op.add_on.ssc.add_ssc_support
-#          kwargs:
-#            ssc_dir: ssc
+      db_conf:
+        abstract_storage_cls: oidcmsg.storage.extension.LabeledAbstractStorage
+        keyjar:
+          handler: oidcmsg.storage.abfile.AbstractFileSystem
+          fdir: storage/fed/keyjar
+          key_conv: oidcmsg.storage.converter.QPKey
+          value_conv: cryptojwt.serialize.item.KeyIssuer
+          label: 'x'
+        default:
+          handler: oidcmsg.storage.abfile.AbstractFileSystem
+          fdir: storage/fed
+          key_conv: oidcmsg.storage.converter.QPKey
+          value_conv: oidcmsg.storage.converter.JSON
+        entity_statement:
+          handler: oidcmsg.storage.abfile.AbstractFileSystem
+          fdir: storage/fed/entity_statement
+          key_conv: oidcmsg.storage.converter.QPKey
+          value_conv: oidcmsg.storage.converter.JSON
+        config:
+          handler: oidcmsg.storage.abfile.AbstractFileSystem
+          fdir: storage/fed/config
+          key_conv: oidcmsg.storage.converter.QPKey
+          value_conv: oidcmsg.storage.converter.JSON
+      add_on:
+        ssc:
+          function: fedservice.op.add_on.ssc.add_ssc_support
+          kwargs:
+            ssc_dir: ssc
 #            client_cert: '{}/certs/example.crt'
 #            client_key: '{}/certs/example.key'
     # this adds PKCE support as mandatory - disable if needed
@@ -284,6 +309,33 @@ op:
         function: fedservice.op.add_on.automatic_registration.add_automatic_registration_support
         kwargs:
           new_id: False  # default False
+          automatic_registration_client_authn_methods_supported:
+            - request_param
+          where:
+            - authorization
+    db_conf:
+      abstract_storage_cls: oidcmsg.storage.extension.LabeledAbstractStorage
+      keyjar:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: storage/keyjar
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: cryptojwt.serialize.item.KeyIssuer
+        label: 'x'
+      default:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: storage
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: oidcmsg.storage.converter.JSON
+      session:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: storage/session
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: oidcmsg.storage.converter.JSON
+      sso:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: storage/sso
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: oidcmsg.storage.converter.JSON
 
 webserver:
   server_cert: 'certs/example.crt'

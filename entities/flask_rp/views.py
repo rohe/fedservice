@@ -33,23 +33,29 @@ def irp():
     return send_from_directory('entity_statements', 'irp.jws')
 
 
+# @oidc_rp_views.route('/<string:op_hash>/.well-known/openid-federation')
 @oidc_rp_views.route('/<string:op_hash>/.well-known/openid-federation')
 def wkof(op_hash):
     _rph = current_app.rph
-    cli = _rph.issuer2rp[_rph.hash2issuer[op_hash]]
+    try:
+        cli = _rph.issuer2rp[_rph.hash2issuer[op_hash]]
+    except KeyError:
+        return make_response('Not found', 404)
+
     _asrv = cli.service['authorization']
-    reg_srv = Registration(service_context=_asrv.service_context,
-                           state_db=_asrv.state_db, conf=_asrv.conf)
+    reg_srv = Registration(service_context=_asrv.service_context, conf=_asrv.conf)
 
     metadata = reg_srv.construct()
-    _fe = current_app.rph.federation_entity
+    _fe = cli.service_context.federation_entity
     iss = sub = _fe.entity_id
     _jws = _fe.create_entity_statement(
         metadata={"openid_relying_party": metadata.to_dict()},
         iss=iss, sub=sub, authority_hints=_fe.authority_hints,
         lifetime=86400)
 
-    return _jws
+    response = make_response(_jws)
+    response.headers['Content-Type'] = 'application/jose; charset=UTF-8'
+    return response
 
 
 @oidc_rp_views.route('/rp')
@@ -114,7 +120,8 @@ def authz_cb(op_hash):
 
     if 'userinfo' in res:
         endpoints = {}
-        for k, v in rp.service_context.provider_info.items():
+        _pi = rp.service_context.get('provider_info')
+        for k, v in _pi.items():
             if k.endswith('_endpoint'):
                 endp = k.replace('_', ' ')
                 endp = endp.capitalize()

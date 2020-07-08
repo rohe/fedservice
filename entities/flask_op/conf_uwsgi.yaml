@@ -102,7 +102,7 @@ op:
           - https://example.org/appl
       refresh:
         lifetime: 86400
-    jwks:
+    keys:
       *oidc_keys
     endpoint:
       webfinger:
@@ -240,7 +240,7 @@ op:
             - oidcendpoint.user_authn.authn_context.INTERNETPROTOCOLPASSWORD
     federation:
       entity_id: *base_url
-      signing_keys:
+      keys:
         private_path: 'private/fed_keys.json'
         key_defs: *key_def
         public_path: 'static/fed_keys.json'
@@ -250,6 +250,29 @@ op:
       priority: []
       entity_type: openid_provider
       opponent_entity_type: openid_relying_party
+      db_conf:
+        abstract_storage_cls: oidcmsg.storage.extension.LabeledAbstractStorage
+        keyjar:
+          handler: oidcmsg.storage.abfile.AbstractFileSystem
+          fdir: storage/fed/keyjar
+          key_conv: oidcmsg.storage.converter.QPKey
+          value_conv: cryptojwt.serialize.item.KeyIssuer
+          label: 'x'
+        default:
+          handler: oidcmsg.storage.abfile.AbstractFileSystem
+          fdir: storage/fed
+          key_conv: oidcmsg.storage.converter.QPKey
+          value_conv: oidcmsg.storage.converter.JSON
+        entity_statement:
+          handler: oidcmsg.storage.abfile.AbstractFileSystem
+          fdir: storage/fed/entity_statement
+          key_conv: oidcmsg.storage.converter.QPKey
+          value_conv: oidcmsg.storage.converter.JSON
+        config:
+          handler: oidcmsg.storage.abfile.AbstractFileSystem
+          fdir: storage/fed/config
+          key_conv: oidcmsg.storage.converter.QPKey
+          value_conv: oidcmsg.storage.converter.JSON
       add_on:
         ssc:
           function: fedservice.op.add_on.ssc.add_ssc_support
@@ -284,6 +307,29 @@ op:
         function: fedservice.op.add_on.automatic_registration.add_automatic_registration_support
         kwargs:
           new_id: False  # default False
+    db_conf:
+      abstract_storage_cls: oidcmsg.storage.extension.LabeledAbstractStorage
+      keyjar:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: storage/keyjar
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: cryptojwt.serialize.item.KeyIssuer
+        label: 'x'
+      default:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: storage
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: oidcmsg.storage.converter.JSON
+      session:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: storage/session
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: oidcmsg.storage.converter.JSON
+      sso:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: storage/sso
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: oidcmsg.storage.converter.JSON
 
 webserver:
   server_cert: 'certs/example.crt'

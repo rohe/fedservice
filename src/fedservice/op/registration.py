@@ -13,6 +13,7 @@ class Registration(registration.Registration):
     request_format = 'jose'
     request_placement = 'body'
     response_format = 'jose'
+    endpoint_name = "federation_registration_endpoint"
 
     def __init__(self, endpoint_context, **kwargs):
         registration.Registration.__init__(self, endpoint_context, **kwargs)
@@ -36,10 +37,8 @@ class Registration(registration.Registration):
             _fe.authority_hints, statements)
 
         statement = _fe.pick_metadata(statements)
-
-        # handle the registration request as in the non-federation case.
         req = RegistrationRequest(**statement.metadata)
-        response_info = registration.Registration.process_request(self, req, authn=None, **kwargs)
+        response_info = self.non_fed_process_request(req, **kwargs)
         if "response_args" in response_info:
             payload = _fe.get_payload(request)
             _policy = diff2policy(response_info['response_args'],
@@ -47,7 +46,6 @@ class Registration(registration.Registration):
             entity_statement = _fe.create_entity_statement(
                 _fe.entity_id,
                 payload['iss'],
-                _fe.key_jar,
                 metadata={'federation_entity': {"trust_anchor_id": statement.fo}},
                 metadata_policy={_fe.opponent_entity_type: _policy},
                 aud=payload['iss']
@@ -56,6 +54,10 @@ class Registration(registration.Registration):
             del response_info["response_args"]
 
         return response_info
+
+    def non_fed_process_request(self, req, **kwargs):
+        # handle the registration request as in the non-federation case.
+        return registration.Registration.process_request(self, req, authn=None, **kwargs)
 
     @staticmethod
     def create_entity_statement(response_args, request, endpoint_context,
