@@ -66,7 +66,7 @@ def construct_entity_statement_query(api_endpoint, issuer, subject):
                           urlencode({
                               "iss": issuer,
                               "sub": subject
-                          }))
+                              }))
 
 
 def active(config):
@@ -232,7 +232,7 @@ class Collector(object):
         """
         logger.debug("--get_configuration_information(%s)", entity_id)
         _url = construct_well_known_url(entity_id, "openid-federation")
-        logger.debug("Get config info from: %s", _url)
+        logger.debug("Get configuration from: '%s'", _url)
         try:
             if self.use_ssc:
                 logger.debug("Use SelfSignedCert support")
@@ -241,13 +241,14 @@ class Collector(object):
                 self_signed_config = self.get_signed_entity_statement(_url, self.httpc_params)
         except MissingPage:  # if tenant involved
             _tenant_url = construct_tenant_well_known_url(entity_id, "openid-federation")
-            logger.debug("Get config info from (tenant): %s", _tenant_url)
+            logger.debug("Get configuration from (tenant): '%s'", _tenant_url)
             if _tenant_url != _url:
                 if self.use_ssc:
                     self_signed_config = self.do_ssc_seq(_tenant_url, entity_id)
                 else:
                     self_signed_config = self.get_signed_entity_statement(_tenant_url,
                                                                           self.httpc_params)
+                logger.debug('Self signed statement: %s', self_signed_config)
             else:
                 raise MissingPage("No such page: '{}'".format(_url))
         except SSLError as err:
