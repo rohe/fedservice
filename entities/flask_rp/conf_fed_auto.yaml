@@ -27,7 +27,7 @@ port: &port 4001
 
 base_url: &base "https://{domain}:{port}"
 
-http_params:
+httpc_params:
   verify: False
 
 keydefs: &keydef

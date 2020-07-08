@@ -14,7 +14,6 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
     request_format = 'jws'
     response_format = 'jws'
 
-
     def __init__(self, endpoint_context, **kwargs):
         provider_config.ProviderConfiguration.__init__(self, endpoint_context,
                                                        **kwargs)

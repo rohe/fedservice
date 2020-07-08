@@ -37,7 +37,11 @@ def irp():
 @oidc_rp_views.route('/<string:op_hash>/.well-known/openid-federation')
 def wkof(op_hash):
     _rph = current_app.rph
-    cli = _rph.issuer2rp[_rph.hash2issuer[op_hash]]
+    try:
+        cli = _rph.issuer2rp[_rph.hash2issuer[op_hash]]
+    except KeyError:
+        return make_response('Not found', 404)
+
     _asrv = cli.service['authorization']
     reg_srv = Registration(service_context=_asrv.service_context, conf=_asrv.conf)
 
@@ -49,7 +53,9 @@ def wkof(op_hash):
         iss=iss, sub=sub, authority_hints=_fe.authority_hints,
         lifetime=86400)
 
-    return _jws
+    response = make_response(_jws)
+    response.headers['Content-Type'] = 'application/jose; charset=UTF-8'
+    return response
 
 
 @oidc_rp_views.route('/rp')

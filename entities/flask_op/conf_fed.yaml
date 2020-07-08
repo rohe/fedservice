@@ -48,7 +48,7 @@ oidc_keys: &oidc_keys
 op:
   server_info:
     issuer: *base_url
-    http_params:
+    httpc_params:
       verify: false
     session_key:
       filename: 'private/session_jwk.json'
@@ -102,7 +102,7 @@ op:
           - https://example.org/appl
       refresh:
         lifetime: 86400
-    jwks:
+    keys:
       *oidc_keys
     endpoint:
       webfinger:
@@ -240,7 +240,7 @@ op:
             - oidcendpoint.user_authn.authn_context.INTERNETPROTOCOLPASSWORD
     federation:
       entity_id: *base_url
-      signing_keys:
+      keys:
         private_path: 'private/fed_keys.json'
         key_defs: *key_def
         public_path: 'static/fed_keys.json'
@@ -250,11 +250,11 @@ op:
       priority: []
       entity_type: openid_provider
       opponent_entity_type: openid_relying_party
-      add_on:
-        ssc:
-          function: fedservice.op.add_on.ssc.add_ssc_support
-          kwargs:
-            ssc_dir: ssc
+#      add_on:
+#        ssc:
+#          function: fedservice.op.add_on.ssc.add_ssc_support
+#          kwargs:
+#            ssc_dir: ssc
 #            client_cert: '{}/certs/example.crt'
 #            client_key: '{}/certs/example.key'
     # this adds PKCE support as mandatory - disable if needed
