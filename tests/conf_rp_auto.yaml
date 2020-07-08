@@ -27,7 +27,7 @@ port: &port 4001
 
 base_url: &base "https://{domain}:{port}"
 
-http_params:
+httpc_params:
   verify: False
 
 keydefs: &keydef
@@ -76,7 +76,7 @@ services: &services
 
 federation: &federation
   entity_id: *base
-  signing_keys:
+  keys:
     private_path: 'private/fed_keys_auto.json'
     key_defs: *keydef
     public_path: 'static/fed_keys_auto.json'
