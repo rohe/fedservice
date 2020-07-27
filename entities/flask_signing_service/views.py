@@ -33,7 +33,9 @@ def signer(unit):
     part = urlparse(_sub_url)
     if pf_part.scheme == part.scheme:
         if pf_part.netloc == part.netloc:
-            return _srv.create_entity_statement(part.path.split('/')[-1])
+            response = make_response(_srv.create_entity_statement(part.path.split('/')[-1]))
+            response.headers['Content-Type'] = 'application/jose; charset=UTF-8'
+            return response
 
     response = make_response(_srv.create_entity_statement(quote_plus(_sub_url)))
     response.headers['Content-Type'] = 'application/jose; charset=UTF-8'

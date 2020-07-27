@@ -27,7 +27,14 @@ class RPHandler(oidcrp.RPHandler):
 
     def init_federation_entity(self, issuer):
         args = {k: v for k, v in self.federation_entity_config.items()}
-        _entity_id = self.federation_entity_config['entity_id']
+
+        _entity_id = ''
+        _cnf = self.client_configs.get(issuer)
+        if _cnf:
+            _entity_id = _cnf.get('entity_id')
+        if not _entity_id:
+            _entity_id = self.federation_entity_config['entity_id']
+
         if '{}' in _entity_id:
             _entity_id = _entity_id.format(issuer)
             args['entity_id'] = _entity_id
