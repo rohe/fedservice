@@ -50,3 +50,6 @@ class ESCache(object):
 
     def keys(self):
         return self._db.keys()
+
+    def __len__(self):
+        return len(self._db)

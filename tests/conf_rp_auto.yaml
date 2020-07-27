@@ -88,7 +88,6 @@ federation: &federation
   opponent_entity_type: openid_provider
   registration_type: automatic
   db_conf:
-    abstract_storage_cls: 'oidcmsg.storage.extension.LabeledAbstractStorage'
     config:
       handler: oidcmsg.storage.abfile.AbstractFileSystem
       fdir: 'storage/config'

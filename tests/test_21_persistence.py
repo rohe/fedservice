@@ -54,9 +54,8 @@ class TestEndpointPersistence(object):
             },
             'template_dir': 'template',
             'db_conf': {
-                'abstract_storage_cls': 'oidcmsg.storage.extension.LabeledAbstractStorage',
                 'keyjar': {
-                    'handler': 'oidcmsg.storage.abfile.AbstractFileSystem',
+                    'handler': 'oidcmsg.storage.abfile.LabeledAbstractFileSystem',
                     'fdir': 'storage/keyjar',
                     'key_conv': 'oidcmsg.storage.converter.QPKey',
                     'value_conv': 'cryptojwt.serialize.item.KeyIssuer',
@@ -167,7 +166,7 @@ class TestEndpointPersistence(object):
             tree = _collector.collect_intermediate(subject, 'https://ntnu.no')
             assert tree
 
-        assert len(_collector.config_cache.keys()) == 2
+        assert len(_collector.config_cache) == 2
         assert set(_collector.config_cache.keys()) == {'https://ntnu.no', 'https://feide.no'}
 
         # The unpacked fedop's self signed entity statement
@@ -178,7 +177,7 @@ class TestEndpointPersistence(object):
                'https://feide.no/api'
 
         # For each entity statement there is also the expiration time
-        assert len(_collector.entity_statement_cache.keys()) == 4
+        assert len(_collector.entity_statement_cache) == 4
         assert set(_collector.entity_statement_cache.keys()) == {
             'https://feide.no!!https://ntnu.no',
             'https://feide.no!exp!https://ntnu.no',

@@ -61,9 +61,9 @@ class Authorization(authorization.Authorization):
                         request["client_id"] = registered_client_id
                         kwargs["also_known_as"] = {_cid: registered_client_id}
                         client_info = self.endpoint_context.cdb.get(registered_client_id)
-                        self.endpoint_context.cdb.set(_cid, client_info)
+                        self.endpoint_context.cdb[_cid] = client_info
                         client_info['entity_id'] = _cid
-                        self.endpoint_context.cdb.set(registered_client_id, client_info)
+                        self.endpoint_context.cdb[registered_client_id] = client_info
             else:
                 return {
                     'error': 'unauthorized_client',
