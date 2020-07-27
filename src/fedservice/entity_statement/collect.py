@@ -4,15 +4,14 @@ from urllib.parse import quote_plus
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 
-import requests
 from cryptojwt import JWT
 from cryptojwt import KeyJar
 from cryptojwt.jwk import x5c_to_pems
 from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import utc_time_sans_frac
 from oidcmsg.exception import MissingPage
-from oidcmsg.storage.init import get_storage_class
 from oidcmsg.storage.init import init_storage
+import requests
 from requests.exceptions import SSLError
 
 from fedservice.exception import UnknownCertificate
@@ -66,7 +65,7 @@ def construct_entity_statement_query(api_endpoint, issuer, subject):
                           urlencode({
                               "iss": issuer,
                               "sub": subject
-                              }))
+                          }))
 
 
 def active(config):
@@ -173,6 +172,8 @@ class Collector(object):
 
         response = self.http_cli("GET", url, **httpc_args)
         if response.status_code == 200:
+            if 'application/jose' not in response.headers['Content-Type']:
+                logger.warning('Wrong Content-Type: %s', response.headers['Content-Type'])
             return response.text
         elif response.status_code == 404:
             raise MissingPage("No such page: '{}'".format(url))

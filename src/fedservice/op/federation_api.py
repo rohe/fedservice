@@ -1,9 +1,9 @@
 import logging
 
-from fedservice.message import EntityStatement
 from oidcendpoint.endpoint import Endpoint
-from oidcendpoint.oidc import provider_config
 from oidcmsg import oidc
+
+from fedservice.message import EntityStatement
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,6 @@ class FederationAPI(Endpoint):
         self.metadata_api = None
 
     def process_request(self, request=None, **kwargs):
-
         return {'response_args': self.endpoint_context.provider_info.copy()}
 
     def create_entity_statement(self, request_args, request=None, **kwargs):

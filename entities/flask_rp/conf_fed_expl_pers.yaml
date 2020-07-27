@@ -149,6 +149,7 @@ clients:
   # Supports OP information lookup but not client registration
   local:
     issuer: "https://{domain}:5000"
+    entity_id: "https://{domain}:{port}/local"
     client_preferences: *prefs
     redirect_uris: ["https://{domain}:{port}/authz_cb/local"]
     services: *services

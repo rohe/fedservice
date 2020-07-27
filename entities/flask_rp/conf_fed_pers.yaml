@@ -71,7 +71,7 @@ services: &services
     class: fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery
     kwargs: {}
   registration:
-    class: fedservice.rp.registration.Registration
+    class: fedservice.rp.registration.FedRegistration
     kwargs: {}
   authorization:
     class: oidcservice.oidc.authorization.Authorization
@@ -90,8 +90,8 @@ services: &services
     kwargs: {}
 
 federation: &federation
-  entity_id: "https://{domain}:{port}/{{}}"
-  keys:
+  entity_id: *base
+  signing_keys:
     private_path: 'private/fed_keys.json'
     key_defs: *keydef
     public_path: 'static/fed_keys.json'
@@ -107,6 +107,28 @@ federation: &federation
       function: fedservice.op.add_on.ssc.add_ssc_support
       kwargs:
         ssc_dir: ssc
+  db_conf:
+    default:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: 'storage/{issuer}/exp/fed'
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: oidcmsg.storage.converter.JSON
+    config:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: 'storage/{issuer}/exp/fed/config'
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: oidcmsg.storage.converter.JSON
+    entity_statement:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: 'storage/{issuer}/exp/fed/entity_statement'
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: oidcmsg.storage.converter.JSON
+    keyjar:
+      handler: oidcmsg.storage.abfile.AbstractFileSystem
+      fdir: 'storage/{issuer}/exp/fed/keyjar'
+      key_conv: oidcmsg.storage.converter.QPKey
+      value_conv: cryptojwt.serialize.item.KeyIssuer
+      label: x
 
 # The keys in this dictionary are the OPs short user friendly name
 # not the issuer (iss) name.
@@ -119,13 +141,48 @@ clients:
     client_preferences: *prefs
     redirect_uris: null
     services: *services
+    db_conf:
+      abstract_storage_cls: oidcmsg.base.LabeledAbstractStorage
+      keyjar:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: 'storage/{issuer}/keyjar'
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: cryptojwt.serialize.item.KeyIssuer
+        label: keyjar
+      default:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: 'storage/{issuer}'
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: oidcmsg.storage.converter.JSON
+      state:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: 'storage/{issuer}/state'
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: oidcmsg.storage.converter.JSON
   # Supports OP information lookup but not client registration
   local:
     issuer: "https://{domain}:5000"
-    # entity_id: "https://{domain}:{port}/local"
     client_preferences: *prefs
     redirect_uris: ["https://{domain}:{port}/authz_cb/local"]
     services: *services
+    db_conf:
+      abstract_storage_cls: oidcmsg.base.LabeledAbstractStorage
+      keyjar:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: 'storage/local/keyjar'
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: cryptojwt.serialize.item.KeyIssuer
+        label: keyjar
+      default:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: 'storage/local'
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: oidcmsg.storage.converter.JSON
+      state:
+        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        fdir: 'storage/local/state'
+        key_conv: oidcmsg.storage.converter.QPKey
+        value_conv: oidcmsg.storage.converter.JSON
 
 webserver:
   port: *port

@@ -1,21 +1,52 @@
 #!/usr/bin/env python3
+import argparse
 import json
 
+from oidcop.logging import configure_logging
+
 from fedservice import FederationEntity
-from fedservice.entity_statement.collect import branch2lists
+from fedservice import branch2lists
+from fedservice import eval_chain
 from fedservice.entity_statement.collect import verify_self_signed_signature
-from fedservice.entity_statement.verify import eval_chain
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG"
+    },
+    "loggers": {
+        "idp": {
+            "level": "DEBUG"}
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+
+            "formatter": "default"},
+    },
+    "formatters": {
+        "default": {
+            "format": '%(asctime)s %(name)s %(levelname)s %(message)s'}
+    }
+}
 
 if __name__ == '__main__':
-    import argparse
+    pass
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', dest='insecure', action='store_true')
     parser.add_argument('-t', dest='trusted_roots_file')
     parser.add_argument('-e', dest='entity_type')
     parser.add_argument('-o', dest='opponent_entity_type')
+    parser.add_argument('-l', dest='logging', action='store_true')
     parser.add_argument(dest="url")
     args = parser.parse_args()
+
+    if args.logging:
+        logger = configure_logging(config=LOGGING).getChild(__name__)
 
     trusted_roots = json.loads(open(args.trusted_roots_file).read())
 
@@ -35,11 +66,12 @@ if __name__ == '__main__':
     chains = branch2lists(_tree)
     for c in chains:
         c.append(jws)
-    statements = [eval_chain(c, federation_entity.key_jar, args.opponent_entity_type) for c in
+
+    statements = [eval_chain(c, federation_entity.keyjar, args.opponent_entity_type) for c in
                   chains]
 
     for statement in statements:
         print(20 * "=", statement.fo, 20 * "=")
-        for ver in statement.verified_chain:
+        for node in statement.verified_chain:
             # pretty print JSON
-            print(json.dumps(ver, sort_keys=True, indent=4))
+            print(json.dumps(node, sort_keys=True, indent=4))

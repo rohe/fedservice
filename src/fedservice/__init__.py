@@ -2,12 +2,8 @@ import logging
 
 from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
-from cryptojwt.key_jar import KeyJar
-from cryptojwt.key_jar import init_key_jar
 from oidcendpoint.util import importer
 from oidcmsg.context import OidcContext
-from oidcmsg.storage.init import get_storage_class
-from oidcmsg.storage.init import get_storage_conf
 
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.collect import branch2lists
