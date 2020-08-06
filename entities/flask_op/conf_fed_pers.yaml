@@ -253,9 +253,8 @@ op:
       entity_type: openid_provider
       opponent_entity_type: openid_relying_party
       db_conf:
-        abstract_storage_cls: oidcmsg.storage.extension.LabeledAbstractStorage
         keyjar:
-          handler: oidcmsg.storage.abfile.AbstractFileSystem
+          handler: oidcmsg.storage.abfile.LabeledAbstractFileSystem
           fdir: storage/fed/keyjar
           key_conv: oidcmsg.storage.converter.QPKey
           value_conv: cryptojwt.serialize.item.KeyIssuer
@@ -275,11 +274,11 @@ op:
           fdir: storage/fed/config
           key_conv: oidcmsg.storage.converter.QPKey
           value_conv: oidcmsg.storage.converter.JSON
-      add_on:
-        ssc:
-          function: fedservice.op.add_on.ssc.add_ssc_support
-          kwargs:
-            ssc_dir: ssc
+#      add_on:
+#        ssc:
+#          function: fedservice.op.add_on.ssc.add_ssc_support
+#          kwargs:
+#            ssc_dir: ssc
 #            client_cert: '{}/certs/example.crt'
 #            client_key: '{}/certs/example.key'
     # this adds PKCE support as mandatory - disable if needed
@@ -287,7 +286,7 @@ op:
       pkce:
         function: oidcendpoint.oidc.add_on.pkce.add_pkce_support
         kwargs:
-          essential: false
+          essential: true
           code_challenge_method:
             #plain
             - S256
@@ -314,9 +313,8 @@ op:
           where:
             - authorization
     db_conf:
-      abstract_storage_cls: oidcmsg.storage.extension.LabeledAbstractStorage
       keyjar:
-        handler: oidcmsg.storage.abfile.AbstractFileSystem
+        handler: oidcmsg.storage.abfile.LabeledAbstractFileSystem
         fdir: storage/keyjar
         key_conv: oidcmsg.storage.converter.QPKey
         value_conv: cryptojwt.serialize.item.KeyIssuer
