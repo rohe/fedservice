@@ -100,8 +100,7 @@ def get_rp(op_hash):
         try:
             rp = current_app.rph.issuer2rp[_iss]
         except KeyError:
-            return make_response("Couldn't find client for {}".format(_iss),
-                                 400)
+            return make_response("Couldn't find client for {}".format(_iss), 400)
 
     return rp
 
