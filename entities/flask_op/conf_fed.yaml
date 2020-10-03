@@ -250,14 +250,7 @@ op:
       priority: []
       entity_type: openid_provider
       opponent_entity_type: openid_relying_party
-#      add_on:
-#        ssc:
-#          function: fedservice.op.add_on.ssc.add_ssc_support
-#          kwargs:
-#            ssc_dir: ssc
-#            client_cert: '{}/certs/example.crt'
-#            client_key: '{}/certs/example.key'
-    # this adds PKCE support as mandatory - disable if needed
+    # Global add on's this adds PKCE support as mandatory - disable if needed
     add_on:
       pkce:
         function: oidcendpoint.oidc.add_on.pkce.add_pkce_support
@@ -281,9 +274,14 @@ op:
             - iss
             - eduperson_scoped_affiliation
       automatic_registration:
-        function: fedservice.op.add_on.automatic_registration.add_automatic_registration_support
+        function: fedservice.op.add_on.automatic_registration.add_support
         kwargs:
           new_id: False  # default False
+          client_registration_authn_methods_supported:
+            ar:
+              - request_object
+          where:
+            - authorization
 
 webserver:
   server_cert: 'certs/example.crt'

@@ -63,7 +63,7 @@ services: &services
     class: fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery
     kwargs: {}
   authorization:
-    class: oidcservice.oidc.authorization.Authorization
+    class: fedservice.rp.authorization.FedAuthorization
     kwargs: {}
   accesstoken:
     class: oidcservice.oidc.access_token.AccessToken
@@ -76,8 +76,8 @@ services: &services
     kwargs: {}
 
 federation: &federation
-  entity_id: *base
-  signing_keys:
+  entity_id: "https://{domain}:{port}/{{}}"
+  keys:
     private_path: 'private/fed_keys_auto.json'
     key_defs: *keydef
     public_path: 'static/fed_keys_auto.json'
