@@ -1,8 +1,8 @@
+from oidcservice.exception import OtherError
 from oidcservice.oidc.authorization import Authorization
 
 
 class FedAuthorization(Authorization):
-    default_authn_method = 'request_param'
 
     def __init__(self, service_context, client_authn_factory=None, conf=None):
         Authorization.__init__(self, service_context=service_context,
@@ -14,10 +14,18 @@ class FedAuthorization(Authorization):
             post_args = {}
 
         pi = self.service_context.get('provider_info')
-        _sup = pi.get('automatic_registration_client_authn_methods_supported')
+        _ams = pi.get('client_registration_authn_methods_supported')
         # what if request_param is already set ??
         # What if request_param in not in client_auth ??
-        if _sup and 'request_param' in _sup:
-            post_args['request_param'] = "request"
+        if _ams and 'ar' in _ams:
+            if "request_object" in _ams['ar']:
+                post_args['request_param'] = "request"
+            else:
+                raise OtherError("Using request object in authentication not supported")
+        else: # no authn methods supported
+            # am I already registered ?
+            if self.service_context.get('registration_response') is None:  # Not registered
+                raise OtherError("Can not send an authorization request without being registered"
+                                 " and automatic registration not supported")
 
         return request_args, post_args
