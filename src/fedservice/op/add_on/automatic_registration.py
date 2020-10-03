@@ -4,7 +4,7 @@ from oidcendpoint.client_authn import RequestParam
 from fedservice.op import registration
 
 
-def add_automatic_registration_support(endpoint, **kwargs):
+def add_support(endpoint, **kwargs):
     """
 
     :param endpoint:
@@ -23,15 +23,17 @@ def add_automatic_registration_support(endpoint, **kwargs):
 
             if endp == 'authorization':
                 if not auth_endpoint.client_authn_method:
-                    auth_endpoint.client_authn_method = [RequestParam()]
+                    auth_endpoint.client_authn_method = [
+                        RequestParam(auth_endpoint.endpoint_context)]
             else:  # pushed_authorization
                 if not auth_endpoint.client_authn_method:
-                    auth_endpoint.client_authn_method = [PrivateKeyJWT()]
+                    auth_endpoint.client_authn_method = [
+                        PrivateKeyJWT(auth_endpoint.endpoint_context)]
 
             _pi = auth_endpoint.endpoint_context.provider_info
-            _supported = kwargs.get('automatic_registration_client_authn_methods_supported')
+            _supported = kwargs.get('client_registration_authn_methods_supported')
             if _supported:
-                _pi['automatic_registration_client_authn_methods_supported'] = _supported
-            else:
-                _pi['automatic_registration_client_authn_methods_supported'] = [
-                    _method.tag for _method in auth_endpoint.client_authn_method]
+                _pi['client_registration_authn_methods_supported'] = _supported
+            # else:
+            #     _pi['client_registration_authn_methods_supported'] = [
+            #         _method.tag for _method in auth_endpoint.client_authn_method]
