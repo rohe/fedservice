@@ -211,8 +211,7 @@ class TestEndpoint(object):
             'add_on': {
                 "automatic_registration": {
                     "function":
-                        "fedservice.op.add_on.automatic_registration"
-                        ".add_automatic_registration_support",
+                        "fedservice.op.add_on.automatic_registration.add_support",
                     "kwargs": {
                         "new_id": False,  # default False
                         "where": ["pushed_authorization"]
