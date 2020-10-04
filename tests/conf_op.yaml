@@ -259,9 +259,14 @@ op:
             - iss
             - eduperson_scoped_affiliation
       automatic_registration:
-        function: fedservice.op.add_on.automatic_registration.add_automatic_registration_support
+        function: fedservice.op.add_on.automatic_registration.add_support
         kwargs:
           new_id: False  # default False
+          client_registration_authn_methods_supported:
+            ar:
+              - request_object
+          where:
+            - authorization
 
 webserver:
   server_cert: 'certs/example.crt'

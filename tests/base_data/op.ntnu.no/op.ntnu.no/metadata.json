@@ -8,6 +8,7 @@
     "token_endpoint": "https://op.ntnu.no/accessToken",
     "userinfo_endpoint": "https://op.ntnu.no/people",
     "federation_registration_endpoint": "https://op.ntnu.no/fedreg",
-    "token_endpoint_auth_methods_supported": ["private_key_jwt", "client_secret_basic"]
+    "token_endpoint_auth_methods_supported": ["private_key_jwt", "client_secret_basic"],
+    "client_registration_authn_methods_supported": {"ar": ["request_object"]}
   }
 }
