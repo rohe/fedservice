@@ -61,9 +61,8 @@ services: &services
     class: fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery
     kwargs: {}
   authorization:
-    class: oidcservice.oidc.authorization.Authorization
+    class: fedservice.rp.authorization.FedAuthorization
     kwargs: {'conf':{'post_construct':{'request_param': 'request'}}}
-  #    kwargs: {}
   accesstoken:
     class: oidcservice.oidc.access_token.AccessToken
     kwargs: {}
