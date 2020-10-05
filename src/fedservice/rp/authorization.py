@@ -22,6 +22,7 @@ class FedAuthorization(Authorization):
                 post_args['request_param'] = "request"
                 post_args['audience'] = "authorization_endpoint"
                 post_args["with_jti"] = True
+                post_args["expires_in"] = self.conf.get("request_object_expires_in", 300)
             else:
                 raise OtherError("Using request object in authentication not supported")
         else: # no authn methods supported

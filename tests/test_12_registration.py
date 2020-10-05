@@ -213,7 +213,8 @@ class TestAutomatic(object):
         self.service = {
             'discovery': FedProviderInfoDiscovery(service_context),
             'registration': Registration(service_context),
-            'authorization': FedAuthorization(service_context),
+            'authorization': FedAuthorization(service_context,
+                                              conf={"request_object_expires_in": 300}),
         }
 
         # and now for the OP
