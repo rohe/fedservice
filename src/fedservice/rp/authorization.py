@@ -21,6 +21,7 @@ class FedAuthorization(Authorization):
             if "request_object" in _ams['ar']:
                 post_args['request_param'] = "request"
                 post_args['audience'] = "authorization_endpoint"
+                post_args["with_jti"] = True
             else:
                 raise OtherError("Using request object in authentication not supported")
         else: # no authn methods supported
