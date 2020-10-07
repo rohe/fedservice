@@ -267,7 +267,7 @@ class TestAutomatic(object):
                     "function":
                         "fedservice.op.add_on.automatic_registration.add_support",
                     "kwargs": {
-                        "new_id": True,  # default False
+                        "new_id": False,  # default False
                         'client_registration_authn_methods_supported': {"ar": ['request_object']},
                         'where': ['authorization']
                     }
@@ -303,6 +303,7 @@ class TestAutomatic(object):
 
         self.authorization_endpoint.endpoint_context.provider_info[
             'client_registration_authn_methods_supported'] = {"ar": ['request_object']}
+        self.authorization_endpoint.automatic_registration_endpoint.kwargs['new_id'] = True
         # This is cheating. Getting the OP's provider info
         _fe = _registration_service.service_context.federation_entity
         statement = Statement()
@@ -336,7 +337,7 @@ class TestAutomatic(object):
         assert "response_type" in req
 
         client_ids = list(self.authorization_endpoint.endpoint_context.cdb.keys())
-        assert len(client_ids) == 2
+        assert len(client_ids) == 2  # dynamic and entity_id
         assert ENTITY_ID in client_ids
 
     def test_automatic_registration_keep_client_id(self):
