@@ -62,16 +62,18 @@ class Registration(registration.Registration):
         return resp
 
     def _get_trust_anchor_id(self, entity_statement):
-        _metadata = entity_statement.get('metadata')
-        if not _metadata:
-            return None
+        return entity_statement.get('trust_anchor_id')
 
-        _fed_entity = _metadata.get('federation_entity')
-        if not _fed_entity:
-            return None
-
-        _trust_anchor_id = _fed_entity.get('trust_anchor_id')
-        return _trust_anchor_id
+        # _metadata = entity_statement.get('metadata')
+        # if not _metadata:
+        #     return None
+        #
+        # _fed_entity = _metadata.get('federation_entity')
+        # if not _fed_entity:
+        #     return None
+        #
+        # _trust_anchor_id = _fed_entity.get('trust_anchor_id')
+        # return _trust_anchor_id
 
     def get_trust_anchor_id(self, entity_statement):
         if len(self.service_context.federation_entity.op_statements) == 1:
@@ -143,7 +145,10 @@ class Registration(registration.Registration):
         _policy = combine_policy(policy_chains_tup[0][1],
                                  entity_statement['metadata_policy'][_fe.entity_type])
         logger.debug("Combined policy: {}".format(_policy))
-        _uev = unverified_entity_statement(kwargs["request_body"])
+        _req = kwargs.get("request")
+        if _req is None:
+            _req = kwargs.get("request_body")
+        _uev = unverified_entity_statement(_req)
         logger.debug("Registration request: {}".format(_uev))
         _query = _uev["metadata"][_fe.entity_type]
         _sc.registration_response = apply_policy(_query, _policy)
