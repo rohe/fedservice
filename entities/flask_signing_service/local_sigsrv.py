@@ -4,7 +4,7 @@ import os
 import sys
 
 from cryptojwt import KeyJar
-from cryptojwt.jwk import pems_to_x5c
+# from cryptojwt.jwk import pems_to_x5c
 from flask import Flask
 from oidcop.utils import create_context
 from oidcop.utils import lower_or_upper

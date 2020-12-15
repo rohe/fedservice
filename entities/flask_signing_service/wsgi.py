@@ -3,7 +3,7 @@ import logging
 import os
 
 from cryptojwt import KeyJar
-from cryptojwt.jwk import pems_to_x5c
+# from cryptojwt.jwk import pems_to_x5c
 from flask import Flask
 from oidcop.utils import create_context
 from oidcop.utils import lower_or_upper
@@ -28,6 +28,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 template_dir = os.path.join(dir_path, 'templates')
 
 _root, _ = os.path.split(dir_path)
+
 
 def key_setup():
     # Copy dynamically created files to there places in the base_data information tree.
@@ -73,9 +74,9 @@ cert_file = lower_or_upper(web_conf, "server_cert")
 if not cert_file.startswith("/"):
     _cert = "{}/{}".format(dir_path, cert_file)
 
-with open(cert_file, 'r') as fp:
-    pem = fp.read()
-    app.signing_service.x5c = pems_to_x5c([pem])
+# with open(cert_file, 'r') as fp:
+#     pem = fp.read()
+#     app.signing_service.x5c = pems_to_x5c([pem])
 
 if __name__ == "__main__":
     web_conf = app.fss_config.web_conf
