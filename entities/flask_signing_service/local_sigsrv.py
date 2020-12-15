@@ -88,9 +88,9 @@ if __name__ == "__main__":
     app.signing_service.cwd = dir_path
     _cert = "{}/{}".format(dir_path, lower_or_upper(web_conf, "server_cert"))
 
-    with open(_cert.format(dir_path), 'r') as fp:
-        pem = fp.read()
-    app.signing_service.x5c = pems_to_x5c([pem])
+    # with open(_cert.format(dir_path), 'r') as fp:
+    #     pem = fp.read()
+    # app.signing_service.x5c = pems_to_x5c([pem])
 
     app.run(host=web_conf.get('domain'), port=web_conf.get('port'),
             debug=web_conf.get('debug', True), ssl_context=ssl_context)
