@@ -2,7 +2,7 @@ import logging
 
 from cryptojwt.key_jar import init_key_jar
 import oidcrp
-from oidcrp.configure import add_base_path
+from oidcmsg import add_base_path
 from oidcrp.util import lower_or_upper
 
 from fedservice import create_federation_entity

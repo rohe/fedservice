@@ -108,6 +108,7 @@ class Registration(registration.Registration):
 
         _trust_anchor_id = self.get_trust_anchor_id(entity_statement)
 
+        logger.debug("trust_anchor_id: {}".format(_trust_anchor_id))
         chosen = None
         for op_statement in _fe.op_statements:
             if op_statement.anchor == _trust_anchor_id:
@@ -119,6 +120,7 @@ class Registration(registration.Registration):
 
         # based on the Federation ID, conclude which OP config to use
         op_claims = chosen.metadata
+        logger.debug("OP claims: {}".format(op_claims))
         # _sc.trust_path = (chosen.anchor, _fe.op_paths[statement.anchor][0])
         _sc.provider_info = ProviderConfigurationResponse(**op_claims)
 
@@ -130,6 +132,7 @@ class Registration(registration.Registration):
         _node = {_fe.entity_id: (resp, tree)}
         chains = branch2lists(_node)
         logger.debug("%d chains", len(chains))
+        logger.debug("Evaluate policy chains")
         # Get the policies
         policy_chains_tup = [eval_policy_chain(c, _fe.keyjar, _fe.entity_type) for c in chains]
         # Weed out unusable chains
@@ -144,7 +147,7 @@ class Registration(registration.Registration):
 
         _policy = combine_policy(policy_chains_tup[0][1],
                                  entity_statement['metadata_policy'][_fe.entity_type])
-        logger.debug("Combined policy: {}".format(_policy))
+        logger.debug("Effective policy: {}".format(_policy))
         _req = kwargs.get("request")
         if _req is None:
             _req = kwargs.get("request_body")
