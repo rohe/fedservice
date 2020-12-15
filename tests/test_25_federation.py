@@ -141,6 +141,7 @@ class TestFed(object):
                      status=200)
             _req_args = self.authorization_endpoint.parse_request(compact(_req_args))
 
+        # need to register a user session info
         args = self.authorization_endpoint.process_request(_req_args)
         response_args = self.authorization_endpoint.do_response(**args)
 

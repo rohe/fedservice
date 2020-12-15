@@ -37,12 +37,12 @@ class TestEndpoint(object):
             "grant_expires_in": 300,
             "refresh_token_expires_in": 86400,
             "verify_ssl": False,
-            'keys': {'key_defs': KEYSPEC},
-            "endpoint": {},
-            "jwks": {
+            'keys': {
+                'key_defs': KEYSPEC,
                 "private_path": "own/jwks.json",
                 "uri_path": "static/jwks.json"
             },
+            "endpoint": {},
             "authentication": {
                 "anon": {
                     'acr': UNSPECIFIED,

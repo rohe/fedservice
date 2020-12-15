@@ -1,5 +1,6 @@
 import os
 import shutil
+from time import sleep
 
 from oidcendpoint.user_authn.authn_context import UNSPECIFIED
 from oidcendpoint.user_authn.user import NoAuthn
@@ -159,6 +160,8 @@ class TestEndpointPersistence(object):
         fedop_on_inter_1 = es_api.create_entity_statement(get_netloc(intermediate))
         es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(fedop2))
         fedop_on_inter_2 = es_api.create_entity_statement(get_netloc(intermediate))
+
+        sleep(1)
 
         with responses.RequestsMock() as rsps:
             _url = "{}/.well-known/openid-federation".format(intermediate)

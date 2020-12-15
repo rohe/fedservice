@@ -124,7 +124,7 @@ class TestEndpoint(object):
                 },
                 "code": {"lifetime": 600},
                 "token": {
-                    "class": "oidcendpoint.jwt_token.JWTToken",
+                    "class": "oidcendpoint.token.jwt_token.JWTToken",
                     "kwargs": {
                         "lifetime": 3600,
                         "add_claims": [

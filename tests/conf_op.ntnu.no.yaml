@@ -71,7 +71,7 @@ op:
       code:
         lifetime: 600
       token:
-        class: oidcendpoint.jwt_token.JWTToken
+        class: oidcendpoint.token.jwt_token.JWTToken
         lifetime: 3600
         add_claims:
           - email
@@ -150,7 +150,7 @@ op:
               - private_key_jwt
       token:
         path: token
-        class: oidcendpoint.oidc.token.AccessToken
+        class: oidcendpoint.oidc.token.Token
         kwargs:
           client_authn_method:
             - client_secret_post
