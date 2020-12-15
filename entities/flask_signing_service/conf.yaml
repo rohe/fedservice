@@ -37,22 +37,29 @@ server_info:
     class: fedservice.metadata_api.fs2.FSEntityStatementAPI
     kwargs:
       entity_id_pattern: 'https://{domain}:{port}/eid/{{}}'
-      base_path: 'base_data'
+      base_path: 'localhost_data'
       iss: 'swamid.se'
       url_prefix: 'https://{domain}:{port}/eid'
   umu.se:
     class: fedservice.metadata_api.fs2.FSEntityStatementAPI
     kwargs:
       entity_id_pattern: 'https://{domain}:{port}/eid/{{}}'
-      base_path: 'base_data'
+      base_path: 'localhost_data'
       iss: 'umu.se'
       url_prefix: 'https://{domain}:{port}/eid'
   lu.se:
     class: fedservice.metadata_api.fs2.FSEntityStatementAPI
     kwargs:
       entity_id_pattern: 'https://{domain}:{port}/eid/{{}}'
-      base_path: 'base_data'
+      base_path: 'localhost_data'
       iss: 'lu.se'
+      url_prefix: 'https://{domain}:{port}/eid'
+  feide.no:
+    class: fedservice.metadata_api.fs2.FSEntityStatementAPI
+    kwargs:
+      entity_id_pattern: 'https://{domain}:{port}/eid/{{}}'
+      base_path: 'localhost_data'
+      iss: 'feide.no'
       url_prefix: 'https://{domain}:{port}/eid'
 
 httpc_params:

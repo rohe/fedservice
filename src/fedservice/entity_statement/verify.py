@@ -5,9 +5,19 @@ from cryptojwt.jws.jws import factory
 
 from fedservice.entity_statement.policy import apply_policy
 from fedservice.entity_statement.policy import gather_policies
-from fedservice.entity_statement.statement import Statement
+from fedservice.entity_statement.statement import TrustChain
 
 logger = logging.getLogger(__name__)
+
+
+def trusted_anchor(es, key_jar):
+    _jwt = factory(es)
+    payload = _jwt.jwt.payload()
+    if payload['iss'] not in key_jar:
+        logger.warning("Trust chain ending in a trust anchor I do not know: '%s'", payload['iss'])
+        return False
+
+    return True
 
 
 def verify_trust_chain(es_list, key_jar):
@@ -18,6 +28,11 @@ def verify_trust_chain(es_list, key_jar):
     :return: A sequence of verified entity statements
     """
     ves = []
+
+    if not trusted_anchor(es_list[0], key_jar):
+        # Trust chain ending in a trust anchor I don't know.
+        return ves
+
     n = len(es_list) - 1
     for es in es_list:
         _jwt = factory(es)
@@ -46,7 +61,7 @@ def verify_trust_chain(es_list, key_jar):
                         logger.debug(
                             "New keys added to the federation key jar for '{}': {}".format(
                                 res['sub'], _key_spec)
-                            )
+                        )
                         # Only add keys to the KeyJar if they are not already there.
                         _kb.set(new)
                         key_jar.add_kb(res['sub'], _kb)
@@ -76,10 +91,13 @@ def eval_policy_chain(chain, key_jar, entity_type):
     :return: tuple with federation ID, combined metadata policy and expiration time
     """
     ves = verify_trust_chain(chain, key_jar)
-    tp_exp = trust_chain_expires_at(ves)
+    if ves:
+        tp_exp = trust_chain_expires_at(ves)
 
-    # Combine the metadata policies from the trust root and all intermediates
-    return ves[0]["iss"], gather_policies(ves[:-1], entity_type), tp_exp
+        # Combine the metadata policies from the trust root and all intermediates
+        return ves[0]["iss"], gather_policies(ves[:-1], entity_type), tp_exp
+    else:
+        return None
 
 
 def eval_chain(chain, key_jar, entity_type, apply_policies=True):
@@ -89,13 +107,17 @@ def eval_chain(chain, key_jar, entity_type, apply_policies=True):
     :param key_jar: A :py:class:`cryptojwt.key_jar.KeyJar` instance
     :param entity_type: Which type of metadata you want returned
     :param apply_policies: Apply policies to the metadata or not
-    :returns: A Statement instances
+    :returns: A TrustChain instances
     """
     logger.debug("Evaluate trust chain")
     ves = verify_trust_chain(chain, key_jar)
+
+    if not ves:
+        return None
+
     tp_exp = trust_chain_expires_at(ves)
 
-    statement = Statement(exp=tp_exp, verified_chain=ves)
+    statement = TrustChain(exp=tp_exp, verified_chain=ves)
 
     if apply_policies:
         if len(ves) > 1:
@@ -109,6 +131,7 @@ def eval_chain(chain, key_jar, entity_type, apply_policies=True):
             else:
                 # apply the combined metadata policies on the metadata
                 statement.metadata = apply_policy(metadata, combined_policy)
+                logger.debug("After applied policy: %s", statement.metadata)
                 statement.combined_policy = combined_policy
         else:
             statement.metadata = ves[0]["metadata"][entity_type]
@@ -118,7 +141,7 @@ def eval_chain(chain, key_jar, entity_type, apply_policies=True):
         statement.metadata = ves[-1]
 
     iss_path = [x['iss'] for x in ves]
-    statement.fo = iss_path[0]
+    statement.anchor = iss_path[0]
 
     iss_path.reverse()
 

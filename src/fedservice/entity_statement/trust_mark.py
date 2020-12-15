@@ -1,8 +1,5 @@
 from cryptojwt import JWT
 
-from fedservice import branch2lists
-from fedservice import eval_chain
-from fedservice.entity_statement.collect import verify_self_signed_signature
 from fedservice.exception import ConstraintError
 from fedservice.message import TrustMark
 
@@ -53,8 +50,8 @@ def get_trust_mark(federation_entity, token, entity_id, trust_anchor_id):
     entity_config = federation_entity.get_configuration_information(_tm["iss"])
 
     # Collect the trust chains and verify them
-    statements = federation_entity.collect_metadata_statements(entity_config,
-                                                               "federation_entity")
+    statements = federation_entity.collect_trust_chains(entity_config,
+                                                        "federation_entity")
     # one of the statement chains has to end in the trust_anchor
     statement = None
     for s in statements:
@@ -68,5 +65,3 @@ def get_trust_mark(federation_entity, token, entity_id, trust_anchor_id):
             raise ConstraintError("Trust chain too long")
 
     return _tm
-
-

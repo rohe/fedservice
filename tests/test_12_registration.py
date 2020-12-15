@@ -8,7 +8,7 @@ from oidcservice.service_context import ServiceContext
 import pytest
 
 from fedservice import FederationEntity
-from fedservice.entity_statement.statement import Statement
+from fedservice.entity_statement.statement import TrustChain
 from fedservice.metadata_api.fs2 import read_info
 from fedservice.op import authorization
 from fedservice.op import provider_config
@@ -146,12 +146,12 @@ class TestExplicit(object):
         _fe = _registration_service.service_context.federation_entity
 
         # This is cheating. Getting the OP provider info
-        statement = Statement()
-        statement.metadata = self.registration_endpoint.endpoint_context.provider_info
-        statement.fo = "https://feide.no"
-        statement.verified_chain = [{'iss': "https://ntnu.no"}]
+        trust_chain = TrustChain()
+        trust_chain.metadata = self.registration_endpoint.endpoint_context.provider_info
+        trust_chain.anchor = "https://feide.no"
+        trust_chain.verified_chain = [{'iss': "https://ntnu.no"}]
 
-        self.service['discovery'].update_service_context([statement])
+        self.service['discovery'].update_service_context([trust_chain])
         # add the OP's federation keys
         self.rp_federation_entity.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
@@ -174,7 +174,7 @@ class TestExplicit(object):
         assert set(reg_resp.keys()) == {'response', 'http_headers', 'cookie'}
 
         # The RP parses the OP's response
-        args = _registration_service.parse_response(reg_resp['response'], request_body=jws)
+        args = _registration_service.parse_response(reg_resp['response'], request=jws)
         assert set(args.keys()) == {'entity_id', 'client_id', 'contacts', 'application_type',
                                     'redirect_uris', 'response_types', 'client_id_issued_at',
                                     'client_secret', 'grant_types', 'client_secret_expires_at'}
@@ -306,9 +306,9 @@ class TestAutomatic(object):
         self.authorization_endpoint.automatic_registration_endpoint.kwargs['new_id'] = True
         # This is cheating. Getting the OP's provider info
         _fe = _registration_service.service_context.federation_entity
-        statement = Statement()
+        statement = TrustChain()
         statement.metadata = self.registration_endpoint.endpoint_context.provider_info
-        statement.fo = "https://feide.no"
+        statement.anchor = "https://feide.no"
         statement.verified_chain = [{'iss': "https://ntnu.no"}]
 
         self.service['discovery'].update_service_context([statement])
@@ -344,9 +344,9 @@ class TestAutomatic(object):
         # This is cheating. Getting the OP provider info
         _registration_service = self.service['registration']
         _fe = _registration_service.service_context.federation_entity
-        statement = Statement()
+        statement = TrustChain()
         statement.metadata = self.registration_endpoint.endpoint_context.provider_info
-        statement.fo = "https://feide.no"
+        statement.anchor = "https://feide.no"
         statement.verified_chain = [{'iss': "https://ntnu.no"}]
 
         self.service['discovery'].update_service_context([statement])
@@ -508,9 +508,9 @@ class TestAutomaticNoSupport(object):
 
         # This is cheating. Getting the OP's provider info
         _fe = _registration_service.service_context.federation_entity
-        statement = Statement()
+        statement = TrustChain()
         statement.metadata = self.registration_endpoint.endpoint_context.provider_info
-        statement.fo = "https://feide.no"
+        statement.anchor = "https://feide.no"
         statement.verified_chain = [{'iss': "https://ntnu.no"}]
 
         self.service['discovery'].update_service_context([statement])

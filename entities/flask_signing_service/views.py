@@ -19,8 +19,9 @@ def send_js(path):
 def well_known(unit):
     # self signed entity statement
     _srv = current_app.signing_service.issuer[unit]
-    _x5c = current_app.signing_service.x5c
-    response = make_response(_srv.create_entity_statement(unit, x5c=_x5c))
+    # _x5c = current_app.signing_service.x5c
+    # response = make_response(_srv.create_entity_statement(unit, x5c=_x5c))
+    response = make_response(_srv.create_entity_statement(unit))
     response.headers['Content-Type'] = 'application/jose; charset=UTF-8'
     return response
 

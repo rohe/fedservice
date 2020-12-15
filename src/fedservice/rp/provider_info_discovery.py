@@ -70,10 +70,10 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         self.service_context.set('provider_info', _pi)
         self.service_context.federation_entity.federation = trust_root_id
 
-    def update_service_context(self, statements, **kwargs):
+    def update_service_context(self, trust_chains, **kwargs):
         """
         The list of :py:class:`fedservice.entity_statement.statement.Statement` instances are
-        stored in *provider_federations*.
+        stored in *trust_anchors*.
         If the OP and RP only has one federation in common then the choice is
         easy and the name of the federation are stored in the *federation*
         attribute while the provider info are stored in the service_context.
@@ -85,40 +85,46 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         _sc = self.service_context
         _fe = _sc.federation_entity
 
-        possible = list(set([s.fo for s in statements]).intersection(_fe.tr_priority))
+        if _fe.tr_priority:
+            possible = []
+            for ta in _fe.tr_priority:
+                for s in trust_chains:
+                    if s.anchor == ta:
+                        possible.append(ta)
+        else:
+            possible = [s.anchor for s in trust_chains]
 
-        _fe.provider_federations = possible
-        _fe.op_statements = statements
+        _trust_anchor = possible[0]
+
+        _fe.trust_anchors = possible
+        _fe.op_statements = trust_chains
+
+        provider_info_per_trust_anchor = {}
+        for s in trust_chains:
+            if s.anchor in possible:
+                claims = s.metadata
+                provider_info_per_trust_anchor[s.anchor] = self.response_cls(**claims)
+        _sc.set('provider_info_per_trust_anchor', provider_info_per_trust_anchor)
 
         _fe.proposed_authority_hints = create_authority_hints(
-            _fe.authority_hints, statements)
+            _fe.authority_hints, trust_chains)
 
-        if len(possible) == 1:
-            for s in statements:
-                if s.fo == possible[0]:
-                    claims = s.metadata
-                    _pi = self.response_cls(**claims)
-                    _sc.set('provider_info', _pi)
-                    self._update_service_context(_pi)
-                    _sc.set('behaviour',
-                            map_configuration_to_preference(_pi, _sc.client_preferences))
-                    break
-        else:
-            # Not optimal but a reasonable estimate for now
-            claims = statements[0].metadata
-            _pinfo = self.response_cls(**claims)
-            _sc.set('provider_info', _pinfo)
-            _sc.set('behaviour', map_configuration_to_preference(_pinfo, _sc.client_preferences))
+        _pi = provider_info_per_trust_anchor[_trust_anchor]
+        _sc.set('provider_info', _pi)
+        self._update_service_context(_pi)
+        _sc.set('behaviour', map_configuration_to_preference(_pi, _sc.client_preferences))
 
     def parse_response(self, info, sformat="", state="", **kwargs):
-        # returns a list of Statement instances
-        statements = self.parse_federation_response(info, state=state)
+        # returns a list of TrustChain instances
+        trust_chains = self.parse_federation_response(info, state=state)
+        # Get rid of NULL chains (== trust chains I can't verify)
+        trust_chains = [s for s in trust_chains if s is not None]
 
-        if not statements:
+        if not trust_chains:
             logger.error('Missing or faulty response')
             raise ResponseError("Missing or faulty response")
 
-        return statements
+        return trust_chains
 
     def parse_federation_response(self, response, **kwargs):
         """
@@ -135,17 +141,15 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         :returns: A list of lists of Statement instances. The innermost lists represents
         trust chains
         """
-
-        _jwt = factory(response)
-        entity_statement = _jwt.jwt.payload()
+        entity_statement = verify_self_signed_signature(response)
         entity_id = entity_statement['iss']
 
         _fe = self.service_context.federation_entity
-
-        statement = verify_self_signed_signature(response)
-        _tree = _fe.collect_statement_chains(entity_id, statement)
+        _tree = _fe.collect_statement_chains(entity_id, entity_statement)
         _node = {entity_id: (response, _tree)}
+        logger.debug("Translate tree to chains")
         _chains = branch2lists(_node)
+        logger.debug("%s chains", len(_chains))
         for c in _chains:
             c.append(response)
         return [eval_chain(c, _fe.keyjar, 'openid_provider') for c in _chains]

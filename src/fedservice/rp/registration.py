@@ -1,6 +1,7 @@
 import logging
 
 from cryptojwt.jws.jws import factory
+from oidcmsg.oidc import ProviderConfigurationResponse
 from oidcmsg.oidc import RegistrationRequest
 from oidcmsg.oidc import RegistrationResponse
 from oidcservice.exception import ResponseError
@@ -61,20 +62,22 @@ class Registration(registration.Registration):
         return resp
 
     def _get_trust_anchor_id(self, entity_statement):
-        _metadata = entity_statement.get('metadata')
-        if not _metadata:
-            return None
+        return entity_statement.get('trust_anchor_id')
 
-        _fed_entity = _metadata.get('federation_entity')
-        if not _fed_entity:
-            return None
-
-        _trust_anchor_id = _fed_entity.get('trust_anchor_id')
-        return _trust_anchor_id
+        # _metadata = entity_statement.get('metadata')
+        # if not _metadata:
+        #     return None
+        #
+        # _fed_entity = _metadata.get('federation_entity')
+        # if not _fed_entity:
+        #     return None
+        #
+        # _trust_anchor_id = _fed_entity.get('trust_anchor_id')
+        # return _trust_anchor_id
 
     def get_trust_anchor_id(self, entity_statement):
         if len(self.service_context.federation_entity.op_statements) == 1:
-            _id = self.service_context.federation_entity.op_statements[0].fo
+            _id = self.service_context.federation_entity.op_statements[0].anchor
             _tai = self._get_trust_anchor_id(entity_statement)
             if _tai and _tai != _id:
                 logger.warning(
@@ -107,7 +110,7 @@ class Registration(registration.Registration):
 
         chosen = None
         for op_statement in _fe.op_statements:
-            if op_statement.fo == _trust_anchor_id:
+            if op_statement.anchor == _trust_anchor_id:
                 chosen = op_statement
                 break
 
@@ -116,8 +119,8 @@ class Registration(registration.Registration):
 
         # based on the Federation ID, conclude which OP config to use
         op_claims = chosen.metadata
-        # _sc.trust_path = (chosen.fo, _fe.op_paths[statement.fo][0])
-        _sc.provider_info = self.response_cls(**op_claims)
+        # _sc.trust_path = (chosen.anchor, _fe.op_paths[statement.anchor][0])
+        _sc.provider_info = ProviderConfigurationResponse(**op_claims)
 
         # To create RPs metadata collect the trust chains
         tree = {}
@@ -126,13 +129,26 @@ class Registration(registration.Registration):
 
         _node = {_fe.entity_id: (resp, tree)}
         chains = branch2lists(_node)
-
+        logger.debug("%d chains", len(chains))
         # Get the policies
         policy_chains_tup = [eval_policy_chain(c, _fe.keyjar, _fe.entity_type) for c in chains]
+        # Weed out unusable chains
+        policy_chains_tup = [pct for pct in policy_chains_tup if pct is not None]
+        # Should leave me with one. The one ending in the chosen trust anchor.
+        policy_chains_tup = [pct for pct in policy_chains_tup if pct[0] == _trust_anchor_id]
+
+        if policy_chains_tup == []:
+            logger.warning("No chain that ends in chosen trust anchor (%s)", _trust_anchor_id)
+            raise ValueError("No trust chain that ends in chosen trust anchor (%s)",
+                             _trust_anchor_id)
+
         _policy = combine_policy(policy_chains_tup[0][1],
                                  entity_statement['metadata_policy'][_fe.entity_type])
         logger.debug("Combined policy: {}".format(_policy))
-        _uev = unverified_entity_statement(kwargs["request_body"])
+        _req = kwargs.get("request")
+        if _req is None:
+            _req = kwargs.get("request_body")
+        _uev = unverified_entity_statement(_req)
         logger.debug("Registration request: {}".format(_uev))
         _query = _uev["metadata"][_fe.entity_type]
         _sc.registration_response = apply_policy(_query, _policy)

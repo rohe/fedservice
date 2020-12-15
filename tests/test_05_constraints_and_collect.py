@@ -1,18 +1,18 @@
 import json
 import os
 
-import responses
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
-from fedservice.entity_statement.constraints import meets_restrictions
-
-from fedservice.entity_statement.verify import verify_trust_chain
+import responses
 
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.collect import construct_entity_statement_query
 from fedservice.entity_statement.collect import verify_self_signed_signature
+from fedservice.entity_statement.constraints import meets_restrictions
+from fedservice.entity_statement.verify import verify_trust_chain
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
+
 
 def test_collect():
     jwks = open(os.path.join(BASE_PATH, 'base_data', 'feide.no', 'feide.no', 'jwks.json')).read()
@@ -43,7 +43,7 @@ def test_collect():
             _msg = open(os.path.join(BASE_PATH, 'base_data', netloc, netloc, "jws")).read()
             _url = "https://{}/.well-known/openid-federation".format(netloc)
             rsps.add(rsps.GET, _url, body=_msg)
-            # Get the self-signed entity statement from a leaf
+            # Get the self-signed entity statement from an entity
             _self_signed = _collector.get_configuration_information(authority)
 
         _statement = verify_self_signed_signature(_self_signed)
@@ -56,12 +56,13 @@ def test_collect():
             _url = construct_entity_statement_query(_api_endpoint, authority,
                                                     "https://{}".format(subject))
             rsps.add(rsps.GET, _url, body=_msg)
-            # Get the self-signed entity statement from a leaf
+            # Get the self-signed entity statement from an authority about the subject
             _signed_statement = _collector.get_entity_statement(_api_endpoint, authority,
                                                                 "https://{}".format(subject))
             chain.append(_signed_statement)
             _jwt = factory(_signed_statement)
             _statement = _jwt.jwt.payload()
+            # Make the authority be the subject climbing up the chain.
             subject = _statement['iss'][8:]
 
     # Now I have the chain should be 3 items in it

@@ -1,0 +1,5 @@
+{
+  "federation_entity": {
+    "federation_api_endpoint": "https://federation.catalogix.se:4002/api/feide.no"
+  }
+}

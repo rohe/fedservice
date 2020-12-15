@@ -98,7 +98,7 @@ class TestRpService(object):
         statements = _dserv.parse_response(http_response.text)
         assert len(statements) == 1
         statement = statements[0]
-        assert statement.fo == 'https://feide.no'
+        assert statement.anchor == 'https://feide.no'
         _dserv.update_service_context(statements)
         assert set(_dserv.service_context.get('behaviour').keys()) == {
             'grant_types', 'id_token_signed_response_alg',
@@ -191,10 +191,10 @@ class TestRpService(object):
         _jwt = _fe.create_entity_statement(
             'https://op.ntnu.no', 'https://foodle.uninett.no',
             metadata_policy={_fe.entity_type: metadata_policy},
-            metadata={"federation_entity": {"trust_anchor_id": statements[0].fo}},
+            metadata={"federation_entity": {"trust_anchor_id": statements[0].anchor}},
             authority_hints=['https://feide.no'])
 
-        claims = self.service['registration'].parse_response(_jwt, request_body=_info['body'])
+        claims = self.service['registration'].parse_response(_jwt, request=_info['body'])
 
         assert set(claims.keys()) == {
             'id_token_signed_response_alg', 'application_type', 'client_secret',

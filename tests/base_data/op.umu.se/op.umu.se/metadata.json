@@ -1,0 +1,23 @@
+{
+  "openid_provider": {
+    "issuer": "https://op.umu.se",
+    "id_token_signing_alg_values_supported": [
+      "ES256",
+      "ES384",
+      "ES512"
+    ],
+    "authorization_endpoint": "https://op.umu.se/authorization",
+    "token_endpoint": "https://op.umu.se/accessToken",
+    "userinfo_endpoint": "https://op.umu.se/people",
+    "federation_registration_endpoint": "https://op.umu.se/fedreg",
+    "token_endpoint_auth_methods_supported": [
+      "private_key_jwt",
+      "client_secret_basic"
+    ],
+    "client_registration_authn_methods_supported": {
+      "ar": [
+        "request_object"
+      ]
+    }
+  }
+}

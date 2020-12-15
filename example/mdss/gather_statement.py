@@ -57,5 +57,5 @@ if __name__ == "__main__":
         fedent.collector.insecure = True
 
     for statement in main(fedent, args.entity_id, args.entity_type):
-        print(20 * "=", statement.fo, 20 * "=")
+        print(20 * "=", statement.anchor, 20 * "=")
         print(json.dumps(statement.metadata, indent=4, sort_keys=True))

@@ -7,7 +7,7 @@ __author__ = 'roland'
 logger = logging.getLogger(__name__)
 
 
-class Statement(object):
+class TrustChain(object):
     """
     Class in which to store the parse result from applying metadata policies on a
     metadata statement.
@@ -17,7 +17,7 @@ class Statement(object):
         """
         :param exp: Expiration time
         """
-        self.fo = ""
+        self.anchor = ""
         self.iss_path = []
         self.err = {}
         self.metadata = {}
@@ -50,4 +50,3 @@ class Statement(object):
             return True
         else:
             return False
-

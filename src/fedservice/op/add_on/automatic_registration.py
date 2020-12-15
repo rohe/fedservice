@@ -22,11 +22,17 @@ def add_support(endpoint, **kwargs):
             auth_endpoint.automatic_registration_endpoint = auto_reg
 
             if endp == 'authorization':
-                if not auth_endpoint.client_authn_method:
-                    auth_endpoint.client_authn_method = [
+                if isinstance(auth_endpoint.client_verification_method, list):
+                    auth_endpoint.client_verification_method.append(
+                        RequestParam(auth_endpoint.endpoint_context))
+                else:
+                    auth_endpoint.client_verification_method = [
                         RequestParam(auth_endpoint.endpoint_context)]
-            else:  # pushed_authorization
-                if not auth_endpoint.client_authn_method:
+            else:  # pushed_authorization endpoint
+                if isinstance(auth_endpoint.client_authn_method, list):
+                    auth_endpoint.client_authn_method.append(
+                        PrivateKeyJWT(auth_endpoint.endpoint_context))
+                else:
                     auth_endpoint.client_authn_method = [
                         PrivateKeyJWT(auth_endpoint.endpoint_context)]
 

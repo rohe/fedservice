@@ -1,13 +1,13 @@
 import os
 
-import pytest
-import requests
-import responses
 from cryptojwt.jwk import pems_to_x5c
 from cryptojwt.jwk import x5c_to_pems
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import build_keyjar
 from oidcmsg.exception import MissingPage
+import pytest
+import requests
+import responses
 
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.collect import branch2lists
@@ -51,6 +51,99 @@ def test_get_entity_statement():
     msg = verify_self_signed_signature(_jws)
     assert msg['iss'] == entity_id
     assert msg['sub'] == target
+
+
+def test_branch2lists_1():
+    tree = {
+        "https://example.com/rp": (
+            'statement1', {
+                "https://example.com/intermediate1": (
+                    'statement2', {
+                        "https://example.com/anchor": (
+                            "statement3", {})})})}
+
+    chains = branch2lists(tree)
+    assert len(chains) == 1
+    assert len(chains[0]) == 3
+    assert chains[0] == ["statement3", "statement2", "statement1"]
+
+
+def test_branch2lists_2():
+    tree = {
+        "https://example.com/rp": (
+            'statement1', {
+                "https://example.com/intermediate1": (
+                    'statement2', {
+                        "https://example.com/anchor1": ("statement3", {}),
+                        "https://example.com/anchor2": ("statement4", {})
+                    })})}
+
+    chains = branch2lists(tree)
+    assert len(chains) == 2
+    assert chains[0] == ["statement3", "statement2", "statement1"]
+    assert chains[1] == ["statement4", "statement2", "statement1"]
+
+
+def test_branch2lists_3():
+    tree = {
+        "https://example.com/rp": (
+            'statement1', {
+                "https://example.com/intermediate1": (
+                    'statement2', {
+                        "https://example.com/anchor1": ("statement3", {})
+                    }
+                ),
+                "https://example.com/intermediate2": (
+                    'statement5', {
+                        "https://example.com/anchor2": ("statement4", {})
+                    }
+                )
+            })}
+
+    chains = branch2lists(tree)
+    assert len(chains) == 2
+    assert chains[0] == ["statement3", "statement2", "statement1"]
+    assert chains[1] == ["statement4", "statement5", "statement1"]
+
+
+def test_branch2lists_4():
+    tree = {
+        "https://example.com/rp": (
+            'statement1', {
+                "https://example.com/intermediate1": (
+                    'statement2', {
+                        "https://example.com/anchor1": ("statement3", {})
+                    }
+                ),
+                "https://example.com/intermediate2": (
+                    'statement5', {
+                        "https://example.com/anchor1": ("statement3", {})
+                    }
+                )
+            })}
+
+    chains = branch2lists(tree)
+    assert len(chains) == 2
+    assert chains[0] == ["statement3", "statement2", "statement1"]
+    assert chains[1] == ["statement3", "statement5", "statement1"]
+
+
+def test_branch2lists_5():
+    tree = {
+        "https://example.com/rp": (
+            'statement1', {
+                "https://example.com/intermediate1": (
+                    'statement2', {
+                        "https://example.com/anchor1": ("statement3", {})
+                    }
+                ),
+                "https://example.com/anchor2": ("statement4", {})
+            })}
+
+    chains = branch2lists(tree)
+    assert len(chains) == 2
+    assert chains[0] == ["statement3", "statement2", "statement1"]
+    assert chains[1] == ["statement4", "statement1"]
 
 
 def test_collect_superiors():

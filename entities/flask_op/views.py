@@ -5,6 +5,8 @@ import os
 import sys
 import traceback
 
+from oidcendpoint.oidc.token import Token
+from oidcendpoint.session.info import UserSessionInfo
 import werkzeug
 from flask import Blueprint
 from flask import current_app
@@ -14,7 +16,6 @@ from flask import request
 from flask.helpers import make_response
 from flask.helpers import send_from_directory
 from oidcendpoint.authn_event import create_authn_event
-from oidcendpoint.oidc.token import AccessToken
 from oidcmsg.oauth2 import ResponseMessage
 from oidcmsg.oidc import AccessTokenRequest
 from oidcmsg.oidc import AuthorizationRequest
@@ -117,6 +118,9 @@ def authn_verify(method):
         authn_info=auth_args['authn_class_ref'],
         authn_time=auth_args['iat'])
 
+    current_app.endpoint_context.session_manager.set(
+        [username], UserSessionInfo(authentication_event=authn_event))
+
     endpoint = current_app.endpoint_context.endpoint['authorization']
     args = endpoint.authz_part2(user=username, request=authz_request,
                                 authn_event=authn_event)
@@ -196,7 +200,7 @@ def service_endpoint(endpoint):
         else:
             kwargs = {}
 
-        if isinstance(endpoint, AccessToken):
+        if isinstance(endpoint, Token):
             args = endpoint.process_request(AccessTokenRequest(**req_args),
                                             **kwargs)
         else:

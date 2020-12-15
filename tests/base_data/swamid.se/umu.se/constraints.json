@@ -1,0 +1,6 @@
+{
+  "naming_constraints": {
+    "permitted": ["https://.se"]
+  },
+  "max_path_length": 1
+}

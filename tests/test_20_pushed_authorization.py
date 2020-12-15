@@ -14,7 +14,7 @@ from oidcservice import JWT_BEARER
 from oidcservice.service_context import ServiceContext
 
 from fedservice import FederationEntity
-from fedservice.entity_statement.statement import Statement
+from fedservice.entity_statement.statement import TrustChain
 from fedservice.metadata_api.fs2 import read_info
 from fedservice.op.authorization import Authorization
 from fedservice.op.pushed_authorization import PushedAuthorization
@@ -124,7 +124,7 @@ class TestEndpoint(object):
                 },
                 "code": {"lifetime": 600},
                 "token": {
-                    "class": "oidcendpoint.jwt_token.JWTToken",
+                    "class": "oidcendpoint.token.jwt_token.JWTToken",
                     "kwargs": {
                         "lifetime": 3600,
                         "add_claims": [
@@ -254,12 +254,12 @@ class TestEndpoint(object):
     def test_pushed_auth_urlencoded(self):
         # This is cheating. Getting the OP's provider info
         _fe = self.service['registration'].service_context.federation_entity
-        statement = Statement()
-        statement.metadata = self.registration_endpoint.endpoint_context.provider_info
-        statement.fo = "https://feide.no"
-        statement.verified_chain = [{'iss': "https://ntnu.no"}]
+        trust_chain = TrustChain()
+        trust_chain.metadata = self.registration_endpoint.endpoint_context.provider_info
+        trust_chain.anchor = "https://feide.no"
+        trust_chain.verified_chain = [{'iss': "https://ntnu.no"}]
 
-        self.service['discovery'].update_service_context([statement])
+        self.service['discovery'].update_service_context([trust_chain])
         # and the OP's federation keys
         self.rp_federation_entity.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
@@ -312,12 +312,12 @@ class TestEndpoint(object):
     def test_pushed_auth_urlencoded_process(self):
         # This is cheating. Getting the OP's provider info
         _fe = self.service['registration'].service_context.federation_entity
-        statement = Statement()
-        statement.metadata = self.registration_endpoint.endpoint_context.provider_info
-        statement.fo = "https://feide.no"
-        statement.verified_chain = [{'iss': "https://ntnu.no"}]
+        trust_chain = TrustChain()
+        trust_chain.metadata = self.registration_endpoint.endpoint_context.provider_info
+        trust_chain.anchor = "https://feide.no"
+        trust_chain.verified_chain = [{'iss': "https://ntnu.no"}]
 
-        self.service['discovery'].update_service_context([statement])
+        self.service['discovery'].update_service_context([trust_chain])
         # and the OP's federation keys
         self.rp_federation_entity.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),

@@ -84,8 +84,8 @@ class TestRpService(object):
                                                   'id_token_signing_alg_values_supported',
                                                   'redirect_uris', 'contacts', 'response_types',
                                                   'jwks_uri'}
-        statement = self.fedent.pick_metadata(statements)
-        assert statement.fo == 'https://feide.no'
+        statement = self.fedent.pick_trust_chain(statements)
+        assert statement.anchor == 'https://feide.no'
         assert set(statement.metadata.keys()) == {'application_type', 'claims',
                                                   'id_token_signing_alg_values_supported',
                                                   'redirect_uris', 'contacts', 'response_types',
