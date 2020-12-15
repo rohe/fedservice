@@ -9,5 +9,41 @@
         "d": "T0lqIOzzUPK8JqYDBmmQU221HGd-ZzAcG1NKRG6QUUNhaNaWht4DV7F1zXcEazHZWqD0LwPE-fUOOM60R63NsqtTaG2vHgUj61eiCbQRM2Q9uXLJaZVCRXdDvosRKtwM31mkyrIS3JhFfo8_qnHR_VC1HKh962SLiYi-Lho7TVEyH5wpI_bZ7HPapPYNm6lpRaxqSrPSf-gmejHTSJ6wMWpsOFGUBsnwhXEc2s9eXDPKGCcXjm74YEX33ItIblmcYTO_Z6OLvECLnDKqUvJbwE_G6z7Praj75zUJKA0xbi2hKJUyH9-JS3ZYvBHmJD4eSlOWTJhI89S6CzrVU_FsJQ"
       }
     ]
+  },
+  "https://swamid.se": {
+    "keys": [
+      {
+        "kty": "RSA",
+        "use": "sig",
+        "kid": "QXRhUzlpSVZMQjVndmFCTjdhRmFVZnpOUTZIb21xTmNpZUlDcW9la1JVRQ",
+        "n": "uX6cmHWvdjlc7oMnLNN4Y8Pll5eE6daF3QeRaP9-YG6gqxd9FGqPR55ilt7nUx9QyuJGDJZs5g9Afn7zSe-U11VM_jWJVKNVEqMARTM87q-R8cGXIg_Xd_LncIEgLXlZJDql8w1-eK_DWUsXo5ZDMegXmMT1povlSkw_HGPQk0qlnJHNl6XdCRTlqCLo04hV0o5AlfE-x-ybdzhLnuHSb61hDdJbcZTDLFoAZElvz-4vVZRCBDY-n5boIgCD8-jWA4v3lnvhR2B_hNGfZJ_l7GewN6B4h_gT40IHouVYxPzwcBLhSz7rOHSp6mRi9ty48jOM0i0bDC5GDw0WaqXSiw",
+        "e": "AQAB",
+        "d": "o0auYojcrKzrf0rUteFizDZIJvqJVSeuZxNdTFXwkMNwC4m-YLU3b2wcDf8hEYq0HBG2ZSgXrR3pwC7QydjoY-7CudS4EFdA8AmomED0toi2Z13nQWU-XWfjjqUqhLyW2YwCPQI4u9TCmBvAMA95EDniY2ejbzke2BprRvsZQjvm4Exnh1bWK_Jbrut-eWt-ocDeRb13xb-bRoi0VILexMODvW_-aBPYNai6pPh7Qe4-xzhDOOgIYZk0ciDjeXw6Z7sCnViNmy1Yl8dmM0frZNBgFe2BD-kpQJRPPgNkoVnlIy69P9GDEaIU5QHiSwHoS-HrPXBP5x48jTOHhR4cCQ"
+      },
+      {
+        "kty": "EC",
+        "use": "sig",
+        "kid": "Tl9kLWJpbm1aM1paLUtxbFozclBmTDhEZVJhY3ktbW8xRWM1S2NPMkZKZw",
+        "crv": "P-256",
+        "x": "rWQMoh0MOP2ZF6IBGD3BDW_Q3NqTzsptjEO-oge2srs",
+        "y": "uB3p-DXd9ZsLed2dwAFvEzC8ywK2SkxcV6_W1BaVMZI"
+      },
+      {
+        "kty": "EC",
+        "use": "sig",
+        "kid": "UUp3Qjg2cTM4Z1V3RnppSWM1Ti1Qekh4YldTZm84c2xPY3RiZWpVZFpBZw",
+        "crv": "P-384",
+        "x": "F07rnDCRm7uCMTOnmiZQTmJhPbf1iRZ-8dEJHQY3gOrgaMBd1FC2vI1doTUMHpHg",
+        "y": "tiZmwyltbtdbQ_Y8O8nF07PnPEFiXEy1VQ8hQZBSsvIXubSh3M4eb9ktJnjykVLB"
+      },
+      {
+        "kty": "EC",
+        "use": "sig",
+        "kid": "MFBDaGw1eDUyOE5oQkk3RFdsOXN4RlZyT09pQVhteDM0QXFVNFpCbnBLYw",
+        "crv": "P-521",
+        "x": "Ae0cejlFgDSuojZVqw1C23xG3l_qkSgdVQPn_Ff4fKB9wMYGAGXg_TB6l9gWrTP_xY0YELs13JnP4nObulj59y3u",
+        "y": "50nV4BH1ff6IjPYXZIxU1KSprVd6v5Hw-BH-tWz0CaQ-wDxNUI_dR1cfAknVI3ydxMvA-vCUpUz1cYyRu1pBZhA"
+      }
+    ]
   }
 }

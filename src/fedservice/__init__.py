@@ -16,7 +16,7 @@ from fedservice.entity_statement.verify import eval_policy_chain
 from fedservice.utils import load_json
 
 __author__ = 'Roland Hedberg'
-__version__ = '1.0.1'
+__version__ = '1.1.0'
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class FederationEntity(OidcContext):
         :param entity_type: The leafs entity type
         :param apply_policies: Apply metadata policies from the list on the the metadata of the
             leaf entity
-        :return: List of Statement instances
+        :return: List of TrustChain instances
         """
         if not entity_type:
             entity_type = self.opponent_entity_type
@@ -74,34 +74,34 @@ class FederationEntity(OidcContext):
     def get_configuration_information(self, subject_id):
         return self.collector.get_configuration_information(subject_id)
 
-    def pick_metadata(self, statements):
+    def pick_trust_chain(self, trust_chains):
         """
-        Pick one statement out of the list of possible statements
+        Pick one trust chain out of the list of possible trust chains
 
-        :param statements: A list of :py:class:`fedservice.entity_statement.statement.Statement
+        :param trust_chains: A list of :py:class:`fedservice.entity_statement.statement.TrustChain
             instances
-        :return: A :py:class:`fedservice.entity_statement.statement.Statement instance
+        :return: A :py:class:`fedservice.entity_statement.statement.TrustChain instance
         """
-        if len(statements) == 1:
-            # right now just pick the first:
-            return statements[0]
-        else:
+        if len(trust_chains) == 1:
+            # If there is only one, then use it
+            return trust_chains[0]
+        elif self.tr_priority:
+            # Go by priority
             for fid in self.tr_priority:
-                for statement in statements:
-                    if statement.fo == fid:
-                        return statement
+                for trust_chain in trust_chains:
+                    if trust_chain.anchor == fid:
+                        return trust_chain
 
         # Can only arrive here if the federations I got back and trust are not
         # in the priority list. So, just pick one
-
-        return statements[0]
+        return trust_chains[0]
 
     def get_payload(self, self_signed_statement):
         _jws = as_unicode(self_signed_statement)
         _jwt = factory(_jws)
         return _jwt.jwt.payload()
 
-    def collect_metadata_statements(self, self_signed_statement, metadata_type):
+    def collect_trust_chains(self, self_signed_statement, metadata_type):
         """
 
         :param self_signed_statement: A Self signed Entity Statement
@@ -114,6 +114,7 @@ class FederationEntity(OidcContext):
         _tree = self.collect_statement_chains(payload['iss'], payload)
         _node = {payload['iss']: (self_signed_statement, _tree)}
         _chains = branch2lists(_node)
+        logger.debug("%s chains", len(_chains))
 
         # verify the trust paths and apply policies
         return [eval_chain(c, self.keyjar, metadata_type) for c in _chains]

@@ -31,22 +31,22 @@ class Registration(registration.Registration):
         """
         _fe = self.endpoint_context.federation_entity
 
-        statements = _fe.collect_metadata_statements(request, 'openid_relying_party')
+        # Collect trust chains
+        trust_chains = _fe.collect_trust_chains(request, 'openid_relying_party')
 
-        _fe.proposed_authority_hints = create_authority_hints(
-            _fe.authority_hints, statements)
+        _fe.proposed_authority_hints = create_authority_hints(_fe.authority_hints, trust_chains)
 
-        statement = _fe.pick_metadata(statements)
-        req = RegistrationRequest(**statement.metadata)
+        trust_chain = _fe.pick_trust_chain(trust_chains)
+        _fe.trust_chain_anchor = trust_chain.anchor
+        req = RegistrationRequest(**trust_chain.metadata)
         response_info = self.non_fed_process_request(req, **kwargs)
         if "response_args" in response_info:
             payload = _fe.get_payload(request)
-            _policy = diff2policy(response_info['response_args'],
-                                  payload['metadata'][_fe.opponent_entity_type])
+            _policy = diff2policy(response_info['response_args'], req)
             entity_statement = _fe.create_entity_statement(
                 _fe.entity_id,
                 payload['iss'],
-                metadata={'federation_entity': {"trust_anchor_id": statement.fo}},
+                metadata={'federation_entity': {"trust_anchor_id": trust_chain.anchor}},
                 metadata_policy={_fe.opponent_entity_type: _policy},
                 aud=payload['iss']
             )

@@ -65,6 +65,8 @@ client_preferences: &prefs
   token_endpoint_auth_method:
     - client_secret_basic
     - client_secret_post
+    - client_secret_jwt
+    - private_key_jwt
 
 services: &services
   discovery:
@@ -98,15 +100,17 @@ federation: &federation
     read_only: false
   authority_hints: authority_hints.json
   trusted_roots: trusted_roots.json
-  priority: []
+  priority:
+    - 'https://127.0.0.1:6000/eid/feide.no'
+    - 'https://127.0.0.1:6000/eid/swamid.se'
   entity_type: openid_relying_party
   opponent_entity_type: openid_provider
   registration_type: explicit
-  add_on:
-    ssc:
-      function: fedservice.op.add_on.ssc.add_ssc_support
-      kwargs:
-        ssc_dir: ssc
+#  add_on:
+#    ssc:
+#      function: fedservice.op.add_on.ssc.add_ssc_support
+#      kwargs:
+#        ssc_dir: ssc
 
 # The keys in this dictionary are the OPs short user friendly name
 # not the issuer (iss) name.

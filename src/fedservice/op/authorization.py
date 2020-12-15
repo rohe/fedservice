@@ -25,13 +25,14 @@ class Authorization(authorization.Authorization):
         _sses = _fe.get_configuration_information(entity_id)
 
         # Collect all the trust chains, verify them and apply policies. return the result
-        statements = _fe.collect_metadata_statements(_sses, "openid_relying_party")
+        trust_chains = _fe.collect_trust_chains(_sses, "openid_relying_party")
 
         # pick one of the possible
-        statement = _fe.pick_metadata(statements)
+        trust_chain = _fe.pick_trust_chain(trust_chains)
+        _fe.trust_chain_anchor = trust_chain.anchor
 
         # handle the registration request as in the non-federation case.
-        req = RegistrationRequest(**statement.metadata)
+        req = RegistrationRequest(**trust_chain.metadata)
         req['client_id'] = entity_id
         new_id = self.automatic_registration_endpoint.kwargs.get("new_id", False)
         response_info = self.automatic_registration_endpoint.non_fed_process_request(req,
@@ -73,3 +74,7 @@ class Authorization(authorization.Authorization):
         # then do client authentication
         return authorization.Authorization.client_authentication(
             self, request, auth, **kwargs)
+
+    def extra_response_args(self, aresp):
+        aresp['trust_anchor_id'] = self.endpoint_context.federation_entity.trust_chain_anchor
+        return aresp

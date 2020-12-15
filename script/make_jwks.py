@@ -21,4 +21,4 @@ _kj = build_keyjar(key_conf=key_conf)
 
 for file in args.out_files:
     with open(file, 'w') as fd:
-        fd.write(_kj.export_jwks_as_json(True, ''))
+        fd.write(json.dumps(_kj.export_jwks(True, ''), indent=2, sort_keys=True))

@@ -1,10 +1,10 @@
 import os
 import shutil
 
-import pytest
-import responses
 from oidcendpoint.user_authn.authn_context import UNSPECIFIED
 from oidcendpoint.user_authn.user import NoAuthn
+import pytest
+import responses
 
 from fedservice.entity_statement.collect import unverified_entity_statement
 from fedservice.metadata_api.fs2 import FSEntityStatementAPI
@@ -15,6 +15,11 @@ from tests.utils import get_netloc
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
+
+
+def full_path(path):
+    return os.path.join(BASE_PATH, path)
+
 
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},
@@ -42,8 +47,8 @@ class TestEndpointPersistence(object):
             "endpoint": {},
             "keys": {
                 'key_defs': KEYSPEC,
-                "private_path": "own/jwks.json",
-                "uri_path": "static/jwks.json"
+                "private_path": full_path("own/jwks.json"),
+                "uri_path": full_path("static/jwks.json")
             },
             "authentication": {
                 "anon": {
@@ -56,26 +61,26 @@ class TestEndpointPersistence(object):
             'db_conf': {
                 'keyjar': {
                     'handler': 'oidcmsg.storage.abfile.LabeledAbstractFileSystem',
-                    'fdir': 'storage/keyjar',
+                    'fdir': full_path('storage/keyjar'),
                     'key_conv': 'oidcmsg.storage.converter.QPKey',
                     'value_conv': 'cryptojwt.serialize.item.KeyIssuer',
                     'label': 'x'
                 },
                 'default': {
                     'handler': 'oidcmsg.storage.abfile.AbstractFileSystem',
-                    'fdir': 'storage',
+                    'fdir': full_path('storage'),
                     'key_conv': 'oidcmsg.storage.converter.QPKey',
                     'value_conv': 'oidcmsg.storage.converter.JSON'
                 },
                 'session': {
                     'handler': 'oidcmsg.storage.abfile.AbstractFileSystem',
-                    'fdir': 'storage/session',
+                    'fdir': full_path('storage/session'),
                     'key_conv': 'oidcmsg.storage.converter.QPKey',
                     'value_conv': 'oidcmsg.storage.converter.JSON'
                 },
                 'sso': {
                     'handler': 'oidcmsg.storage.abfile.AbstractFileSystem',
-                    'fdir': 'storage/sso',
+                    'fdir': full_path('storage/sso'),
                     'key_conv': 'oidcmsg.storage.converter.QPKey',
                     'value_conv': 'oidcmsg.storage.converter.JSON'
                 }
@@ -83,9 +88,9 @@ class TestEndpointPersistence(object):
             'federation': {
                 'entity_id': ENTITY_ID,
                 'signing_keys': {
-                    'private_path': 'private/fed_keys.json',
+                    'private_path': full_path('private/fed_keys.json'),
                     'key_defs': KEYSPEC,
-                    'public_path': 'static/fed_keys.json',
+                    'public_path': full_path('static/fed_keys.json'),
                     'read_only': False
                 },
                 'priority': [],
@@ -96,25 +101,25 @@ class TestEndpointPersistence(object):
                     'abstract_storage_cls': 'oidcmsg.storage.extension.LabeledAbstractStorage',
                     "default": {
                         'handler': 'oidcmsg.storage.abfile.AbstractFileSystem',
-                        'fdir': 'storage/fed',
+                        'fdir': full_path('storage/fed'),
                         'key_conv': 'oidcmsg.storage.converter.QPKey',
                         'value_conv': 'oidcmsg.storage.converter.JSON'
                     },
                     "config": {
                         'handler': 'oidcmsg.storage.abfile.AbstractFileSystem',
-                        'fdir': 'storage/fed/config',
+                        'fdir': full_path('storage/fed/config'),
                         'key_conv': 'oidcmsg.storage.converter.QPKey',
                         'value_conv': 'oidcmsg.storage.converter.JSON'
                     },
                     "entity_statement": {
                         'handler': 'oidcmsg.storage.abfile.AbstractFileSystem',
-                        'fdir': 'storage/fed/entity_statement',
+                        'fdir': full_path('storage/fed/entity_statement'),
                         'key_conv': 'oidcmsg.storage.converter.QPKey',
                         'value_conv': 'oidcmsg.storage.converter.JSON'
                     },
                     "keyjar": {
                         'handler': 'oidcmsg.storage.abfile.AbstractFileSystem',
-                        'fdir': 'storage/fed/keyjar',
+                        'fdir': full_path('storage/fed/keyjar'),
                         'key_conv': 'oidcmsg.storage.converter.QPKey',
                         'value_conv': 'cryptojwt.serialize.item.KeyIssuer',
                         'label': 'x'
@@ -122,8 +127,8 @@ class TestEndpointPersistence(object):
                 }
             }
         }
-        conf['federation']['trusted_roots'] = os.path.join(BASE_PATH, 'trusted_roots.json')
-        conf['federation']['authority_hints'] = os.path.join(BASE_PATH, 'authority_hints.json')
+        conf['federation']['trusted_roots'] = full_path('trusted_roots.json')
+        conf['federation']['authority_hints'] = full_path('authority_hints.json')
 
         endpoint_context = FederationEndpointContext(conf)
         self.endpoint = ProviderConfiguration(endpoint_context)
@@ -132,7 +137,8 @@ class TestEndpointPersistence(object):
         _collector = self.endpoint.endpoint_context.federation_entity.collector
         subject = 'https://op.ntnu.no'
         intermediate = 'https://ntnu.no'
-        fedop = 'https://feide.no'
+        fedop1 = 'https://feide.no'
+        fedop2 = 'https://swamid.se'
         # self-signed from subject
         es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(subject))
         subj_sesi = es_api.create_entity_statement(get_netloc(subject))
@@ -140,53 +146,67 @@ class TestEndpointPersistence(object):
         es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(intermediate))
         inter_sesi = es_api.create_entity_statement(get_netloc(intermediate))
         # self-signed from fedop
-        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(fedop))
-        fedop_sesi = es_api.create_entity_statement(get_netloc(fedop))
+        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(fedop1))
+        fedop_sesi_1 = es_api.create_entity_statement(get_netloc(fedop1))
+        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(fedop2))
+        fedop_sesi_2 = es_api.create_entity_statement(get_netloc(fedop2))
 
         # intermediate on subject
         es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(intermediate))
         inter_on_sub = es_api.create_entity_statement(get_netloc(subject))
         # fedop on intermediate
-        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(fedop))
-        fedop_on_inter = es_api.create_entity_statement(get_netloc(intermediate))
+        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(fedop1))
+        fedop_on_inter_1 = es_api.create_entity_statement(get_netloc(intermediate))
+        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(fedop2))
+        fedop_on_inter_2 = es_api.create_entity_statement(get_netloc(intermediate))
 
         with responses.RequestsMock() as rsps:
             _url = "{}/.well-known/openid-federation".format(intermediate)
             rsps.add("GET", _url, body=inter_sesi, status=200)
 
-            _url = "{}/.well-known/openid-federation".format(fedop)
-            rsps.add("GET", _url, body=fedop_sesi, status=200)
+            _url = "{}/.well-known/openid-federation".format(fedop1)
+            rsps.add("GET", _url, body=fedop_sesi_1, status=200)
+
+            _url = "{}/.well-known/openid-federation".format(fedop2)
+            rsps.add("GET", _url, body=fedop_sesi_2, status=200)
 
             _url = 'https://ntnu.no/api?iss=https%3A%2F%2Fntnu.no&sub=https%3A%2F%2Fop.ntnu.no'
             rsps.add("GET", _url, body=inter_on_sub, status=200)
 
             _url = 'https://feide.no/api?iss=https%3A%2F%2Ffeide.no&sub=https%3A%2F%2Fntnu.no'
-            rsps.add("GET", _url, body=fedop_on_inter, status=200)
+            rsps.add("GET", _url, body=fedop_on_inter_1, status=200)
+
+            _url = 'https://swamid.se/api?iss=https%3A%2F%2Fswamid.se&sub=https%3A%2F%2Fntnu.no'
+            rsps.add("GET", _url, body=fedop_on_inter_2, status=200)
 
             tree = _collector.collect_intermediate(subject, 'https://ntnu.no')
             assert tree
 
-        assert len(_collector.config_cache) == 2
-        assert set(_collector.config_cache.keys()) == {'https://ntnu.no', 'https://feide.no'}
+        assert len(_collector.config_cache) == 3
+        assert set(_collector.config_cache.keys()) == {'https://ntnu.no', 'https://feide.no',
+                                                       'https://swamid.se'}
 
-        # The unpacked fedop's self signed entity statement
+        # The unpacked fedop1's self signed entity statement
         _info = _collector.config_cache['https://feide.no']
-        assert _info['sub'] == fedop
-        assert _info['iss'] == fedop
+        assert _info['sub'] == fedop1
+        assert _info['iss'] == fedop1
         assert _info['metadata']['federation_entity']['federation_api_endpoint'] == \
                'https://feide.no/api'
 
         # For each entity statement there is also the expiration time
-        assert len(_collector.entity_statement_cache) == 4
+        assert len(_collector.entity_statement_cache) == 6
         assert set(_collector.entity_statement_cache.keys()) == {
             'https://feide.no!!https://ntnu.no',
             'https://feide.no!exp!https://ntnu.no',
             'https://ntnu.no!!https://op.ntnu.no',
-            'https://ntnu.no!exp!https://op.ntnu.no'}
+            'https://ntnu.no!exp!https://op.ntnu.no',
+            'https://swamid.se!!https://ntnu.no',
+            'https://swamid.se!exp!https://ntnu.no'
+        }
 
         # have a look at the payload
         _info = unverified_entity_statement(
-            _collector.entity_statement_cache['https://feide.no!!https://ntnu.no'])
+            _collector.entity_statement_cache['https://swamid.se!!https://ntnu.no'])
         assert _info['sub'] == intermediate
-        assert _info['iss'] == fedop
-        assert _info['authority_hints'] == [fedop]
+        assert _info['iss'] == fedop2
+        assert _info['authority_hints'] == [fedop2]

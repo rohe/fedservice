@@ -26,3 +26,15 @@ def fed_parse_response(instance, info, sformat="", state="", **kwargs):
 
     else:
         return instance.parse_response(info, sformat, state, **kwargs)
+
+
+def compact(qsdict):
+    res = {}
+    for key, val in qsdict.items():
+        if isinstance(val, int):
+            res[key] = val
+        elif len(val) == 1:
+            res[key] = val[0]
+        else:
+            res[key] = val
+    return res

@@ -41,7 +41,8 @@ def unverified_entity_statement(signed_jwt):
 
 def verify_self_signed_signature(config):
     """
-    Verify signature. Will raise exception if signature verification fails.
+    Verify signature using only keys in the entity statement.
+    Will raise exception if signature verification fails.
 
     :param config: Signed JWT
     :return: Payload of the signed JWT
@@ -259,7 +260,6 @@ class Collector(object):
             logger.exception(err)
             raise
 
-        logger.debug('SelfSigned statement: %s', self_signed_config)
         return self_signed_config
 
     def get_federation_api_endpoint(self, intermediate):
@@ -285,22 +285,22 @@ class Collector(object):
 
         return fed_api_endpoint
 
-    def collect_intermediate(self, entity_id, intermediate, seen=None, max_superiors=10):
+    def collect_intermediate(self, entity_id, authority, seen=None, max_superiors=10):
         """
-        Collect information about an entity by another entity, the intermediate.
-        This consist of first find the fed_api_endpoint URL for the intermediate and then
-        asking the intermediate for its view of the entity.
+        Collect information about an entity by another entity, the authority.
+        This consist of first find the fed_api_endpoint URL for the authority and then
+        asking the authority for its view of the entity.
 
         :param entity_id: The ID of the entity
-        :param intermediate: The immediate superior
-        :param seen: A list of intermediates that this process has seen. This to capture
+        :param authority: The immediate superior
+        :param seen: A list of authorities that this process has seen. This to capture
             loops. Also used to control the allowed depth.
         :param max_superiors: The maximum number of superiors.
         :return:
         """
-        logger.debug('Collect intermediate "%s"', intermediate)
+        logger.debug('Authority "%s" on %s', authority, entity_id)
         # Should I stop when I reach the first trust anchor ?
-        if entity_id == intermediate and entity_id in self.trusted_anchors:
+        if entity_id == authority and entity_id in self.trusted_anchors:
             return None
 
         if seen is None:
@@ -308,18 +308,18 @@ class Collector(object):
         else:
             _seen = seen[:]
 
-        _seen.append(intermediate)
+        _seen.append(authority)
         # if len(_seen) > max_superiors:
         #     logger.warning("Reached max superiors. The path here was {}".format(_seen))
         #     return None
 
         # Try to get the entity statement from the cache
-        cache_key = "{}!!{}".format(intermediate, entity_id)
+        cache_key = "{}!!{}".format(authority, entity_id)
         entity_statement = self.entity_statement_cache[cache_key]
 
         if entity_statement is not None:
             _now = utc_time_sans_frac()
-            time_key = "{}!exp!{}".format(intermediate, entity_id)
+            time_key = "{}!exp!{}".format(authority, entity_id)
             _exp = self.entity_statement_cache[time_key]
             if _now > (_exp - self.allowed_delta):
                 logger.debug("Cached entity statement timed out")
@@ -328,25 +328,25 @@ class Collector(object):
                 entity_statement = None
 
         if entity_statement is None:
-            fed_api_endpoint = self.get_federation_api_endpoint(intermediate)
+            fed_api_endpoint = self.get_federation_api_endpoint(authority)
             if fed_api_endpoint is None:
                 raise SystemError('Could not find federation_api endpoint')
             logger.debug("Federation API endpoint: '{}' for '{}'".format(fed_api_endpoint,
-                                                                         intermediate))
-            entity_statement = self.get_entity_statement(fed_api_endpoint, intermediate,
+                                                                         authority))
+            entity_statement = self.get_entity_statement(fed_api_endpoint, authority,
                                                          entity_id)
             # entity_statement is a signed JWT
             statement = unverified_entity_statement(entity_statement)
             logger.debug("Unverified entity statement from {} about {}: {}".format(
                 fed_api_endpoint, entity_id, statement))
             self.entity_statement_cache[cache_key] = entity_statement
-            time_key = "{}!exp!{}".format(intermediate, entity_id)
+            time_key = "{}!exp!{}".format(authority, entity_id)
             self.entity_statement_cache[time_key] = statement["exp"]
 
         if entity_statement:
-            intermediate_statement = self.config_cache[intermediate]
-            return entity_statement, self.collect_superiors(intermediate,
-                                                            intermediate_statement,
+            authority_statement = self.config_cache[authority]
+            return entity_statement, self.collect_superiors(authority,
+                                                            authority_statement,
                                                             seen=_seen,
                                                             max_superiors=max_superiors)
         else:
@@ -358,7 +358,7 @@ class Collector(object):
 
         :param entity_id: The entity ID
         :param statement: Metadata statement
-        :param seen: A list of intermediates that this process has seen. This to capture
+        :param seen: A list of authorities that this process has seen. This to capture
             loops. Also used to control the allowed depth.
         :param max_superiors: The maximum number of superiors.
         :param stop_at: The ID of the trust anchor at which the trust chain should stop.
@@ -371,15 +371,17 @@ class Collector(object):
         logger.debug('Collect superiors to: %s', entity_id)
         logger.debug('Collect based on: %s', statement)
         if 'authority_hints' not in statement:
+            logger.debug("No authority for this entity")
             return superior
         elif statement['iss'] == stop_at:
+            logger.debug("Reached trust anchor")
             return superior
 
-        for intermediate in statement['authority_hints']:
-            if intermediate in seen:  # loop ?!
-                logger.warning("Loop detected at {}".format(intermediate))
-            superior[intermediate] = self.collect_intermediate(entity_id, intermediate, seen,
-                                                               max_superiors)
+        for authority in statement['authority_hints']:
+            if authority in seen:  # loop ?!
+                logger.warning("Loop detected at {}".format(authority))
+            superior[authority] = self.collect_intermediate(entity_id, authority, seen,
+                                                            max_superiors)
 
         return superior
 
@@ -393,12 +395,13 @@ def branch2lists(node):
 
         (statement, node) = branch
         if not node:
-            res = [[statement]]
+            res.append([statement])
             continue
 
         _lists = branch2lists(node)
         for l in _lists:
             l.append(statement)
+
         if not res:
             res = _lists
         else:

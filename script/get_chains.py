@@ -57,7 +57,7 @@ if __name__ == '__main__':
         opponent_entity_type=args.opponent_entity_type)
 
     if args.insecure:
-        federation_entity.collector.insecure = args.insecure
+        federation_entity.collector.httpc_params = {"verify": False}
 
     jws = federation_entity.get_configuration_information(args.url)
     metadata = verify_self_signed_signature(jws)
@@ -71,7 +71,7 @@ if __name__ == '__main__':
                   chains]
 
     for statement in statements:
-        print(20 * "=", statement.fo, 20 * "=")
+        print(20 * "=", statement.anchor, 20 * "=")
         for node in statement.verified_chain:
             # pretty print JSON
             print(json.dumps(node, sort_keys=True, indent=4))

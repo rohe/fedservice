@@ -13,6 +13,10 @@ class FedAuthorization(Authorization):
         if post_args is None:
             post_args = {}
 
+        client_id = request_args.get('client_id')
+        if not client_id:
+            request_args['client_id'] = self.service_context.federation_entity.entity_id
+
         pi = self.service_context.get('provider_info')
         _ams = pi.get('client_registration_authn_methods_supported')
         # what if request_param is already set ??
@@ -20,9 +24,10 @@ class FedAuthorization(Authorization):
         if _ams and 'ar' in _ams:
             if "request_object" in _ams['ar']:
                 post_args['request_param'] = "request"
-                post_args['audience'] = "authorization_endpoint"
+                post_args['recv'] = pi.get("authorization_endpoint")
                 post_args["with_jti"] = True
-                post_args["expires_in"] = self.conf.get("request_object_expires_in", 300)
+                post_args["lifetime"] = self.conf.get("request_object_expires_in", 300)
+                post_args['issuer'] = self.service_context.federation_entity.entity_id
             else:
                 raise OtherError("Using request object in authentication not supported")
         else: # no authn methods supported

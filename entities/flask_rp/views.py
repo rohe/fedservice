@@ -132,7 +132,7 @@ def authz_cb(op_hash):
         return render_template('opresult.html', endpoints=endpoints,
                                userinfo=res['userinfo'],
                                access_token=res['token'],
-                               federation=statement.fo, fe_expires=time_str)
+                               federation=statement.anchor, fe_expires=time_str)
     else:
         return make_response(res['error'], 400)
 

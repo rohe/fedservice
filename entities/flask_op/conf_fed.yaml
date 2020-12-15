@@ -90,7 +90,7 @@ op:
       code:
         lifetime: 600
       token:
-        class: oidcendpoint.jwt_token.JWTToken
+        class: oidcendpoint.token.jwt_token.JWTToken
         lifetime: 3600
         add_claims:
           - email
@@ -169,7 +169,7 @@ op:
               - private_key_jwt
       token:
         path: token
-        class: oidcendpoint.oidc.token.AccessToken
+        class: oidcendpoint.oidc.token.Token
         kwargs:
           client_authn_method:
             - client_secret_post
@@ -247,7 +247,9 @@ op:
         read_only: false
       authority_hints: authority_hints.json
       trusted_roots: trusted_roots.json
-      priority: []
+      priority:
+        - 'https://127.0.0.1:6000/eid/feide.no'
+        - 'https://127.0.0.1:6000/eid/umu.se'
       entity_type: openid_provider
       opponent_entity_type: openid_relying_party
     # Global add on's this adds PKCE support as mandatory - disable if needed
@@ -277,7 +279,7 @@ op:
         function: fedservice.op.add_on.automatic_registration.add_support
         kwargs:
           new_id: False  # default False
-          client_registration_authn_methods_supported:
+          client_verification_methods_supported:
             ar:
               - request_object
           where:

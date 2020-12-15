@@ -1,0 +1,6 @@
+{
+  "naming_constraints": {
+    "permitted": ["https://.no"]
+  },
+  "max_path_length": 1
+}
