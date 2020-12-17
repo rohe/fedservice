@@ -69,20 +69,23 @@ op:
               - enc
             kid: refresh
       code:
-        lifetime: 600
+        kwargs:
+          lifetime: 600
       token:
         class: oidcendpoint.token.jwt_token.JWTToken
-        lifetime: 3600
-        add_claims:
-          - email
-          - email_verified
-          - phone_number
-          - phone_number_verified
-        add_claim_by_scope: True
-        aud:
-          - https://example.org/appl
+        kwargs:
+          lifetime: 3600
+          add_claims:
+            - email
+            - email_verified
+            - phone_number
+            - phone_number_verified
+          add_claim_by_scope: True
+          aud:
+            - https://example.org/appl
       refresh:
-        lifetime: 86400
+        kwargs:
+          lifetime: 86400
     keys:
       *oidc_keys
     endpoint:
