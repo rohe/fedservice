@@ -97,8 +97,8 @@ class TestFed(object):
         _service.update_service_context(_resp)
 
         # and we're done
-        assert _service.service_context.registration_response[
-                   "token_endpoint_auth_method"] == "private_key_jwt"
+        reg_resp = _service.service_context.get("registration_response")
+        assert reg_resp["token_endpoint_auth_method"] == "private_key_jwt"
 
     def test_automatic_registration(self):
         config = Configuration.create_from_config_file(full_path('conf_foodle.uninett.no.yaml'),

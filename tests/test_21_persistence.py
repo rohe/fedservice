@@ -41,11 +41,22 @@ class TestEndpointPersistence(object):
         conf = {
             "issuer": ENTITY_ID,
             "password": "mycket hemligt",
-            "token_expires_in": 600,
-            "grant_expires_in": 300,
-            "refresh_token_expires_in": 86400,
             "verify_ssl": False,
             "endpoint": {},
+            "token_handler_args": {
+                "jwks_def": {
+                    "private_path": "private/token_jwks.json",
+                    "read_only": False,
+                    "key_defs": [
+                        {"type": "oct", "bytes": "24", "use": ["enc"], "kid": "code"},
+                        {"type": "oct", "bytes": "24", "use": ["enc"], "kid": "token"},
+                        {"type": "oct", "bytes": "24", "use": ["enc"], "kid": "refresh"}
+                    ],
+                },
+                "code": {"kwargs": {"lifetime": 600}},
+                "token": {"kwargs": {"lifetime": 3600}},
+                "refresh": {"kwargs": {"lifetime": 3600}},
+            },
             "keys": {
                 'key_defs': KEYSPEC,
                 "private_path": full_path("own/jwks.json"),

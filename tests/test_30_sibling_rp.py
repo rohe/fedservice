@@ -3,9 +3,9 @@ import shutil
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
+from oidcrp.configure import Configuration
 import pytest
 import responses
-from oidcrp.configure import Configuration
 
 from fedservice.entity_statement.collect import unverified_entity_statement
 from fedservice.metadata_api.fs2 import FSEntityStatementAPI
@@ -65,7 +65,8 @@ class TestEndpointPersistence(object):
 
         self.subject = 'https://op.ntnu.no'
         self.intermediate = 'https://ntnu.no'
-        self.fedop = 'https://feide.no'
+        self.fedop1 = 'https://feide.no'
+        self.fedop2 = 'https://swamid.se'
 
     def create_statements(self):
         res = {}
@@ -75,16 +76,26 @@ class TestEndpointPersistence(object):
         # self-signed from intermediate
         es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(self.intermediate))
         res['inter_sesi'] = es_api.create_entity_statement(get_netloc(self.intermediate))
-        # self-signed from fedop
-        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(self.fedop))
-        res['fedop_sesi'] = es_api.create_entity_statement(get_netloc(self.fedop))
+
+        # self-signed from fedop1
+        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(self.fedop1))
+        res['fedop1_sesi'] = es_api.create_entity_statement(get_netloc(self.fedop1))
+
+        # self-signed from fedop2
+        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(self.fedop2))
+        res['fedop2_sesi'] = es_api.create_entity_statement(get_netloc(self.fedop2))
 
         # intermediate on subject
         es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(self.intermediate))
         res['inter_on_sub'] = es_api.create_entity_statement(get_netloc(self.subject))
-        # fedop on intermediate
-        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(self.fedop))
-        res['fedop_on_inter'] = es_api.create_entity_statement(get_netloc(self.intermediate))
+
+        # fedop1 on intermediate
+        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(self.fedop1))
+        res['fedop1_on_inter'] = es_api.create_entity_statement(get_netloc(self.intermediate))
+
+        # fedop2 on intermediate
+        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(self.fedop2))
+        res['fedop2_on_inter'] = es_api.create_entity_statement(get_netloc(self.intermediate))
         return res
 
     def test_discovery(self):
@@ -98,13 +109,19 @@ class TestEndpointPersistence(object):
             rsps.add("GET", _url, body=stmts['inter_sesi'], status=200)
 
             _url = "https://feide.no/.well-known/openid-federation"
-            rsps.add("GET", _url, body=stmts['fedop_sesi'], status=200)
+            rsps.add("GET", _url, body=stmts['fedop1_sesi'], status=200)
+
+            _url = "https://swamid.se/.well-known/openid-federation"
+            rsps.add("GET", _url, body=stmts['fedop2_sesi'], status=200)
 
             _url = 'https://ntnu.no/api?iss=https://ntnu.no&sub=https%3A%2F%2Fop.ntnu.no'
             rsps.add("GET", _url, body=stmts['inter_on_sub'], status=200)
 
             _url = 'https://feide.no/api?iss=https%3A%2F%2Ffeide.no&sub=https%3A%2F%2Fntnu.no'
-            rsps.add("GET", _url, body=stmts['fedop_on_inter'], status=200)
+            rsps.add("GET", _url, body=stmts['fedop1_on_inter'], status=200)
+
+            _url = "https://swamid.se/api?iss=https%3A%2F%2Fswamid.se&sub=https%3A%2F%2Fntnu.no"
+            rsps.add("GET", _url, body=stmts['fedop2_on_inter'], status=200)
 
             auth_req = self.rph1.begin('ntnu')
 
@@ -115,13 +132,17 @@ class TestEndpointPersistence(object):
         info = parse_qs(p.query)
         payload = unverified_entity_statement(info["request"][0])
         assert payload['client_id'] == rp.service_context.federation_entity.entity_id
-        assert iss in payload['aud']
+        # assert iss in payload['aud']
 
         # Only persistent storage when it comes to federation information
         rp2 = self.rph2.init_client(iss)
         c = rp2.service_context.federation_entity.collector
-        assert set(c.config_cache.keys()) == {'https://ntnu.no', 'https://feide.no'}
-        assert set(c.entity_statement_cache.keys()) == {'https://ntnu.no!!https://op.ntnu.no',
-                                                        'https://feide.no!!https://ntnu.no',
-                                                        'https://ntnu.no!exp!https://op.ntnu.no',
-                                                        'https://feide.no!exp!https://ntnu.no'}
+        assert set(c.config_cache.keys()) == {'https://ntnu.no', 'https://feide.no',
+                                              'https://swamid.se'}
+        assert set(c.entity_statement_cache.keys()) == {
+            'https://feide.no!!https://ntnu.no',
+            'https://feide.no!exp!https://ntnu.no',
+            'https://ntnu.no!!https://op.ntnu.no',
+            'https://ntnu.no!exp!https://op.ntnu.no',
+            'https://swamid.se!!https://ntnu.no',
+            'https://swamid.se!exp!https://ntnu.no'}
