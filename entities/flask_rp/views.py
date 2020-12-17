@@ -115,7 +115,10 @@ def authz_cb(op_hash):
         return make_response('Unknown state', 400)
 
     logger.debug('Issuer: {}'.format(iss))
-    res = current_app.rph.finalize(iss, request.args)
+    try:
+        res = current_app.rph.finalize(iss, request.args)
+    except Exception as err:
+        make_response(err, 400)
 
     if 'userinfo' in res:
         endpoints = {}
