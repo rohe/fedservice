@@ -154,8 +154,9 @@ class Registration(registration.Registration):
         _uev = unverified_entity_statement(_req)
         logger.debug("Registration request: {}".format(_uev))
         _query = _uev["metadata"][_fe.entity_type]
-        _sc.registration_response = apply_policy(_query, _policy)
-        return _sc.registration_response
+        _resp = apply_policy(_query, _policy)
+        _sc.set("registration_response", _resp)
+        return _resp
 
     def update_service_context(self, resp, **kwargs):
         registration.Registration.update_service_context(self, resp, **kwargs)
