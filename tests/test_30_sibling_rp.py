@@ -131,12 +131,15 @@ class TestEndpointPersistence(object):
         p = urlparse(auth_req['url'])
         info = parse_qs(p.query)
         payload = unverified_entity_statement(info["request"][0])
-        assert payload['client_id'] == rp.service_context.federation_entity.entity_id
+        assert payload['client_id'] == rp.client_get("service_context").federation_entity.entity_id
         # assert iss in payload['aud']
 
-        # Only persistent storage when it comes to federation information
+        _federation_dump = rp.client_get("service_context").federation_entity.dump()
+
         rp2 = self.rph2.init_client(iss)
-        c = rp2.service_context.federation_entity.collector
+        rp2.client_get("service_context").federation_entity.load(_federation_dump)
+        c = rp2.client_get("service_context").federation_entity.collector
+
         assert set(c.config_cache.keys()) == {'https://ntnu.no', 'https://feide.no',
                                               'https://swamid.se'}
         assert set(c.entity_statement_cache.keys()) == {

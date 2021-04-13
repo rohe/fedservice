@@ -1,7 +1,7 @@
 from urllib.parse import urlparse
 
-from oidcendpoint import endpoint_context
-from oidcendpoint.util import get_http_params
+from oidcop import endpoint_context
+from oidcop.util import get_http_params
 
 from fedservice import create_federation_entity
 

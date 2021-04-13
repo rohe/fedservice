@@ -64,13 +64,13 @@ services: &services
     class: fedservice.rp.authorization.FedAuthorization
     kwargs: {'conf':{'post_construct':{'request_param': 'request'}}}
   accesstoken:
-    class: oidcservice.oidc.access_token.AccessToken
+    class: oidcrp.oidc.access_token.AccessToken
     kwargs: {}
   userinfo:
-    class: oidcservice.oidc.userinfo.UserInfo
+    class: oidcrp.oidc.userinfo.UserInfo
     kwargs: {}
   end_session:
-    class: oidcservice.oidc.end_session.EndSession
+    class: oidcrp.oidc.end_session.EndSession
     kwargs: {}
 
 federation: &federation

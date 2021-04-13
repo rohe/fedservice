@@ -1,11 +1,10 @@
 import os
 
-import pytest
 from cryptojwt.jws.jws import factory
-from cryptojwt.key_jar import build_keyjar
-from oidcendpoint.endpoint_context import EndpointContext
-from oidcendpoint.user_authn.authn_context import UNSPECIFIED
-from oidcendpoint.user_authn.user import NoAuthn
+from oidcop.server import Server
+from oidcop.user_authn.authn_context import UNSPECIFIED
+from oidcop.user_authn.user import NoAuthn
+import pytest
 
 from fedservice import FederationEntity
 from fedservice.metadata_api.fs2 import read_info
@@ -52,8 +51,9 @@ class TestEndpoint(object):
             },
             'template_dir': 'template'
         }
-        endpoint_context = EndpointContext(conf)
-        self.endpoint = ProviderConfiguration(endpoint_context)
+        server = Server(conf)
+        endpoint_context = server.endpoint_context
+        self.endpoint = ProviderConfiguration(server.server_get)
 
         # === Federation stuff =======
         fe_conf = {
@@ -72,7 +72,7 @@ class TestEndpoint(object):
             root_dir=ROOT_DIR)
 
         self.fedent = federation_entity
-        self.endpoint.endpoint_context.federation_entity = federation_entity
+        self.endpoint.server_get("endpoint_context").federation_entity = federation_entity
 
     def test_do_response(self):
         args = self.endpoint.process_request()

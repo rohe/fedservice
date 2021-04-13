@@ -10,7 +10,7 @@ from oidcrp.util import lower_or_upper
 try:
     from secrets import token_urlsafe as rnd_token
 except ImportError:
-    from oidcendpoint import rndstr as rnd_token
+    from oidcop import rndstr as rnd_token
 
 
 class Configuration:

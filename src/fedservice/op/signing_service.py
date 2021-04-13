@@ -1,6 +1,6 @@
 import os
 
-from oidcendpoint.util import importer
+from oidcop.util import importer
 
 """
         'federation_api': {

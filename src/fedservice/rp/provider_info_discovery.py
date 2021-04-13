@@ -2,10 +2,9 @@ import logging
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 
-from cryptojwt.jws.jws import factory
 from oidcmsg.oidc import ProviderConfigurationResponse
-from oidcservice.exception import ResponseError
-from oidcservice.oidc.provider_info_discovery import ProviderInfoDiscovery
+from oidcrp.exception import ResponseError
+from oidcrp.oidc.provider_info_discovery import ProviderInfoDiscovery
 
 from fedservice.entity_statement.collect import branch2lists
 from fedservice.entity_statement.collect import verify_self_signed_signature
@@ -22,15 +21,15 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
     request_body_type = 'jose'
     response_body_type = 'jose'
 
-    def __init__(self, service_context, conf=None, client_authn_factory=None, **kwargs):
+    def __init__(self, client_get, conf=None, client_authn_factory=None, **kwargs):
         ProviderInfoDiscovery.__init__(
-            self, service_context, conf=conf, client_authn_factory=client_authn_factory)
+            self, client_get, conf=conf, client_authn_factory=client_authn_factory)
 
     def get_request_parameters(self, method="GET", **kwargs):
         try:
             _iss = kwargs["iss"]
         except KeyError:
-            _iss = self.service_context.get('issuer')
+            _iss = self.client_get("service_context").get('issuer')
 
         qpart = {'iss': _iss}
 
@@ -67,8 +66,9 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         #     # Replace what was there before
         #     self.service_context.keyjar[self.service_context.issuer] = _kb
 
-        self.service_context.set('provider_info', _pi)
-        self.service_context.federation_entity.federation = trust_root_id
+        _context = self.client_get("service_context")
+        _context.set('provider_info', _pi)
+        _context.federation_entity.federation = trust_root_id
 
     def update_service_context(self, trust_chains, **kwargs):
         """
@@ -82,8 +82,8 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         :param kwargs: Extra Keyword arguments
         """
 
-        _sc = self.service_context
-        _fe = _sc.federation_entity
+        _context = self.client_get("service_context")
+        _fe = _context.federation_entity
 
         if _fe.tr_priority:
             possible = []
@@ -104,15 +104,15 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
             if s.anchor in possible:
                 claims = s.metadata
                 provider_info_per_trust_anchor[s.anchor] = self.response_cls(**claims)
-        _sc.set('provider_info_per_trust_anchor', provider_info_per_trust_anchor)
+        _context.set('provider_info_per_trust_anchor', provider_info_per_trust_anchor)
 
         _fe.proposed_authority_hints = create_authority_hints(
             _fe.authority_hints, trust_chains)
 
         _pi = provider_info_per_trust_anchor[_trust_anchor]
-        _sc.set('provider_info', _pi)
+        _context.set('provider_info', _pi)
         self._update_service_context(_pi)
-        _sc.set('behaviour', map_configuration_to_preference(_pi, _sc.client_preferences))
+        _context.set('behaviour', map_configuration_to_preference(_pi, _context.client_preferences))
 
     def parse_response(self, info, sformat="", state="", **kwargs):
         # returns a list of TrustChain instances
@@ -144,7 +144,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         entity_statement = verify_self_signed_signature(response)
         entity_id = entity_statement['iss']
 
-        _fe = self.service_context.federation_entity
+        _fe = self.client_get("service_context").federation_entity
         _tree = _fe.collect_statement_chains(entity_id, entity_statement)
         _node = {entity_id: (response, _tree)}
         logger.debug("Translate tree to chains")
@@ -162,6 +162,6 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         :return:
         """
 
-        _fe = self.service_context.federation_entity
+        _fe = self.client_get("service_context").federation_entity
         self_signed_config = _fe.collector.get_configuration_information(kwargs["iss"])
         return self.parse_response(self_signed_config)

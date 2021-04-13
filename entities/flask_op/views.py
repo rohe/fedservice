@@ -5,8 +5,8 @@ import os
 import sys
 import traceback
 
-from oidcendpoint.oidc.token import Token
-from oidcendpoint.session.info import UserSessionInfo
+from oidcop.oidc.token import Token
+from oidcop.session.info import UserSessionInfo
 import werkzeug
 from flask import Blueprint
 from flask import current_app
@@ -15,7 +15,7 @@ from flask import render_template
 from flask import request
 from flask.helpers import make_response
 from flask.helpers import send_from_directory
-from oidcendpoint.authn_event import create_authn_event
+from oidcop.authn_event import create_authn_event
 from oidcmsg.oauth2 import ResponseMessage
 from oidcmsg.oidc import AccessTokenRequest
 from oidcmsg.oidc import AuthorizationRequest

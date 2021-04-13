@@ -4,8 +4,8 @@ from cryptojwt.jws.jws import factory
 from oidcmsg.oidc import ProviderConfigurationResponse
 from oidcmsg.oidc import RegistrationRequest
 from oidcmsg.oidc import RegistrationResponse
-from oidcservice.exception import ResponseError
-from oidcservice.oidc import registration
+from oidcrp.exception import ResponseError
+from oidcrp.oidc import registration
 
 from fedservice.entity_statement.collect import branch2lists
 from fedservice.entity_statement.collect import unverified_entity_statement
@@ -23,8 +23,8 @@ class Registration(registration.Registration):
     request_body_type = 'jose'
     response_body_type = 'jose'
 
-    def __init__(self, service_context, conf=None, client_authn_factory=None, **kwargs):
-        registration.Registration.__init__(self, service_context, conf=conf,
+    def __init__(self, client_get, conf=None, client_authn_factory=None, **kwargs):
+        registration.Registration.__init__(self, client_get, conf=conf,
                                            client_authn_factory=client_authn_factory)
         #
         self.post_construct.append(self.create_entity_statement)
@@ -46,7 +46,7 @@ class Registration(registration.Registration):
         :return:
         """
 
-        _fe = self.service_context.federation_entity
+        _fe = self.client_get("service_context").federation_entity
         _md = {_fe.entity_type: request_args.to_dict()}
         return _fe.create_entity_statement(
             iss=_fe.entity_id, sub=_fe.entity_id, metadata=_md, key_jar=_fe.keyjar,
@@ -76,8 +76,9 @@ class Registration(registration.Registration):
         # return _trust_anchor_id
 
     def get_trust_anchor_id(self, entity_statement):
-        if len(self.service_context.federation_entity.op_statements) == 1:
-            _id = self.service_context.federation_entity.op_statements[0].anchor
+        _context = self.client_get("service_context")
+        if len(_context.federation_entity.op_statements) == 1:
+            _id = _context.federation_entity.op_statements[0].anchor
             _tai = self._get_trust_anchor_id(entity_statement)
             if _tai and _tai != _id:
                 logger.warning(
@@ -97,12 +98,12 @@ class Registration(registration.Registration):
         :param resp: An entity statement instance
         :return: A set of metadata claims
         """
-        _sc = self.service_context
-        _fe = _sc.federation_entity
+        _context = self.client_get("service_context")
+        _fe = _context.federation_entity
 
         # Can not collect trust chain. Have to verify the signed JWT with keys I have
 
-        kj = self.service_context.federation_entity.keyjar
+        kj = _context.federation_entity.keyjar
         _jwt = factory(resp)
         entity_statement = _jwt.verify_compact(resp, keys=kj.get_jwt_verify_keys(_jwt.jwt))
 
@@ -122,7 +123,7 @@ class Registration(registration.Registration):
         op_claims = chosen.metadata
         logger.debug("OP claims: {}".format(op_claims))
         # _sc.trust_path = (chosen.anchor, _fe.op_paths[statement.anchor][0])
-        _sc.provider_info = ProviderConfigurationResponse(**op_claims)
+        _context.provider_info = ProviderConfigurationResponse(**op_claims)
 
         # To create RPs metadata collect the trust chains
         tree = {}
@@ -155,12 +156,12 @@ class Registration(registration.Registration):
         logger.debug("Registration request: {}".format(_uev))
         _query = _uev["metadata"][_fe.entity_type]
         _resp = apply_policy(_query, _policy)
-        _sc.set("registration_response", _resp)
+        _context.set("registration_response", _resp)
         return _resp
 
     def update_service_context(self, resp, **kwargs):
         registration.Registration.update_service_context(self, resp, **kwargs)
-        _fe = self.service_context.federation_entity
+        _fe = self.client_get("service_context").federation_entity
         _fe.iss = resp['client_id']
 
     def get_response_ext(self, url, method="GET", body=None, response_body_type="",
@@ -175,12 +176,12 @@ class Registration(registration.Registration):
         :param kwargs:
         :return:
         """
-
-        _collector = self.service_context.federation_entity.collector
+        _context = self.client_get("service_context")
+        _collector = _context.federation_entity.collector
 
         httpc_args = _collector.httpc_parms.copy()
         # have I seen it before
-        cert_path = _collector.get_cert_path(self.service_context.provider_info["issuer"])
+        cert_path = _collector.get_cert_path(_context.provider_info["issuer"])
         if cert_path:
             httpc_args["verify"] = cert_path
 
@@ -194,7 +195,7 @@ class Registration(registration.Registration):
             return {'http_response': resp}
 
         if "keyjar" not in kwargs:
-            kwargs["keyjar"] = self.service_context.keyjar
+            kwargs["keyjar"] = _context.keyjar
         if not response_body_type:
             response_body_type = self.response_body_type
 

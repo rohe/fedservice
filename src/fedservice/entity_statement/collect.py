@@ -10,7 +10,7 @@ from cryptojwt.jwk import x5c_to_pems
 from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import utc_time_sans_frac
 from oidcmsg.exception import MissingPage
-from oidcmsg.storage.init import init_storage
+from oidcmsg.impexp import ImpExp
 import requests
 from requests.exceptions import SSLError
 
@@ -79,9 +79,22 @@ def active(config):
     return True
 
 
-class Collector(object):
-    def __init__(self, trust_anchors, http_cli=None, insecure=False,
-                 allowed_delta=300, httpc_params=None, cwd='', db_conf=None):
+class Collector(ImpExp):
+    parameter = {
+        "trusted_anchors": {},
+        "trusted_ids": [],
+        "config_cache": ESCache,
+        "entity_statement_cache": ESCache,
+        "allowed_delta": 0,
+        "web_cert_path": "",
+        "use_ssc": bool,
+        "ssc_dir": "",
+        "cwd": "",
+        "httpc_params": {}
+    }
+
+    def __init__(self, trust_anchors=None, http_cli=None, insecure=False,
+                 allowed_delta=300, httpc_params=None, cwd=''):
         """
 
         :param trust_anchors:
@@ -90,13 +103,18 @@ class Collector(object):
         :param httpc_params: Additional parameters to pass to the HTTP client
             function
         """
-        self.trusted_anchors = trust_anchors
-        self.trusted_ids = set(trust_anchors.keys())
+        ImpExp.__init__(self)
 
-        self.config_cache = ESCache(db=init_storage(db_conf, 'config'),
-                                    allowed_delta=allowed_delta)
-        self.entity_statement_cache = ESCache(db=init_storage(db_conf, 'entity_statement'),
-                                              allowed_delta=allowed_delta)
+        if trust_anchors:
+            self.trusted_anchors = trust_anchors
+            self.trusted_ids = set(trust_anchors.keys())
+        else:
+            self.trusted_anchors = {}
+            self.trusted_ids = []
+
+
+        self.config_cache = ESCache(allowed_delta=allowed_delta)
+        self.entity_statement_cache = ESCache(allowed_delta=allowed_delta)
 
         self.http_cli = http_cli or requests.request
         self.allowed_delta = allowed_delta

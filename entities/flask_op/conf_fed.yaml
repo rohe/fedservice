@@ -279,7 +279,7 @@ op:
         function: fedservice.op.add_on.automatic_registration.add_support
         kwargs:
           new_id: False  # default False
-          client_verification_methods_supported:
+          client_registration_authn_methods_supported:
             ar:
               - request_object
           where:

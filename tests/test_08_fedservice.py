@@ -33,7 +33,8 @@ class TestRpService(object):
         federation_entity = FederationEntity(
             RECEIVER, trusted_roots=ANCHOR, authority_hints={},
             httpd=Publisher(os.path.join(BASE_PATH, 'base_data')),
-            entity_type='openid_relying_party', opponent_entity_type='openid_provider'
+            entity_type='openid_relying_party', opponent_entity_type='openid_provider',
+            config={}
         )
         # Swap in the DummyCollector
         federation_entity.collector = DummyCollector(trusted_roots=ANCHOR,

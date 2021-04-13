@@ -1,22 +1,21 @@
 import logging
 
 from cryptojwt.jwt import utc_time_sans_frac
-from oidcendpoint.util import importer
+from oidcmsg.impexp import ImpExp
 
 logger = logging.getLogger(__name__)
 
 
-class ESCache(object):
-    def __init__(self, db, allowed_delta=300):
-        self._db = db
-        self.allowed_delta = allowed_delta
+class ESCache(ImpExp):
+    parameter = {
+        "_db": {},
+        "allowed_delta": 0
+    }
 
-    # def get_db(self, db_conf=None):
-    #     if db_conf:
-    #         _kwargs = db_conf.get("kwargs", {})
-    #         return importer(db_conf["class"])(**_kwargs)
-    #     else:
-    #         return {}
+    def __init__(self, allowed_delta=300):
+        ImpExp.__init__(self)
+        self._db = {}
+        self.allowed_delta = allowed_delta
 
     def __setitem__(self, key, value):
         self._db[key] = value

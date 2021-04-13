@@ -1,11 +1,12 @@
 import os
 
-from oidcendpoint.endpoint_context import EndpointContext
-from oidcendpoint.user_authn.authn_context import UNSPECIFIED
-from oidcendpoint.user_authn.user import NoAuthn
-from oidcservice.exception import OtherError
-from oidcservice.service_context import ServiceContext
+from oidcop.server import Server
+from oidcop.user_authn.authn_context import UNSPECIFIED
+from oidcop.user_authn.user import NoAuthn
+from oidcrp.entity import Entity
+from oidcrp.exception import OtherError
 import pytest
+import responses
 
 from fedservice import FederationEntity
 from fedservice.entity_statement.statement import TrustChain
@@ -36,13 +37,14 @@ class TestExplicit(object):
     @pytest.fixture(autouse=True)
     def create_endpoint(self):
         # First the RP
-        service_context = ServiceContext(config={
+        entity = Entity(config={
             'behaviour': {
                 'federation_types_supported': ['explicit']
             },
             'issuer': "https://op.ntnu.no",
             'keys': {'key_defs': KEYSPEC}
         })
+        service_context = entity.client_get("service_context")
 
         # the federation part of the RP
         self.rp_federation_entity = FederationEntity(
@@ -63,9 +65,9 @@ class TestExplicit(object):
 
         # The RP has/supports 3 services
         self.service = {
-            'discovery': FedProviderInfoDiscovery(service_context),
-            'registration': Registration(service_context),
-            'authorization': FedAuthorization(service_context),
+            'discovery': FedProviderInfoDiscovery(entity.client_get),
+            'registration': Registration(entity.client_get),
+            'authorization': FedAuthorization(entity.client_get),
         }
 
         # and now for the OP
@@ -114,12 +116,11 @@ class TestExplicit(object):
             },
             'template_dir': 'template'
         }
-        endpoint_context = EndpointContext(conf)
-        # endpoint_context.keyjar.httpc_params = endpoint_context.httpc_params
+        server = Server(conf)
 
-        self.registration_endpoint = endpoint_context.endpoint["registration"]
-        self.authorization_endpoint = endpoint_context.endpoint["authorization"]
-        self.provider_endpoint = endpoint_context.endpoint["provider_config"]
+        self.registration_endpoint = server.server_get("endpoint", "registration")
+        self.authorization_endpoint = server.server_get("endpoint", "authorization")
+        self.provider_endpoint = server.server_get("endpoint", "provider_config")
 
         # === Federation stuff =======
         federation_entity = FederationEntity(
@@ -138,16 +139,18 @@ class TestExplicit(object):
             trusted_roots=ANCHOR,
             root_dir=ROOT_DIR)
 
-        self.registration_endpoint.endpoint_context.federation_entity = federation_entity
+        self.registration_endpoint.server_get(
+            "endpoint_context").federation_entity = federation_entity
 
     def test_explicit_registration(self):
         _registration_service = self.service['registration']
         # Using the RP's federation entity instance
-        _fe = _registration_service.service_context.federation_entity
+        _fe = _registration_service.client_get("service_context").federation_entity
 
+        _endpoint_context = self.registration_endpoint.server_get("endpoint_context")
         # This is cheating. Getting the OP provider info
         trust_chain = TrustChain()
-        trust_chain.metadata = self.registration_endpoint.endpoint_context.provider_info
+        trust_chain.metadata = _endpoint_context.provider_info
         trust_chain.anchor = "https://feide.no"
         trust_chain.verified_chain = [{'iss': "https://ntnu.no"}]
 
@@ -155,7 +158,7 @@ class TestExplicit(object):
         # add the OP's federation keys
         self.rp_federation_entity.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
-            issuer_id=self.registration_endpoint.endpoint_context.provider_info['issuer'])
+            issuer_id=_endpoint_context.provider_info['issuer'])
 
         # construct the client registration request
         req_args = {
@@ -184,7 +187,7 @@ class TestAutomatic(object):
     @pytest.fixture(autouse=True)
     def create_endpoint(self):
         # First the RP
-        service_context = ServiceContext(config={
+        entity = Entity(config={
             'behaviour': {
                 'federation_types_supported': ['explicit']
             },
@@ -207,13 +210,13 @@ class TestAutomatic(object):
             issuer_id=ENTITY_ID)
 
         # add the federation part to the service context
-        service_context.federation_entity = self.rp_federation_entity
+        entity.client_get("service_context").federation_entity = self.rp_federation_entity
 
         # The RP has/supports 3 services
         self.service = {
-            'discovery': FedProviderInfoDiscovery(service_context),
-            'registration': Registration(service_context),
-            'authorization': FedAuthorization(service_context,
+            'discovery': FedProviderInfoDiscovery(entity.client_get),
+            'registration': Registration(entity.client_get),
+            'authorization': FedAuthorization(entity.client_get,
                                               conf={"request_object_expires_in": 300}),
         }
 
@@ -274,10 +277,10 @@ class TestAutomatic(object):
                 }
             }
         }
-        endpoint_context = EndpointContext(conf)
-        self.registration_endpoint = endpoint_context.endpoint["registration"]
-        self.authorization_endpoint = endpoint_context.endpoint["authorization"]
-        self.provider_endpoint = endpoint_context.endpoint["provider_config"]
+        server = Server(conf)
+        self.registration_endpoint = server.server_get("endpoint", "registration")
+        self.authorization_endpoint = server.server_get("endpoint", "authorization")
+        self.provider_endpoint = server.server_get("endpoint", "provider_config")
 
         # === Federation stuff =======
         federation_entity = FederationEntity(
@@ -296,39 +299,48 @@ class TestAutomatic(object):
             trusted_roots=ANCHOR,
             root_dir=ROOT_DIR)
 
-        self.registration_endpoint.endpoint_context.federation_entity = federation_entity
+        self.registration_endpoint.server_get(
+            "endpoint_context").federation_entity = federation_entity
 
     def test_automatic_registration_new_client_id(self):
         _registration_service = self.service['registration']
 
-        self.authorization_endpoint.endpoint_context.provider_info[
+        self.authorization_endpoint.server_get("endpoint_context").provider_info[
             'client_registration_authn_methods_supported'] = {"ar": ['request_object']}
         self.authorization_endpoint.automatic_registration_endpoint.kwargs['new_id'] = True
         # This is cheating. Getting the OP's provider info
-        _fe = _registration_service.service_context.federation_entity
+        _fe = _registration_service.client_get("service_context").federation_entity
         statement = TrustChain()
-        statement.metadata = self.registration_endpoint.endpoint_context.provider_info
+        statement.metadata = self.registration_endpoint.server_get("endpoint_context").provider_info
         statement.anchor = "https://feide.no"
         statement.verified_chain = [{'iss': "https://ntnu.no"}]
 
-        self.service['discovery'].update_service_context([statement])
+        with responses.RequestsMock() as rsps:
+            _jwks = self.authorization_endpoint.server_get("endpoint_context").keyjar.export_jwks()
+            rsps.add("GET", 'https://op.ntnu.no/static/jwks.json', body=_jwks,
+                     adding_headers={"Content-Type": "application/json"}, status=200)
+
+            self.service['discovery'].update_service_context([statement])
+
         # and the OP's federation keys
         self.rp_federation_entity.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
-            issuer_id=self.registration_endpoint.endpoint_context.provider_info['issuer'])
+            issuer_id=self.registration_endpoint.server_get("endpoint_context").provider_info[
+                'issuer'])
 
-        _context = self.service['authorization'].service_context
-        _context.set('issuer', 'https://op.ntnu.no')
-        _context.set('redirect_uris', ['https://foodle.uninett.no/callback'])
-        _context.set('entity_id', self.rp_federation_entity.entity_id)
-        _context.set('client_id', self.rp_federation_entity.entity_id)
-        _context.set('behaviour', {'response_types': ['code']})
-        _context.set('provider_info', self.authorization_endpoint.endpoint_context.provider_info)
+        _context = self.service['authorization'].client_get("service_context")
+        _context.issuer = 'https://op.ntnu.no'
+        _context.redirect_uris = ['https://foodle.uninett.no/callback']
+        _context.entity_id = self.rp_federation_entity.entity_id
+        _context.client_id = self.rp_federation_entity.entity_id
+        _context.behaviour = {'response_types': ['code']}
+        _context.provider_info = self.authorization_endpoint.server_get(
+            "endpoint_context").provider_info
         authn_request = self.service['authorization'].construct()
 
         # Have to provide the OP with clients keys
-        self.authorization_endpoint.endpoint_context.keyjar.import_jwks(
-            _registration_service.service_context.keyjar.export_jwks(),
+        self.authorization_endpoint.server_get("endpoint_context").keyjar.import_jwks(
+            _registration_service.client_get("service_context").keyjar.export_jwks(),
             ENTITY_ID
         )
 
@@ -336,16 +348,16 @@ class TestAutomatic(object):
         req = self.authorization_endpoint.parse_request(authn_request.to_dict())
         assert "response_type" in req
 
-        client_ids = list(self.authorization_endpoint.endpoint_context.cdb.keys())
+        client_ids = list(self.authorization_endpoint.server_get("endpoint_context").cdb.keys())
         assert len(client_ids) == 2  # dynamic and entity_id
         assert ENTITY_ID in client_ids
 
     def test_automatic_registration_keep_client_id(self):
         # This is cheating. Getting the OP provider info
         _registration_service = self.service['registration']
-        _fe = _registration_service.service_context.federation_entity
+        _fe = _registration_service.client_get("service_context").federation_entity
         statement = TrustChain()
-        statement.metadata = self.registration_endpoint.endpoint_context.provider_info
+        statement.metadata = self.registration_endpoint.server_get("endpoint_context").provider_info
         statement.anchor = "https://feide.no"
         statement.verified_chain = [{'iss': "https://ntnu.no"}]
 
@@ -354,31 +366,33 @@ class TestAutomatic(object):
         # and the OP's federation keys
         self.rp_federation_entity.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
-            issuer_id=self.registration_endpoint.endpoint_context.provider_info['issuer'])
+            issuer_id=self.registration_endpoint.server_get("endpoint_context").provider_info[
+                'issuer'])
 
-        service_context = self.service['authorization'].service_context
-        service_context.set('issuer', 'https://op.ntnu.no')
-        service_context.set('redirect_uris', ['https://foodle.uninett.no/callback'])
-        service_context.set('entity_id', self.rp_federation_entity.entity_id)
-        service_context.set('client_id', self.rp_federation_entity.entity_id)
-        service_context.set('behaviour', {'response_types': ['code']})
-        service_context.set('provider_info',
-                            self.authorization_endpoint.endpoint_context.provider_info)
+        service_context = self.service['authorization'].client_get("service_context")
+        service_context.issuer = 'https://op.ntnu.no'
+        service_context.redirect_uris = ['https://foodle.uninett.no/callback']
+        service_context.entity_id = self.rp_federation_entity.entity_id
+        service_context.client_id = self.rp_federation_entity.entity_id
+        service_context.behaviour = {'response_types': ['code']}
+        service_context.provider_info = self.authorization_endpoint.server_get(
+            "endpoint_context").provider_info
 
         authn_request = self.service['authorization'].construct()
         # Have to provide the OP with clients keys
-        self.authorization_endpoint.endpoint_context.keyjar.import_jwks(
-            _registration_service.service_context.keyjar.export_jwks(),
+        self.authorization_endpoint.server_get("endpoint_context").keyjar.import_jwks(
+            _registration_service.client_get("service_context").keyjar.export_jwks(),
             ENTITY_ID
         )
 
+        _auth_endp_context = self.authorization_endpoint.server_get("endpoint_context")
         # get rid of the earlier client registrations
-        for k in self.authorization_endpoint.endpoint_context.cdb.keys():
-            del self.authorization_endpoint.endpoint_context.cdb[k]
+        for k in _auth_endp_context.cdb.keys():
+            del _auth_endp_context.cdb[k]
 
         # Have to provide the OP with clients keys
-        self.authorization_endpoint.endpoint_context.keyjar.import_jwks(
-            _registration_service.service_context.keyjar.export_jwks(),
+        _auth_endp_context.keyjar.import_jwks(
+            _registration_service.client_get("service_context").keyjar.export_jwks(),
             ENTITY_ID
         )
 
@@ -392,7 +406,7 @@ class TestAutomatic(object):
         # reg_resp = self.registration_endpoint.do_response(**res)
         # assert set(reg_resp.keys()) == {'response', 'http_headers', 'cookie'}
 
-        client_ids = list(self.authorization_endpoint.endpoint_context.cdb.keys())
+        client_ids = list(_auth_endp_context.cdb.keys())
         assert len(client_ids) == 1
         assert client_ids[0] == ENTITY_ID
 
@@ -401,7 +415,7 @@ class TestAutomaticNoSupport(object):
     @pytest.fixture(autouse=True)
     def create_endpoint(self):
         # First the RP
-        service_context = ServiceContext(config={
+        entity = Entity(config={
             'behaviour': {
                 'federation_types_supported': ['explicit']
             },
@@ -424,13 +438,13 @@ class TestAutomaticNoSupport(object):
             issuer_id=ENTITY_ID)
 
         # add the federation part to the service context
-        service_context.federation_entity = self.rp_federation_entity
+        entity.client_get("service_context").federation_entity = self.rp_federation_entity
 
         # The RP has/supports 3 services
         self.service = {
-            'discovery': FedProviderInfoDiscovery(service_context),
-            'registration': Registration(service_context),
-            'authorization': FedAuthorization(service_context),
+            'discovery': FedProviderInfoDiscovery(entity.client_get),
+            'registration': Registration(entity.client_get),
+            'authorization': FedAuthorization(entity.client_get),
         }
 
         # and now for the OP
@@ -479,10 +493,11 @@ class TestAutomaticNoSupport(object):
             },
             'template_dir': 'template'
         }
-        endpoint_context = EndpointContext(conf)
-        self.registration_endpoint = endpoint_context.endpoint["registration"]
-        self.authorization_endpoint = endpoint_context.endpoint["authorization"]
-        self.provider_endpoint = endpoint_context.endpoint["provider_config"]
+        server = Server(conf)
+        # endpoint_context = EndpointContext(conf)
+        self.registration_endpoint = server.server_get("endpoint", "registration")
+        self.authorization_endpoint = server.server_get("endpoint", "authorization")
+        self.provider_endpoint = server.server_get("endpoint", "provider_config")
 
         # === Federation stuff =======
         federation_entity = FederationEntity(
@@ -501,15 +516,16 @@ class TestAutomaticNoSupport(object):
             trusted_roots=ANCHOR,
             root_dir=ROOT_DIR)
 
-        self.registration_endpoint.endpoint_context.federation_entity = federation_entity
+        self.registration_endpoint.server_get(
+            "endpoint_context").federation_entity = federation_entity
 
     def test_automatic_registration_new_client_id(self):
         _registration_service = self.service['registration']
 
         # This is cheating. Getting the OP's provider info
-        _fe = _registration_service.service_context.federation_entity
+        _fe = _registration_service.client_get("service_context").federation_entity
         statement = TrustChain()
-        statement.metadata = self.registration_endpoint.endpoint_context.provider_info
+        statement.metadata = self.registration_endpoint.server_get("endpoint_context").provider_info
         statement.anchor = "https://feide.no"
         statement.verified_chain = [{'iss': "https://ntnu.no"}]
 
@@ -517,15 +533,17 @@ class TestAutomaticNoSupport(object):
         # and the OP's federation keys
         self.rp_federation_entity.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
-            issuer_id=self.registration_endpoint.endpoint_context.provider_info['issuer'])
+            issuer_id=self.registration_endpoint.server_get("endpoint_context").provider_info[
+                'issuer'])
 
-        _context = self.service['authorization'].service_context
-        _context.set('issuer', 'https://op.ntnu.no')
-        _context.set('redirect_uris', ['https://foodle.uninett.no/callback'])
-        _context.set('entity_id', self.rp_federation_entity.entity_id)
-        _context.set('client_id', self.rp_federation_entity.entity_id)
-        _context.set('behaviour', {'response_types': ['code']})
-        _context.set('provider_info', self.authorization_endpoint.endpoint_context.provider_info)
+        _context = self.service['authorization'].client_get("service_context")
+        _context.issuer = 'https://op.ntnu.no'
+        _context.redirect_uris = ['https://foodle.uninett.no/callback']
+        _context.entity_id = self.rp_federation_entity.entity_id
+        # _context.client_id = self.rp_federation_entity.entity_id
+        _context.behaviour = {'response_types': ['code']}
+        _context.provider_info = self.authorization_endpoint.server_get(
+            "endpoint_context").provider_info
 
         # The client not registered and the OP not supporting automatic client registration
         with pytest.raises(OtherError):

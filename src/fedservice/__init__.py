@@ -1,9 +1,11 @@
+import json
 import logging
 
 from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
-from oidcendpoint.util import importer
 from oidcmsg.context import OidcContext
+from oidcop.exception import ConfigurationError
+from oidcop.util import importer
 
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.collect import branch2lists
@@ -16,30 +18,64 @@ from fedservice.entity_statement.verify import eval_policy_chain
 from fedservice.utils import load_json
 
 __author__ = 'Roland Hedberg'
-__version__ = '1.1.0'
+__version__ = '2.0.0'
 
 logger = logging.getLogger(__name__)
 
 
 class FederationEntity(OidcContext):
-    def __init__(self, entity_id, trusted_roots, authority_hints=None,
+    parameter = OidcContext.parameter.copy()
+    parameter.update({
+        "entity_type": "",
+        "opponent_entity_type": "",
+        "registration_type": "",
+        "default_lifetime": 0,
+        "httpc_params": {},
+        "trusted_roots": {},
+        "collector": Collector,
+        "authority_hints": [],
+        "tr_priority": []
+    })
+
+    def __init__(self, entity_id="", trusted_roots=None, authority_hints=None,
                  default_lifetime=86400, httpd=None, priority=None, entity_type='',
                  opponent_entity_type='', registration_type='', cwd='', httpc_params=None,
                  config=None):
-        OidcContext.__init__(self, config, entity_id=entity_id)
+        if config is None:
+            config = {}
+
+        self.entity_id = entity_id or config["entity_id"]
+
+        OidcContext.__init__(self, config, entity_id=self.entity_id)
+
+        self.entity_type = entity_type or config.get("entity_type")
+        self.opponent_entity_type = opponent_entity_type or config.get("opponent_entity_type", "")
+        self.registration_type = registration_type or config.get("registration_type", "")
+        self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
+        self.httpc_params = httpc_params or config.get("httpc_params", {}
+                                                       )
+        if not trusted_roots:
+            trusted_roots = json.loads(open(config["trusted_roots"]).read())
+
         self.collector = Collector(trust_anchors=trusted_roots, http_cli=httpd, cwd=cwd,
-                                   httpc_params=httpc_params, db_conf=self.db_conf)
-        self.entity_id = entity_id
-        self.entity_type = entity_type
-        self.opponent_entity_type = opponent_entity_type
+                                   httpc_params=self.httpc_params)
 
         for iss, jwks in trusted_roots.items():
             self.keyjar.import_jwks(jwks, iss)
 
-        self.authority_hints = authority_hints
-        self.default_lifetime = default_lifetime
-        self.tr_priority = priority or sorted(set(trusted_roots.keys()))
-        self.registration_type = registration_type
+        if authority_hints is not None:
+            self.authority_hints = authority_hints
+        elif "authority_hints" in config:
+            self.authority_hints = json.loads(open(config["authority_hints"]).read())
+        else:
+            raise ConfigurationError("Missing authority_hints specification")
+
+        if priority:
+            self.tr_priority = priority
+        elif 'priority' in config:
+            pass
+        else:
+            self.tr_priority = sorted(set(trusted_roots.keys()))
 
     def collect_statement_chains(self, entity_id, statement):
         return self.collector.collect_superiors(entity_id, statement)

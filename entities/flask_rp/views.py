@@ -10,7 +10,7 @@ from flask import render_template
 from flask import request
 from flask.helpers import make_response
 from flask.helpers import send_from_directory
-from oidcservice.oidc.registration import Registration
+from oidcrp.oidc.registration import Registration
 
 logger = logging.getLogger(__name__)
 

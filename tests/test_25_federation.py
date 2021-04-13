@@ -1,21 +1,23 @@
 import json
 import os
+import sys
 from urllib.parse import parse_qs
 
-from oidcop.configure import Configuration as OPConfiguration
-from oidcop.configure import add_base_path
+from oidcmsg import add_base_path
 from oidcrp.configure import Configuration
 import pytest
 import responses
 
-from fedservice.op import init_oidc_op_endpoints
 from fedservice.rp import init_oidc_rp_handler
+from fedservice.server import Server
 from fedservice.utils import compact
 from tests.utils import DummyCollector
 from tests.utils import Publisher
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 jwks = open(os.path.join(BASE_PATH, 'base_data', 'feide.no', 'feide.no', 'jwks.json')).read()
 ANCHOR = {'https://feide.no': json.loads(jwks)}
@@ -36,25 +38,57 @@ def test_init_rp():
 class TestFed(object):
     @pytest.fixture(autouse=True)
     def create_op_enpoint_context(self):
-        op_conf = OPConfiguration.create_from_config_file(full_path('conf_op.ntnu.no.yaml'),
-                                                          base_path=BASE_PATH)
+        cwd = os.getcwd()
+        if cwd.endswith('tests'):
+            sys.path.append(".")
+        else:  # assume it's run from the package root dir
+            sys.path.append("tests")
+        import conf_op_ntnu_no
 
-        add_base_path(op_conf.op["server_info"]["federation"],
+        _conf = conf_op_ntnu_no.CONF.copy()
+        add_base_path(_conf,
                       {
+                          "session_key": ['filename'],
+                          "keys": ['private_path', 'public_path'],
+                          "jwks": ["private_path", "public_path"],
+                          "": ["template"]
+                      },
+                      dir_path)
+        add_base_path(_conf["federation"],
+                      {
+                          "session_key": ['filename'],
                           "keys": ['private_path', 'public_path'],
                           "": ["authority_hints", "trusted_roots"]
                       },
-                      BASE_PATH)
+                      dir_path)
+        add_base_path(_conf["token_handler_args"],
+                      {
+                          "jwks_def": ['private_path', 'public_path'],
+                      },
+                      dir_path)
+        add_base_path(_conf["userinfo"],
+                      {
+                          "kwargs": ['db_file'],
+                      },
+                      dir_path)
+        add_base_path(_conf["cookie_dealer"],
+                      {
+                          "sign_jwk": ['filename'],
+                      },
+                      dir_path)
 
-        _endpoint_context = init_oidc_op_endpoints(op_conf, BASE_PATH)
+        server = Server(_conf)
+
+        # _endpoint_context = init_oidc_op_endpoints(op_conf, BASE_PATH)
+        _endpoint_context = server.get_endpoint_context()
         _endpoint_context.federation_entity.collector = DummyCollector(
             httpd=Publisher(ROOT_DIR),
             trusted_roots=ANCHOR,
             root_dir=ROOT_DIR)
 
-        self.provider_endpoint = _endpoint_context.endpoint['provider_config']
-        self.registration_endpoint = _endpoint_context.endpoint["registration"]
-        self.authorization_endpoint = _endpoint_context.endpoint["authorization"]
+        self.provider_endpoint = server.server_get("endpoint", 'provider_config')
+        self.registration_endpoint = server.server_get("endpoint", "registration")
+        self.authorization_endpoint = server.server_get("endpoint", "authorization")
 
     def test_explicit_registration(self):
         config = Configuration.create_from_config_file(full_path('conf_foodle.uninett.no.yaml'),
@@ -63,12 +97,12 @@ class TestFed(object):
         rph = init_oidc_rp_handler(config, BASE_PATH)
 
         rp = rph.init_client('ntnu')
-        rp.service_context.federation_entity.collector = DummyCollector(
+        rp.client_get("service_context").federation_entity.collector = DummyCollector(
             httpd=Publisher(ROOT_DIR),
             trusted_roots=ANCHOR,
             root_dir=ROOT_DIR)
 
-        _service = rp.service['provider_info']
+        _service = rp.client_get("service", 'provider_info')
 
         args = self.provider_endpoint.process_request()
         info = self.provider_endpoint.do_response(**args)
@@ -84,7 +118,7 @@ class TestFed(object):
 
         # Do the client registration request
         # First let the client construct the client registration request
-        _service = rp.service['registration']
+        _service = rp.client_get("service", 'registration')
         _request_args = _service.get_request_parameters()
 
         # send it to the provider
@@ -97,7 +131,7 @@ class TestFed(object):
         _service.update_service_context(_resp)
 
         # and we're done
-        reg_resp = _service.service_context.get("registration_response")
+        reg_resp = _service.client_get("service_context").get("registration_response")
         assert reg_resp["token_endpoint_auth_method"] == "private_key_jwt"
 
     def test_automatic_registration(self):
@@ -107,12 +141,12 @@ class TestFed(object):
         rph = init_oidc_rp_handler(config, BASE_PATH)
 
         rp = rph.init_client('ntnu')
-        rp.service_context.federation_entity.collector = DummyCollector(
+        rp.client_get("service_context").federation_entity.collector = DummyCollector(
             httpd=Publisher(ROOT_DIR),
             trusted_roots=ANCHOR,
             root_dir=ROOT_DIR)
 
-        _service = rp.service['provider_info']
+        _service = rp.client_get("service", 'provider_info')
 
         # don't need to parse the request since there is none
         args = self.provider_endpoint.process_request()
@@ -129,7 +163,7 @@ class TestFed(object):
 
         # Do the client authorization request
         # First let the client construct the authorization request
-        _service = rp.service['authorization']
+        _service = rp.client_get("service", 'authorization')
         _request_args = _service.get_request_parameters()
 
         # send it to the provider

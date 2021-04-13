@@ -1,6 +1,6 @@
 import logging
 
-from oidcendpoint.oidc import registration
+from oidcop.oidc import registration
 from oidcmsg.oidc import RegistrationRequest
 
 from fedservice.entity_statement.policy import diff2policy
@@ -15,8 +15,8 @@ class Registration(registration.Registration):
     response_format = 'jose'
     endpoint_name = "federation_registration_endpoint"
 
-    def __init__(self, endpoint_context, **kwargs):
-        registration.Registration.__init__(self, endpoint_context, **kwargs)
+    def __init__(self, server_get, **kwargs):
+        registration.Registration.__init__(self, server_get, **kwargs)
         self.post_construct.append(self.create_entity_statement)
 
     def parse_request(self, request, auth=None, **kwargs):
@@ -29,7 +29,7 @@ class Registration(registration.Registration):
         :param kwargs:
         :return:
         """
-        _fe = self.endpoint_context.federation_entity
+        _fe = self.server_get("endpoint_context").federation_entity
 
         # Collect trust chains
         trust_chains = _fe.collect_trust_chains(request, 'openid_relying_party')

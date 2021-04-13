@@ -2,7 +2,7 @@ import logging
 
 import cherrypy
 from cryptojwt.utils import as_bytes
-from oidcendpoint.authn_event import AuthnEvent
+from oidcop.authn_event import AuthnEvent
 from oidcmsg.oauth2 import AuthorizationRequest
 from oidcmsg.oauth2 import ResponseMessage
 

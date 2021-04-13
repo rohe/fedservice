@@ -1,8 +1,9 @@
 import logging
 
 from cryptojwt.key_jar import init_key_jar
-import oidcrp
 from oidcmsg import add_base_path
+import oidcrp
+from oidcrp import rp_handler
 from oidcrp.util import lower_or_upper
 
 from fedservice import create_federation_entity
@@ -10,22 +11,24 @@ from fedservice import create_federation_entity
 logger = logging.getLogger(__name__)
 
 
-class RPHandler(oidcrp.RPHandler):
+class RPHandler(rp_handler.RPHandler):
     def __init__(self, base_url='', hash_seed="", keyjar=None, verify_ssl=True,
                  services=None, service_factory=None, client_configs=None,
                  client_authn_factory=None, client_cls=None,
                  state_db=None, federation_entity_config=None, httpc_params=None, **kwargs):
-        oidcrp.RPHandler.__init__(self, base_url=base_url, hash_seed=hash_seed, keyjar=keyjar,
-                                  verify_ssl=verify_ssl, services=services,
-                                  service_factory=service_factory, client_configs=client_configs,
-                                  client_authn_factory=client_authn_factory, client_cls=client_cls,
-                                  state_db=state_db, httpc_params=httpc_params, **kwargs)
+        rp_handler.RPHandler.__init__(self, base_url=base_url, hash_seed=hash_seed, keyjar=keyjar,
+                                      verify_ssl=verify_ssl, services=services,
+                                      service_factory=service_factory,
+                                      client_configs=client_configs,
+                                      client_authn_factory=client_authn_factory,
+                                      client_cls=client_cls,
+                                      state_db=state_db, httpc_params=httpc_params, **kwargs)
 
         self.federation_entity_config = federation_entity_config
 
     def init_client(self, issuer):
-        client = oidcrp.RPHandler.init_client(self, issuer)
-        client.service_context.federation_entity = self.init_federation_entity(issuer)
+        client = rp_handler.RPHandler.init_client(self, issuer)
+        client.client_get("service_context").federation_entity = self.init_federation_entity(issuer)
         return client
 
     def init_federation_entity(self, issuer):
@@ -62,7 +65,7 @@ class RPHandler(oidcrp.RPHandler):
 
         :param iss_id: The issuer ID
         :param user: A user identifier
-        :return: A :py:class:`oidcservice.oidc.Client` instance
+        :return: A :py:class:`oidcrp.oidc.Client` instance
         """
 
         logger.info('client_setup: iss_id={}, user={}'.format(iss_id, user))
@@ -90,7 +93,7 @@ class RPHandler(oidcrp.RPHandler):
 
         logger.debug("Get provider info")
         issuer = self.do_provider_info(client)
-        _sc = client.service_context
+        _sc = client.client_get("service_context")
         try:
             _fe = _sc.federation_entity
         except AttributeError:
@@ -108,7 +111,7 @@ class RPHandler(oidcrp.RPHandler):
                 self.hash2issuer[iss_id] = issuer
             else:
                 _callbacks = self.add_callbacks(_sc)
-                _sc.set('client_id', oidcrp.add_path(_fe.entity_id, _callbacks['__hex']))
+                _sc.set('client_id', oidcrp.util.add_path(_fe.entity_id, _callbacks['__hex']))
         else:  # explicit
             logger.debug("Do client registration")
             self.do_client_registration(client, iss_id)

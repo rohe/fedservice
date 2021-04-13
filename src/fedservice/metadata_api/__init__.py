@@ -1,7 +1,7 @@
 from urllib.parse import unquote_plus
-from urllib.parse import urlparse
 
 from cryptojwt import KeyJar
+
 from fedservice.entity_statement.create import create_entity_statement
 
 
@@ -31,5 +31,3 @@ class EntityStatementAPI:
 
         return create_entity_statement(self.make_entity_id(self.iss), self.make_entity_id(sub),
                                        self.keyjar, **_info)
-
-

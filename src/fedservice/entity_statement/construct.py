@@ -1,7 +1,7 @@
 import logging
 
 from oidcmsg.oidc import RegistrationRequest
-from oidcservice.oidc.provider_info_discovery import PROVIDER2PREFERENCE
+from oidcrp.oidc.provider_info_discovery import PROVIDER2PREFERENCE
 
 from fedservice.entity_statement.policy import apply_policy
 

@@ -1,7 +1,7 @@
 import logging
 
 from cryptojwt.jwk import pems_to_x5c
-from oidcendpoint.oidc import provider_config
+from oidcop.oidc import provider_config
 from oidcmsg import oidc
 from oidcmsg.oidc import ProviderConfigurationResponse
 
@@ -14,13 +14,13 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
     request_format = 'jws'
     response_format = 'jws'
 
-    def __init__(self, endpoint_context, **kwargs):
-        provider_config.ProviderConfiguration.__init__(self, endpoint_context,
+    def __init__(self, server_get, **kwargs):
+        provider_config.ProviderConfiguration.__init__(self, server_get,
                                                        **kwargs)
         self.post_construct.append(self.create_entity_statement)
 
     def process_request(self, request=None, **kwargs):
-        return {'response_args': self.endpoint_context.provider_info.copy()}
+        return {'response_args': self.server_get("endpoint_context").provider_info.copy()}
 
     def create_entity_statement(self, request_args, request=None, **kwargs):
         """
@@ -32,7 +32,7 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
         :return:
         """
 
-        _fe = self.endpoint_context.federation_entity
+        _fe = self.server_get("endpoint_context").federation_entity
         _md = {_fe.entity_type: request_args.to_dict()}
         if _fe.collector.use_ssc:
             with open(_fe.collector.web_cert_path,'r') as fp:

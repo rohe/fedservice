@@ -2,7 +2,7 @@ import os
 from urllib.parse import urlparse
 
 from flask.app import Flask
-from oidcendpoint.util import get_http_params
+from oidcop.util import get_http_params
 
 from fedservice import create_federation_entity
 from fedservice.op import EndpointContext

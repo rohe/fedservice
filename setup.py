@@ -50,7 +50,7 @@ setup(
     author="Roland Hedberg",
     author_email="roland@catalogix.se",
     license="Apache 2.0",
-    url='https://github.com/IdentityPython/oidcservice/',
+    url='https://github.com/IdentityPython/oidcrp/',
     packages=["fedservice", "fedservice/entity_statement", "fedservice/rp",
               "fedservice/metadata_api", "fedservice/op",
               "fedservice/op/add_on"],
@@ -63,8 +63,8 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Topic :: Software Development :: Libraries :: Python Modules"],
     install_requires=[
-        'oidcservice>=0.6.10',
-        'oidcendpoint>=0.13.4'
+        'oidcrp>=2.0.0',
+        'oidcop>=2.0.0'
     ],
     tests_require=[
         "responses",

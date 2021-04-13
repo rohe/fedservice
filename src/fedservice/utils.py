@@ -3,7 +3,7 @@ import logging
 import ssl
 import sys
 
-from oidcservice.exception import ResponseError
+from oidcrp.exception import ResponseError
 
 logger = logging.getLogger(__name__)
 

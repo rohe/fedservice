@@ -15,8 +15,8 @@ class PushedAuthorization(Authorization):
     response_format = "json"
     name = "pushed_authorization"
 
-    def __init__(self, endpoint_context, **kwargs):
-        Authorization.__init__(self, endpoint_context, **kwargs)
+    def __init__(self, server_get, **kwargs):
+        Authorization.__init__(self, server_get, **kwargs)
         # self.pre_construct.append(self._pre_construct)
         self.post_parse_request.append(self._post_parse_request)
         self.ttl = kwargs.get("ttl", 3600)
@@ -30,7 +30,7 @@ class PushedAuthorization(Authorization):
         # create URN
 
         _urn = "urn:uuid:{}".format(uuid.uuid4())
-        self.endpoint_context.par_db[_urn] = request
+        self.server_get("endpoint_context").par_db[_urn] = request
 
         return {
             "http_response": {"request_uri": _urn, "expires_in": self.ttl},

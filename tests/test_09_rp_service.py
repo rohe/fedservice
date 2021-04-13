@@ -3,9 +3,9 @@ import os
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
-import pytest
 from cryptojwt.jws.jws import factory
-from oidcservice.service_context import ServiceContext
+from oidcrp.entity import Entity
+import pytest
 
 from fedservice import FederationEntity
 from fedservice import eval_chain
@@ -42,10 +42,11 @@ class TestRpService(object):
     @pytest.fixture(autouse=True)
     def rp_service_setup(self):
         entity_id = 'https://foodle.uninett.no'
-        service_context = ServiceContext(config={
+        entity = Entity(config={
             'issuer': 'https://op.ntnu.no',
             'keys': {'key_defs': KEY_DEFS}
         })
+        service_context = entity.get_service_context()
 
         http_cli = Publisher(os.path.join(BASE_PATH, 'base_data'))
 
@@ -76,8 +77,8 @@ class TestRpService(object):
         }
 
         self.service = {
-            'discovery': FedProviderInfoDiscovery(service_context),
-            'registration': Registration(service_context)
+            'discovery': FedProviderInfoDiscovery(client_get=entity.client_get),
+            'registration': Registration(client_get=entity.client_get)
         }
 
     def test_1(self):
@@ -100,7 +101,7 @@ class TestRpService(object):
         statement = statements[0]
         assert statement.anchor == 'https://feide.no'
         _dserv.update_service_context(statements)
-        assert set(_dserv.service_context.get('behaviour').keys()) == {
+        assert set(_dserv.client_get("service_context").get('behaviour').keys()) == {
             'grant_types', 'id_token_signed_response_alg',
             'token_endpoint_auth_method', 'federation_type'}
 
@@ -120,7 +121,7 @@ class TestRpService(object):
         jws = self.service['registration'].construct(request_args=req_args)
         assert jws
 
-        _sc = self.service['registration'].service_context
+        _sc = self.service['registration'].client_get("service_context")
         self.service['registration'].endpoint = _sc.get('provider_info')[
             'federation_registration_endpoint']
 
@@ -128,7 +129,7 @@ class TestRpService(object):
         _info = self.service['registration'].get_request_parameters(
             request_body_type="jose", method="POST")
 
-        assert set(_info.keys()) == {'method', 'url', 'body', 'headers'}
+        assert set(_info.keys()) == {'method', 'url', 'body', 'headers', 'request'}
         assert _info['method'] == 'POST'
         assert _info['url'] == 'https://op.ntnu.no/fedreg'
         assert _info['headers'] == {'Content-Type': 'application/jose'}
@@ -140,7 +141,9 @@ class TestRpService(object):
                                        'iat', 'sub', 'authority_hints'}
         assert set(payload['metadata']['openid_relying_party'].keys()) == {
             'application_type', "id_token_signed_response_alg", 'grant_types',
-            'response_types', "token_endpoint_auth_method", 'federation_type'}
+            'response_types', "token_endpoint_auth_method", 'federation_type',
+            'redirect_uris'
+        }
 
     def test_parse_registration_response(self):
         # construct the entity statement the OP should return
@@ -152,8 +155,8 @@ class TestRpService(object):
 
         self.service['discovery'].update_service_context(res)
 
-        _sc = self.service['registration'].service_context
-        self.service['registration'].endpoint = _sc.get('provider_info')[
+        _context = self.service['registration'].client_get("service_context")
+        self.service['registration'].endpoint = _context.get('provider_info')[
             'federation_registration_endpoint']
 
         # construct the client registration request
@@ -170,7 +173,7 @@ class TestRpService(object):
         payload = _req_jwt.jwt.payload()
 
         # The OP as federation entity
-        _fe = _sc.federation_entity
+        _fe = _context.federation_entity
         del _fe.keyjar["https://op.ntnu.no"]
         # make sure I have the private keys
         _fe.keyjar.import_jwks(
@@ -199,4 +202,4 @@ class TestRpService(object):
         assert set(claims.keys()) == {
             'id_token_signed_response_alg', 'application_type', 'client_secret',
             'client_id', 'response_types', 'token_endpoint_auth_method',
-            'grant_types', "contacts", 'federation_type'}
+            'grant_types', "contacts", 'federation_type', 'redirect_uris'}

@@ -1,5 +1,5 @@
-from oidcendpoint.client_authn import PrivateKeyJWT
-from oidcendpoint.client_authn import RequestParam
+from oidcop.client_authn import PrivateKeyJWT
+from oidcop.client_authn import RequestParam
 
 from fedservice.op import registration
 
@@ -18,25 +18,26 @@ def add_support(endpoint, **kwargs):
             auth_endpoint = endpoint.get('federation_{}'.format(endp))
 
         if auth_endpoint:
-            auto_reg = registration.Registration(auth_endpoint.endpoint_context, **kwargs)
+            _context = auth_endpoint.server_get("endpoint_context")
+            auto_reg = registration.Registration(auth_endpoint.server_get, **kwargs)
             auth_endpoint.automatic_registration_endpoint = auto_reg
 
             if endp == 'authorization':
                 if isinstance(auth_endpoint.client_verification_method, list):
                     auth_endpoint.client_verification_method.append(
-                        RequestParam(auth_endpoint.endpoint_context))
+                        RequestParam(_context))
                 else:
                     auth_endpoint.client_verification_method = [
-                        RequestParam(auth_endpoint.endpoint_context)]
+                        RequestParam(_context)]
             else:  # pushed_authorization endpoint
                 if isinstance(auth_endpoint.client_authn_method, list):
                     auth_endpoint.client_authn_method.append(
-                        PrivateKeyJWT(auth_endpoint.endpoint_context))
+                        PrivateKeyJWT(_context))
                 else:
                     auth_endpoint.client_authn_method = [
-                        PrivateKeyJWT(auth_endpoint.endpoint_context)]
+                        PrivateKeyJWT(_context)]
 
-            _pi = auth_endpoint.endpoint_context.provider_info
+            _pi = _context.provider_info
             _supported = kwargs.get('client_registration_authn_methods_supported')
             if _supported:
                 _pi['client_registration_authn_methods_supported'] = _supported
