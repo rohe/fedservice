@@ -73,7 +73,7 @@ class FederationEntity(OidcContext):
         if priority:
             self.tr_priority = priority
         elif 'priority' in config:
-            pass
+            self.tr_priority = config["priority"]
         else:
             self.tr_priority = sorted(set(trusted_roots.keys()))
 

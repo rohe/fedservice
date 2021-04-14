@@ -60,7 +60,7 @@ web_conf = config.webserver
 
 # To be able to publish the TLS cert in the entity statement
 _cert = os.path.join(dir_path, lower_or_upper(web_conf, "server_cert"))
-app.endpoint_context.federation_entity.collector.web_cert_path = _cert
+app.server.endpoint_context.federation_entity.collector.web_cert_path = _cert
 
 
 def main():
@@ -75,11 +75,11 @@ def main():
     kwargs = {}
 
     if args.display:
-        print(json.dumps(app.endpoint_context.provider_info, indent=4, sort_keys=True))
+        print(json.dumps(app.server.endpoint_context.provider_info, indent=4, sort_keys=True))
         exit(0)
 
     if args.insecure:
-        app.endpoint_context.federation_entity.collector.insecure = True
+        app.server.endpoint_context.federation_entity.collector.insecure = True
 
     context = create_context(dir_path, web_conf)
 

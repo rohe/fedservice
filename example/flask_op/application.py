@@ -4,13 +4,12 @@ from urllib.parse import urlparse
 from flask.app import Flask
 from oidcop.util import get_http_params
 
-from fedservice import create_federation_entity
-from fedservice.op import EndpointContext
+from fedservice.server import Server
 
 folder = os.path.dirname(os.path.realpath(__file__))
 
 
-def init_oidc_op_endpoints(app):
+def init_oidc_op(app):
     _config = app.srv_config.op
     _server_info_config = _config['server_info']
     _server_info_config['issuer'] = _server_info_config.get('issuer').format(
@@ -22,12 +21,9 @@ def init_oidc_op_endpoints(app):
         _fed_conf['httpc_params'] = get_http_params(_server_info_config.get(
             "httpc_params"))
 
-    federation_entity = create_federation_entity(cwd=folder, **_fed_conf)
+    op = Server(_server_info_config, cwd=folder)
 
-    endpoint_context = EndpointContext(_server_info_config, cwd=folder,
-                                       federation_entity=federation_entity)
-
-    for endp in endpoint_context.endpoint.values():
+    for endp in op.endpoint.values():
         p = urlparse(endp.endpoint_path)
         _vpath = p.path.split('/')
         if _vpath[0] == '':
@@ -35,7 +31,7 @@ def init_oidc_op_endpoints(app):
         else:
             endp.vpath = _vpath
 
-    return endpoint_context
+    return op
 
 
 def oidc_provider_init_app(config, name=None, **kwargs):
@@ -51,6 +47,6 @@ def oidc_provider_init_app(config, name=None, **kwargs):
     app.register_blueprint(oidc_op_views)
 
     # Initialize the oidc_provider after views to be able to set correct urls
-    app.endpoint_context = init_oidc_op_endpoints(app)
+    app.server = init_oidc_op(app)
 
     return app

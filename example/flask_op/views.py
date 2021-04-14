@@ -5,9 +5,7 @@ import os
 import sys
 import traceback
 
-from oidcop.oidc.token import Token
-from oidcop.session.info import UserSessionInfo
-import werkzeug
+from cryptojwt.jwt import utc_time_sans_frac
 from flask import Blueprint
 from flask import current_app
 from flask import redirect
@@ -15,10 +13,12 @@ from flask import render_template
 from flask import request
 from flask.helpers import make_response
 from flask.helpers import send_from_directory
-from oidcop.authn_event import create_authn_event
 from oidcmsg.oauth2 import ResponseMessage
 from oidcmsg.oidc import AccessTokenRequest
 from oidcmsg.oidc import AuthorizationRequest
+from oidcop.authn_event import create_authn_event
+from oidcop.oidc.token import Token
+import werkzeug
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ def do_response(endpoint, req_args, error='', **args):
             resp = make_response(info['response'], 200)
             _headers = info.get('http_headers')
             if _headers:
-                for k,v in _headers:
+                for k, v in _headers:
                     resp.headers[k] = v
         else:  # _response_placement == 'url':
             logger.info('Redirect to: {}'.format(info['response']))
@@ -97,13 +97,10 @@ def authn_verify(method):
     """
     Authentication verification
 
-    :param url_endpoint: Which endpoint to use
-    :param kwargs: response arguments
-    :return: HTTP redirect
     """
     url_endpoint = 'verify/{}'.format(method)
-    authn_method = current_app.endpoint_context.endpoint_to_authn_method[
-        url_endpoint]
+    _context = current_app.server.server_get("endpoint_context")
+    authn_method = _context.endpoint_to_authn_method[url_endpoint]
 
     kwargs = dict([(k, v) for k, v in request.form.items()])
     username = authn_method.verify(**kwargs)
@@ -113,17 +110,11 @@ def authn_verify(method):
     auth_args = authn_method.unpack_token(kwargs['token'])
     authz_request = AuthorizationRequest().from_urlencoded(auth_args['query'])
 
-    authn_event = create_authn_event(
-        uid=username, salt='salt',
-        authn_info=auth_args['authn_class_ref'],
-        authn_time=auth_args['iat'])
+    endpoint = current_app.server.server_get("endpoint", 'authorization')
+    _session_id = endpoint.create_session(authz_request, username, auth_args['authn_class_ref'],
+                                           auth_args['iat'], authn_method)
 
-    current_app.endpoint_context.session_manager.set(
-        [username], UserSessionInfo(authentication_event=authn_event))
-
-    endpoint = current_app.endpoint_context.endpoint['authorization']
-    args = endpoint.authz_part2(user=username, request=authz_request,
-                                authn_event=authn_event)
+    args = endpoint.authz_part2(request=authz_request, session_id=_session_id)
 
     if isinstance(args, ResponseMessage) and 'error' in args:
         return make_response(args.to_json(), 400)
@@ -133,12 +124,10 @@ def authn_verify(method):
 
 @oidc_op_views.route('/.well-known/<service>')
 def well_known(service):
-    # if service == 'openid-configuration':
-    #     _endpoint = current_app.endpoint_context.endpoint['provider_info']
     if service == 'openid-federation':
-        _endpoint = current_app.endpoint_context.endpoint['provider_config']
+        _endpoint = current_app.server.server_get("endpoint", 'provider_config')
     elif service == 'webfinger':
-        _endpoint = current_app.endpoint_context.endpoint['webfinger']
+        _endpoint = current_app.server.server_get("endpoint", 'webfinger')
     else:
         return make_response('Not supported', 400)
 
@@ -149,26 +138,22 @@ def well_known(service):
 
 @oidc_op_views.route('/registration', methods=['POST'])
 def registration():
-    return service_endpoint(current_app.endpoint_context.endpoint[
-                                'registration'])
+    return service_endpoint(current_app.server.server_get("endpoint", 'registration'))
 
 
 @oidc_op_views.route('/authorization')
 def authorization():
-    return service_endpoint(current_app.endpoint_context.endpoint[
-                                'authorization'])
+    return service_endpoint(current_app.server.server_get("endpoint", 'authorization'))
 
 
 @oidc_op_views.route('/token', methods=['GET', 'POST'])
 def token():
-    return service_endpoint(current_app.endpoint_context.endpoint[
-                                'token'])
+    return service_endpoint(current_app.server.server_get("endpoint", 'token'))
 
 
 @oidc_op_views.route('/userinfo', methods=['GET', 'POST'])
 def userinfo():
-    return service_endpoint(current_app.endpoint_context.endpoint[
-                                'userinfo'])
+    return service_endpoint(current_app.server.server_get("endpoint", 'userinfo'))
 
 
 def service_endpoint(endpoint):
@@ -201,8 +186,7 @@ def service_endpoint(endpoint):
             kwargs = {}
 
         if isinstance(endpoint, Token):
-            args = endpoint.process_request(AccessTokenRequest(**req_args),
-                                            **kwargs)
+            args = endpoint.process_request(AccessTokenRequest(**req_args), **kwargs)
         else:
             args = endpoint.process_request(req_args, **kwargs)
     except Exception as err:

@@ -42,11 +42,11 @@ def wkof(op_hash):
     except KeyError:
         return make_response('Not found', 404)
 
-    _asrv = cli.service['authorization']
-    reg_srv = Registration(service_context=_asrv.service_context, conf=_asrv.conf)
+    _asrv = cli.client_get("service",'authorization')
+    reg_srv = Registration(client_get=cli.client_get, conf=_asrv.conf)
 
     metadata = reg_srv.construct()
-    _fe = cli.service_context.federation_entity
+    _fe = cli.client_get("service_context").federation_entity
     iss = sub = _fe.entity_id
     _jws = _fe.create_entity_statement(
         metadata={"openid_relying_party": metadata.to_dict()},
@@ -108,9 +108,10 @@ def get_rp(op_hash):
 @oidc_rp_views.route('/authz_cb/<op_hash>')
 def authz_cb(op_hash):
     rp = get_rp(op_hash)
+    _context = rp.client_get("service_context")
 
     try:
-        iss = rp.session_interface.get_iss(request.args['state'])
+        iss = _context.state.get_iss(request.args['state'])
     except KeyError:
         return make_response('Unknown state', 400)
 
@@ -122,14 +123,14 @@ def authz_cb(op_hash):
 
     if 'userinfo' in res:
         endpoints = {}
-        _pi = rp.service_context.get('provider_info')
+        _pi = _context.get('provider_info')
         for k, v in _pi.items():
             if k.endswith('_endpoint'):
                 endp = k.replace('_', ' ')
                 endp = endp.capitalize()
                 endpoints[endp] = v
 
-        statement = rp.service_context.federation_entity.op_statements[0]
+        statement = _context.federation_entity.op_statements[0]
         _st = localtime(statement.exp)
         time_str = strftime('%a, %d %b %Y %H:%M:%S')
         return render_template('opresult.html', endpoints=endpoints,

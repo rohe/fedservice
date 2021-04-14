@@ -31,15 +31,17 @@ def main(config_file, args):
 
     kwargs = {}
 
+    _srv_context = app.server.server_get("endpoint_context")
+
     if args.display:
-        print(json.dumps(app.endpoint_context.provider_info, indent=4, sort_keys=True))
+        print(json.dumps(_srv_context.provider_info, indent=4, sort_keys=True))
         exit(0)
 
     if args.insecure:
-        app.endpoint_context.federation_entity.collector.insecure = True
+        _srv_context.federation_entity.collector.insecure = True
 
     _cert = os.path.join(dir_path, lower_or_upper(web_conf, "server_cert"))
-    app.endpoint_context.federation_entity.collector.web_cert_path = _cert
+    _srv_context.federation_entity.collector.web_cert_path = _cert
 
     app.run(host=web_conf['domain'], port=web_conf['port'],
             debug=web_conf['debug'], ssl_context=context,
