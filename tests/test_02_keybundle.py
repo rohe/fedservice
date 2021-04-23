@@ -45,7 +45,7 @@ def test_unpack_signed_jwks():
 
     with responses.RequestsMock() as rsps:
         rsps.add("GET", _signed_jwks_url, body=_jws, status=200,
-                 adding_headers={"Content-Type": "application/jwt"})
+                 content_type= "application/jwt")
 
         _kb.do_remote()
 
