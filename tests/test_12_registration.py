@@ -1,5 +1,6 @@
 import os
 
+from oidcop.cookie_handler import CookieHandler
 from oidcop.server import Server
 from oidcop.user_authn.authn_context import UNSPECIFIED
 from oidcop.user_authn.user import NoAuthn
@@ -26,6 +27,11 @@ ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},
     {"type": "EC", "crv": "P-256", "use": ["sig"]},
+]
+
+COOKIE_KEYDEFS = [
+    {"type": "oct", "kid": "sig", "use": ["sig"]},
+    {"type": "oct", "kid": "enc", "use": ["enc"]}
 ]
 
 ENTITY_ID = 'https://foodle.uninett.no'
@@ -79,6 +85,17 @@ class TestExplicit(object):
             "grant_expires_in": 300,
             "refresh_token_expires_in": 86400,
             "httpc_param": {'verify': False},
+            "cookie_handler": {
+                "class": CookieHandler,
+                "kwargs": {
+                    "keys": {"key_defs": COOKIE_KEYDEFS},
+                    "name": {
+                        "session": "oidc_op",
+                        "register": "oidc_op_reg",
+                        "session_management": "oidc_op_sman"
+                    }
+                },
+            },
             "endpoint": {
                 'provider_info': {
                     'path': '.well-known/openid-federation',
@@ -229,6 +246,17 @@ class TestAutomatic(object):
             "grant_expires_in": 300,
             "refresh_token_expires_in": 86400,
             "verify_ssl": False,
+            "cookie_handler": {
+                "class": CookieHandler,
+                "kwargs": {
+                    "keys": {"key_defs": COOKIE_KEYDEFS},
+                    "name": {
+                        "session": "oidc_op",
+                        "register": "oidc_op_reg",
+                        "session_management": "oidc_op_sman"
+                    }
+                },
+            },
             "endpoint": {
                 'provider_info': {
                     'path': '.well-known/openid-federation',

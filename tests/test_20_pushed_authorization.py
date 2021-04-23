@@ -3,7 +3,7 @@ import os
 
 from cryptojwt import JWT
 from oidcmsg.oauth2 import AuthorizationRequest
-from oidcop.cookie import CookieDealer
+from oidcop.cookie_handler import CookieHandler
 from oidcop.id_token import IDToken
 from oidcop.oidc.provider_config import ProviderConfiguration
 from oidcop.oidc.registration import Registration as OPRegistration
@@ -39,6 +39,11 @@ ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},
     {"type": "EC", "crv": "P-256", "use": ["sig"]},
+]
+
+COOKIE_KEYDEFS = [
+    {"type": "oct", "kid": "sig", "use": ["sig"]},
+    {"type": "oct", "kid": "enc", "use": ["enc"]}
 ]
 
 RP_ENTITY_ID = 'https://foodle.uninett.no'
@@ -195,16 +200,15 @@ class TestEndpoint(object):
                 }
             },
             "template_dir": "template",
-            "cookie_dealer": {
-                "class": CookieDealer,
+            "cookie_handler": {
+                "class": CookieHandler,
                 "kwargs": {
-                    "sign_key": "ghsNKDDLshZTPn974nOsIGhedULrsqnsGoBFBLwUKuJhE2ch",
-                    "default_values": {
-                        "name": "oidcop",
-                        "domain": "127.0.0.1",
-                        "path": "/",
-                        "max_age": 3600,
-                    },
+                    "keys": {"key_defs": COOKIE_KEYDEFS},
+                    "name": {
+                        "session": "oidc_op",
+                        "register": "oidc_op_reg",
+                        "session_management": "oidc_op_sman"
+                    }
                 },
             },
             'add_on': {
@@ -247,7 +251,8 @@ class TestEndpoint(object):
             trusted_roots=ANCHOR,
             root_dir=ROOT_DIR)
 
-        self.authorization_endpoint.server_get("endpoint_context").federation_entity = federation_entity
+        self.authorization_endpoint.server_get(
+            "endpoint_context").federation_entity = federation_entity
 
     def test_pushed_auth_urlencoded(self):
         # since all endpoint used the same endpoint_context I can grab anyone

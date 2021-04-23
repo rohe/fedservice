@@ -1,10 +1,13 @@
 import json
 import logging
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 
+from cryptojwt import JWT
 from cryptojwt import key_bundle
-from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import KeyJar
-
 
 logger = logging.getLogger(__name__)
 
@@ -14,20 +17,25 @@ class KeyBundle(key_bundle.KeyBundle):
     Extended :py:class:`oidcmsg.key_bundle.KeyBundle` class that supports
     signed JWKS uris.
     """
-    def __init__(self, keys=None, source="", cache_time=300, verify_ssl=True,
-                 file_format="jwk", keytype="RSA", keyusage=None,
-                 verify_keys=None):
+
+    def __init__(self,
+                 keys: Union[List, Dict] = None,
+                 source: Optional[str] = "",
+                 cache_time: Optional[int] = 300,
+                 file_format: Optional[str] = "jwk",
+                 keytype: Optional[str] = "RSA",
+                 keyusage: Optional[Union[List[str], str]] = None,
+                 federation_keys: Optional[Union[str, KeyJar]] = None):
         super(KeyBundle, self).__init__(keys=keys, source=source,
                                         cache_time=cache_time,
-                                        verify_ssl=verify_ssl,
                                         fileformat=file_format,
                                         keytype=keytype, keyusage=keyusage)
-        if verify_keys is not None:
-            if isinstance(verify_keys, KeyJar):
-                self.verify_keys = verify_keys
+        if federation_keys is not None:
+            if isinstance(federation_keys, KeyJar):
+                self.federation_keys = federation_keys
             else:
-                self.verify_keys = KeyJar()
-                self.verify_keys.import_jwks(verify_keys, '')
+                self.federation_keys = KeyJar()
+                self.federation_keys.import_jwks(federation_keys, '')
 
     def _parse_remote_response(self, response):
         """
@@ -49,9 +57,8 @@ class KeyBundle(key_bundle.KeyBundle):
             elif response.headers["Content-Type"] == 'application/jwt':
                 logger.debug(
                     "Signed JWKS: %s from %s" % (response.text, self.source))
-                _jws = factory(response.text)
-                _resp = _jws.verify_compact(
-                    response.text, keys=self.verify_keys.get_signing_key())
+                _jwt = JWT(key_jar=self.federation_keys)
+                _resp = _jwt.unpack(response.text)
                 return _resp
             else:
                 logger.error('Wrong content type: {}'.format(
@@ -59,3 +66,12 @@ class KeyBundle(key_bundle.KeyBundle):
                 raise ValueError('Content-type mismatch')
         except KeyError:
             pass
+
+    def signed_jwks(self, issuer, sign_alg: Optional[str] = "RS256"):
+        """
+
+        :return: Signed JWT containing a JWKS
+        """
+        jwks = json.loads(self.jwks())
+        _jwt = JWT(self.federation_keys, iss=issuer, sign_alg=sign_alg)
+        return _jwt.pack(jwks)

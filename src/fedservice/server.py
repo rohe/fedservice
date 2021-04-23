@@ -15,11 +15,11 @@ class Server(server.Server):
                  conf: Union[dict, Configuration],
                  keyjar: Optional[KeyJar] = None,
                  cwd: Optional[str] = "",
-                 cookie_dealer: Optional[Any] = None,
+                 cookie_handler: Optional[Any] = None,
                  httpc: Optional[Any] = None
                  ):
         server.Server.__init__(self, conf=conf, keyjar=keyjar, cwd=cwd,
-                               cookie_dealer=cookie_dealer, httpc=httpc)
+                               cookie_handler=cookie_handler, httpc=httpc)
 
         fed_conf = conf["federation"]
         federation_entity = FederationEntity(

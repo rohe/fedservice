@@ -1,5 +1,12 @@
+import oidcop.cookie_handler
+
 DOMAIN = 'op.ntnu.no'
 BASE_URL = "https://{}".format(DOMAIN)
+
+COOKIE_KEYDEFS = [
+    {"type": "oct", "kid": "sig", "use": ["sig"]},
+    {"type": "oct", "kid": "enc", "use": ["enc"]}
+]
 
 CONF = {
     'issuer': BASE_URL,
@@ -48,6 +55,17 @@ CONF = {
         'public_path': 'static/jwks.json',
         'read_only': False,
         'uri_path': 'static/jwks.json'
+    },
+    "cookie_handler": {
+        "class": oidcop.cookie_handler.CookieHandler,
+        "kwargs": {
+            "keys": {"key_defs": COOKIE_KEYDEFS},
+            "name": {
+                "session": "oidc_op",
+                "register": "oidc_op_reg",
+                "session_management": "oidc_op_sman"
+            }
+        },
     },
     'endpoint': {
         'webfinger': {
