@@ -1,4 +1,3 @@
-import json
 from typing import Any
 from typing import Optional
 from typing import Union
@@ -7,12 +6,12 @@ from cryptojwt import KeyJar
 from oidcop import server
 
 from fedservice import FederationEntity
-from fedservice.configure import Configuration
+from fedservice.configure import FedOpConfiguration
 
 
 class Server(server.Server):
     def __init__(self,
-                 conf: Union[dict, Configuration],
+                 conf: Union[dict, FedOpConfiguration],
                  keyjar: Optional[KeyJar] = None,
                  cwd: Optional[str] = "",
                  cookie_handler: Optional[Any] = None,
@@ -22,9 +21,6 @@ class Server(server.Server):
                                cookie_handler=cookie_handler, httpc=httpc)
 
         fed_conf = conf["federation"]
-        federation_entity = FederationEntity(
-            httpd=httpc,
-            config=fed_conf
-        )
+        federation_entity = FederationEntity(httpd=httpc, config=fed_conf)
 
         self.server_get("endpoint_context").federation_entity = federation_entity

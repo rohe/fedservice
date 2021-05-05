@@ -10,18 +10,14 @@ folder = os.path.dirname(os.path.realpath(__file__))
 
 
 def init_oidc_op(app):
-    _config = app.srv_config.op
-    _server_info_config = _config['server_info']
-    _server_info_config['issuer'] = _server_info_config.get('issuer').format(
-        domain=app.srv_config.domain, port=app.srv_config.port)
+    _op_config = app.srv_config.op
 
-    _fed_conf = _server_info_config.get('federation')
-    _fed_conf["entity_id"] = app.srv_config.base_url
+    _fed_conf = _op_config.federation
+    _fed_conf.entity_id = _op_config.issuer # Works when openid_provider
     if 'httpc_params' not in _fed_conf:
-        _fed_conf['httpc_params'] = get_http_params(_server_info_config.get(
-            "httpc_params"))
+        _fed_conf.httpc_params = get_http_params(_op_config.httpc_params)
 
-    op = Server(_server_info_config, cwd=folder)
+    op = Server(_op_config, cwd=folder)
 
     for endp in op.endpoint.values():
         p = urlparse(endp.endpoint_path)
