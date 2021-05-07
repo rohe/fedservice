@@ -4,10 +4,13 @@ import sys
 from urllib.parse import parse_qs
 
 from oidcmsg import add_base_path
+from oidcop.configure import create_from_config_file
+from oidcop.utils import lower_or_upper
 from oidcrp.configure import Configuration
 import pytest
 import responses
 
+from fedservice.configure import FedRPConfiguration
 from fedservice.rp import init_oidc_rp_handler
 from fedservice.server import Server
 from fedservice.utils import compact
@@ -28,9 +31,11 @@ def full_path(local_file):
 
 
 def test_init_rp():
-    config = Configuration.create_from_config_file(full_path('conf_foodle.uninett.no.yaml'),
-                                                   base_path=BASE_PATH)
-    rph = init_oidc_rp_handler(config, BASE_PATH)
+    config = create_from_config_file(Configuration,
+                                     entity_conf=[{"class": FedRPConfiguration, "attr": "rp"}],
+                                     filename=full_path('conf_foodle.uninett.no.yaml'),
+                                     base_path=BASE_PATH)
+    rph = init_oidc_rp_handler(config.rp, BASE_PATH)
     rp = rph.init_client('ntnu')
     assert rp
 
@@ -91,10 +96,16 @@ class TestFed(object):
         self.authorization_endpoint = server.server_get("endpoint", "authorization")
 
     def test_explicit_registration(self):
-        config = Configuration.create_from_config_file(full_path('conf_foodle.uninett.no.yaml'),
-                                                       base_path=BASE_PATH)
+        config = create_from_config_file(Configuration,
+                                         entity_conf=[{"class": FedRPConfiguration, "attr": "rp"}],
+                                         filename=full_path('conf_foodle.uninett.no.yaml'),
+                                         base_path=BASE_PATH)
 
-        rph = init_oidc_rp_handler(config, BASE_PATH)
+        config.rp.federation.web_cert_path = "{}/{}".format(dir_path,
+                                                            lower_or_upper(config.web_conf,
+                                                                           "server_cert"))
+
+        rph = init_oidc_rp_handler(config.rp, BASE_PATH)
 
         rp = rph.init_client('ntnu')
         rp.client_get("service_context").federation_entity.collector = DummyCollector(
@@ -135,10 +146,12 @@ class TestFed(object):
         assert reg_resp["token_endpoint_auth_method"] == "private_key_jwt"
 
     def test_automatic_registration(self):
-        config = Configuration.create_from_config_file(full_path('conf_foodle.uninett.no.yaml'),
-                                                       base_path=BASE_PATH)
+        config = create_from_config_file(Configuration,
+                                         entity_conf=[{"class": FedRPConfiguration, "attr": "rp"}],
+                                         filename=full_path('conf_foodle.uninett.no.yaml'),
+                                         base_path=BASE_PATH)
 
-        rph = init_oidc_rp_handler(config, BASE_PATH)
+        rph = init_oidc_rp_handler(config.rp, BASE_PATH)
 
         rp = rph.init_client('ntnu')
         rp.client_get("service_context").federation_entity.collector = DummyCollector(

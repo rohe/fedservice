@@ -121,22 +121,10 @@ class RPHandler(rp_handler.RPHandler):
 
 
 def init_oidc_rp_handler(config, dir_path):
-    rp_keys_conf = config.rp_keys
+    rp_keys_conf = config.keys
     _fed_conf = config.federation
 
     _httpc_params = config.httpc_params
-
-    add_base_path(_fed_conf,
-                  {
-                      "keys": ['private_path', 'public_path'],
-                      "": ["authority_hints", "trusted_roots"]
-                  },
-                  dir_path)
-
-    _fed_conf['entity_id'] = _fed_conf['entity_id'].format(domain=config.domain, port=config.port)
-
-    _fed_conf['web_cert_path'] = "{}/{}".format(dir_path,
-                                                lower_or_upper(config.web_conf, "server_cert"))
 
     _path = rp_keys_conf['uri_path']
     if _path.startswith('./'):

@@ -1,12 +1,14 @@
 import os
-import shutil
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
-from oidcrp.configure import Configuration
+from oidcop.configure import create_from_config_file
+from oidcrp.configure import RPConfiguration
 import pytest
 import responses
 
+from fedservice.configure import DEFAULT_FILE_ATTRIBUTE_NAMES
+from fedservice.configure import FedEntityConfiguration
 from fedservice.entity_statement.collect import unverified_entity_statement
 from fedservice.metadata_api.fs2 import FSEntityStatementAPI
 from fedservice.rp import RPHandler
@@ -25,9 +27,9 @@ ENTITY_ID = 'https://op.ntnu.no'
 
 
 def init_rp_handler(config):
-    rp_keys_conf = config.rp_keys
+    rp_keys_conf = config.keys
     _fed_conf = config.federation
-    _fed_conf['keys'] = rp_keys_conf
+    _fed_conf.keys = rp_keys_conf
     _httpc_params = config.httpc_params
 
     _path = rp_keys_conf['uri_path']
@@ -45,20 +47,16 @@ def init_rp_handler(config):
 class TestEndpointPersistence(object):
     @pytest.fixture(autouse=True)
     def create_rph(self):
-        try:
-            shutil.rmtree('storage')
-        except FileNotFoundError:
-            pass
-
         _file = os.path.join(BASE_PATH, "conf_rp_auto.yaml")
-        config = Configuration.create_from_config_file(_file)
-        # Have to make it absolute, not relative
-        config.federation['trusted_roots'] = os.path.join(BASE_PATH,
-                                                          config.federation['trusted_roots'])
-        config.federation['authority_hints'] = os.path.join(BASE_PATH,
-                                                            config.federation['authority_hints'])
-        config.federation['entity_id'] = config.federation['entity_id'].format(
-            domain=config.domain, port=config.port)
+        # automatic means no implicit registration
+        config = create_from_config_file(RPConfiguration,
+                                         entity_conf=[
+                                             {"class": FedEntityConfiguration,
+                                              "attr": "federation",
+                                              "path": ["federation"]}],
+                                         filename=_file,
+                                         base_path=BASE_PATH,
+                                         file_attributes=DEFAULT_FILE_ATTRIBUTE_NAMES)
 
         self.rph1 = init_rp_handler(config)
         self.rph2 = init_rp_handler(config)

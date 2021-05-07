@@ -38,22 +38,6 @@
   "httpc_params": {
     "verify": false
   },
-  "keydefs": [
-    {
-      "type": "RSA",
-      "key": "",
-      "use": [
-        "sig"
-      ]
-    },
-    {
-      "type": "EC",
-      "crv": "P-256",
-      "use": [
-        "sig"
-      ]
-    }
-  ],
   "rp_keys": {
     "private_path": "private/jwks.json",
     "key_defs": [

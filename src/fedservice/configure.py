@@ -1,58 +1,20 @@
-"""Configuration management for Signing Service"""
-import logging
 from typing import Dict
 from typing import List
 from typing import Optional
 
-from oidcop.configure import Base
 from oidcop.configure import OPConfiguration
-from oidcrp.logging import configure_logging
-from oidcrp.util import get_http_params
-from oidcrp.util import lower_or_upper
+from oidcrp.configure import Base
+from oidcrp.configure import RPConfiguration
 
-try:
-    from secrets import token_urlsafe as rnd_token
-except ImportError:
-    from oidcop import rndstr as rnd_token
+URIS = [
+    "redirect_uris", 'post_logout_redirect_uris', 'frontchannel_logout_uri',
+    'backchannel_logout_uri', 'issuer', 'base_url', "entity_id_pattern", "url_prefix"]
 
+DEFAULT_FILE_ATTRIBUTE_NAMES = ['server_key', 'server_cert', 'filename', 'template_dir',
+                                'private_path', 'public_path', 'db_file', 'authority_hints',
+                                'trusted_roots']
 
-class RPConfiguration:
-    """Signing Service Configuration"""
-
-    def __init__(self, conf: Dict) -> None:
-        self.logger = configure_logging(config=conf.get('logging')).getChild(__name__)
-
-        # server info
-        self.domain = lower_or_upper(conf, "domain")
-        self.port = lower_or_upper(conf, "port")
-
-        # HTTP params
-        _params = get_http_params(conf.get("httpc_params"))
-        if _params:
-            self.httpc_params = _params
-        else:
-            _params = {'verify', lower_or_upper(conf, "verify_ssl", True)}
-
-        # web server config
-        self.web_conf = lower_or_upper(conf, "webserver")
-
-        srv_info = lower_or_upper(conf, "server_info", {})
-        for entity, spec in srv_info.items():
-            for key, arg in spec.items():
-                if key == "kwargs":
-                    _kw_args = {}
-                    for attr, val in arg.items():
-                        if attr in ["entity_id_pattern", "url_prefix"]:
-                            _kw_args[attr] = val.format(domain=self.domain, port=self.port)
-                        else:
-                            _kw_args[attr] = val
-
-                    spec["kwargs"] = _kw_args
-
-        self.server_info = srv_info
-
-
-DEFAULT_CONFIG = {
+DEFAULT_FED_CONFIG = {
     "keys": {
         "private_path": "private/fed_keys.json",
         "key_defs": [
@@ -78,7 +40,7 @@ DEFAULT_CONFIG = {
 }
 
 
-class FedConfiguration(Base):
+class FedEntityConfiguration(Base):
     def __init__(self,
                  conf: Dict,
                  base_path: str = '',
@@ -95,11 +57,12 @@ class FedConfiguration(Base):
         self.priority = {}
         self.entity_type = ""
         self.opponent_entity_type = ""
+        self.registration_type = ""
 
         for key in self.__dict__.keys():
             _val = conf.get(key)
-            if not _val and key in DEFAULT_CONFIG:
-                _val = DEFAULT_CONFIG[key]
+            if not _val and key in DEFAULT_FED_CONFIG:
+                _val = DEFAULT_FED_CONFIG[key]
             if not _val:
                 continue
 
@@ -113,50 +76,44 @@ class FedConfiguration(Base):
 
 
 class FedOpConfiguration(OPConfiguration):
+    """ Provider configuration """
+
     def __init__(self,
                  conf: Dict,
+                 entity_conf: Optional[List[dict]] = None,
                  base_path: Optional[str] = '',
-                 domain: Optional[str] = "127.0.0.1",
-                 port: Optional[int] = 80,
+                 domain: Optional[str] = "",
+                 port: Optional[int] = 0,
                  file_attributes: Optional[List[str]] = None,
                  ):
-        OPConfiguration.__init__(self, conf, base_path, domain, port, file_attributes)
+        if file_attributes is None:
+            file_attributes = DEFAULT_FILE_ATTRIBUTE_NAMES
 
-        fed_conf = conf.get("federation")
-        if fed_conf:
-            self.federation = FedConfiguration(fed_conf)
-        else:
-            self.federation = None
+        OPConfiguration.__init__(self, conf, base_path=base_path, file_attributes=file_attributes,
+                                 domain=domain, port=port)
+
+        self.federation = FedEntityConfiguration(conf["federation"], base_path=base_path,
+                                                 domain=domain, port=port,
+                                                 file_attributes=file_attributes)
 
 
-class Configuration(Base):
-    """Server Configuration"""
+class FedRPConfiguration(RPConfiguration):
+    """RP Configuration"""
 
     def __init__(self,
                  conf: Dict,
-                 base_path: str = '',
+                 entity_conf: Optional[List[dict]] = None,
+                 base_path: Optional[str] = "",
                  file_attributes: Optional[List[str]] = None,
                  domain: Optional[str] = "",
                  port: Optional[int] = 0
-                 ):
-        Base.__init__(self, conf, base_path, file_attributes)
+                 ) -> None:
+        if file_attributes is None:
+            file_attributes = DEFAULT_FILE_ATTRIBUTE_NAMES
 
-        log_conf = conf.get('logging')
-        if log_conf:
-            self.logger = configure_logging(config=log_conf).getChild(__name__)
-        else:
-            self.logger = logging.getLogger('oidcop')
+        RPConfiguration.__init__(self, conf=conf, base_path=base_path,
+                                 file_attributes=file_attributes, domain=domain, port=port)
 
-        self.webserver = conf.get("webserver", {})
-
-        if domain:
-            args = {"domain": domain}
-        else:
-            args = {"domain": conf.get("domain", "127.0.0.1")}
-
-        if port:
-            args["port"] = port
-        else:
-            args["port"] = conf.get("port", 80)
-
-        self.op = FedOpConfiguration(conf["op"]["server_info"], **args)
+        self.federation = FedEntityConfiguration(conf["federation"], base_path=base_path,
+                                                 domain=domain, port=port,
+                                                 file_attributes=file_attributes)
