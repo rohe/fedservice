@@ -5,10 +5,12 @@ import logging
 import os
 
 import OpenSSL
-import werkzeug
+from fedservice.configure import FedOpConfiguration
 from oidcop.configure import Configuration
 from oidcop.utils import create_context
 from oidcop.utils import lower_or_upper
+from oidcrp.configure import create_from_config_file
+import werkzeug
 
 try:
     from .application import oidc_provider_init_app
@@ -53,7 +55,10 @@ class PeerCertWSGIRequestHandler(werkzeug.serving.WSGIRequestHandler):
 
 logging.basicConfig(level=logging.DEBUG)
 config_file = "conf_uwsgi.yaml"
-config = Configuration.create_from_config_file(config_file)
+config = create_from_config_file(Configuration,
+                                 entity_conf=[{'class': FedOpConfiguration, "attr": "op",
+                                               "path": ["os", "server_info"]}],
+                                 filename=config_file)
 app = oidc_provider_init_app(config)
 
 web_conf = config.webserver

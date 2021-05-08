@@ -6,11 +6,12 @@ import os
 
 # import OpenSSL
 # import werkzeug
+from oidcop.configure import Configuration
 from oidcop.configure import create_from_config_file
 from oidcop.utils import create_context
 from oidcop.utils import lower_or_upper
 
-from fedservice.configure import Configuration
+from fedservice.configure import FedOpConfiguration
 
 try:
     from .application import oidc_provider_init_app
@@ -24,7 +25,13 @@ logger = logging.getLogger(__name__)
 
 def main(config_file, args):
     logging.basicConfig(level=logging.DEBUG)
-    config = create_from_config_file(Configuration, config_file)
+    config = create_from_config_file(Configuration,
+                                     entity_conf=[{
+                                         "class": FedOpConfiguration,
+                                         "attr": "op",
+                                         "path": ["op", "server_info"]
+                                     }],
+                                     filename=config_file)
     app = oidc_provider_init_app(config)
 
     web_conf = config.webserver
