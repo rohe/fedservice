@@ -24,7 +24,7 @@ def send_js(path):
 
 @oidc_rp_views.route('/')
 def index():
-    _providers = current_app.rp_config.clients.keys()
+    _providers = current_app.srv_config.rp.clients.keys()
     return render_template('opbyuid.html', providers=_providers)
 
 
@@ -85,7 +85,7 @@ def rp():
         else:
             return redirect(result['url'], 303)
     else:
-        _providers = current_app.rp_config.clients.keys()
+        _providers = current_app.srv_config.rp.clients.keys()
         return render_template('opbyuid.html', providers=_providers)
 
 

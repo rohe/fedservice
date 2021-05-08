@@ -19,7 +19,7 @@ if __name__ == "__main__":
     name = 'oidc_rp'
     template_dir = os.path.join(dir_path, 'templates')
     app = application.oidc_provider_init_app(conf, name, template_folder=template_dir)
-    _web_conf = app.rp_config.web_conf
+    _web_conf = app.srv_config.web_conf
     context = create_context(dir_path, _web_conf)
     _cert = "{}/{}".format(dir_path, lower_or_upper(_web_conf, "server_cert"))
 
