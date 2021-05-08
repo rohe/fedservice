@@ -57,7 +57,7 @@ logging.basicConfig(level=logging.DEBUG)
 config_file = "conf_uwsgi.yaml"
 config = create_from_config_file(Configuration,
                                  entity_conf=[{'class': FedOpConfiguration, "attr": "op",
-                                               "path": ["os", "server_info"]}],
+                                               "path": ["op", "server_info"]}],
                                  filename=config_file)
 app = oidc_provider_init_app(config)
 
