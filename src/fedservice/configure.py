@@ -5,6 +5,8 @@ from typing import Optional
 from oidcop.configure import OPConfiguration
 from oidcrp.configure import Base
 from oidcrp.configure import RPConfiguration
+from oidcrp.configure import add_base_path
+from oidcrp.configure import set_domain_and_port
 
 URIS = [
     "redirect_uris", 'post_logout_redirect_uris', 'frontchannel_logout_uri',
@@ -117,3 +119,27 @@ class FedRPConfiguration(RPConfiguration):
         self.federation = FedEntityConfiguration(conf["federation"], base_path=base_path,
                                                  domain=domain, port=port,
                                                  file_attributes=file_attributes)
+
+
+DEFAULT_FILE_ATTRIBUTE_NAMES = ['server_key', 'server_cert', 'filename',
+                                'private_path', 'public_path', 'base_path']
+
+
+class FedSigServConfiguration(Base):
+    def __init__(self,
+                 conf: dict,
+                 base_path: Optional[str] = "",
+                 file_attributes: Optional[List[str]] = None,
+                 domain: Optional[str] = "",
+                 port: Optional[int] = 0):
+        Base.__init__(self, conf=conf, base_path=base_path, file_attributes=file_attributes)
+
+        if file_attributes is None:
+            file_attributes = DEFAULT_FILE_ATTRIBUTE_NAMES
+
+        add_base_path(conf, base_path, file_attributes)
+        set_domain_and_port(conf, ["entity_id_pattern", 'url_prefix'], domain, port)
+
+        self.server_info = conf["server_info"]
+        # self.key_defs = conf["keydefs"]
+        # self.httpc_params = conf.get("httpc_params", {"verify_ssl": True})

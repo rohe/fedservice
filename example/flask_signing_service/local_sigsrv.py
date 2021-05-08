@@ -8,8 +8,10 @@ from cryptojwt import KeyJar
 from flask import Flask
 from oidcop.utils import create_context
 from oidcop.utils import lower_or_upper
+from oidcrp.configure import Configuration
+from oidcrp.configure import create_from_config_file
 
-from fedservice.configure import Configuration
+from fedservice.configure import FedSigServConfiguration
 from fedservice.op.signing_service import SigningService
 
 NAME = 'sign_serv'
@@ -30,9 +32,7 @@ template_dir = os.path.join(dir_path, 'templates')
 
 
 def init_sign_service(app):
-    _server_info_config = app.fss_config.server_info
-
-    signing_service = SigningService(_server_info_config, cwd=dir_path)
+    signing_service = SigningService(app.fss_config.sigsrv.server_info, cwd=dir_path)
 
     return signing_service
 
@@ -41,7 +41,12 @@ def init_app(config_file, name=None, **kwargs):
     name = name or __name__
     app = Flask(name, static_url_path='', **kwargs)
 
-    app.fss_config = Configuration.create_from_config_file(config_file)
+    app.fss_config = create_from_config_file(Configuration,
+                                             entity_conf=[{
+                                                 'class': FedSigServConfiguration,
+                                                 'attr': 'sigsrv'
+                                             }],
+                                             filename=config_file)
 
     try:
         from .views import sigserv_views
@@ -66,7 +71,8 @@ if __name__ == "__main__":
     key_jar = KeyJar()
     key_jar.import_jwks_from_file("../flask_op/static/fed_keys.json", "")
     _jwks = key_jar.export_jwks_as_json(issuer_id="")
-    with open('base_data/umu.se/https%3A%2F%2F{}%3A{}/jwks.json'.format(domain,op_port), "w") as fp:
+    with open('base_data/umu.se/https%3A%2F%2F{}%3A{}/jwks.json'.format(domain, op_port),
+              "w") as fp:
         fp.write(_jwks)
 
     for _key_file, _port in rp_spec:
@@ -74,7 +80,7 @@ if __name__ == "__main__":
             key_jar = KeyJar()
             key_jar.import_jwks_from_file(_key_file, "")
             _jwks = key_jar.export_jwks_as_json(issuer_id="")
-            _file = 'base_data/lu.se/https%3A%2F%2F{}%3A{}%2Flocal/jwks.json'.format(domain,_port)
+            _file = 'base_data/lu.se/https%3A%2F%2F{}%3A{}%2Flocal/jwks.json'.format(domain, _port)
             with open(_file, "w") as fp:
                 fp.write(_jwks)
 
