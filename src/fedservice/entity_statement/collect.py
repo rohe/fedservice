@@ -316,7 +316,7 @@ class Collector(ImpExp):
         :param max_superiors: The maximum number of superiors.
         :return:
         """
-        logger.debug('Authority "%s" on %s', authority, entity_id)
+        logger.debug('Get authority "%s" for "%s"', authority, entity_id)
         # Should I stop when I reach the first trust anchor ?
         if entity_id == authority and entity_id in self.trusted_anchors:
             return None
@@ -336,6 +336,7 @@ class Collector(ImpExp):
         entity_statement = self.entity_statement_cache[cache_key]
 
         if entity_statement is not None:
+            logger.debug("Have cached statement")
             _now = utc_time_sans_frac()
             time_key = "{}!exp!{}".format(authority, entity_id)
             _exp = self.entity_statement_cache[time_key]
@@ -346,6 +347,7 @@ class Collector(ImpExp):
                 entity_statement = None
 
         if entity_statement is None:
+            logger.debug(f"Have not seen '{authority}' before")
             fed_api_endpoint = self.get_federation_api_endpoint(authority)
             if fed_api_endpoint is None:
                 raise SystemError('Could not find federation_api endpoint')
