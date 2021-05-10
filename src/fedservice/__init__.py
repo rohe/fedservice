@@ -176,6 +176,7 @@ def create_federation_entity(entity_id, httpc_params=None, **kwargs):
         _value = kwargs.get(_key)
         if _value:
             _conf[_key] = _value
+
     if _conf:
         _conf['httpc_params'] = args['httpc_params']
         args['config'] = _conf

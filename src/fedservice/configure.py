@@ -12,9 +12,9 @@ URIS = [
     "redirect_uris", 'post_logout_redirect_uris', 'frontchannel_logout_uri',
     'backchannel_logout_uri', 'issuer', 'base_url', "entity_id_pattern", "url_prefix"]
 
-DEFAULT_FILE_ATTRIBUTE_NAMES = ['server_key', 'server_cert', 'filename', 'template_dir',
-                                'private_path', 'public_path', 'db_file', 'authority_hints',
-                                'trusted_roots']
+DEFAULT_FED_FILE_ATTRIBUTE_NAMES = ['server_key', 'server_cert', 'filename', 'template_dir',
+                                    'private_path', 'public_path', 'db_file', 'authority_hints',
+                                    'trusted_roots']
 
 DEFAULT_FED_CONFIG = {
     "keys": {
@@ -61,6 +61,8 @@ class FedEntityConfiguration(Base):
         self.opponent_entity_type = ""
         self.registration_type = ""
 
+        set_domain_and_port(conf, uris=['entity_id'], domain=domain, port=port)
+
         for key in self.__dict__.keys():
             _val = conf.get(key)
             if not _val and key in DEFAULT_FED_CONFIG:
@@ -68,13 +70,7 @@ class FedEntityConfiguration(Base):
             if not _val:
                 continue
 
-            if key in ["entity_id"]:
-                if '{domain}' in _val:
-                    setattr(self, key, _val.format(domain=domain, port=port))
-                else:
-                    setattr(self, key, _val)
-            else:
-                setattr(self, key, _val)
+            setattr(self, key, _val)
 
 
 class FedOpConfiguration(OPConfiguration):
@@ -89,7 +85,7 @@ class FedOpConfiguration(OPConfiguration):
                  file_attributes: Optional[List[str]] = None,
                  ):
         if file_attributes is None:
-            file_attributes = DEFAULT_FILE_ATTRIBUTE_NAMES
+            file_attributes = DEFAULT_FED_FILE_ATTRIBUTE_NAMES
 
         OPConfiguration.__init__(self, conf, base_path=base_path, file_attributes=file_attributes,
                                  domain=domain, port=port)
@@ -111,7 +107,7 @@ class FedRPConfiguration(RPConfiguration):
                  port: Optional[int] = 0
                  ) -> None:
         if file_attributes is None:
-            file_attributes = DEFAULT_FILE_ATTRIBUTE_NAMES
+            file_attributes = DEFAULT_FED_FILE_ATTRIBUTE_NAMES
 
         RPConfiguration.__init__(self, conf=conf, base_path=base_path,
                                  file_attributes=file_attributes, domain=domain, port=port)

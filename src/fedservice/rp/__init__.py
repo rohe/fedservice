@@ -132,12 +132,6 @@ def init_oidc_rp_handler(config, dir_path):
     elif _path.startswith('/'):
         _path = _path[1:]
 
-    for client, _cnf in config.clients.items():
-        for attr in ['client_id', 'entity_id']:
-            _val = _cnf.get(attr)
-            if _val:
-                _cnf[attr] = _val.format(domain=config.domain, port=config.port)
-
     args = {k: v for k, v in rp_keys_conf.items() if k != "uri_path"}
     rp_keyjar = init_key_jar(**args)
     rp_keyjar.httpc_params = _httpc_params
