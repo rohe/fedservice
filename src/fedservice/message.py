@@ -232,15 +232,17 @@ class EntityStatement(JsonWebToken):
         'iss': SINGLE_REQUIRED_STRING,
         'exp': SINGLE_REQUIRED_INT,
         'iat': SINGLE_REQUIRED_INT,
+        'jwks': SINGLE_OPTIONAL_DICT,
+        'aud': SINGLE_OPTIONAL_STRING,
         "jti": SINGLE_OPTIONAL_STRING,
         'authority_hints': OPTIONAL_LIST_OF_STRINGS,
         'metadata': SINGLE_OPTIONAL_METADATA,
         'metadata_policy': SINGLE_OPTIONAL_METADATA_POLICY,
         'constraints': SINGLE_OPTIONAL_CONSTRAINS,
-        'sub_meta': SINGLE_OPTIONAL_DICT,
-        'jwks': SINGLE_OPTIONAL_DICT,
         "crit": OPTIONAL_LIST_OF_STRINGS,
-        "policy_language_crit": OPTIONAL_LIST_OF_STRINGS
+        "policy_language_crit": OPTIONAL_LIST_OF_STRINGS,
+        'trust_marks': SINGLE_OPTIONAL_DICT,
+        'trust_anchor_id': SINGLE_OPTIONAL_STRING
     })
 
 
