@@ -234,6 +234,9 @@ op:
       priority: []
       entity_type: openid_provider
       opponent_entity_type: openid_relying_party
+    claims_interface:
+      class:
+        function: oidcop.session.claims.ClaimsInterface
     # this adds PKCE support as mandatory - disable if needed
     add_on:
       pkce:

@@ -143,6 +143,7 @@ class TestEndpoint(object):
                 },
                 "refresh": {"lifetime": 86400},
             },
+            "claims_interface": {"class": "oidcop.session.claims.ClaimsInterface", "kwargs": {}},
             "verify_ssl": False,
             "capabilities": CAPABILITIES,
             "keys": {"uri_path": "static/jwks.json", "key_defs": KEYSPEC},

@@ -42,6 +42,7 @@ class TestEndpointPersistence(object):
         conf = {
             "issuer": ENTITY_ID,
             "password": "mycket hemligt",
+            "claims_interface": {"class": "oidcop.session.claims.ClaimsInterface", "kwargs": {}},
             "verify_ssl": False,
             "endpoint": {
                 "provider_config": {
