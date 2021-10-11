@@ -4,7 +4,7 @@ import os
 from cryptojwt import JWT
 from oidcmsg.oauth2 import AuthorizationRequest
 from oidcop.cookie_handler import CookieHandler
-from oidcop.id_token import IDToken
+from oidcop.token.id_token import IDToken
 from oidcop.oidc.provider_config import ProviderConfiguration
 from oidcop.oidc.registration import Registration as OPRegistration
 from oidcop.server import Server
@@ -65,11 +65,11 @@ client_yaml = """
 oidc_clients:
   s6BhdRkqt3:
     "client_secret": 7Fjfp0ZBr1KtDRbnfVdmIw
-    "redirect_uris": 
+    "redirect_uris":
         - ['https://client.example.org/cb', '']
     "client_salt": "salted"
     'token_endpoint_auth_method': 'client_secret_post'
-    'response_types': 
+    'response_types':
         - 'code'
         - 'token'
         - 'code id_token'
@@ -143,6 +143,7 @@ class TestEndpoint(object):
                 },
                 "refresh": {"lifetime": 86400},
             },
+            "claims_interface": {"class": "oidcop.session.claims.ClaimsInterface", "kwargs": {}},
             "verify_ssl": False,
             "capabilities": CAPABILITIES,
             "keys": {"uri_path": "static/jwks.json", "key_defs": KEYSPEC},

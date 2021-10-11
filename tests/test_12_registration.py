@@ -84,7 +84,8 @@ class TestExplicit(object):
             "token_expires_in": 600,
             "grant_expires_in": 300,
             "refresh_token_expires_in": 86400,
-            "httpc_param": {'verify': False},
+            "httpc_param": {'verify': False, "timeout": 2},
+            "claims_interface": {"class": "oidcop.session.claims.ClaimsInterface", "kwargs": {}},
             "cookie_handler": {
                 "class": CookieHandler,
                 "kwargs": {
@@ -209,7 +210,8 @@ class TestAutomatic(object):
                 'federation_types_supported': ['explicit']
             },
             'issuer': "https://op.ntnu.no",
-            'keys': {'key_defs': KEYSPEC}
+            'keys': {'key_defs': KEYSPEC},
+            "httpc_param": {'verify': False, "timeout": 2},
         })
 
         # the federation part of the RP
@@ -241,6 +243,7 @@ class TestAutomatic(object):
         op_entity_id = "https://op.ntnu.no"
         conf = {
             "issuer": op_entity_id,
+            "httpc_param": {'verify': False, "timeout": 2},
             "password": "mycket hemligt",
             "token_expires_in": 600,
             "grant_expires_in": 300,
@@ -293,6 +296,7 @@ class TestAutomatic(object):
                 }
             },
             'template_dir': 'template',
+            "claims_interface": {"class": "oidcop.session.claims.ClaimsInterface", "kwargs": {}},
             'add_on': {
                 "automatic_registration": {
                     "function":
@@ -448,7 +452,8 @@ class TestAutomaticNoSupport(object):
                 'federation_types_supported': ['explicit']
             },
             'issuer': "https://op.ntnu.no",
-            'keys': {'key_defs': KEYSPEC}
+            'keys': {'key_defs': KEYSPEC},
+            "httpc_param": {'verify': False, "timeout": 2},
         })
 
         # the federation part of the RP
@@ -483,7 +488,8 @@ class TestAutomaticNoSupport(object):
             "token_expires_in": 600,
             "grant_expires_in": 300,
             "refresh_token_expires_in": 86400,
-            "verify_ssl": False,
+            "httpc_param": {'verify': False, "timeout": 2},
+            "claims_interface": {"class": "oidcop.session.claims.ClaimsInterface", "kwargs": {}},
             "endpoint": {
                 'provider_info': {
                     'path': '.well-known/openid-federation',
