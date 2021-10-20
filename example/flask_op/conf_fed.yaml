@@ -52,7 +52,7 @@ op:
       verify: false
       timeout: 4
     session_key:
-      filename: 'private/session_jwk.json'
+      filename: private/session_jwk.json
       type: OCT
       use: sig
     capabilities:
@@ -173,10 +173,10 @@ op:
         class: oidcop.oidc.token.Token
         kwargs:
           client_authn_method:
-            - client_secret_post
-            - client_secret_basic
-            - client_secret_jwt
-            - private_key_jwt
+          - client_secret_post
+          - client_secret_basic
+          - client_secret_jwt
+          - private_key_jwt
       userinfo:
         path: userinfo
         class: oidcop.oidc.userinfo.UserInfo
@@ -206,12 +206,12 @@ op:
         acr: urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocolPassword
         class: oidcop.user_authn.user.UserPassJinja2
         kwargs:
-          verify_endpoint: 'verify/user'
+          verify_endpoint: '/verify/user'
           template: user_pass.jinja2
           db:
             class: oidcop.util.JSONDictDB
             kwargs:
-              json_path: passwd.json
+              filename: passwd.json
           page_header: "Testing log in"
           submit_btn: "Get me in!"
           user_label: "Nickname"

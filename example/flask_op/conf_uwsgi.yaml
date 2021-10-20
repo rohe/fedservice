@@ -48,10 +48,11 @@ oidc_keys: &oidc_keys
 op:
   server_info:
     issuer: *base_url
-    http_params:
+    httpc_params:
       verify: false
+      timeout: 4
     session_key:
-      filename: 'private/session_jwk.json'
+      filename: private/session_jwk.json
       type: OCT
       use: sig
     capabilities:
@@ -205,7 +206,7 @@ op:
         acr: urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocolPassword
         class: oidcop.user_authn.user.UserPassJinja2
         kwargs:
-          verify_endpoint: 'verify/user'
+          verify_endpoint: '/verify/user'
           template: user_pass.jinja2
           db:
             class: oidcop.util.JSONDictDB
@@ -321,29 +322,6 @@ op:
               - request_object
           where:
             - authorization
-    db_conf:
-      abstract_storage_cls: oidcmsg.storage.extension.LabeledAbstractStorage
-      keyjar:
-        handler: oidcmsg.storage.abfile.AbstractFileSystem
-        fdir: storage/keyjar
-        key_conv: oidcmsg.storage.converter.QPKey
-        value_conv: cryptojwt.serialize.item.KeyIssuer
-        label: 'x'
-      default:
-        handler: oidcmsg.storage.abfile.AbstractFileSystem
-        fdir: storage
-        key_conv: oidcmsg.storage.converter.QPKey
-        value_conv: oidcmsg.storage.converter.JSON
-      session:
-        handler: oidcmsg.storage.abfile.AbstractFileSystem
-        fdir: storage/session
-        key_conv: oidcmsg.storage.converter.QPKey
-        value_conv: oidcmsg.storage.converter.JSON
-      sso:
-        handler: oidcmsg.storage.abfile.AbstractFileSystem
-        fdir: storage/sso
-        key_conv: oidcmsg.storage.converter.QPKey
-        value_conv: oidcmsg.storage.converter.JSON
 
 webserver:
   server_cert: 'certs/example.crt'
