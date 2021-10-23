@@ -69,7 +69,7 @@ if __name__ == "__main__":
     _web_conf = app.srv_config.web_conf
     context = create_context(dir_path, _web_conf)
     _cert = "{}/{}".format(dir_path, lower_or_upper(_web_conf, "server_cert"))
-
+    
     # app.rph.federation_entity.collector.web_cert_path = _cert
-    app.run(host=_web_conf.domain, port=_web_conf.port,
+    app.run(host=_web_conf.get("domain"), port=_web_conf.get("port"),
             debug=_web_conf.get("debug"), ssl_context=context)

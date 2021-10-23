@@ -40,18 +40,17 @@ class DummyCollector(Collector):
             else:
                 return None
 
-        super = {}
-
+        superior = {}
         try:
             _hints = entity_statement['authority_hints']
         except KeyError:
             pass
         else:
             for intermediate in _hints:
-                super[intermediate] = self.build_path(intermediate, self.root_dir,
+                superior[intermediate] = self.build_path(intermediate, self.root_dir,
                                                       entity_statement['iss'])
 
-        return super
+        return superior
 
     def get_configuration_information(self, subject_id):
         """

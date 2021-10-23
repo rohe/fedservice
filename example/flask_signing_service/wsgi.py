@@ -8,7 +8,7 @@ from flask import Flask
 from oidcop.utils import create_context
 from oidcop.utils import lower_or_upper
 
-from fedservice.configure import Configuration
+from fedservice.configure import FedSigServConfiguration
 from fedservice.op.signing_service import SigningService
 
 NAME = 'sign_serv'
@@ -59,7 +59,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__, static_url_path='')
 
-app.fss_config = Configuration.create_from_config_file("conf.yaml")
+app.fss_config = FedSigServConfiguration.create_from_config_file("conf.yaml")
 
 app.register_blueprint(sigserv_views)
 
