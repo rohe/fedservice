@@ -1,9 +1,12 @@
 import logging
+from typing import Optional
 
 from cryptojwt.key_jar import init_key_jar
 from oidcmsg import add_base_path
 import oidcrp
 from oidcrp import rp_handler
+from oidcrp.oauth2 import Client
+from oidcrp.oidc.registration import add_callbacks
 from oidcrp.util import lower_or_upper
 
 from fedservice import create_federation_entity
@@ -54,7 +57,10 @@ class RPHandler(rp_handler.RPHandler):
             'web_cert_path')
         return _federation_entity
 
-    def client_setup(self, iss_id='', user=''):
+    def client_setup(self,
+                     iss_id: Optional[str] = '',
+                     user: Optional[str] = '',
+                     behaviour_args: Optional[dict] = None) -> Client:
         """
         First if no issuer ID is given then the identifier for the user is
         used by the webfinger service to try to find the issuer ID.
@@ -92,7 +98,7 @@ class RPHandler(rp_handler.RPHandler):
             return client
 
         logger.debug("Get provider info")
-        issuer = self.do_provider_info(client)
+        issuer = self.do_provider_info(client, behaviour_args=behaviour_args)
         _sc = client.client_get("service_context")
         try:
             _fe = _sc.federation_entity
@@ -110,11 +116,11 @@ class RPHandler(rp_handler.RPHandler):
                 # client.client_id = _fe.entity_id
                 self.hash2issuer[iss_id] = issuer
             else:
-                _callbacks = self.add_callbacks(_sc)
+                _callbacks = add_callbacks(_sc)
                 _sc.set('client_id', oidcrp.util.add_path(_fe.entity_id, _callbacks['__hex']))
         else:  # explicit
             logger.debug("Do client registration")
-            self.do_client_registration(client, iss_id)
+            self.do_client_registration(client, iss_id, behaviour_args=behaviour_args)
 
         self.issuer2rp[issuer] = client
         return client

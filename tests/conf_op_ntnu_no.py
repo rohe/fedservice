@@ -21,11 +21,6 @@ CONF = {
                                   'urn:ietf:params:oauth:grant-type:jwt-bearer',
                                   'refresh_token']},
     'template_dir': 'templates',
-    'id_token': {
-        'class': 'oidcop.id_token.IDToken',
-        'kwargs': {
-            'default_claims': {'email': {'essential': True},
-                               'email_verified': {'essential': True}}}},
     'token_handler_args': {
         'jwks_def': {
             'private_path': 'private/token_jwk.json',
@@ -46,7 +41,13 @@ CONF = {
                 'add_claim_by_scope': True,
                 'aud': ['https://example.org/appl']}
         },
-        'refresh': {'kwargs': {'lifetime': 86400}}},
+        'refresh': {'kwargs': {'lifetime': 86400}},
+        'id_token': {
+            'class': 'oidcop.token.id_token.IDToken',
+            'kwargs': {
+                'default_claims': {'email': {'essential': True},
+                                   'email_verified': {'essential': True}}}},
+    },
     'keys': {
         'private_path': 'private/jwks.json',
         'key_defs': [{'type': 'RSA', 'use': ['sig']},

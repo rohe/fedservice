@@ -173,7 +173,8 @@ class TestExplicit(object):
         trust_chain.verified_chain = [{'iss': "https://ntnu.no"}]
 
         self.service['discovery'].update_service_context([trust_chain])
-        # add the OP's federation keys
+
+        # Fake fetching the key from op.ntnu.no over the net
         self.rp_federation_entity.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
             issuer_id=_endpoint_context.provider_info['issuer'])
@@ -189,10 +190,13 @@ class TestExplicit(object):
         assert jws
 
         # THe OP handles the registration request
+
         res = self.registration_endpoint.process_request(jws)
         assert res
+
         reg_resp = self.registration_endpoint.do_response(**res)
-        assert set(reg_resp.keys()) == {'response', 'http_headers', 'cookie'}
+
+        assert set(reg_resp.keys()) == {'response', 'response_code','http_headers', 'cookie'}
 
         # The RP parses the OP's response
         args = _registration_service.parse_response(reg_resp['response'], request=jws)

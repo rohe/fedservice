@@ -3,6 +3,7 @@ import os
 import sys
 from urllib.parse import parse_qs
 
+from fedservice.configure import FedOpConfiguration
 from oidcmsg import add_base_path
 from oidcop.configure import create_from_config_file
 from oidcop.utils import lower_or_upper
@@ -31,11 +32,11 @@ def full_path(local_file):
 
 
 def test_init_rp():
-    config = create_from_config_file(Configuration,
+    config = create_from_config_file(FedRPConfiguration,
                                      entity_conf=[{"class": FedRPConfiguration, "attr": "rp"}],
                                      filename=full_path('conf_foodle.uninett.no.yaml'),
                                      base_path=BASE_PATH)
-    rph = init_oidc_rp_handler(config.rp, BASE_PATH)
+    rph = init_oidc_rp_handler(config, BASE_PATH)
     rp = rph.init_client('ntnu')
     assert rp
 
@@ -82,7 +83,9 @@ class TestFed(object):
                       },
                       dir_path)
 
-        server = Server(_conf)
+        configuration = FedOpConfiguration(conf=_conf, base_path=BASE_PATH, domain="127.0.0.1",
+                                           port=443)
+        server = Server(configuration)
 
         # _endpoint_context = init_oidc_op_endpoints(op_conf, BASE_PATH)
         _endpoint_context = server.get_endpoint_context()

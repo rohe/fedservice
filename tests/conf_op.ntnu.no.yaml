@@ -45,14 +45,6 @@ op:
         - urn:ietf:params:oauth:grant-type:jwt-bearer
         - refresh_token
     template_dir: templates
-    id_token:
-      class: oidcendpoint.id_token.IDToken
-      kwargs:
-        default_claims:
-          email:
-            essential: True
-          email_verified:
-            essential: True
     token_handler_args:
       jwks_def:
         private_path: 'private/token_jwk.json'
@@ -72,7 +64,7 @@ op:
         kwargs:
           lifetime: 600
       token:
-        class: oidcendpoint.token.jwt_token.JWTToken
+        class: oidcop.token.jwt_token.JWTToken
         kwargs:
           lifetime: 3600
           add_claims:
@@ -86,15 +78,23 @@ op:
       refresh:
         kwargs:
           lifetime: 86400
+      id_token:
+        class: oidcop.token.id_token.IDToken
+        kwargs:
+          default_claims:
+            email:
+              essential: True
+            email_verified:
+              essential: True
     keys:
       *oidc_keys
     endpoint:
       webfinger:
         path: '.well-known/webfinger'
-        class: oidcendpoint.oidc.discovery.Discovery
+        class: oidcop.oidc.discovery.Discovery
       provider_info:
         path: ".well-known/openid-configuration"
-        class: oidcendpoint.oidc.provider_config.ProviderConfiguration
+        class: oidcop.oidc.provider_config.ProviderConfiguration
         kwargs:
           client_authn_method: null
       federation_info:
@@ -109,13 +109,13 @@ op:
           client_authn_method: null
       registration_api:
         path: registration_api
-        class: oidcendpoint.oidc.read_registration.RegistrationRead
+        class: oidcop.oidc.read_registration.RegistrationRead
         kwargs:
           client_authn_method:
             - bearer_header
       introspection:
         path: introspection
-        class: oidcendpoint.oauth2.introspection.Introspection
+        class: oidcop.oauth2.introspection.Introspection
         kwargs:
           client_authn_method:
             - client_secret_post
@@ -153,7 +153,7 @@ op:
               - private_key_jwt
       token:
         path: token
-        class: oidcendpoint.oidc.token.Token
+        class: oidcop.oidc.token.Token
         kwargs:
           client_authn_method:
             - client_secret_post
@@ -162,7 +162,7 @@ op:
             - private_key_jwt
       userinfo:
         path: userinfo
-        class: oidcendpoint.oidc.userinfo.UserInfo
+        class: oidcop.oidc.userinfo.UserInfo
         kwargs:
           claim_types_supported:
             - normal
@@ -170,7 +170,7 @@ op:
             - distributed
       end_session:
         path: session
-        class: oidcendpoint.oidc.session.Session
+        class: oidcop.oidc.session.Session
         kwargs:
           logout_verify_url: verify_logout
           post_logout_uri_path: post_logout
@@ -181,7 +181,7 @@ op:
           backchannel_logout_session_supported: True
           check_session_iframe: 'check_session_iframe'
     userinfo:
-      class: oidcendpoint.user_info.UserInfo
+      class: oidcop.user_info.UserInfo
       kwargs:
         db_file: users.json
     authentication:
@@ -200,12 +200,12 @@ op:
 #          user_label: "Nickname"
 #          passwd_label: "Secret sauce"
       anon:
-        acr: oidcendpoint.user_authn.authn_context.UNSPECIFIED
-        class: oidcendpoint.user_authn.user.NoAuthn
+        acr: oidcop.user_authn.authn_context.UNSPECIFIED
+        class: oidcop.user_authn.user.NoAuthn
         kwargs:
           user: diana
     cookie_dealer:
-      class: oidcendpoint.cookie.CookieDealer
+      class: oidcop.cookie.CookieDealer
       sign_jwk:
           filename: 'private/cookie_sign_jwk.json'
           type: OCT
@@ -217,11 +217,11 @@ op:
           path: /
           max_age: 3600
     login_hint2acrs:
-      class: oidcendpoint.login_hint.LoginHint2Acrs
+      class: oidcop.login_hint.LoginHint2Acrs
       kwargs:
         scheme_map:
           email:
-            - oidcendpoint.user_authn.authn_context.INTERNETPROTOCOLPASSWORD
+            - oidcop.user_authn.authn_context.INTERNETPROTOCOLPASSWORD
     federation:
       entity_id: *base_url
       keys:
@@ -240,7 +240,7 @@ op:
     # this adds PKCE support as mandatory - disable if needed
     add_on:
       pkce:
-        function: oidcendpoint.oidc.add_on.pkce.add_pkce_support
+        function: oidcop.oidc.add_on.pkce.add_pkce_support
         kwargs:
           essential: false
           code_challenge_method:
@@ -249,7 +249,7 @@ op:
             - S384
             - S512
       claims:
-        function: oidcendpoint.oidc.add_on.custom_scopes.add_custom_scopes
+        function: oidcop.oidc.add_on.custom_scopes.add_custom_scopes
         kwargs:
           research_and_scholarship:
             - name
