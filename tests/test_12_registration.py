@@ -172,7 +172,13 @@ class TestExplicit(object):
         trust_chain.anchor = "https://feide.no"
         trust_chain.verified_chain = [{'iss': "https://ntnu.no"}]
 
-        self.service['discovery'].update_service_context([trust_chain])
+        with responses.RequestsMock() as rsps:
+            _jwks = self.authorization_endpoint.server_get(
+                "endpoint_context").keyjar.export_jwks_as_json()
+            rsps.add("GET", 'https://op.ntnu.no/static/jwks.json', body=_jwks,
+                     adding_headers={"Content-Type": "application/json"}, status=200)
+
+            self.service['discovery'].update_service_context([trust_chain])
 
         # Fake fetching the key from op.ntnu.no over the net
         self.rp_federation_entity.keyjar.import_jwks(
@@ -187,7 +193,6 @@ class TestExplicit(object):
         self.rp_federation_entity.proposed_authority_hints = ['https://ntnu.no']
 
         jws = _registration_service.construct(request_args=req_args)
-        assert jws
 
         # THe OP handles the registration request
 
@@ -196,7 +201,7 @@ class TestExplicit(object):
 
         reg_resp = self.registration_endpoint.do_response(**res)
 
-        assert set(reg_resp.keys()) == {'response', 'response_code','http_headers', 'cookie'}
+        assert set(reg_resp.keys()) == {'response', 'response_code', 'http_headers', 'cookie'}
 
         # The RP parses the OP's response
         args = _registration_service.parse_response(reg_resp['response'], request=jws)
@@ -351,7 +356,8 @@ class TestAutomatic(object):
         statement.verified_chain = [{'iss': "https://ntnu.no"}]
 
         with responses.RequestsMock() as rsps:
-            _jwks = self.authorization_endpoint.server_get("endpoint_context").keyjar.export_jwks()
+            _jwks = self.authorization_endpoint.server_get(
+                "endpoint_context").keyjar.export_jwks_as_json()
             rsps.add("GET", 'https://op.ntnu.no/static/jwks.json', body=_jwks,
                      adding_headers={"Content-Type": "application/json"}, status=200)
 
