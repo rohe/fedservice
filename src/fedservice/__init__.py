@@ -172,7 +172,7 @@ def create_federation_entity(entity_id, httpc_params=None, **kwargs):
             pass
 
     _conf = {}
-    for _key in ['keys', 'db_conf', 'issuer']:
+    for _key in ['key_conf', 'db_conf', 'issuer']:
         _value = kwargs.get(_key)
         if _value:
             _conf[_key] = _value

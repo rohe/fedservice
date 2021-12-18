@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "name": "SWAMID"
+  },
+  "keys": {
+    "key_defs": [
+      {
+        "type": "RSA",
+        "use": [
+          "sig"
+        ]
+      },
+      {
+        "type": "EC",
+        "crv": "P-256",
+        "use": [
+          "sig"
+        ]
+      }
+    ],
+    "private_path": "private/jwks.json",
+    "public_path": "public/jwks.json",
+    "read_only": false
+  },
+  "authority_hints": "",
+  "trusted_roots": ""
+}

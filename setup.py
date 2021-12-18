@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright (C) 2017 Roland Hedberg, Sweden
 #
@@ -64,8 +64,8 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Topic :: Software Development :: Libraries :: Python Modules"],
     install_requires=[
-        'oidcrp>=2.1.0',
-        'oidcop>=2.3.0'
+        'oidcrp>=2.1.3',
+        'oidcop>=2.3.4'
     ],
     tests_require=[
         "responses",

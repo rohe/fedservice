@@ -2,7 +2,8 @@ import os
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
-from oidcop.configure import create_from_config_file
+from fedservice.configure import DEFAULT_FED_FILE_ATTRIBUTE_NAMES
+from oidcmsg.configure import create_from_config_file
 from oidcrp.configure import RPConfiguration
 import pytest
 import responses
@@ -27,9 +28,10 @@ ENTITY_ID = 'https://op.ntnu.no'
 
 
 def init_rp_handler(config):
-    rp_keys_conf = config.keys
+    rp_keys_conf = config.key_conf
     _fed_conf = config.federation
-    _fed_conf.keys = rp_keys_conf
+    if not _fed_conf.key_conf:
+        _fed_conf.key_conf = rp_keys_conf
     _httpc_params = config.httpc_params
 
     _path = rp_keys_conf['uri_path']
@@ -56,7 +58,7 @@ class TestEndpointPersistence(object):
                                               "path": ["federation"]}],
                                          filename=_file,
                                          base_path=BASE_PATH,
-                                         file_attributes=DEFAULT_FILE_ATTRIBUTE_NAMES)
+                                         file_attributes=DEFAULT_FED_FILE_ATTRIBUTE_NAMES)
 
         self.rph1 = init_rp_handler(config)
         self.rph2 = init_rp_handler(config)

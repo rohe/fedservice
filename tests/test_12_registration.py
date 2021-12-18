@@ -48,7 +48,7 @@ class TestExplicit(object):
                 'federation_types_supported': ['explicit']
             },
             'issuer': "https://op.ntnu.no",
-            'keys': {'key_defs': KEYSPEC}
+            'key_conf': {'key_defs': KEYSPEC}
         })
         service_context = entity.client_get("service_context")
 
@@ -120,7 +120,7 @@ class TestExplicit(object):
                     }
                 }
             },
-            "keys": {
+            "key_conf": {
                 "private_path": "own/jwks.json",
                 "uri_path": "static/jwks.json",
                 "key_defs": KEYSPEC
@@ -291,7 +291,7 @@ class TestAutomatic(object):
                     }
                 }
             },
-            "keys": {
+            "key_conf": {
                 "private_path": "own/jwks.json",
                 "uri_path": "static/jwks.json",
                 "key_defs": KEYSPEC

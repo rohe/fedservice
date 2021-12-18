@@ -1,0 +1,12 @@
+{
+  "constraints": {
+    "max_path_length": 1
+  },
+  "metadata_policy": {
+    "openid_provider": {
+      "contacts": {
+        "add": "swamid@sunet.se"
+      }
+    }
+  }
+}

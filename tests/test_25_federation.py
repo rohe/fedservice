@@ -3,14 +3,14 @@ import os
 import sys
 from urllib.parse import parse_qs
 
-from fedservice.configure import FedOpConfiguration
-from oidcmsg import add_base_path
-from oidcop.configure import create_from_config_file
+from oidcmsg.configure import Configuration
+from oidcmsg.configure import create_from_config_file
 from oidcop.utils import lower_or_upper
-from oidcrp.configure import Configuration
 import pytest
 import responses
 
+from fedservice.configure import DEFAULT_FED_FILE_ATTRIBUTE_NAMES
+from fedservice.configure import FedOpConfiguration
 from fedservice.configure import FedRPConfiguration
 from fedservice.rp import init_oidc_rp_handler
 from fedservice.server import Server
@@ -52,36 +52,6 @@ class TestFed(object):
         import conf_op_ntnu_no
 
         _conf = conf_op_ntnu_no.CONF.copy()
-        add_base_path(_conf,
-                      {
-                          "session_key": ['filename'],
-                          "keys": ['private_path', 'public_path'],
-                          "jwks": ["private_path", "public_path"],
-                          "": ["template"]
-                      },
-                      dir_path)
-        add_base_path(_conf["federation"],
-                      {
-                          "session_key": ['filename'],
-                          "keys": ['private_path', 'public_path'],
-                          "": ["authority_hints", "trusted_roots"]
-                      },
-                      dir_path)
-        add_base_path(_conf["token_handler_args"],
-                      {
-                          "jwks_def": ['private_path', 'public_path'],
-                      },
-                      dir_path)
-        add_base_path(_conf["userinfo"],
-                      {
-                          "kwargs": ['db_file'],
-                      },
-                      dir_path)
-        add_base_path(_conf["cookie_dealer"],
-                      {
-                          "sign_jwk": ['filename'],
-                      },
-                      dir_path)
 
         configuration = FedOpConfiguration(conf=_conf, base_path=BASE_PATH, domain="127.0.0.1",
                                            port=443)
@@ -102,6 +72,7 @@ class TestFed(object):
         config = create_from_config_file(Configuration,
                                          entity_conf=[{"class": FedRPConfiguration, "attr": "rp"}],
                                          filename=full_path('conf_foodle.uninett.no.yaml'),
+                                         file_attributes=DEFAULT_FED_FILE_ATTRIBUTE_NAMES,
                                          base_path=BASE_PATH)
 
         config.rp.federation.web_cert_path = "{}/{}".format(dir_path,
@@ -152,6 +123,7 @@ class TestFed(object):
         config = create_from_config_file(Configuration,
                                          entity_conf=[{"class": FedRPConfiguration, "attr": "rp"}],
                                          filename=full_path('conf_foodle.uninett.no.yaml'),
+                                         file_attributes=DEFAULT_FED_FILE_ATTRIBUTE_NAMES,
                                          base_path=BASE_PATH)
 
         rph = init_oidc_rp_handler(config.rp, BASE_PATH)

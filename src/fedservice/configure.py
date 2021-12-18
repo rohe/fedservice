@@ -1,12 +1,14 @@
+import json
 from typing import Dict
 from typing import List
 from typing import Optional
 
+from oidcmsg.configure import Base
+from oidcmsg.configure import DEFAULT_DIR_ATTRIBUTE_NAMES
+from oidcmsg.configure import add_base_path
+from oidcmsg.configure import set_domain_and_port
 from oidcop.configure import OPConfiguration
-from oidcrp.configure import Base
 from oidcrp.configure import RPConfiguration
-from oidcrp.configure import add_base_path
-from oidcrp.configure import set_domain_and_port
 
 URIS = [
     "redirect_uris", 'post_logout_redirect_uris', 'frontchannel_logout_uri',
@@ -43,34 +45,42 @@ DEFAULT_FED_CONFIG = {
 
 
 class FedEntityConfiguration(Base):
+    uris = ["entity_id"]
+
     def __init__(self,
                  conf: Dict,
+                 entity_conf: Optional[List[dict]] = None,
                  base_path: str = '',
                  file_attributes: Optional[List[str]] = None,
                  domain: Optional[str] = "",
-                 port: Optional[int] = 0
+                 port: Optional[int] = 0,
+                 dir_attributes: Optional[List[str]] = None,
                  ):
-        Base.__init__(self, conf, base_path, file_attributes)
+        file_attributes = file_attributes or DEFAULT_FED_FILE_ATTRIBUTE_NAMES
+        dir_attributes = dir_attributes or DEFAULT_DIR_ATTRIBUTE_NAMES
 
-        self.entity_id = ""
-        self.keys = None
-        self.authority_hints = ""
-        self.trusted_roots = ""
-        self.priority = {}
-        self.entity_type = ""
-        self.opponent_entity_type = ""
-        self.registration_type = ""
+        Base.__init__(self, conf=conf, base_path=base_path, file_attributes=file_attributes,
+                      dir_attributes=dir_attributes, domain=domain, port=port)
 
-        set_domain_and_port(conf, uris=['entity_id'], domain=domain, port=port)
+        self.entity_id = conf.get("entity_id")
+        self.key_conf = conf.get("keys")
+        self.authority_hints = conf.get("authority_hints")
+        self.trusted_roots = conf.get("trusted_roots")
+        self.priority = conf.get("priority", [])
+        self.entity_type = conf.get("entity_type", "")
+        self.opponent_entity_type = conf.get("opponent_entity_type", "")
+        self.registration_type = conf.get("registration_type", "")
 
-        for key in self.__dict__.keys():
-            _val = conf.get(key)
-            if not _val and key in DEFAULT_FED_CONFIG:
-                _val = DEFAULT_FED_CONFIG[key]
-            if not _val:
-                continue
+        self.metadata = conf.get("metadata")
 
-            setattr(self, key, _val)
+        # if base_path and self.metadata:
+        #     add_base_path(self.metadata, base_path, ['authority_hints', 'trusted_roots'])
+        #     # self.complete_paths(conf, self.__dict__.keys(), DEFAULT_FED_CONFIG, base_path)
+
+        if self.authority_hints:
+            self._authority_hints = json.loads(open(self.authority_hints).read())
+        if self.trusted_roots:
+            self._trusted_roots = json.loads(open(self.trusted_roots).read())
 
 
 class FedOpConfiguration(OPConfiguration):
@@ -83,16 +93,21 @@ class FedOpConfiguration(OPConfiguration):
                  domain: Optional[str] = "",
                  port: Optional[int] = 0,
                  file_attributes: Optional[List[str]] = None,
+                 dir_attributes: Optional[List[str]] = None,
                  ):
-        if file_attributes is None:
-            file_attributes = DEFAULT_FED_FILE_ATTRIBUTE_NAMES
 
-        OPConfiguration.__init__(self, conf, base_path=base_path, file_attributes=file_attributes,
-                                 domain=domain, port=port)
+        file_attributes = file_attributes or DEFAULT_FED_FILE_ATTRIBUTE_NAMES
+        dir_attributes = dir_attributes or DEFAULT_DIR_ATTRIBUTE_NAMES
+
+        OPConfiguration.__init__(self, conf, base_path=base_path,
+                                 file_attributes=file_attributes,
+                                 domain=domain, port=port,
+                                 dir_attributes=dir_attributes)
 
         self.federation = FedEntityConfiguration(conf["federation"], base_path=base_path,
                                                  domain=domain, port=port,
-                                                 file_attributes=file_attributes)
+                                                 file_attributes=self._file_attributes,
+                                                 dir_attributes=self._dir_attributes)
 
 
 class FedRPConfiguration(RPConfiguration):
@@ -104,17 +119,20 @@ class FedRPConfiguration(RPConfiguration):
                  base_path: Optional[str] = "",
                  file_attributes: Optional[List[str]] = None,
                  domain: Optional[str] = "",
-                 port: Optional[int] = 0
+                 port: Optional[int] = 0,
+                 dir_attributes: Optional[List[str]] = None,
                  ) -> None:
         if file_attributes is None:
             file_attributes = DEFAULT_FED_FILE_ATTRIBUTE_NAMES
 
         RPConfiguration.__init__(self, conf=conf, base_path=base_path,
-                                 file_attributes=file_attributes, domain=domain, port=port)
+                                 file_attributes=file_attributes, domain=domain, port=port,
+                                 dir_attributes=dir_attributes)
 
         self.federation = FedEntityConfiguration(conf["federation"], base_path=base_path,
                                                  domain=domain, port=port,
-                                                 file_attributes=file_attributes)
+                                                 file_attributes=file_attributes,
+                                                 dir_attributes=dir_attributes)
 
 
 DEFAULT_FILE_ATTRIBUTE_NAMES = ['server_key', 'server_cert', 'filename',
@@ -127,15 +145,16 @@ class FedSigServConfiguration(Base):
                  base_path: Optional[str] = "",
                  file_attributes: Optional[List[str]] = None,
                  domain: Optional[str] = "",
-                 port: Optional[int] = 0):
-        Base.__init__(self, conf=conf, base_path=base_path, file_attributes=file_attributes)
+                 port: Optional[int] = 0,
+                 dir_attributes: Optional[List[str]] = None,
+                 ):
 
-        if file_attributes is None:
-            file_attributes = DEFAULT_FILE_ATTRIBUTE_NAMES
+        self._file_attributes = file_attributes or DEFAULT_FED_FILE_ATTRIBUTE_NAMES
+        self._dir_attributes = dir_attributes or DEFAULT_DIR_ATTRIBUTE_NAMES
 
-        add_base_path(conf, base_path, file_attributes)
+        Base.__init__(self, conf=conf, base_path=base_path, file_attributes=self._file_attributes,
+                      dir_attributes=self._dir_attributes)
+
         set_domain_and_port(conf, ["entity_id_pattern", 'url_prefix'], domain, port)
 
         self.server_info = conf["server_info"]
-        # self.key_defs = conf["keydefs"]
-        # self.httpc_params = conf.get("httpc_params", {"verify_ssl": True})

@@ -2,11 +2,9 @@ import logging
 from typing import Optional
 
 from cryptojwt.key_jar import init_key_jar
-from oidcmsg import add_base_path
 import oidcrp
 from oidcrp import rp_handler
 from oidcrp.oauth2 import Client
-from oidcrp.oidc.registration import add_callbacks
 from oidcrp.util import lower_or_upper
 
 from fedservice import create_federation_entity
@@ -116,7 +114,7 @@ class RPHandler(rp_handler.RPHandler):
                 # client.client_id = _fe.entity_id
                 self.hash2issuer[iss_id] = issuer
             else:
-                _callbacks = add_callbacks(_sc)
+                _callbacks = self.add_callbacks(_sc)
                 _sc.set('client_id', oidcrp.util.add_path(_fe.entity_id, _callbacks['__hex']))
         else:  # explicit
             logger.debug("Do client registration")
@@ -127,7 +125,7 @@ class RPHandler(rp_handler.RPHandler):
 
 
 def init_oidc_rp_handler(config, dir_path):
-    rp_keys_conf = config.keys
+    rp_keys_conf = config.key_conf
     _fed_conf = config.federation
 
     _httpc_params = config.httpc_params

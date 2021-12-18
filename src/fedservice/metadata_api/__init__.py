@@ -11,7 +11,10 @@ class EntityStatementAPI:
         self.keyjar = KeyJar()
         self.entity_id_pattern = entity_id_pattern
         self.url_prefix = ''
-        self.base_path = ""
+        self.fe_base_path = ""
+        self.auth_base_path = ""
+        self.conf = None
+        self.federation_api_endpoint = ""
 
     def gather_info(self, sub):
         raise NotImplementedError()
