@@ -117,7 +117,7 @@ class MetaAPIDb(MetaAPI):
         MetaAPI.__init__(self, static_dir)
         self.authn_info = authn_info
         self.db_uri = db_uri
-        self.keyjar = keyjar
+        self.keyjar = key_jar
         self.issuer = issuer
         self.lifetime = lifetime
         self.sign_alg = sign_alg
