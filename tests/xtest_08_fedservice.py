@@ -1,11 +1,12 @@
 import json
 import os
 
-import pytest
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import build_keyjar
+import pytest
 
-from fedservice import FederationEntity
+from fedservice.entity import FederationEntity
+from fedservice.entity.fetch import Fetch
 from fedservice.entity_statement.collect import branch2lists
 from fedservice.entity_statement.collect import verify_self_signed_signature
 from fedservice.entity_statement.verify import eval_chain
@@ -30,11 +31,26 @@ ANCHOR = {'https://feide.no': json.loads(jwks)}
 class TestRpService(object):
     @pytest.fixture(autouse=True)
     def rp_service_setup(self):
+        config = {
+            "entity_id": RECEIVER,
+            "httpc_params": {"verify": False, "timeout": 1},
+            "federation": {
+                "endpoint": {
+                    "fetch": {
+                        "path": "fetch",
+                        "class": Fetch,
+                        "kwargs": {"client_authn_method": None},
+                    }
+                },
+                "trusted_roots": ANCHOR,
+                "authority_hints": [],
+                "entity_type": 'openid_relying_party',
+                "opponent_entity_type": 'openid_provider',
+            }
+        }
         federation_entity = FederationEntity(
-            RECEIVER, trusted_roots=ANCHOR, authority_hints={},
-            httpd=Publisher(os.path.join(BASE_PATH, 'base_data')),
-            entity_type='openid_relying_party', opponent_entity_type='openid_provider',
-            config={}
+            config=config,
+            httpc=Publisher(os.path.join(BASE_PATH, 'base_data')),
         )
         # Swap in the DummyCollector
         federation_entity.collector = DummyCollector(trusted_roots=ANCHOR,
@@ -78,7 +94,9 @@ class TestRpService(object):
         tree = self.fedent.collect_statement_chains(leaf_entity_id, _jws)
         _node = {leaf_entity_id: (_jws, tree)}
         chains = branch2lists(_node)
-        statements = [eval_chain(c, self.fedent.keyjar, 'openid_relying_party') for c in chains]
+        statements = [
+            eval_chain(c, self.fedent.endpoint_context.federation.keyjar, 'openid_relying_party')
+            for c in chains]
         assert len(statements) == 1
         statement = statements[0]
         assert set(statement.metadata.keys()) == {'application_type', 'claims',
@@ -119,8 +137,8 @@ class TestRpService(object):
         key_jar = build_keyjar(KEYSPEC, issuer_id=iss)
         authority = {"https://ntnu.no": ["https://feide.no"]}
 
-        _jwt = self.fedent.create_entity_statement(iss, sub, key_jar=key_jar, metadata=metadata,
-                                                   authority_hints=authority)
+        _jwt = self.fedent.endpoint_context.federation.create_entity_statement(
+            iss, sub, key_jar=key_jar, metadata=metadata, authority_hints=authority)
 
         assert _jwt
 

@@ -5,8 +5,8 @@ from typing import Union
 from cryptojwt import KeyJar
 from oidcop import server
 
-from fedservice import FederationEntity
 from fedservice.configure import FedOpConfiguration
+from fedservice.entity import FederationEntity
 
 
 class Server(server.Server):
@@ -21,6 +21,6 @@ class Server(server.Server):
                                cookie_handler=cookie_handler, httpc=httpc)
 
         fed_conf = conf["federation"]
-        federation_entity = FederationEntity(httpd=httpc, config=fed_conf)
+        federation_entity = FederationEntity(httpc=httpc, config=fed_conf)
 
         self.server_get("endpoint_context").federation_entity = federation_entity

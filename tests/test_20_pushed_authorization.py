@@ -2,22 +2,25 @@ import io
 import os
 
 from cryptojwt import JWT
+
+from fedservice.entity.fetch import Fetch
+from fedservice.op import FederationServer
 from oidcmsg.oauth2 import AuthorizationRequest
 from oidcop.cookie_handler import CookieHandler
-from oidcop.token.id_token import IDToken
 from oidcop.oidc.provider_config import ProviderConfiguration
 from oidcop.oidc.registration import Registration as OPRegistration
 from oidcop.server import Server
+from oidcop.token.id_token import IDToken
 from oidcrp.defaults import JWT_BEARER
-from oidcrp.entity import Entity
 import pytest
 import yaml
 
-from fedservice import FederationEntity
+from fedservice.entity import FederationEntity
 from fedservice.entity_statement.statement import TrustChain
 from fedservice.metadata_api.fs2 import read_info
 from fedservice.op.authorization import Authorization
 from fedservice.op.pushed_authorization import PushedAuthorization
+from fedservice.rp import FederationRP
 from fedservice.rp.provider_info_discovery import FedProviderInfoDiscovery
 from fedservice.rp.registration import Registration as RPRegistration
 from .utils import DummyCollector
@@ -61,60 +64,59 @@ RESPONSE_TYPES_SUPPORTED = [
     ["none"],
 ]
 
-client_yaml = """
-oidc_clients:
-  s6BhdRkqt3:
-    "client_secret": 7Fjfp0ZBr1KtDRbnfVdmIw
-    "redirect_uris":
-        - ['https://client.example.org/cb', '']
-    "client_salt": "salted"
-    'token_endpoint_auth_method': 'client_secret_post'
-    'response_types':
-        - 'code'
-        - 'token'
-        - 'code id_token'
-        - 'id_token'
-        - 'code id_token token'
-"""
+CLIENTS = {
+    "oidc_clients": {
+        "s6BhdRkqt3": {
+            "client_secret": "7Fjfp0ZBr1KtDRbnfVdmIw",
+            "redirect_uris": [['https://client.example.org/cb', '']],
+            "client_salt": "salted",
+            'token_endpoint_auth_method': ['client_secret_post'],
+            'response_types': ['code', 'token', 'code id_token', 'id_token', 'code id_token token']
+        }
+    }
+}
 
 
 class TestEndpoint(object):
     @pytest.fixture(autouse=True)
     def create_setup(self):
         # First the RP
-        entity = Entity(config={
+        config = {
             'behaviour': {
                 'federation_types_supported': ['automatic']
             },
             'issuer': "https://op.ntnu.no",
-            'keys': {'key_defs': KEYSPEC}
-        })
-        service_context = entity.get_service_context()
+            'keys': {'key_defs': KEYSPEC},
+            "federation": {
+                "endpoint": {
+                    "fetch": {
+                        "path": "fetch",
+                        "class": Fetch,
+                        "kwargs": {"client_authn_method": None},
+                    }
+                },
+                'entity_id': RP_ENTITY_ID,
+                "trusted_roots": ANCHOR,
+                "authority_hints": ['https://ntnu.no'],
+                "entity_type": 'openid_relying_party',
+                "opponent_entity_type": 'openid_provider'
+            }
+        }
 
-        self.rp_federation_entity = FederationEntity(
-            entity_id=RP_ENTITY_ID, trusted_roots=ANCHOR, authority_hints=['https://ntnu.no'],
-            entity_type='openid_relying_party', opponent_entity_type='openid_provider'
-        )
+        self.entity = FederationRP(config=config)
+        service_context = self.entity.get_service_context()
 
-        self.rp_federation_entity.keyjar.import_jwks(
-            read_info(os.path.join(ROOT_DIR, 'foodle.uninett.no'),
-                      'foodle.uninett.no', 'jwks'), issuer_id=RP_ENTITY_ID)
-
-        self.rp_federation_entity.collector = DummyCollector(
+        service_context.federation_entity.collector = DummyCollector(
             trusted_roots=ANCHOR, root_dir=ROOT_DIR)
 
-        # add the federation part to the service context
-        service_context.federation_entity = self.rp_federation_entity
-
-        # The RP has/supports 3 services
-
-        self.discovery_service = FedProviderInfoDiscovery(entity.client_get)
-        self.registration_service = RPRegistration(entity.client_get)
+        # The RP has/supports 2 services
+        self.discovery_service = FedProviderInfoDiscovery(self.entity.client_get)
+        self.registration_service = RPRegistration(self.entity.client_get)
         # self.authorization_service = FedAuthorization(entity.client_get)
 
         # and now for the OP
         op_entity_id = "https://op.ntnu.no"
-        conf = {
+        op_conf = {
             "issuer": op_entity_id,
             "password": "mycket hemligt zebra",
             "token_handler_args": {
@@ -221,59 +223,60 @@ class TestEndpoint(object):
                         "where": ["pushed_authorization"]
                     }
                 }
+            },
+            "federation": {
+                "endpoint": {
+                    "fetch": {
+                        "path": "fetch",
+                        "class": Fetch,
+                        "kwargs": {"client_authn_method": None},
+                    }
+                },
+                "entity_id": op_entity_id,
+                "trusted_roots": ANCHOR,
+                "authority_hints": ['https://ntnu.no'],
+                "entity_type": 'openid_relying_party',
+                "opponent_entity_type": 'openid_relying_party'
             }
         }
-        server = Server(conf)
+        server = FederationServer(conf=op_conf)
         endpoint_context = server.get_endpoint_context()
-        _clients = yaml.safe_load(io.StringIO(client_yaml))
+        # _clients = yaml.safe_load(io.StringIO(client_yaml))
         # endpoint_context.cdb = _clients["oidc_clients"]
+        # store keys under my own ID
         endpoint_context.keyjar.import_jwks(
-            endpoint_context.keyjar.export_jwks(True, ""), conf["issuer"]
+            endpoint_context.keyjar.export_jwks(True, ""), op_conf["issuer"]
         )
 
         self.pushed_authorization_endpoint = server.server_get("endpoint", "pushed_authorization")
         self.authorization_endpoint = server.server_get("endpoint", "authorization")
         self.registration_endpoint = server.server_get("endpoint", "registration")
 
-        federation_entity = FederationEntity(
-            op_entity_id, trusted_roots=ANCHOR,
-            authority_hints=['https://ntnu.no'],
-            entity_type='openid_relying_party',
-            httpd=Publisher(ROOT_DIR),
-            opponent_entity_type='openid_relying_party')
-
-        # federation_entity.keyjar.import_jwks(
-        #     read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'),
-        #               'op.ntnu.no', 'jwks'),
-        #     issuer_id=op_entity_id)
-
-        federation_entity.collector = DummyCollector(
+        endpoint_context.federation_entity.collector = DummyCollector(
             httpd=Publisher(ROOT_DIR),
             trusted_roots=ANCHOR,
             root_dir=ROOT_DIR)
 
-        self.authorization_endpoint.server_get(
-            "endpoint_context").federation_entity = federation_entity
 
     def test_pushed_auth_urlencoded(self):
         # since all endpoint used the same endpoint_context I can grab anyone
-        _context = self.registration_endpoint.server_get("endpoint_context")
+        _op_context = self.registration_endpoint.server_get("endpoint_context")
 
         # This is cheating. Getting the OP's provider info
         _fe = self.registration_service.client_get("service_context").federation_entity
         trust_chain = TrustChain()
-        trust_chain.metadata = _context.provider_info
+        trust_chain.metadata = _op_context.provider_info
         trust_chain.anchor = "https://feide.no"
         trust_chain.verified_chain = [{'iss': "https://ntnu.no"}]
 
         self.discovery_service.update_service_context([trust_chain])
         # and the OP's federation keys
-        self.rp_federation_entity.keyjar.import_jwks(
+        _op_context.federation_entity.context.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
-            issuer_id=_context.provider_info['issuer'])
+            issuer_id=_op_context.provider_info['issuer'])
 
-        # Add RP's keys to the OP's keyjar.
-        _context.keyjar.import_jwks(
+        # Add RP's OIDC keys to the OP's keyjar.
+        _op_context.keyjar.import_jwks(
             self.discovery_service.client_get("service_context").keyjar.export_jwks(issuer_id=""),
             RP_ENTITY_ID
         )
@@ -292,7 +295,7 @@ class TestEndpoint(object):
         _jwt.with_jti = True
         _assertion = _jwt.pack(
             {
-                "aud": [_context.provider_info["pushed_authorization_request_endpoint"]]
+                "aud": [_op_context.provider_info["pushed_authorization_request_endpoint"]]
             })
         authn_request.update({"client_assertion": _assertion, "client_assertion_type": JWT_BEARER})
 
@@ -313,7 +316,7 @@ class TestEndpoint(object):
         }
 
         # Should have a registered client now
-        assert set(_context.cdb.keys()) == {RP_ENTITY_ID}
+        assert set(_op_context.cdb.keys()) == {RP_ENTITY_ID}
 
     def test_pushed_auth_urlencoded_process(self):
         # since all endpoint used the same endpoint_context I can grab anyone
@@ -327,14 +330,16 @@ class TestEndpoint(object):
         trust_chain.verified_chain = [{'iss': "https://ntnu.no"}]
 
         self.discovery_service.update_service_context([trust_chain])
-        # and the OP's federation keys
-        self.rp_federation_entity.keyjar.import_jwks(
+
+        _rp_context = self.discovery_service.client_get("service_context")
+        # add the OP's federation keys to the RP
+        _rp_context.federation_entity.context.keyjar.import_jwks(
             read_info(os.path.join(ROOT_DIR, 'op.ntnu.no'), 'op.ntnu.no', 'jwks'),
             issuer_id=_context.provider_info['issuer'])
 
-        # Add RP's keys to the OP's keyjar.
+        # Add RP's keys to the OP's OIDC keyjar.
         _context.keyjar.import_jwks(
-            self.discovery_service.client_get("service_context").keyjar.export_jwks(issuer_id=""),
+            _rp_context.keyjar.export_jwks(issuer_id=""),
             RP_ENTITY_ID
         )
 

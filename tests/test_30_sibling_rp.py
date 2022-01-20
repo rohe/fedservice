@@ -2,13 +2,12 @@ import os
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
-from fedservice.configure import DEFAULT_FED_FILE_ATTRIBUTE_NAMES
 from oidcmsg.configure import create_from_config_file
 from oidcrp.configure import RPConfiguration
 import pytest
 import responses
 
-from fedservice.configure import DEFAULT_FILE_ATTRIBUTE_NAMES
+from fedservice.configure import DEFAULT_FED_FILE_ATTRIBUTE_NAMES
 from fedservice.configure import FedEntityConfiguration
 from fedservice.entity_statement.collect import unverified_entity_statement
 from fedservice.metadata_api.fs2 import FSEntityStatementAPI
@@ -49,7 +48,7 @@ def init_rp_handler(config):
 class TestEndpointPersistence(object):
     @pytest.fixture(autouse=True)
     def create_rph(self):
-        _file = os.path.join(BASE_PATH, "conf_rp_auto.yaml")
+        _file = os.path.join(BASE_PATH, "conf_rp_auto.json")
         # automatic means no implicit registration
         config = create_from_config_file(RPConfiguration,
                                          entity_conf=[
@@ -131,13 +130,22 @@ class TestEndpointPersistence(object):
         p = urlparse(auth_req['url'])
         info = parse_qs(p.query)
         payload = unverified_entity_statement(info["request"][0])
-        assert payload['client_id'] == rp.client_get("service_context").federation_entity.entity_id
+        assert payload['client_id'] == rp.client_get("service_context").federation_entity.context.entity_id
         # assert iss in payload['aud']
+
+        # _federation_context_dump = rp.client_get("service_context").federation_entity.context.dump()
+        # _federation_collector_dump = rp.client_get("service_context").federation_entity.collector.dump()
+        # rp2 = self.rph2.init_client(iss)
+        # rp2.client_get("service_context").federation_entity.context.load(_federation_context_dump)
+        #
+        # c = rp2.client_get("service_context").federation_entity.collector
+        # c.load(_federation_collector_dump)
 
         _federation_dump = rp.client_get("service_context").federation_entity.dump()
 
         rp2 = self.rph2.init_client(iss)
         rp2.client_get("service_context").federation_entity.load(_federation_dump)
+
         c = rp2.client_get("service_context").federation_entity.collector
 
         assert set(c.config_cache.keys()) == {'https://ntnu.no', 'https://feide.no',

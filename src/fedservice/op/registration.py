@@ -30,11 +30,12 @@ class Registration(registration.Registration):
         :return:
         """
         _fe = self.server_get("endpoint_context").federation_entity
+        _fe_cntx = _fe.context
 
         # Collect trust chains
         trust_chains = _fe.collect_trust_chains(request, 'openid_relying_party')
 
-        _fe.proposed_authority_hints = create_authority_hints(_fe.authority_hints, trust_chains)
+        _fe.proposed_authority_hints = create_authority_hints(_fe_cntx.authority_hints, trust_chains)
 
         trust_chain = _fe.pick_trust_chain(trust_chains)
         _fe.trust_chain_anchor = trust_chain.anchor
@@ -43,11 +44,11 @@ class Registration(registration.Registration):
         if "response_args" in response_info:
             payload = _fe.get_payload(request)
             _policy = diff2policy(response_info['response_args'], req)
-            entity_statement = _fe.create_entity_statement(
-                _fe.entity_id,
+            entity_statement = _fe_cntx.create_entity_statement(
+                _fe_cntx.entity_id,
                 payload['iss'],
                 trust_anchor_id=trust_chain.anchor,
-                metadata_policy={_fe.opponent_entity_type: _policy},
+                metadata_policy={_fe_cntx.opponent_entity_type: _policy},
                 aud=payload['iss']
             )
             response_info["response_msg"] = entity_statement

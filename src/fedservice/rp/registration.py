@@ -46,11 +46,11 @@ class Registration(registration.Registration):
         :return:
         """
 
-        _fe = self.client_get("service_context").federation_entity
-        _md = {_fe.entity_type: request_args.to_dict()}
-        return _fe.create_entity_statement(
-            iss=_fe.entity_id, sub=_fe.entity_id, metadata=_md, key_jar=_fe.keyjar,
-            authority_hints=_fe.proposed_authority_hints)
+        _fe_ctx = self.client_get("service_context").federation_entity.context
+        _md = {_fe_ctx.entity_type: request_args.to_dict()}
+        return _fe_ctx.create_entity_statement(
+            iss=_fe_ctx.entity_id, sub=_fe_ctx.entity_id, metadata=_md, key_jar=_fe_ctx.keyjar,
+            authority_hints=_fe_ctx.proposed_authority_hints)
 
     def parse_response(self, info, sformat="", state="", **kwargs):
         resp = self.parse_federation_registration_response(info, **kwargs)
@@ -76,9 +76,9 @@ class Registration(registration.Registration):
         # return _trust_anchor_id
 
     def get_trust_anchor_id(self, entity_statement):
-        _context = self.client_get("service_context")
-        if len(_context.federation_entity.op_statements) == 1:
-            _id = _context.federation_entity.op_statements[0].anchor
+        _fe_context = self.client_get("service_context").federation_entity.get_context()
+        if len(_fe_context.op_statements) == 1:
+            _id = _fe_context.op_statements[0].anchor
             _tai = self._get_trust_anchor_id(entity_statement)
             if _tai and _tai != _id:
                 logger.warning(
@@ -100,10 +100,10 @@ class Registration(registration.Registration):
         """
         _context = self.client_get("service_context")
         _fe = _context.federation_entity
-
+        _fe_ctx = _fe.context
         # Can not collect trust chain. Have to verify the signed JWT with keys I have
 
-        kj = _context.federation_entity.keyjar
+        kj = _fe_ctx.keyjar
         _jwt = factory(resp)
         entity_statement = _jwt.verify_compact(resp, keys=kj.get_jwt_verify_keys(_jwt.jwt))
 
@@ -111,7 +111,7 @@ class Registration(registration.Registration):
 
         logger.debug("trust_anchor_id: {}".format(_trust_anchor_id))
         chosen = None
-        for op_statement in _fe.op_statements:
+        for op_statement in _fe_ctx.op_statements:
             if op_statement.anchor == _trust_anchor_id:
                 chosen = op_statement
                 break
@@ -127,15 +127,15 @@ class Registration(registration.Registration):
 
         # To create RPs metadata collect the trust chains
         tree = {}
-        for ah in _fe.authority_hints:
-            tree[ah] = _fe.collector.collect_intermediate(_fe.entity_id, ah)
+        for ah in _fe_ctx.authority_hints:
+            tree[ah] = _fe.collector.collect_intermediate(_fe_ctx.entity_id, ah)
 
-        _node = {_fe.entity_id: (resp, tree)}
+        _node = {_fe_ctx.entity_id: (resp, tree)}
         chains = branch2lists(_node)
         logger.debug("%d chains", len(chains))
         logger.debug("Evaluate policy chains")
         # Get the policies
-        policy_chains_tup = [eval_policy_chain(c, _fe.keyjar, _fe.entity_type) for c in chains]
+        policy_chains_tup = [eval_policy_chain(c, _fe_ctx.keyjar, _fe_ctx.entity_type) for c in chains]
         # Weed out unusable chains
         policy_chains_tup = [pct for pct in policy_chains_tup if pct is not None]
         # Should leave me with one. The one ending in the chosen trust anchor.
@@ -147,14 +147,14 @@ class Registration(registration.Registration):
                              _trust_anchor_id)
 
         _policy = combine_policy(policy_chains_tup[0][1],
-                                 entity_statement['metadata_policy'][_fe.entity_type])
+                                 entity_statement['metadata_policy'][_fe_ctx.entity_type])
         logger.debug("Effective policy: {}".format(_policy))
         _req = kwargs.get("request")
         if _req is None:
             _req = kwargs.get("request_body")
         _uev = unverified_entity_statement(_req)
         logger.debug("Registration request: {}".format(_uev))
-        _query = _uev["metadata"][_fe.entity_type]
+        _query = _uev["metadata"][_fe_ctx.entity_type]
         _resp = apply_policy(_query, _policy)
         _context.set("registration_response", _resp)
         return _resp

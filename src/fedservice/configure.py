@@ -5,7 +5,6 @@ from typing import Optional
 
 from oidcmsg.configure import Base
 from oidcmsg.configure import DEFAULT_DIR_ATTRIBUTE_NAMES
-from oidcmsg.configure import add_base_path
 from oidcmsg.configure import set_domain_and_port
 from oidcop.configure import OPConfiguration
 from oidcrp.configure import RPConfiguration
@@ -39,6 +38,13 @@ DEFAULT_FED_CONFIG = {
         "public_path": "static/fed_keys.json",
         "read_only": False
     },
+    "endpoint": {
+        "fetch": {
+            "path": "fetch",
+            "class": 'fedservice.entity.fetch.Fetch',
+            "kwargs": {"client_authn_method": None},
+        }
+    },
     "authority_hints": "authority_hints.json",
     "trusted_roots": "trusted_roots.json"
 }
@@ -64,23 +70,25 @@ class FedEntityConfiguration(Base):
 
         self.entity_id = conf.get("entity_id")
         self.key_conf = conf.get("keys")
-        self.authority_hints = conf.get("authority_hints")
-        self.trusted_roots = conf.get("trusted_roots")
         self.priority = conf.get("priority", [])
         self.entity_type = conf.get("entity_type", "")
         self.opponent_entity_type = conf.get("opponent_entity_type", "")
         self.registration_type = conf.get("registration_type", "")
+        self.endpoint = conf.get("endpoint", DEFAULT_FED_CONFIG["endpoint"])
+
+        self._authority_hints = conf.get("authority_hints")
+        if isinstance(self._authority_hints, str):
+            self.authority_hints = json.loads(open(self._authority_hints).read())
+        else:
+            self.authority_hints = self._authority_hints
+
+        self._trusted_roots = conf.get("trusted_roots")
+        if isinstance(self._trusted_roots, str):
+            self.trusted_roots = json.loads(open(self._trusted_roots).read())
+        else:
+            self.trusted_roots = self._trusted_roots
 
         self.metadata = conf.get("metadata")
-
-        # if base_path and self.metadata:
-        #     add_base_path(self.metadata, base_path, ['authority_hints', 'trusted_roots'])
-        #     # self.complete_paths(conf, self.__dict__.keys(), DEFAULT_FED_CONFIG, base_path)
-
-        if self.authority_hints:
-            self._authority_hints = json.loads(open(self.authority_hints).read())
-        if self.trusted_roots:
-            self._trusted_roots = json.loads(open(self.trusted_roots).read())
 
 
 class FedOpConfiguration(OPConfiguration):
@@ -95,7 +103,6 @@ class FedOpConfiguration(OPConfiguration):
                  file_attributes: Optional[List[str]] = None,
                  dir_attributes: Optional[List[str]] = None,
                  ):
-
         file_attributes = file_attributes or DEFAULT_FED_FILE_ATTRIBUTE_NAMES
         dir_attributes = dir_attributes or DEFAULT_DIR_ATTRIBUTE_NAMES
 
@@ -148,7 +155,6 @@ class FedSigServConfiguration(Base):
                  port: Optional[int] = 0,
                  dir_attributes: Optional[List[str]] = None,
                  ):
-
         self._file_attributes = file_attributes or DEFAULT_FED_FILE_ATTRIBUTE_NAMES
         self._dir_attributes = dir_attributes or DEFAULT_DIR_ATTRIBUTE_NAMES
 

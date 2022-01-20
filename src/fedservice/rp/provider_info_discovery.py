@@ -83,11 +83,11 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         """
 
         _context = self.client_get("service_context")
-        _fe = _context.federation_entity
+        _fe_context = _context.federation_entity.context
 
-        if _fe.tr_priority:
+        if _fe_context.tr_priority:
             possible = []
-            for ta in _fe.tr_priority:
+            for ta in _fe_context.tr_priority:
                 for s in trust_chains:
                     if s.anchor == ta:
                         possible.append(ta)
@@ -96,18 +96,19 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
 
         _trust_anchor = possible[0]
 
-        _fe.trust_anchors = possible
-        _fe.op_statements = trust_chains
+        _fe_context.trust_anchors = possible
+        _fe_context.op_statements = trust_chains
 
         provider_info_per_trust_anchor = {}
         for s in trust_chains:
             if s.anchor in possible:
                 claims = s.metadata
                 provider_info_per_trust_anchor[s.anchor] = self.response_cls(**claims)
-        _context.set('provider_info_per_trust_anchor', provider_info_per_trust_anchor)
 
-        _fe.proposed_authority_hints = create_authority_hints(
-            _fe.authority_hints, trust_chains)
+        #  _fe_context.provider_info_per_trust_anchor = provider_info_per_trust_anchor
+
+        _fe_context.proposed_authority_hints = create_authority_hints(
+            _fe_context.authority_hints, trust_chains)
 
         _pi = provider_info_per_trust_anchor[_trust_anchor]
         _context.set('provider_info', _pi)
@@ -152,7 +153,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         logger.debug("%s chains", len(_chains))
         for c in _chains:
             c.append(response)
-        return [eval_chain(c, _fe.keyjar, 'openid_provider') for c in _chains]
+        return [eval_chain(c, _fe.context.keyjar, 'openid_provider') for c in _chains]
 
     def get_response(self, *args, **kwargs):
         """

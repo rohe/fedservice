@@ -2,6 +2,7 @@ import os
 import shutil
 from time import sleep
 
+from fedservice.entity.fetch import Fetch
 from fedservice.entity_statement.collect import Collector
 from oidcop.user_authn.authn_context import UNSPECIFIED
 from oidcop.user_authn.user import NoAuthn
@@ -10,6 +11,7 @@ import responses
 
 from fedservice.entity_statement.collect import unverified_entity_statement
 from fedservice.metadata_api.fs2 import FSEntityStatementAPI
+from fedservice.op import FederationServer
 from fedservice.op.provider_config import ProviderConfiguration
 from fedservice.server import Server
 from tests.utils import get_netloc
@@ -86,6 +88,13 @@ class TestEndpointPersistence(object):
                     'public_path': full_path('static/fed_keys.json'),
                     'read_only': False
                 },
+                "endpoint": {
+                    "fetch": {
+                        "path": "fetch",
+                        "class": Fetch,
+                        "kwargs": {"client_authn_method": None},
+                    }
+                },
                 'priority': [],
                 'entity_type': 'openid_provider',
                 'opponent_entity_type': 'openid_relying_party',
@@ -95,7 +104,7 @@ class TestEndpointPersistence(object):
         conf['federation']['trusted_roots'] = full_path('trusted_roots.json')
         conf['federation']['authority_hints'] = full_path('authority_hints.json')
 
-        server = Server(conf)
+        server = FederationServer(conf)
         self.endpoint = server.server_get("endpoint", "provider_config")
 
     def test_collect_intermediate(self):
