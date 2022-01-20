@@ -1,2 +1,1 @@
-cryptojwt>=1.5.1
-oidcop>=2.2.0
+oidcop>=2.3.4
