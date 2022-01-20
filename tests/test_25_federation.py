@@ -34,7 +34,7 @@ def full_path(local_file):
 def test_init_rp():
     config = create_from_config_file(FedRPConfiguration,
                                      entity_conf=[{"class": FedRPConfiguration, "attr": "rp"}],
-                                     filename=full_path('conf_foodle.uninett.no.yaml'),
+                                     filename=full_path('conf_foodle.uninett.no.json'),
                                      base_path=BASE_PATH)
     rph = init_oidc_rp_handler(config, BASE_PATH)
     rp = rph.init_client('ntnu')
@@ -71,7 +71,7 @@ class TestFed(object):
     def test_explicit_registration(self):
         config = create_from_config_file(Configuration,
                                          entity_conf=[{"class": FedRPConfiguration, "attr": "rp"}],
-                                         filename=full_path('conf_foodle.uninett.no.yaml'),
+                                         filename=full_path('conf_foodle.uninett.no.json'),
                                          file_attributes=DEFAULT_FED_FILE_ATTRIBUTE_NAMES,
                                          base_path=BASE_PATH)
 
@@ -122,7 +122,7 @@ class TestFed(object):
     def test_automatic_registration(self):
         config = create_from_config_file(Configuration,
                                          entity_conf=[{"class": FedRPConfiguration, "attr": "rp"}],
-                                         filename=full_path('conf_foodle.uninett.no.yaml'),
+                                         filename=full_path('conf_foodle.uninett.no.json'),
                                          file_attributes=DEFAULT_FED_FILE_ATTRIBUTE_NAMES,
                                          base_path=BASE_PATH)
 

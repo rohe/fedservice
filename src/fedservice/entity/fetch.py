@@ -1,17 +1,18 @@
 import logging
 
-from oidcop.endpoint import Endpoint
 from oidcmsg import oidc
+from oidcop.endpoint import Endpoint
 
 from fedservice.message import EntityStatement
 
 logger = logging.getLogger(__name__)
 
 
-class FederationAPI(Endpoint):
+class Fetch(Endpoint):
     request_cls = oidc.Message
     response_cls = EntityStatement
     response_format = 'jws'
+    name = "fetch"
 
     def __init__(self, server_get, **kwargs):
         Endpoint.__init__(self, server_get, **kwargs)
@@ -19,7 +20,8 @@ class FederationAPI(Endpoint):
         self.metadata_api = None
 
     def process_request(self, request=None, **kwargs):
-        return {'response_args': self.server_get("endpoint_context").provider_info.copy()}
+        _metadata = self.server_get("metadata")
+        return {'response_args': _metadata}
 
     def create_entity_statement(self, request_args, request=None, **kwargs):
         """
@@ -31,6 +33,8 @@ class FederationAPI(Endpoint):
         :return:
         """
 
-        _fe = self.server_get("endpoint_context").federation_entity
-        _md = {_fe.entity_type: request_args.to_dict()}
-        return _fe.create_entity_statement(_fe.entity_id, sub=_fe.entity_id, metadata=_md)
+        _context = self.server_get("context")
+        _md = {_context.entity_type: request_args.to_dict()}
+        return _context.create_entity_statement(iss=_context.entity_id,
+                                                sub=_context.entity_id,
+                                                metadata=_md)

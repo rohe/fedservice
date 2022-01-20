@@ -1,15 +1,52 @@
 import logging
+from typing import Callable
 from typing import Optional
+from typing import Union
 
+from cryptojwt import KeyJar
 from cryptojwt.key_jar import init_key_jar
 import oidcrp
 from oidcrp import rp_handler
+from oidcrp.configure import Configuration
+from oidcrp.entity import Entity
 from oidcrp.oauth2 import Client
+from oidcrp.oidc.registration import add_callbacks
 from oidcrp.util import lower_or_upper
 
-from fedservice import create_federation_entity
+from fedservice.entity import FederationEntity
+from fedservice.entity import create_federation_entity
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_OIDC_FED_SERVICES = {
+    'provider_info': {'class': 'fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery'},
+    'registration': {'class': 'fedservice.rp.registration.Registration'},
+}
+
+
+class FederationRP(Entity):
+    def __init__(self,
+                 client_authn_factory: Optional[Callable] = None,
+                 keyjar: Optional[KeyJar] = None,
+                 config: Optional[Union[dict, Configuration]] = None,
+                 services: Optional[dict] = None,
+                 jwks_uri: Optional[str] = '',
+                 httpc_params: Optional[dict] = None,
+                 httpc: Optional[Callable] = None,
+                 cwd: Optional[str] = ""):
+        Entity.__init__(self,
+                        client_authn_factory=client_authn_factory,
+                        keyjar=keyjar,
+                        config=config,
+                        services=services,
+                        jwks_uri=jwks_uri,
+                        httpc_params=httpc_params)
+
+        fed_conf = config.get("federation")
+        if fed_conf:
+            self._service_context.federation_entity = FederationEntity(config=fed_conf,
+                                                                       httpc=httpc,
+                                                                       cwd=cwd)
 
 
 class RPHandler(rp_handler.RPHandler):
@@ -33,24 +70,21 @@ class RPHandler(rp_handler.RPHandler):
         return client
 
     def init_federation_entity(self, issuer):
-        args = {k: v for k, v in self.federation_entity_config.items()}
+        args = {k: v for k, v in self.federation_entity_config["conf"].items()}
 
-        _entity_id = ''
-        _cnf = self.client_configs.get(issuer)
-        if _cnf:
-            _entity_id = _cnf.get('entity_id')
+        # _cnf = self.client_configs.get(issuer).get("federation")
+        # args.update(_cnf)
+
+        _entity_id = args.get('entity_id', '')
         if not _entity_id:
-            _entity_id = self.federation_entity_config['entity_id']
-
-        if '{}' in _entity_id:
-            _entity_id = _entity_id.format(issuer)
-            args['entity_id'] = _entity_id
+            args['entity_id'] = self.federation_entity_config['entity_id']
 
         logger.debug('Entity ID: %s', _entity_id)
 
         _federation_entity = create_federation_entity(httpc_params=self.httpc_params,
                                                       issuer=issuer, **args)
-        _federation_entity.keyjar.httpc_params = self.httpc_params
+
+        _federation_entity.context.keyjar.httpc_params = self.httpc_params
         _federation_entity.collector.web_cert_path = self.federation_entity_config.get(
             'web_cert_path')
         return _federation_entity
@@ -104,18 +138,18 @@ class RPHandler(rp_handler.RPHandler):
             _fe = None
             registration_type = 'explicit'
         else:
-            registration_type = _fe.registration_type
+            registration_type = _fe.context.registration_type
 
         if registration_type == 'automatic':
             _redirect_uris = _sc.config.get("redirect_uris")
             if _redirect_uris:
                 _sc.set('redirect_uris', _redirect_uris)
-                _sc.set('client_id', _fe.entity_id)
+                _sc.set('client_id', _fe.context.entity_id)
                 # client.client_id = _fe.entity_id
                 self.hash2issuer[iss_id] = issuer
             else:
-                _callbacks = self.add_callbacks(_sc)
-                _sc.set('client_id', oidcrp.util.add_path(_fe.entity_id, _callbacks['__hex']))
+                _callbacks = add_callbacks(_sc)
+                _sc.set('client_id', oidcrp.util.add_path(_fe.context.entity_id, _callbacks['__hex']))
         else:  # explicit
             logger.debug("Do client registration")
             self.do_client_registration(client, iss_id, behaviour_args=behaviour_args)

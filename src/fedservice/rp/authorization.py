@@ -24,7 +24,7 @@ class FedAuthorization(Authorization):
                 post_args['recv'] = _context.provider_info["authorization_endpoint"]
                 post_args["with_jti"] = True
                 post_args["lifetime"] = self.conf.get("request_object_expires_in", 300)
-                post_args['issuer'] = _context.federation_entity.entity_id
+                post_args['issuer'] = _context.federation_entity.get_context().entity_id
             else:
                 raise OtherError("Using request object in authentication not supported")
         else: # no authn methods supported
@@ -35,6 +35,6 @@ class FedAuthorization(Authorization):
 
         client_id = request_args.get('client_id')
         if not client_id:
-            request_args['client_id'] = _context.federation_entity.entity_id
+            request_args['client_id'] = _context.federation_entity.get_context().entity_id
 
         return request_args, post_args

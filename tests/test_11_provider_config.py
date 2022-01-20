@@ -1,13 +1,13 @@
 import os
 
 from cryptojwt.jws.jws import factory
-from oidcop.server import Server
 from oidcop.user_authn.authn_context import UNSPECIFIED
 from oidcop.user_authn.user import NoAuthn
 import pytest
 
-from fedservice import FederationEntity
+from fedservice.entity.fetch import Fetch
 from fedservice.metadata_api.fs2 import read_info
+from fedservice.op import FederationServer
 from fedservice.op.provider_config import ProviderConfiguration
 from tests.utils import DummyCollector
 from tests.utils import Publisher
@@ -42,7 +42,13 @@ class TestEndpoint(object):
                 "private_path": "own/jwks.json",
                 "uri_path": "static/jwks.json"
             },
-            "endpoint": {},
+            "endpoint": {
+                "provider_config": {
+                    "path": ".well-known/openid-configuration",
+                    "class": ProviderConfiguration,
+                    "kwargs": {},
+                }
+            },
             "authentication": {
                 "anon": {
                     'acr': UNSPECIFIED,
@@ -50,30 +56,30 @@ class TestEndpoint(object):
                     "kwargs": {"user": "diana"}
                 }
             },
-            'template_dir': 'template'
+            'template_dir': 'template',
+            "federation": {
+                "entity_id": ENTITY_ID,
+                'keys': {'key_defs': KEYSPEC},
+                "endpoint": {
+                    "fetch": {
+                        "path": "fetch",
+                        "class": Fetch,
+                        "kwargs": {"client_authn_method": None},
+                    }
+                },
+                "trusted_roots": ANCHOR,
+                "authority_hints": ['https://feide.no'],
+                "entity_type": 'openid_relying_party',
+                "opponent_entity_type": 'openid_provider'
+            }
         }
-        server = Server(conf)
-        endpoint_context = server.endpoint_context
-        self.endpoint = ProviderConfiguration(server.server_get)
+        server = FederationServer(conf)
+        self.endpoint = server.server_get('endpoint', 'provider_config')
 
-        # === Federation stuff =======
-        fe_conf = {
-            'keys': {'key_defs': KEYSPEC}
-        }
-
-        federation_entity = FederationEntity(
-            ENTITY_ID, trusted_roots=ANCHOR,
-            authority_hints={'https://ntnu.no': ['https://feide.no']},
-            httpd=Publisher(ROOT_DIR), config=fe_conf,
-            entity_type='openid_relying_party', opponent_entity_type='openid_provider')
-
-        federation_entity.collector = DummyCollector(
+        server.endpoint_context.federation_entity.collector = DummyCollector(
             httpd=Publisher(os.path.join(BASE_PATH, 'data')),
             trusted_roots=ANCHOR,
             root_dir=ROOT_DIR)
-
-        self.fedent = federation_entity
-        self.endpoint.server_get("endpoint_context").federation_entity = federation_entity
 
     def test_do_response(self):
         args = self.endpoint.process_request()

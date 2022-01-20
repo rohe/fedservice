@@ -1,16 +1,19 @@
 import os
 
 from cryptojwt import JWT
+from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import build_keyjar
+import pytest
 
-from fedservice import FederationEntity
+from fedservice.entity import FederationEntity
+from fedservice.entity.fetch import Fetch
+from fedservice.entity.status import SelfSigned
+from fedservice.entity.status import Status
 from fedservice.entity_statement.trust_mark import create_trust_mark
-from fedservice.entity_statement.trust_mark import get_trust_mark
 from fedservice.entity_statement.trust_mark import unpack_trust_mark
 from fedservice.message import TrustMark
 from fedservice.metadata_api.fs2 import read_info
-from .utils import DummyCollector
-from .utils import Publisher
+from fedservice.trust_mark_issuer import TrustMarkIssuer
 
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},
@@ -79,71 +82,129 @@ def test_create_unpack_trust_3rd_party():
     assert isinstance(_tm_inst, TrustMark)
 
 
-def test_get_trust_mark_self_signed():
-    _entity_id = "https://op.ntnu.no"
-    config = {'keys': {'key_defs': KEYSPEC}}
+ENTITY_ID = "https://op.ntnu.no"
 
-    federation_entity = FederationEntity(
-        _entity_id, trusted_roots=ANCHOR, config=config,
-        authority_hints=['https://ntnu.no'],
-        entity_type='openid_relying_party',
-        httpd=Publisher(ROOT_DIR),
-        opponent_entity_type='openid_relying_party')
+TM_ID = "https://refeds.org/wp-content/uploads/2016/01/Sirtfi-1.0.pdf"
 
-    federation_entity.collector = DummyCollector(
-        httpd=Publisher(ROOT_DIR),
-        trusted_roots=ANCHOR,
-        root_dir=ROOT_DIR)
+CONFIG_3RD = {
+    "entity_id": ENTITY_ID,
+    "keys": {"uri_path": "static/fed_jwks.json", "key_defs": KEYSPEC},
+    "endpoint": {
+        "status": {
+            "path": "status",
+            "class": Status,
+            "kwargs": {
+                "client_authn_method": None,
+                "db": {
+                    "class": "fedservice.trust_mark_issuer.FileDB",
+                    "kwargs": {TM_ID: "sirtifi"}
+                },
+            },
+        },
+        "fetch": {
+            "path": "fetch",
+            "class": Fetch,
+            "kwargs": {"client_authn_method": None},
+        }
+    },
+    "trusted_roots": ANCHOR,
+    "authority_hints": ['https://ntnu.no'],
+    "entity_type": 'trust_mark_issuer',
+    "trust_marks": {
+        TM_ID : {"ref": "https://refeds.org/sirtfi"}
+    },
+    "trust_mark_db": {
+        "class": "fedservice.trust_mark_issuer.FileDB",
+        "kwargs": {TM_ID: "sirtifi"}
+    }
+}
 
-    _tm = TrustMark(
-        id="https://openid.net/certification/op",
-        sub=_entity_id,
-        mark=("http://openid.net/wordpress-content/uploads/2016/05/"
-              "oid-l-certification-mark-l-cmyk-150dpi-90mm.jpg"),
-        ref=("https://openid.net/wordpress-content/uploads/2015/09/"
-             "RolandHedberg-pyoidc-0.7.7-Basic-26-Sept-2015.zip")
-    )
+CONFIG_SELF_SIGN = {
+    "entity_id": ENTITY_ID,
+    "keys": {"uri_path": "static/fed_jwks.json", "key_defs": KEYSPEC},
+    "endpoint": {
+        "status": {
+            "path": "status",
+            "class": SelfSigned,
+            "kwargs": {
+                "client_authn_method": None,
+            },
+        },
+        "fetch": {
+            "path": "fetch",
+            "class": Fetch,
+            "kwargs": {"client_authn_method": None},
+        }
+    },
+    "trusted_roots": ANCHOR,
+    "authority_hints": ['https://ntnu.no'],
+    "entity_type": 'trust_mark_issuer',
+    "self_signed_trust_marks": {
+        "function": "fedservice.trust_mark_issuer.self_signed_trust_mark",
+        "kwargs": {
+            "https://openid.net/certification/op": {
+                "mark": ("http://openid.net/wordpress-content/uploads/2016/05/"
+                         "oid-l-certification-mark-l-cmyk-150dpi-90mm.jpg"),
+                "ref": ("https://openid.net/wordpress-content/uploads/2015/09/"
+                        "RolandHedberg-pyoidc-0.7.7-Basic-26-Sept-2015.zip")
+            }
+        }
+    }
+}
 
-    # Create the Signed JWT representing the Trust Mark
-    _jwt0 = JWT(key_jar=federation_entity.keyjar, iss=_entity_id, lifetime=3600)
-    _jws = _jwt0.pack(_tm)
 
-    trust_anchor_id = list(ANCHOR.keys())[0]
+class TestSelfSigned(object):
+    @pytest.fixture(autouse=True)
+    def create_issuer(self):
+        self.entity = FederationEntity(config=CONFIG_SELF_SIGN)
 
-    _tm = get_trust_mark(federation_entity, _jws, _entity_id, trust_anchor_id)
+    def test_get_trust_mark_self_signed(self):
+        # Verify the self signed trust marks
+        for _jws in self.entity.server_get('context').signed_trust_marks:
+            _jwt = factory(_jws)
+            _payload = _jwt.jwt.payload()
+            _tm = TrustMark(**_payload)
+            assert _tm.verify()
 
-    assert isinstance(_tm, TrustMark)
+    def test_verify_using_id(self):
+        _endpoint = self.entity.get_endpoint("status")
+        _resp = _endpoint.process_request({"id": "https://openid.net/certification/op",
+                                           "sub": self.entity.context.entity_id})
+        assert _resp == {'response_args': {"active": True}}
+
+    def test_using_trust_mark(self):
+        _jws = self.entity.server_get('context').signed_trust_marks[0]
+        _endpoint = self.entity.get_endpoint("status")
+        _resp = _endpoint.process_request({"trust_mark": _jws})
+        assert _resp == {'response_args': {"active": True}}
 
 
-def test_get_trust_mark_3rd_party():
-    _iss = "https://feide.no"
-    _sub = "https://op.ntnu.no"
+class Test3rdParty(object):
+    @pytest.fixture(autouse=True)
+    def create_issuer(self):
+        self.id = "https://refeds.org/wp-content/uploads/2016/01/Sirtfi-1.0.pdf"
+        self.tmi = TrustMarkIssuer(config=CONFIG_3RD)
 
-    config = {'keys': {'key_defs': KEYSPEC}}
+    def test_get_trust_mark_3rd_party(self):
+        # Create the Signed JWT representing the Trust Mark
 
-    federation_entity = FederationEntity(
-        _iss, trusted_roots=ANCHOR, config=config,
-        authority_hints=['https://ntnu.no'],
-        entity_type='openid_relying_party',
-        httpd=Publisher(ROOT_DIR),
-        opponent_entity_type='openid_relying_party')
+        _jws = self.tmi.create_trust_mark(self.id, "https://example.com")
+        _jwt = factory(_jws)
+        _payload = _jwt.jwt.payload()
+        _tm = TrustMark(**_payload)
+        assert _tm.verify()
 
-    federation_entity.collector = DummyCollector(
-        httpd=Publisher(ROOT_DIR),
-        trusted_roots=ANCHOR,
-        root_dir=ROOT_DIR)
+    def test_verify_using_id(self):
+        _jws = self.tmi.create_trust_mark(self.id, self.tmi.context.entity_id)
 
-    _tm = TrustMark(
-        id="https://refeds.org/wp-content/uploads/2016/01/Sirtfi-1.0.pdf",
-        sub=_sub,
-    )
+        _endpoint = self.tmi.get_endpoint("status")
+        _resp = _endpoint.process_request({"id": self.id,
+                                           "sub": self.tmi.context.entity_id})
+        assert _resp == {'response_args': {"active": True}}
 
-    # Create the Signed JWT representing the Trust Mark
-    _jwt0 = JWT(key_jar=federation_entity.keyjar, iss=_iss, lifetime=3600)
-    _jws = _jwt0.pack(_tm)
+    def test_using_trust_mark(self):
+        _jws = self.tmi.create_trust_mark(self.id, self.tmi.context.entity_id)
 
-    trust_anchor_id = list(ANCHOR.keys())[0]
-
-    _tm = get_trust_mark(federation_entity, _jws, _sub, trust_anchor_id)
-
-    assert isinstance(_tm, TrustMark)
+        _endpoint = self.tmi.get_endpoint("status")
+        _resp = _endpoint.process_request({"trust_mark": _jws})
+        assert _resp == {'response_args': {"active": True}}

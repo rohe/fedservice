@@ -177,6 +177,13 @@ CONF = {
                          {'type': 'EC', 'crv': 'P-384', 'use': ['sig']}],
             'public_path': 'base_data/ntnu.no/op.ntnu.no/jwks.json',
             'read_only': False},
+        "endpoint": {
+            "fetch": {
+                "path": "fetch",
+                "class": 'fedservice.entity.fetch.Fetch',
+                "kwargs": {"client_authn_method": None},
+            }
+        },
         'authority_hints': 'base_data/op.ntnu.no/op.ntnu.no/authority.json',
         'trusted_roots': 'trusted_roots.json',
         'priority': [],

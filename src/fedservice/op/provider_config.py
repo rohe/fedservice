@@ -33,12 +33,13 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
         """
 
         _fe = self.server_get("endpoint_context").federation_entity
-        _md = {_fe.entity_type: request_args.to_dict()}
+        _fe_ctx = _fe.get_context()
+        _md = {_fe_ctx.entity_type: request_args.to_dict()}
         if _fe.collector.use_ssc:
             with open(_fe.collector.web_cert_path,'r') as fp:
                 pem_cert = fp.read()
             x5c = pems_to_x5c([pem_cert])
-            return _fe.create_entity_statement(_fe.entity_id, sub=_fe.entity_id, metadata=_md,
+            return _fe_ctx.create_entity_statement(_fe_ctx.entity_id, sub=_fe_ctx.entity_id, metadata=_md,
                                                x5c=x5c)
         else:
-            return _fe.create_entity_statement(_fe.entity_id, sub=_fe.entity_id, metadata=_md)
+            return _fe_ctx.create_entity_statement(_fe_ctx.entity_id, sub=_fe_ctx.entity_id, metadata=_md)

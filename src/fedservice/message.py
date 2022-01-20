@@ -7,7 +7,6 @@ from oidcmsg.exception import MissingRequiredAttribute
 from oidcmsg.message import Message
 from oidcmsg.message import OPTIONAL_LIST_OF_SP_SEP_STRINGS
 from oidcmsg.message import OPTIONAL_LIST_OF_STRINGS
-from oidcmsg.message import REQUIRED_LIST_OF_STRINGS
 from oidcmsg.message import SINGLE_OPTIONAL_ANY
 from oidcmsg.message import SINGLE_OPTIONAL_INT
 from oidcmsg.message import SINGLE_OPTIONAL_JSON
@@ -99,12 +98,14 @@ SINGLE_OPTIONAL_NAMING_CONSTRAINTS = (Message, False, msg_ser, naming_constraint
 class FederationEntity(Message):
     """Class representing a Federation Entity."""
     c_param = {
-        "federation_api_endpoint": SINGLE_OPTIONAL_STRING,
+        "federation_fetch_endpoint": SINGLE_REQUIRED_STRING,
+        "federation_list_endpoint": SINGLE_OPTIONAL_STRING,
+        "federation_evaluate_endpoint": SINGLE_OPTIONAL_STRING,
         "name": SINGLE_OPTIONAL_STRING,
         "contacts": OPTIONAL_LIST_OF_STRINGS,
         "policy_url": SINGLE_OPTIONAL_STRING,
         "homepage_uri": SINGLE_OPTIONAL_STRING,
-        "trust_anchor_id": SINGLE_OPTIONAL_STRING
+        "trust_marks": SINGLE_OPTIONAL_JSON
     }
 
 
@@ -166,6 +167,22 @@ class OauthClientInformationResponse(OauthClientMetadata):
                     "client_secret_expires_at is a MUST if client_secret is present")
 
 
+class TrustMarkIssuerMetadata(Message):
+    """Metadata for a Trust Issuer Client."""
+    c_param = {
+        "status_endpoint": SINGLE_REQUIRED_STRING
+    }
+
+
+def trust_mark_issuer_metadata_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a OauthClientMetadata."""
+    return deserialize_from_one_of(val, TrustMarkIssuerMetadata, sformat)
+
+
+OPTIONAL_TRUST_MARK_ISSUER_METADATA = (Message, False, msg_ser,
+                                       trust_mark_issuer_metadata_deser, False)
+
+
 class Metadata(Message):
     """The different types of metadata that an entity in a federation can belong to."""
     c_param = {
@@ -173,13 +190,15 @@ class Metadata(Message):
         'openid_provider': OPTIONAL_PROVIDER_METADATA,
         "oauth_authorization_server": OPTIONAL_AUTH_SERVER_METADATA,
         "oauth_client": OPTIONAL_OAUTH_CLIENT_METADATA,
-        "federation_entity": OPTIONAL_FEDERATION_ENTITY_METADATA
+        "federation_entity": OPTIONAL_FEDERATION_ENTITY_METADATA,
+        "trust_mark_issuer": OPTIONAL_TRUST_MARK_ISSUER_METADATA
     }
 
 
 def metadata_deser(val, sformat="json"):
     """Deserializes a JSON object (most likely) into a MetadataPolicy."""
     return deserialize_from_one_of(val, Metadata, sformat)
+
 
 SINGLE_REQUIRED_METADATA = (Message, True, msg_ser, metadata_deser, False)
 SINGLE_OPTIONAL_METADATA = (Message, False, msg_ser, metadata_deser, False)

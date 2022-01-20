@@ -59,7 +59,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__, static_url_path='')
 
-app.fss_config = FedSigServConfiguration.create_from_config_file("conf.yaml")
+app.fss_config = FedSigServConfiguration.create_from_config_file("conf.json")
 
 app.register_blueprint(sigserv_views)
 
