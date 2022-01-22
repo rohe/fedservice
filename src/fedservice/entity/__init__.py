@@ -17,6 +17,7 @@ from oidcop.util import build_endpoints
 from oidcop.util import importer
 from requests import request
 
+from fedservice import message
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.collect import branch2lists
 from fedservice.entity_statement.create import create_entity_statement
@@ -68,7 +69,8 @@ class FederationContext(OidcContext):
         "authority_hints": [],
         "tr_priority": [],
         "trust_mark_issuer": None,
-        "signed_trust_marks": []
+        "signed_trust_marks": [],
+        "trust_marks": []
     })
 
     def __init__(self,
@@ -81,7 +83,9 @@ class FederationContext(OidcContext):
                  priority: Optional[List[str]] = None,
                  entity_type: Optional[str] = '',
                  opponent_entity_type: Optional[str] = '',
-                 registration_type: Optional[str] = ''):
+                 registration_type: Optional[str] = '',
+                 trust_marks: Optional[List[str]] = None
+                 ):
 
         self.config = config
         self.server_get = server_get
@@ -95,6 +99,7 @@ class FederationContext(OidcContext):
         self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
         self.trust_mark_issuer = None
         self.signed_trust_marks = []
+        self.trust_marks = trust_marks or config.get("trust_marks", [])
 
         _trusted_roots = config.get("trusted_roots")
         if _trusted_roots is None:
@@ -135,9 +140,10 @@ class FederationContext(OidcContext):
                                                                      spec=_sstm)
 
     def create_entity_statement(self, iss, sub, key_jar=None, metadata=None, metadata_policy=None,
-                                authority_hints=None, lifetime=0, **kwargs):
-        if not key_jar:
-            key_jar = self.keyjar
+                                authority_hints=None, lifetime=0, jwks=None, **kwargs):
+        if jwks:
+            kwargs["jwks"] = jwks
+        key_jar = key_jar or self.keyjar
         if not authority_hints:
             authority_hints = self.authority_hints
         if not lifetime:
@@ -253,9 +259,23 @@ class FederationEntity(object):
     def get_context(self, *arg):
         return self.context
 
+    def get_endpoint_context(self, *arg):
+        return self.context
+
     def get_metadata(self):
-        # basic federation entity metadata can be found in message.FederationEntity
-        metadata = self.context.config.get("entity", {})
+        _config = self.context.config
+        metadata = {}
+        # collect endpoints
+        endpoints = {}
+        for key, item in self.endpoint.items():
+            if key in ["fetch", "list", "status", "evaluate"]:
+                endpoints[f"federation_{key}_endpoint"] = item.full_path
+        for attr in message.FederationEntity.c_param.keys():
+            if attr in _config:
+                metadata[attr] = _config[attr]
+            elif attr in endpoints:
+                metadata[attr] = endpoints[attr]
+
         return metadata
 
     def get_endpoints(self, *arg):

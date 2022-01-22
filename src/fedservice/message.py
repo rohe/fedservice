@@ -101,6 +101,7 @@ class FederationEntity(Message):
         "federation_fetch_endpoint": SINGLE_REQUIRED_STRING,
         "federation_list_endpoint": SINGLE_OPTIONAL_STRING,
         "federation_evaluate_endpoint": SINGLE_OPTIONAL_STRING,
+        "federation_status_endpoint": SINGLE_OPTIONAL_STRING,
         "name": SINGLE_OPTIONAL_STRING,
         "contacts": OPTIONAL_LIST_OF_STRINGS,
         "policy_url": SINGLE_OPTIONAL_STRING,

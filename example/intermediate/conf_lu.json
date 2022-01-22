@@ -45,7 +45,7 @@
           "subordinates": {
             "class": "oidcmsg.storage.abfile.AbstractFileSystem",
             "kwargs": {
-              "fdir": "subordinates",
+              "fdir": "lu/subordinates",
               "value_conv": "oidcmsg.util.JSON",
               "key_conv": "oidcmsg.util.QPKey"
             }

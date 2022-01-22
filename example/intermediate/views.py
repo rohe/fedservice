@@ -77,8 +77,12 @@ def service_endpoint(endpoint):
     _log.info('At the "{}" endpoint'.format(endpoint.name))
 
     if request.method == 'GET':
+        if request.args:
+            _req_args = request.args.to_dict()
+        else:
+            _req_args = {}
         try:
-            req_args = endpoint.parse_request(request.args.to_dict())
+            req_args = endpoint.parse_request(_req_args)
         except (InvalidClient, UnknownClient) as err:
             _log.error(err)
             return make_response(json.dumps({
@@ -134,13 +138,15 @@ def send_js(path):
     return send_from_directory('static', path)
 
 
-@intermediate.route('/.well-known/<service>')
-def well_known(service):
-    if service == 'openid-federation':
-        _endpoint = current_app.server.server_get("endpoint", 'provider_config')
-    else:
-        return make_response('Not supported', 400)
+@intermediate.route('/fetch')
+def fetch():
+    _endpoint = current_app.server.server_get("endpoint", 'fetch')
+    return service_endpoint(_endpoint)
 
+
+@intermediate.route('/list')
+def list():
+    _endpoint = current_app.server.server_get("endpoint", 'list')
     return service_endpoint(_endpoint)
 
 

@@ -37,7 +37,7 @@ CONFIG = {
             "kwargs": {
                 "client_authn_method": None,
                 "subordinates": {
-                    "https://example.com": SUB_KEYJAR.export_jwks()
+                    "https://example.com": {"jwks": {"keys": SUB_KEYJAR.export_jwks()}}
                 }
             },
         }

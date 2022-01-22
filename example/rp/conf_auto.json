@@ -33,7 +33,7 @@
     }
   },
   "domain": "127.0.0.1",
-  "port": 4002,
+  "port": 4001,
   "base_url": "https://{domain}:{port}",
   "httpc_params": {
     "verify": false
@@ -264,7 +264,7 @@
     }
   },
   "webserver": {
-    "port": 4002,
+    "port": 4001,
     "server_cert": "auto/certs/cert.pem",
     "server_key": "auto/certs/key.pem",
     "domain": "127.0.0.1"
