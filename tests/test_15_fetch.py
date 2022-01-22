@@ -63,8 +63,8 @@ CONFIG = {
 class Test(object):
     @pytest.fixture(autouse=True)
     def create_issuer(self):
-        _intermediate = FederationEntity(config=CONFIG)
-        self.endpoint = _intermediate.server_get('endpoint', 'fetch')
+        self.entity = FederationEntity(config=CONFIG)
+        self.endpoint = self.entity.server_get('endpoint', 'fetch')
 
     def test_self(self):
         _context = self.endpoint.server_get("context")
@@ -99,3 +99,21 @@ class Test(object):
                                         'jwks', 'iss', 'iat', 'exp'}
 
         assert _payload["sub"] == "https://example.com"
+
+    def test_metadata(self):
+        metadata = self.entity.get_metadata()
+        _ctx = self.entity.context
+        iss = sub = _ctx.entity_id
+        _statement = _ctx.create_entity_statement(
+            metadata={_ctx.entity_type: metadata},
+            iss=iss, sub=sub, authority_hints=_ctx.authority_hints,
+            lifetime=_ctx.default_lifetime)
+
+        _jws = factory(_statement)
+        _payload = _jws.jwt.payload()
+        assert _payload["iss"] == _ctx.entity_id
+        assert set(_payload.keys()) == {'sub', 'metadata', 'authority_hints',
+                                        'jwks', 'iss', 'iat', 'exp'}
+
+        assert _payload["sub"] == "https://op.ntnu.no"
+
