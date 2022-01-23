@@ -1,8 +1,8 @@
 {
   "federation": {
-    "entity_id": "https://127.0.0.1:6001",
+    "entity_id": "https://127.0.0.1:7002",
     "keys": {
-      "private_path": "lu/fed_keys.json",
+      "private_path": "swamid/fed_keys.json",
       "key_defs": [
         {
           "type": "RSA",
@@ -18,15 +18,9 @@
           ]
         }
       ],
-      "public_path": "static/lu_fed_keys.json",
+      "public_path": "static/swamid_fed_keys.json",
       "read_only": false
     },
-    "authority_hints": "lu/authority_hints.json",
-    "trusted_roots": "lu/trusted_roots.json",
-    "priority": [
-      "https://127.0.0.1:7001",
-      "https://127.0.0.1:7002"
-    ],
     "entity_type": "federation_entity",
     "opponent_entity_type": "federation_entity",
     "endpoint": {
@@ -58,7 +52,7 @@
     "server_cert": "certs/example.crt",
     "server_key": "certs/example.key",
     "cert_chain": null,
-    "port": 6001,
+    "port": 7002,
     "domain": "127.0.0.1",
     "debug": true
   }

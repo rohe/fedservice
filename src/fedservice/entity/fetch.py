@@ -36,6 +36,7 @@ class Fetch(Endpoint):
                 _response["authority_hints"] = _context.authority_hints
         else:
             _response = _context.subordinates[_sub]
+            _response["authority_hints"] = [_issuer]
 
         return {'response_args': _response}
 

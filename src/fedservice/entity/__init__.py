@@ -102,7 +102,8 @@ class FederationContext(OidcContext):
 
         _trusted_roots = config.get("trusted_roots")
         if _trusted_roots is None:
-            raise ConfigurationError("You MUST trust at least one Trust Anchor")
+            # Must be trust anchor then
+            self.trusted_roots = {}
         elif isinstance(_trusted_roots, str):
             self.trusted_roots = json.loads(open(_trusted_roots).read())
         else:
@@ -119,7 +120,10 @@ class FederationContext(OidcContext):
         else:
             _hints = config.get("authority_hints")
             if _hints is None:
-                raise ConfigurationError("Missing authority_hints specification")
+                print(f"{_hints}, {self.trusted_roots}")
+                if self.trusted_roots != {}:
+                    raise ConfigurationError("Missing authority_hints specification")
+                self.authority_hints = []
             elif isinstance(_hints, str):
                 self.authority_hints = json.loads(open(_hints).read())
             else:

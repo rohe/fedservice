@@ -1,11 +1,6 @@
-# https://127.0.0.1:6001/.well-known/openid-federation
-# https://127.0.0.1:6001/list
-# https://127.0.0.1:6001/fetch
-
-# first the self signed entity statement
+#! /usr/bin/env python3
 import json
 import sys
-from urllib.parse import urlencode
 
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
@@ -45,10 +40,18 @@ def fetch_entity(fetch_endpoint, iss, sub, iss_entity_statement):
     return _res
 
 
+def print_entity_statement(entity_id, entity_statement):
+    print(30 * "_" + f" {entity_id} " + 30 * "_")
+    print()
+    print(json.dumps(entity_statement, indent=2, sort_keys=True))
+    print()
+
+
 if __name__ == "__main__":
     entity_id = sys.argv[1]
     _entity_statement = get_self_signed_entity_statement(entity_id)
     assert _entity_statement["iss"] == entity_id
+    print_entity_statement(entity_id, _entity_statement)
     _list_endpoint = _entity_statement["metadata"]['federation_entity'].get(
         "federation_list_endpoint")
     _fetch_endpoint = _entity_statement["metadata"]['federation_entity'].get(
@@ -57,3 +60,4 @@ if __name__ == "__main__":
         _list = list_entities(_list_endpoint)
         for _entity in _list:
             _statement = fetch_entity(_fetch_endpoint, entity_id, _entity, _entity_statement)
+            print_entity_statement(_entity, _statement)
