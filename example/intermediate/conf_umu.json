@@ -1,8 +1,8 @@
 {
   "federation": {
-    "entity_id": "https://{domain}:{port}",
+    "entity_id": "https://127.0.0.1:6002",
     "keys": {
-      "private_path": "private/fed_keys.json",
+      "private_path": "umu/fed_keys.json",
       "key_defs": [
         {
           "type": "RSA",
@@ -18,7 +18,7 @@
           ]
         }
       ],
-      "public_path": "static/fed_keys.json",
+      "public_path": "static/umu_fed_keys.json",
       "read_only": false
     },
     "authority_hints": "lu/authority_hints.json",
@@ -27,8 +27,8 @@
       "https://127.0.0.1:7001",
       "https://127.0.0.1:7002"
     ],
-    "entity_type": "openid_provider",
-    "opponent_entity_type": "openid_relying_party",
+    "entity_type": "federation_entity",
+    "opponent_entity_type": "federation_entity",
     "endpoint": {
       "fetch": {
         "path": "fetch",
@@ -45,7 +45,7 @@
           "subordinates": {
             "class": "oidcmsg.storage.abfile.AbstractFileSystem",
             "kwargs": {
-              "fdir": "subordinates",
+              "fdir": "lu/subordinates",
               "value_conv": "oidcmsg.util.JSON",
               "key_conv": "oidcmsg.util.QPKey"
             }
@@ -58,7 +58,7 @@
     "server_cert": "certs/example.crt",
     "server_key": "certs/example.key",
     "cert_chain": null,
-    "port": 6001,
+    "port": 6002,
     "domain": "127.0.0.1",
     "debug": true
   }

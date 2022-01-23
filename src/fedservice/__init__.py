@@ -53,6 +53,7 @@ class FederationEndpointContext(EndpointContext):
         "collector": Collector,
         "authority_hints": [],
         "tr_priority": [],
+        "trust_marks": []
     })
 
     def __init__(self,
@@ -69,7 +70,8 @@ class FederationEndpointContext(EndpointContext):
                  priority: List[str] = None,
                  entity_type: str = '',
                  opponent_entity_type: str = '',
-                 registration_type: str = ''):
+                 registration_type: str = '',
+                 trust_marks: List[str] = None):
 
         EndpointContext.__init__(self,
                                  conf=config,
@@ -87,6 +89,7 @@ class FederationEndpointContext(EndpointContext):
         self.opponent_entity_type = opponent_entity_type or config.get("opponent_entity_type", "")
         self.registration_type = registration_type or config.get("registration_type", "")
         self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
+        self.trust_marks = trust_marks or config.get("trust_marks", [])
         self.trusted_roots = trusted_roots or json.loads(open(config["trusted_roots"]).read())
 
         for iss, jwks in self.trusted_roots.items():

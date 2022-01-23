@@ -17,7 +17,7 @@
     "handlers": {
       "default": {
         "class": "logging.FileHandler",
-        "filename": "auto/debug.log",
+        "filename": "expl/debug.log",
         "formatter": "default"
       },
       "console": {
@@ -39,7 +39,7 @@
     "verify": false
   },
   "rp_keys": {
-    "private_path": "auto/private/jwks.json",
+    "private_path": "expl/private/jwks.json",
     "key_defs": [
       {
         "type": "RSA",
@@ -56,9 +56,9 @@
         ]
       }
     ],
-    "public_path": "auto/static/jwks.json",
+    "public_path": "expl/static/jwks.json",
     "read_only": false,
-    "uri_path": "auto/static/jwks.json"
+    "uri_path": "expl/static/jwks.json"
   },
   "client_preferences": {
     "application_name": "rphandler",
@@ -113,7 +113,7 @@
   "federation": {
     "entity_id": "https://{domain}:{port}/{{}}",
     "keys": {
-      "private_path": "auto/private/fed_keys.json",
+      "private_path": "expl/private/fed_keys.json",
       "key_defs": [
         {
           "type": "RSA",
@@ -130,18 +130,18 @@
           ]
         }
       ],
-      "public_path": "auto/static/fed_keys.json",
+      "public_path": "expl/static/fed_keys.json",
       "read_only": false
     },
-    "authority_hints": "auto/authority_hints.json",
-    "trusted_roots": "auto/trusted_roots.json",
+    "authority_hints": "expl/authority_hints.json",
+    "trusted_roots": "expl/trusted_roots.json",
     "priority": [
-      "https://127.0.0.1:7001",
-      "https://127.0.0.1:7002"
+      "https://127.0.0.1:6000/eid/feide.no",
+      "https://127.0.0.1:6000/eid/swamid.se"
     ],
     "entity_type": "openid_relying_party",
     "opponent_entity_type": "openid_provider",
-    "registration_type": "automatic",
+    "registration_type": "explmatic",
     "endpoint": {
       "fetch": {
         "path": "fetch",
@@ -265,8 +265,8 @@
   },
   "webserver": {
     "port": 4002,
-    "server_cert": "auto/certs/cert.pem",
-    "server_key": "auto/certs/key.pem",
+    "server_cert": "expl/certs/cert.pem",
+    "server_key": "expl/certs/key.pem",
     "domain": "127.0.0.1"
   }
 }

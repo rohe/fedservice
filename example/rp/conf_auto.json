@@ -17,7 +17,7 @@
     "handlers": {
       "default": {
         "class": "logging.FileHandler",
-        "filename": "expl/debug.log",
+        "filename": "auto/debug.log",
         "formatter": "default"
       },
       "console": {
@@ -33,13 +33,13 @@
     }
   },
   "domain": "127.0.0.1",
-  "port": 4003,
+  "port": 4001,
   "base_url": "https://{domain}:{port}",
   "httpc_params": {
     "verify": false
   },
   "rp_keys": {
-    "private_path": "expl/private/jwks.json",
+    "private_path": "auto/private/jwks.json",
     "key_defs": [
       {
         "type": "RSA",
@@ -56,9 +56,9 @@
         ]
       }
     ],
-    "public_path": "expl/static/jwks.json",
+    "public_path": "auto/static/jwks.json",
     "read_only": false,
-    "uri_path": "expl/static/jwks.json"
+    "uri_path": "auto/static/jwks.json"
   },
   "client_preferences": {
     "application_name": "rphandler",
@@ -113,7 +113,7 @@
   "federation": {
     "entity_id": "https://{domain}:{port}/{{}}",
     "keys": {
-      "private_path": "expl/private/fed_keys.json",
+      "private_path": "auto/private/fed_keys.json",
       "key_defs": [
         {
           "type": "RSA",
@@ -130,18 +130,18 @@
           ]
         }
       ],
-      "public_path": "expl/static/fed_keys.json",
+      "public_path": "auto/static/fed_keys.json",
       "read_only": false
     },
-    "authority_hints": "expl/authority_hints.json",
-    "trusted_roots": "expl/trusted_roots.json",
+    "authority_hints": "auto/authority_hints.json",
+    "trusted_roots": "auto/trusted_roots.json",
     "priority": [
-      "https://127.0.0.1:6000/eid/feide.no",
-      "https://127.0.0.1:6000/eid/swamid.se"
+      "https://127.0.0.1:7001",
+      "https://127.0.0.1:7002"
     ],
     "entity_type": "openid_relying_party",
     "opponent_entity_type": "openid_provider",
-    "registration_type": "explmatic",
+    "registration_type": "automatic",
     "endpoint": {
       "fetch": {
         "path": "fetch",
@@ -264,9 +264,9 @@
     }
   },
   "webserver": {
-    "port": 4003,
-    "server_cert": "expl/certs/cert.pem",
-    "server_key": "expl/certs/key.pem",
+    "port": 4001,
+    "server_cert": "auto/certs/cert.pem",
+    "server_key": "auto/certs/key.pem",
     "domain": "127.0.0.1"
   }
 }

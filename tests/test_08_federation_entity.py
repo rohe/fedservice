@@ -13,15 +13,16 @@ KEYDEFS = [
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 
+ENTITY_ID = "https://example.com/"
+
 
 class TestNonLeafEndpoint(object):
     @pytest.fixture(autouse=True)
     def create_endpoint(self):
-        entity_id = "https://example.com/"
         conf = {
             "httpc_params": {"verify": False, "timeout": 1},
             "federation": {
-                "entity_id": entity_id,
+                "entity_id": ENTITY_ID,
                 "endpoint": {
                     "fetch": {
                         "path": "fetch",
@@ -35,18 +36,17 @@ class TestNonLeafEndpoint(object):
                 'trusted_roots': os.path.join(BASEDIR, 'trusted_roots.json'),
                 'priority': [],
                 'entity_type': 'federation_entity',
-                "entity": {
-                    "name": "Example Entity",
-                    "contacts": "operations@example.com"
-                }
+                "name": "Example Entity",
+                "contacts": "operations@example.com"
             }
         }
-        server = FederationEntity(config=conf.get("federation"), entity_id=entity_id, cwd=BASEDIR)
+        server = FederationEntity(config=conf.get("federation"), entity_id=ENTITY_ID, cwd=BASEDIR)
         self.endpoint = server.server_get("endpoint", "fetch")
 
     def test_fetch(self):
-        args = self.endpoint.process_request({})
-        msg = self.endpoint.do_response(**args)
+        args = self.endpoint.process_request({"iss": ENTITY_ID})
+        msg = self.endpoint.do_response(response_args=args["response_args"],
+                                        request={"iss": ENTITY_ID})
         _res = factory(msg["response"])
         assert _res
         _payload = _res.jwt.payload()

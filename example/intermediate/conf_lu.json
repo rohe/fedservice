@@ -1,0 +1,65 @@
+{
+  "federation": {
+    "entity_id": "https://127.0.0.1:6001",
+    "keys": {
+      "private_path": "lu/fed_keys.json",
+      "key_defs": [
+        {
+          "type": "RSA",
+          "use": [
+            "sig"
+          ]
+        },
+        {
+          "type": "EC",
+          "crv": "P-256",
+          "use": [
+            "sig"
+          ]
+        }
+      ],
+      "public_path": "static/lu_fed_keys.json",
+      "read_only": false
+    },
+    "authority_hints": "lu/authority_hints.json",
+    "trusted_roots": "lu/trusted_roots.json",
+    "priority": [
+      "https://127.0.0.1:7001",
+      "https://127.0.0.1:7002"
+    ],
+    "entity_type": "federation_entity",
+    "opponent_entity_type": "federation_entity",
+    "endpoint": {
+      "fetch": {
+        "path": "fetch",
+        "class": "fedservice.entity.fetch.Fetch",
+        "kwargs": {
+          "client_authn_method": null
+        }
+      },
+      "list": {
+        "path": "list",
+        "class": "fedservice.entity.list.List",
+        "kwargs": {
+          "client_authn_method": null,
+          "subordinates": {
+            "class": "oidcmsg.storage.abfile.AbstractFileSystem",
+            "kwargs": {
+              "fdir": "lu/subordinates",
+              "value_conv": "oidcmsg.util.JSON",
+              "key_conv": "oidcmsg.util.QPKey"
+            }
+          }
+        }
+      }
+    }
+  },
+  "webserver": {
+    "server_cert": "certs/example.crt",
+    "server_key": "certs/example.key",
+    "cert_chain": null,
+    "port": 6001,
+    "domain": "127.0.0.1",
+    "debug": true
+  }
+}
