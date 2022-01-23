@@ -11,7 +11,6 @@ from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
 from oidcmsg.configure import Configuration
 from oidcmsg.context import OidcContext
-from oidcmsg.impexp import ImpExp
 from oidcop.exception import ConfigurationError
 from oidcop.util import build_endpoints
 from oidcop.util import importer
@@ -143,7 +142,13 @@ class FederationContext(OidcContext):
                                 authority_hints=None, lifetime=0, jwks=None, **kwargs):
         if jwks:
             kwargs["jwks"] = jwks
+        else:
+            if "keys" in kwargs:
+                kwargs["jwks"] = {'keys': kwargs["keys"]}
+                del kwargs["keys"]
+
         key_jar = key_jar or self.keyjar
+
         if not authority_hints:
             authority_hints = self.authority_hints
         if not lifetime:

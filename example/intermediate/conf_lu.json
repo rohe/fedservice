@@ -1,6 +1,6 @@
 {
   "federation": {
-    "entity_id": "https://{domain}:{port}",
+    "entity_id": "https://127.0.0.1:6001",
     "keys": {
       "private_path": "private/fed_keys.json",
       "key_defs": [
@@ -27,8 +27,8 @@
       "https://127.0.0.1:7001",
       "https://127.0.0.1:7002"
     ],
-    "entity_type": "openid_provider",
-    "opponent_entity_type": "openid_relying_party",
+    "entity_type": "federation_entity",
+    "opponent_entity_type": "federation_entity",
     "endpoint": {
       "fetch": {
         "path": "fetch",
