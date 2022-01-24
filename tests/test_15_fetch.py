@@ -88,7 +88,8 @@ class Test(object):
         }
         _res = self.endpoint.process_request(_req)
         assert _res
-        assert len(_res["response_args"]) == 2
+        assert len(_res["response_args"]) == 3
+        assert set(_res["response_args"].keys()) == {'jwks', 'metadata_policy', 'authority_hints'}
         _info = self.endpoint.do_response(response_args=_res["response_args"],
                                           request=_req)
         assert _info
