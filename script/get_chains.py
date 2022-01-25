@@ -4,9 +4,9 @@ import json
 
 from oidcop.logging import configure_logging
 
-from fedservice import FederationEntity
 from fedservice import branch2lists
 from fedservice import eval_chain
+from fedservice.entity import FederationEntity
 from fedservice.entity_statement.collect import verify_self_signed_signature
 
 LOGGING = {
@@ -34,8 +34,6 @@ LOGGING = {
 }
 
 if __name__ == '__main__':
-    pass
-
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', dest='insecure', action='store_true')
     parser.add_argument('-t', dest='trusted_roots_file')
@@ -51,10 +49,11 @@ if __name__ == '__main__':
     trusted_roots = json.loads(open(args.trusted_roots_file).read())
 
     # Creates an entity that can do the collecting of information
-    federation_entity = FederationEntity(
-        'issuer', trusted_roots=trusted_roots,
-        entity_type=args.entity_type,
-        opponent_entity_type=args.opponent_entity_type)
+    conf = {
+        "trusted_roots": trusted_roots,
+        "entity_type": args.entity_type
+    }
+    federation_entity = FederationEntity('Collector', config=conf)
 
     if args.insecure:
         federation_entity.collector.httpc_params = {"verify": False}
@@ -67,10 +66,12 @@ if __name__ == '__main__':
     for c in chains:
         c.append(jws)
 
-    statements = [eval_chain(c, federation_entity.keyjar, args.opponent_entity_type) for c in
-                  chains]
+    statements = [eval_chain(c, federation_entity.context.keyjar, args.opponent_entity_type) for c
+                  in chains]
 
     for statement in statements:
+        if statement is None:
+            continue
         print(20 * "=", statement.anchor, 20 * "=")
         for node in statement.verified_chain:
             # pretty print JSON

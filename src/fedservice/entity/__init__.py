@@ -121,8 +121,8 @@ class FederationContext(OidcContext):
             _hints = config.get("authority_hints")
             if _hints is None:
                 print(f"{_hints}, {self.trusted_roots}")
-                if self.trusted_roots != {}:
-                    raise ConfigurationError("Missing authority_hints specification")
+                # if self.trusted_roots != {}:
+                #     raise ConfigurationError("Missing authority_hints specification")
                 self.authority_hints = []
             elif isinstance(_hints, str):
                 self.authority_hints = json.loads(open(_hints).read())
@@ -191,7 +191,10 @@ class FederationEntity(object):
         if config.get("entity_id") is None:
             config['entity_id'] = entity_id
 
-        self.endpoint = do_endpoints(config, self.server_get)
+        if 'endpoint' in config:
+            self.endpoint = do_endpoints(config, self.server_get)
+        else:
+            self.endpoint = {}
 
     def collect_statement_chains(self, entity_id, statement):
         return self.collector.collect_superiors(entity_id, statement)

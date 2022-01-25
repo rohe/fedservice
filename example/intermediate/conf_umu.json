@@ -54,8 +54,8 @@
       "public_path": "static/umu_fed_keys.json",
       "read_only": false
     },
-    "authority_hints": "lu/authority_hints.json",
-    "trusted_roots": "lu/trusted_roots.json",
+    "authority_hints": "umu/authority_hints.json",
+    "trusted_roots": "umu/trusted_roots.json",
     "priority": [
       "https://127.0.0.1:7001",
       "https://127.0.0.1:7002"
@@ -78,7 +78,7 @@
           "subordinates": {
             "class": "oidcmsg.storage.abfile.AbstractFileSystem",
             "kwargs": {
-              "fdir": "lu/subordinates",
+              "fdir": "umu/subordinates",
               "value_conv": "oidcmsg.util.JSON",
               "key_conv": "oidcmsg.util.QPKey"
             }
