@@ -47,6 +47,7 @@ def init_app(config_file, name=None, **kwargs) -> Flask:
 
 
 if __name__ == "__main__":
+    print(sys.argv)
     name = sys.argv[1]
     conf = sys.argv[2]
     template_dir = os.path.join(dir_path, 'templates')

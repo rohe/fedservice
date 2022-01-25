@@ -42,8 +42,8 @@ def oidc_provider_init_app(config_file, name=None, **kwargs) -> Flask:
 
 
 if __name__ == "__main__":
-    conf = sys.argv[1]
-    name = 'oidc_rp'
+    name = sys.argv[1]
+    conf = sys.argv[2]
     template_dir = os.path.join(dir_path, 'templates')
     app = oidc_provider_init_app(conf, name, template_folder=template_dir)
     _web_conf = app.srv_config.web_conf
