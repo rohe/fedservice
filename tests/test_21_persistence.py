@@ -10,7 +10,7 @@ import pytest
 import responses
 
 from fedservice.entity_statement.collect import unverified_entity_statement
-from fedservice.metadata_api.fs2 import FSEntityStatementAPI
+from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement
 from fedservice.op import FederationServer
 from fedservice.op.provider_config import ProviderConfiguration
 from fedservice.server import Server
@@ -114,24 +114,24 @@ class TestEndpointPersistence(object):
         fedop1 = 'https://feide.no'
         fedop2 = 'https://swamid.se'
         # self-signed from subject
-        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(subject))
+        es_api = FSFetchEntityStatement(ROOT_DIR, iss=get_netloc(subject))
         subj_sesi = es_api.create_entity_statement(get_netloc(subject))
         # self-signed from intermediate
-        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(intermediate))
+        es_api = FSFetchEntityStatement(ROOT_DIR, iss=get_netloc(intermediate))
         inter_sesi = es_api.create_entity_statement(get_netloc(intermediate))
         # self-signed from fedop
-        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(fedop1))
+        es_api = FSFetchEntityStatement(ROOT_DIR, iss=get_netloc(fedop1))
         fedop_sesi_1 = es_api.create_entity_statement(get_netloc(fedop1))
-        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(fedop2))
+        es_api = FSFetchEntityStatement(ROOT_DIR, iss=get_netloc(fedop2))
         fedop_sesi_2 = es_api.create_entity_statement(get_netloc(fedop2))
 
         # intermediate on subject
-        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(intermediate))
+        es_api = FSFetchEntityStatement(ROOT_DIR, iss=get_netloc(intermediate))
         inter_on_sub = es_api.create_entity_statement(get_netloc(subject))
         # fedop on intermediate
-        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(fedop1))
+        es_api = FSFetchEntityStatement(ROOT_DIR, iss=get_netloc(fedop1))
         fedop_on_inter_1 = es_api.create_entity_statement(get_netloc(intermediate))
-        es_api = FSEntityStatementAPI(ROOT_DIR, iss=get_netloc(fedop2))
+        es_api = FSFetchEntityStatement(ROOT_DIR, iss=get_netloc(fedop2))
         fedop_on_inter_2 = es_api.create_entity_statement(get_netloc(intermediate))
 
         sleep(1)
@@ -146,13 +146,13 @@ class TestEndpointPersistence(object):
             _url = "{}/.well-known/openid-federation".format(fedop2)
             rsps.add("GET", _url, body=fedop_sesi_2, status=200)
 
-            _url = 'https://ntnu.no/api?iss=https%3A%2F%2Fntnu.no&sub=https%3A%2F%2Fop.ntnu.no'
+            _url = 'https://ntnu.no/fetch?iss=https%3A%2F%2Fntnu.no&sub=https%3A%2F%2Fop.ntnu.no'
             rsps.add("GET", _url, body=inter_on_sub, status=200)
 
-            _url = 'https://feide.no/api?iss=https%3A%2F%2Ffeide.no&sub=https%3A%2F%2Fntnu.no'
+            _url = 'https://feide.no/fetch?iss=https%3A%2F%2Ffeide.no&sub=https%3A%2F%2Fntnu.no'
             rsps.add("GET", _url, body=fedop_on_inter_1, status=200)
 
-            _url = 'https://swamid.se/api?iss=https%3A%2F%2Fswamid.se&sub=https%3A%2F%2Fntnu.no'
+            _url = 'https://swamid.se/fetch?iss=https%3A%2F%2Fswamid.se&sub=https%3A%2F%2Fntnu.no'
             rsps.add("GET", _url, body=fedop_on_inter_2, status=200)
 
             tree = _collector.collect_intermediate(subject, 'https://ntnu.no')
@@ -166,8 +166,7 @@ class TestEndpointPersistence(object):
         _info = _collector.config_cache['https://feide.no']
         assert _info['sub'] == fedop1
         assert _info['iss'] == fedop1
-        assert _info['metadata']['federation_entity'][
-                   'federation_api_endpoint'] == 'https://feide.no/api'
+        assert _info['metadata']['federation_entity']['federation_fetch_endpoint'] == 'https://feide.no/fetch'
 
         # For each entity statement there is also the expiration time
         assert len(_collector.entity_statement_cache) == 6
@@ -193,15 +192,13 @@ class TestEndpointPersistence(object):
         _c2.load(_collector_dump)
 
         assert len(_c2.config_cache) == 3
-        assert set(_c2.config_cache.keys()) == {'https://ntnu.no', 'https://feide.no',
-                                                       'https://swamid.se'}
+        assert set(_c2.config_cache.keys()) == {'https://ntnu.no', 'https://feide.no', 'https://swamid.se'}
 
         # The unpacked fedop1's self signed entity statement
         _info = _c2.config_cache['https://feide.no']
         assert _info['sub'] == fedop1
         assert _info['iss'] == fedop1
-        assert _info['metadata']['federation_entity'][
-                   'federation_api_endpoint'] == 'https://feide.no/api'
+        assert _info['metadata']['federation_entity']['federation_fetch_endpoint'] == 'https://feide.no/fetch'
 
         # For each entity statement there is also the expiration time
         assert len(_c2.entity_statement_cache) == 6
@@ -215,8 +212,7 @@ class TestEndpointPersistence(object):
         }
 
         # have a look at the payload
-        _info = unverified_entity_statement(
-            _c2.entity_statement_cache['https://swamid.se!!https://ntnu.no'])
+        _info = unverified_entity_statement(_c2.entity_statement_cache['https://swamid.se!!https://ntnu.no'])
         assert _info['sub'] == intermediate
         assert _info['iss'] == fedop2
         assert _info['authority_hints'] == [fedop2]

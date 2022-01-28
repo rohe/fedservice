@@ -52,12 +52,18 @@ if __name__ == "__main__":
     _entity_statement = get_self_signed_entity_statement(entity_id)
     assert _entity_statement["iss"] == entity_id
     print_entity_statement(entity_id, _entity_statement)
-    _list_endpoint = _entity_statement["metadata"]['federation_entity'].get(
-        "federation_list_endpoint")
-    _fetch_endpoint = _entity_statement["metadata"]['federation_entity'].get(
-        "federation_fetch_endpoint")
-    if _list_endpoint:
-        _list = list_entities(_list_endpoint)
+    endpoint = {}
+    # Can be one of federation_entity, openid_relying_party, openid_provider, ..
+    for typ in ["openid_relying_party", "openid_provider", "federation_entity"]:
+        _ent_metadata = _entity_statement["metadata"].get(typ)
+        if _ent_metadata:
+            for endp in ["list", "fetch", "resolve"]:
+                _url = _ent_metadata.get(f"federation_{endp}_endpoint")
+                if _url:
+                    endpoint[endp] = _url
+
+    if "list" in endpoint and "fetch" in endpoint:
+        _list = list_entities(endpoint["list"])
         for _entity in _list:
-            _statement = fetch_entity(_fetch_endpoint, entity_id, _entity, _entity_statement)
+            _statement = fetch_entity(endpoint["fetch"], entity_id, _entity, _entity_statement)
             print_entity_statement(_entity, _statement)

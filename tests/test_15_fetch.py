@@ -7,7 +7,7 @@ import pytest
 from fedservice.entity import FederationEntity
 from fedservice.entity.fetch import Fetch
 from fedservice.entity.list import List
-from fedservice.metadata_api.fs2 import read_info
+from fedservice.fetch_entity_statement.fs2 import read_info
 
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},
@@ -118,3 +118,12 @@ class Test(object):
 
         assert _payload["sub"] == "https://op.ntnu.no"
 
+    def test_well_known(self):
+        _ctx = self.entity.context
+        _statement = _ctx.make_configuration_statement()
+        _jws = factory(_statement)
+        _payload = _jws.jwt.payload()
+        assert _payload["iss"] == _ctx.entity_id
+        assert set(_payload.keys()) == {'sub', 'metadata', 'authority_hints',
+                                        'jwks', 'iss', 'iat', 'exp'}
+        assert _payload["sub"] == _ctx.entity_id

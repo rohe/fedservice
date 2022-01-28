@@ -356,13 +356,11 @@ class Collector(ImpExp):
             if fed_fetch_endpoint is None:
                 return None
             logger.debug(f"Federation fetch endpoint: '{fed_fetch_endpoint}' for '{authority}'")
-            entity_statement = self.get_entity_statement(fed_fetch_endpoint, authority,
-                                                         entity_id)
+            entity_statement = self.get_entity_statement(fed_fetch_endpoint, authority, entity_id)
             # entity_statement is a signed JWT
             statement = unverified_entity_statement(entity_statement)
             logger.debug(
-                f"Unverified entity statement from {fed_fetch_endpoint} about {entity_id}: "
-                f"{statement}")
+                f"Unverified entity statement from {fed_fetch_endpoint} about {entity_id}: {statement}")
             self.entity_statement_cache[cache_key] = entity_statement
             time_key = "{}!exp!{}".format(authority, entity_id)
             self.entity_statement_cache[time_key] = statement["exp"]

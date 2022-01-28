@@ -52,7 +52,7 @@
   "server_info": {
     "class": "fedservice.metadata_api.fsd.FSEntityStatementAPIMulti",
     "kwargs": {
-      "federation_api_endpoint": "https://{domain}:{port}/api/{{}}",
+      "federation_fetch_endpoint": "https://{domain}:{port}/fetch/{{}}",
       "entity_id_pattern": "https://{domain}:{port}/eid/{{}}",
       "federation_entities": "federation_entity",
       "authorities": "authorities",

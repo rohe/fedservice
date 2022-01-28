@@ -1,5 +1,5 @@
 {
   "federation_entity": {
-    "federation_api_endpoint": "https://ntnu.no/api"
+    "federation_fetch_endpoint": "https://ntnu.no/fetch"
   }
 }

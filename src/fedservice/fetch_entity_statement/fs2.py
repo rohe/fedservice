@@ -3,7 +3,7 @@ import logging
 import os
 from urllib.parse import unquote_plus
 
-from fedservice.metadata_api import EntityStatementAPI
+from fedservice.fetch_entity_statement import FetchEntityStatement
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +16,9 @@ def read_info(dir, sub, typ='metadata'):
         return None
 
 
-class FSEntityStatementAPI(EntityStatementAPI):
+class FSFetchEntityStatement(FetchEntityStatement):
     def __init__(self, base_path, entity_id_pattern="https://{}", iss='', **kwargs):
-        EntityStatementAPI.__init__(self, iss, entity_id_pattern)
+        FetchEntityStatement.__init__(self, iss, entity_id_pattern)
         self.base_path = base_path
         if iss:
             # load own keys

@@ -6,7 +6,7 @@ from oidcop.user_authn.user import NoAuthn
 import pytest
 
 from fedservice.entity.fetch import Fetch
-from fedservice.metadata_api.fs2 import read_info
+from fedservice.fetch_entity_statement.fs2 import read_info
 from fedservice.op import FederationServer
 from fedservice.op.provider_config import ProviderConfiguration
 from tests.utils import DummyCollector

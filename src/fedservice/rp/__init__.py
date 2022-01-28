@@ -1,5 +1,5 @@
 import logging
-from typing import Callable
+from typing import Callable, Any
 from typing import Optional
 from typing import Union
 
@@ -33,7 +33,8 @@ class FederationRP(Entity):
                  jwks_uri: Optional[str] = '',
                  httpc_params: Optional[dict] = None,
                  httpc: Optional[Callable] = None,
-                 cwd: Optional[str] = ""):
+                 cwd: Optional[str] = "",
+                 httplib: Optional[Callable] = None):
         Entity.__init__(self,
                         client_authn_factory=client_authn_factory,
                         keyjar=keyjar,
@@ -41,6 +42,9 @@ class FederationRP(Entity):
                         services=services,
                         jwks_uri=jwks_uri,
                         httpc_params=httpc_params)
+
+        if httpc is None and httplib:
+            httpc = httplib
 
         fed_conf = config.get("federation")
         if fed_conf:
@@ -50,10 +54,20 @@ class FederationRP(Entity):
 
 
 class RPHandler(rp_handler.RPHandler):
-    def __init__(self, base_url='', hash_seed="", keyjar=None, verify_ssl=True,
-                 services=None, service_factory=None, client_configs=None,
-                 client_authn_factory=None, client_cls=None,
-                 state_db=None, federation_entity_config=None, httpc_params=None, **kwargs):
+    def __init__(self,
+                 base_url: Optional[str] = '',
+                 hash_seed: Optional[str] = "",
+                 keyjar: Optional[KeyJar] = None,
+                 verify_ssl: Optional[bool] = True,
+                 services: Optional[dict] = None,
+                 service_factory=None,
+                 client_configs: Optional[Union[Configuration, dict]] = None,
+                 client_authn_factory=None,
+                 client_cls: Optional[Any] = None,
+                 state_db: Optional[Any] = None,
+                 federation_entity_config: Optional[Union[Configuration, dict]] = None,
+                 httpc_params: Optional[dict] = None,
+                 **kwargs):
         rp_handler.RPHandler.__init__(self, base_url=base_url, hash_seed=hash_seed, keyjar=keyjar,
                                       verify_ssl=verify_ssl, services=services,
                                       service_factory=service_factory,
@@ -140,17 +154,10 @@ class RPHandler(rp_handler.RPHandler):
         else:
             registration_type = _fe.context.registration_type
 
-        if registration_type == 'automatic':
-            _redirect_uris = _sc.config.get("redirect_uris")
-            if _redirect_uris:
-                _sc.set('redirect_uris', _redirect_uris)
-                _sc.set('client_id', _fe.context.entity_id)
-                # client.client_id = _fe.entity_id
-                self.hash2issuer[iss_id] = issuer
-            else:
-                _callbacks = add_callbacks(_sc)
-                _sc.set('client_id', oidcrp.util.add_path(_fe.context.entity_id, _callbacks['__hex']))
-        else:  # explicit
+        # if client.mint_redirect_uris():
+        #     self.hash2issuer[iss_id] = issuer
+
+        if registration_type != 'automatic':  # explicit
             logger.debug("Do client registration")
             self.do_client_registration(client, iss_id, behaviour_args=behaviour_args)
 
@@ -177,6 +184,6 @@ def init_oidc_rp_handler(config, dir_path):
     rph = RPHandler(base_url=config.base_url, hash_seed=config.hash_seed,
                     jwks_path=_path, client_configs=config.clients, keyjar=rp_keyjar,
                     services=config.services, httpc_params=_httpc_params,
-                    federation_entity_config=_fed_conf)
+                    federation_entity_config=_fed_conf, client_cls=FederationRP)
 
     return rph

@@ -5,9 +5,9 @@ import os
 
 from cryptojwt.utils import as_bytes
 
-from fedservice.metadata_api.db import db_make_entity_statement
-from fedservice.metadata_api.fs import make_entity_statement
-from fedservice.metadata_api.fs import mk_path
+from fedservice.fetch_entity_statement.db import db_make_entity_statement
+from fedservice.fetch_entity_statement.fs import make_entity_statement
+from fedservice.fetch_entity_statement.fs import mk_path
 
 logger = logging.getLogger(__name__)
 

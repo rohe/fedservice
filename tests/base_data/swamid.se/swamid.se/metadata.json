@@ -1,5 +1,5 @@
 {
   "federation_entity": {
-    "federation_api_endpoint": "https://swamid.se/api"
+    "federation_fetch_endpoint": "https://swamid.se/fetch"
   }
 }

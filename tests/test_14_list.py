@@ -6,7 +6,7 @@ import pytest
 from fedservice.entity import FederationEntity
 from fedservice.entity.fetch import Fetch
 from fedservice.entity.list import List
-from fedservice.metadata_api.fs2 import read_info
+from fedservice.fetch_entity_statement.fs2 import read_info
 
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},

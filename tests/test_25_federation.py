@@ -34,7 +34,7 @@ def full_path(local_file):
 def test_init_rp():
     config = create_from_config_file(FedRPConfiguration,
                                      entity_conf=[{"class": FedRPConfiguration, "attr": "rp"}],
-                                     filename=full_path('conf_foodle.uninett.no.json'),
+                                     filename=full_path('conf_foodle.uninett.no_auto.json'),
                                      base_path=BASE_PATH)
     rph = init_oidc_rp_handler(config, BASE_PATH)
     rp = rph.init_client('ntnu')
@@ -49,9 +49,9 @@ class TestFed(object):
             sys.path.append(".")
         else:  # assume it's run from the package root dir
             sys.path.append("tests")
-        import conf_op_ntnu_no
+        import conf_op_umu_se
 
-        _conf = conf_op_ntnu_no.CONF.copy()
+        _conf = conf_op_umu_se.CONF.copy()
 
         configuration = FedOpConfiguration(conf=_conf, base_path=BASE_PATH, domain="127.0.0.1",
                                            port=443)
@@ -71,7 +71,7 @@ class TestFed(object):
     def test_explicit_registration(self):
         config = create_from_config_file(Configuration,
                                          entity_conf=[{"class": FedRPConfiguration, "attr": "rp"}],
-                                         filename=full_path('conf_foodle.uninett.no.json'),
+                                         filename=full_path('conf_foodle.uninett.no_expl.json'),
                                          file_attributes=DEFAULT_FED_FILE_ATTRIBUTE_NAMES,
                                          base_path=BASE_PATH)
 
@@ -81,7 +81,8 @@ class TestFed(object):
 
         rph = init_oidc_rp_handler(config.rp, BASE_PATH)
 
-        rp = rph.init_client('ntnu')
+        # MUST be an unknown entity
+        rp = rph.init_client('https://op.umu.se')
         rp.client_get("service_context").federation_entity.collector = DummyCollector(
             httpd=Publisher(ROOT_DIR),
             trusted_roots=ANCHOR,
@@ -96,17 +97,18 @@ class TestFed(object):
 
         with responses.RequestsMock() as rsps:
             _jwks = open(
-                os.path.join(BASE_PATH, 'base_data', 'ntnu.no', 'op.ntnu.no', 'jwks.json')).read()
-            rsps.add("GET", "https://op.ntnu.no/static/jwks.json", body=_jwks,
+                os.path.join(BASE_PATH, 'base_data', 'umu.se', 'op.umu.se', 'jwks.json')).read()
+            rsps.add("GET", 'https://op.umu.se/static/umu_se_jwks.json', body=_jwks,
                      adding_headers={"Content-Type": "application/json"}, status=200)
             _service.update_service_context(_resp)
 
         # Do the client registration request
         # First let the client construct the client registration request
         _service = rp.client_get("service", 'registration')
+        #_request_args = _service.get_request_parameters(behaviour_args={'add_callbacks':{'add_hash':False}})
         _request_args = _service.get_request_parameters()
 
-        # send it to the provider
+        # On the provider side
         args = self.registration_endpoint.process_request(_request_args["body"])
         response_args = self.provider_endpoint.do_response(**args)
 
@@ -122,13 +124,13 @@ class TestFed(object):
     def test_automatic_registration(self):
         config = create_from_config_file(Configuration,
                                          entity_conf=[{"class": FedRPConfiguration, "attr": "rp"}],
-                                         filename=full_path('conf_foodle.uninett.no.json'),
+                                         filename=full_path('conf_foodle.uninett.no_auto.json'),
                                          file_attributes=DEFAULT_FED_FILE_ATTRIBUTE_NAMES,
                                          base_path=BASE_PATH)
 
         rph = init_oidc_rp_handler(config.rp, BASE_PATH)
 
-        rp = rph.init_client('ntnu')
+        rp = rph.init_client('https://op.umu.se')
         rp.client_get("service_context").federation_entity.collector = DummyCollector(
             httpd=Publisher(ROOT_DIR),
             trusted_roots=ANCHOR,
@@ -144,8 +146,8 @@ class TestFed(object):
 
         with responses.RequestsMock() as rsps:
             _jwks = open(
-                os.path.join(BASE_PATH, 'base_data', 'ntnu.no', 'op.ntnu.no', 'jwks.json')).read()
-            rsps.add("GET", "https://op.ntnu.no/static/jwks.json", body=_jwks,
+                os.path.join(BASE_PATH, 'base_data', 'umu.se', 'op.umu.se', 'jwks.json')).read()
+            rsps.add("GET", 'https://op.umu.se/static/umu_se_jwks.json', body=_jwks,
                      adding_headers={"Content-Type": "application/json"}, status=200)
             _service.update_service_context(_resp)
 

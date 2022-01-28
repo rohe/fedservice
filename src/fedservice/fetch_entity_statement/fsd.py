@@ -14,7 +14,7 @@ from oidcmsg.configure import create_from_config_file
 from fedservice.configure import DEFAULT_FED_FILE_ATTRIBUTE_NAMES
 from fedservice.configure import FedEntityConfiguration
 from fedservice.exception import UnknownEntity
-from fedservice.metadata_api import EntityStatementAPI
+from fedservice.fetch_entity_statement import FetchEntityStatement
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +31,13 @@ def create_regex(pattern):
     return pattern.replace('{}', '([a-zA-Z0-9_.]+)')
 
 
-class FSEntityStatementAPIMulti(object):
+class FSFetchEntityStatementMulti(object):
     def __init__(self, base_path, entity_id_pattern="https://{}", federation_entities="", **kwargs):
         self.lifetime = kwargs["lifetime"]
         self.entity_id_pattern = create_regex(entity_id_pattern)
         self.signer = {}
         for iss in os.listdir(federation_entities):
-            _signer = EntityStatementAPI(iss, entity_id_pattern)
+            _signer = FetchEntityStatement(iss, entity_id_pattern)
             _signer.fe_base_path = os.path.join(base_path, federation_entities, iss)
             _signer.auth_base_path = os.path.join(base_path, kwargs["authorities"], iss)
             cargs = {k: kwargs[k] for k in ['domain', 'port'] if k in kwargs}

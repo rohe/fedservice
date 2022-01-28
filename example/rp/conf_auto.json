@@ -111,7 +111,7 @@
     }
   },
   "federation": {
-    "entity_id": "https://{domain}:{port}/{{}}",
+    "entity_id": "https://{domain}:{port}",
     "keys": {
       "private_path": "auto/private/fed_keys.json",
       "key_defs": [
@@ -174,7 +174,9 @@
           "private_key_jwt"
         ]
       },
-      "redirect_uris": null,
+      "redirect_uris": [
+        "https://{domain}:{port}/authz_cb"
+      ],
       "services": {
         "discovery": {
           "class": "fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery",
@@ -229,7 +231,7 @@
         ]
       },
       "redirect_uris": [
-        "https://{domain}:{port}/authz_cb/local"
+        "https://{domain}:{port}/authz_cb"
       ],
       "services": {
         "discovery": {

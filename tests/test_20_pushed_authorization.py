@@ -17,7 +17,7 @@ import yaml
 
 from fedservice.entity import FederationEntity
 from fedservice.entity_statement.statement import TrustChain
-from fedservice.metadata_api.fs2 import read_info
+from fedservice.fetch_entity_statement.fs2 import read_info
 from fedservice.op.authorization import Authorization
 from fedservice.op.pushed_authorization import PushedAuthorization
 from fedservice.rp import FederationRP

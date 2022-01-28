@@ -1,6 +1,13 @@
 from oidcop.exception import ServiceError
 from oidcrp.exception import OtherError
 from oidcrp.oidc.authorization import Authorization
+from oidcrp.oidc import registration
+
+
+def add_callback_uris(request_args=None, service=None, **kwargs):
+    registration.add_callback_uris(request_args=request_args, service=service, **kwargs)
+    del request_args['redirect_uris']
+    return request_args, {}
 
 
 class FedAuthorization(Authorization):
@@ -8,6 +15,7 @@ class FedAuthorization(Authorization):
     def __init__(self, client_get, client_authn_factory=None, conf=None):
         Authorization.__init__(self, client_get=client_get,
                                client_authn_factory=client_authn_factory, conf=conf)
+        self.pre_construct.insert(0, add_callback_uris)
         self.pre_construct.append(self._automatic_registration)
 
     def _automatic_registration(self, request_args, post_args=None, **kwargs):
@@ -27,7 +35,7 @@ class FedAuthorization(Authorization):
                 post_args['issuer'] = _context.federation_entity.get_context().entity_id
             else:
                 raise OtherError("Using request object in authentication not supported")
-        else: # no authn methods supported
+        else:  # no authn methods supported
             # am I already registered ?
             if not _context.registration_response:  # Not registered
                 raise OtherError("Can not send an authorization request without being registered"

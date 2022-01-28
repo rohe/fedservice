@@ -34,24 +34,16 @@ def irp():
 
 
 # @oidc_rp_views.route('/<string:op_hash>/.well-known/openid-federation')
-@oidc_rp_views.route('/<string:op_hash>/.well-known/openid-federation')
-def wkof(op_hash):
+@oidc_rp_views.route('/.well-known/openid-federation')
+def wkof():
     _rph = current_app.rph
-    try:
-        cli = _rph.issuer2rp[_rph.hash2issuer[op_hash]]
-    except KeyError:
-        return make_response('Not found', 404)
+    if _rph.issuer2rp == {}:
+        cli = _rph.init_client('dummy')
+    else:
+        cli = _rph.issuer2rp["dummy"]
 
-    _asrv = cli.client_get("service",'authorization')
-    reg_srv = Registration(client_get=cli.client_get, conf=_asrv.conf)
-
-    metadata = reg_srv.construct()
     _fe = cli.client_get("service_context").federation_entity
-    iss = sub = _fe.entity_id
-    _jws = _fe.create_entity_statement(
-        metadata={"openid_relying_party": metadata.to_dict()},
-        iss=iss, sub=sub, authority_hints=_fe.authority_hints,
-        lifetime=86400)
+    _jws = _fe.context.make_configuration_statement()
 
     response = make_response(_jws)
     response.headers['Content-Type'] = 'application/jose; charset=UTF-8'

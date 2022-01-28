@@ -162,6 +162,17 @@ class FederationContext(OidcContext):
                                        metadata_policy=metadata_policy,
                                        authority_hints=authority_hints, lifetime=lifetime, **kwargs)
 
+    def make_configuration_statement(self):
+        _metadata = self.server_get("metadata")
+        kwargs = {}
+        if self.authority_hints:
+            kwargs["authority_hints"] = self.authority_hints
+        if self.trust_marks:
+            kwargs["trust_marks"] = self.trust_marks
+
+        return self.create_entity_statement(iss=self.entity_id, sub=self.entity_id,
+                                            metadata=_metadata, **kwargs)
+
 
 class FederationEntity(object):
     name = "federation_entity"
@@ -288,7 +299,7 @@ class FederationEntity(object):
             elif attr in endpoints:
                 metadata[attr] = endpoints[attr]
 
-        return metadata
+        return {self.context.entity_type:metadata}
 
     def get_endpoints(self, *arg):
         return self.endpoint

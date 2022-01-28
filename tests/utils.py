@@ -7,7 +7,7 @@ from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import KeyJar
 
 from fedservice.entity_statement.collect import Collector
-from fedservice.metadata_api.fs2 import FSEntityStatementAPI
+from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement
 
 
 def load_trust_roots(trust_root_file):
@@ -58,14 +58,14 @@ class DummyCollector(Collector):
         :param subject_id:
         :return: A signed JWT
         """
-        es_api = FSEntityStatementAPI(self.root_dir, iss=get_netloc(subject_id))
+        es_api = FSFetchEntityStatement(self.root_dir, iss=get_netloc(subject_id))
         jws = es_api.create_entity_statement(get_netloc(subject_id))
         # config = verify_self_signed_signature(jws)
         # return config
         return jws
 
     def get_entity_statement(self, api_endpoint, issuer, subject):
-        es_api = FSEntityStatementAPI(self.root_dir, iss=get_netloc(issuer))
+        es_api = FSFetchEntityStatement(self.root_dir, iss=get_netloc(issuer))
         return es_api.create_entity_statement(get_netloc(subject))
 
     def build_path(self, intermediate, root_dir='.', sub=''):
@@ -79,7 +79,7 @@ class DummyCollector(Collector):
         :param sub: The identifier of the subject
         :return: An Issuer instance
         """
-        es_api = FSEntityStatementAPI(self.root_dir, iss=get_netloc(intermediate))
+        es_api = FSFetchEntityStatement(self.root_dir, iss=get_netloc(intermediate))
         jws = es_api.create_entity_statement(get_netloc(sub))
         superior = {}
 

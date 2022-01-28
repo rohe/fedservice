@@ -10,7 +10,7 @@ import pytest
 from fedservice import eval_chain
 from fedservice.entity.fetch import Fetch
 from fedservice.entity_statement.collect import branch2lists
-from fedservice.metadata_api.fs2 import FSEntityStatementAPI
+from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement
 from fedservice.rp import DEFAULT_OIDC_FED_SERVICES
 from fedservice.rp import FederationRP
 from .utils import DummyCollector
@@ -150,7 +150,7 @@ class TestRpService(object):
 
     def test_parse_registration_response(self):
         # construct the entity statement the OP should return
-        es_api = FSEntityStatementAPI(os.path.join(BASE_PATH, 'base_data'), iss="op.ntnu.no")
+        es_api = FSFetchEntityStatement(os.path.join(BASE_PATH, 'base_data'), iss="op.ntnu.no")
         jws = es_api.create_entity_statement("op.ntnu.no")
 
         # parse the response and collect the trust chains

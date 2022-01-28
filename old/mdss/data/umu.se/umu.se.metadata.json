@@ -1,5 +1,5 @@
 {
   "federation_entity": {
-    "federation_api_endpoint": "https://<DOMAIN>/umu.se/fedapi"
+    "federation_fetch_endpoint": "https://<DOMAIN>/umu.se/fetch"
   }
 }

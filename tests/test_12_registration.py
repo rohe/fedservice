@@ -7,7 +7,7 @@ import responses
 
 from fedservice.entity.fetch import Fetch
 from fedservice.entity_statement.statement import TrustChain
-from fedservice.metadata_api.fs2 import read_info
+from fedservice.fetch_entity_statement.fs2 import read_info
 from fedservice.op import FederationServer
 from fedservice.rp import FederationRP
 from fedservice.rp.authorization import FedAuthorization

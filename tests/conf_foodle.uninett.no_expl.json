@@ -32,9 +32,8 @@
       }
     }
   },
-  "domain": "127.0.0.1",
-  "port": 4001,
-  "base_url": "https://{domain}:{port}",
+  "domain": "foodle.uninett.no",
+  "base_url": "https://{domain}",
   "httpc_params": {
     "verify": false
   },
@@ -49,6 +48,13 @@
     {
       "type": "EC",
       "crv": "P-256",
+      "use": [
+        "sig"
+      ]
+    },
+    {
+      "type": "EC",
+      "crv": "P-384",
       "use": [
         "sig"
       ]
@@ -67,6 +73,13 @@
       {
         "type": "EC",
         "crv": "P-256",
+        "use": [
+          "sig"
+        ]
+      },
+      {
+        "type": "EC",
+        "crv": "P-384",
         "use": [
           "sig"
         ]
@@ -101,15 +114,13 @@
       "class": "fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery",
       "kwargs": {}
     },
+    "registration": {
+      "class": "fedservice.rp.registration.Registration",
+      "kwargs": {}
+    },
     "authorization": {
       "class": "fedservice.rp.authorization.FedAuthorization",
-      "kwargs": {
-        "conf": {
-          "post_construct": {
-            "request_param": "request"
-          }
-        }
-      }
+      "kwargs": {}
     },
     "accesstoken": {
       "class": "oidcrp.oidc.access_token.AccessToken",
@@ -125,9 +136,9 @@
     }
   },
   "federation": {
-    "entity_id": "https://{domain}:{port}",
+    "entity_id": "https://{domain}",
     "keys": {
-      "private_path": "private/fed_keys_auto.json",
+      "private_path": "base_data/foodle.uninett.no/foodle.uninett.no/jwks.json",
       "key_defs": [
         {
           "type": "RSA",
@@ -142,9 +153,16 @@
           "use": [
             "sig"
           ]
+        },
+        {
+          "type": "EC",
+          "crv": "P-384",
+          "use": [
+            "sig"
+          ]
         }
       ],
-      "public_path": "static/fed_keys_auto.json",
+      "public_path": "base_data/ntnu.no/foodle.uninett.no/jwks.json",
       "read_only": false
     },
     "endpoint": {
@@ -156,8 +174,8 @@
         }
       }
     },
-    "authority_hints": "./authority_hints.json",
-    "trusted_roots": "./trusted_roots.json",
+    "authority_hints": "ntnu_authority_hints.json",
+    "trusted_roots": "trusted_roots.json",
     "priority": [],
     "entity_type": "openid_relying_party",
     "opponent_entity_type": "openid_provider",
@@ -185,20 +203,36 @@
           "private_key_jwt"
         ]
       },
-      "redirect_uris": [
-        "https://{domain}:{port}/authz_cb"
-      ],
+      "redirect_uris": null,
       "services": {
         "discovery": {
           "class": "fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery",
           "kwargs": {}
         },
+        "registration": {
+          "class": "fedservice.rp.registration.Registration",
+          "kwargs": {
+            "conf": {
+              "pre_construct": {
+                "behaviour_args": {
+                  "add_callbacks": {
+                    "add_hash": false
+                  }
+                }
+              }
+            }
+          }
+        },
         "authorization": {
           "class": "fedservice.rp.authorization.FedAuthorization",
           "kwargs": {
             "conf": {
-              "post_construct": {
-                "request_param": "request"
+              "pre_construct": {
+                "behaviour_args": {
+                  "add_callbacks": {
+                    "add_hash": false
+                  }
+                }
               }
             }
           }
@@ -240,22 +274,20 @@
         ]
       },
       "redirect_uris": [
-        "https://{domain}:{port}/authz_cb"
+        "https://{domain}/callback"
       ],
       "services": {
         "discovery": {
           "class": "fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery",
           "kwargs": {}
         },
+        "registration": {
+          "class": "fedservice.rp.registration.Registration",
+          "kwargs": {}
+        },
         "authorization": {
           "class": "fedservice.rp.authorization.FedAuthorization",
-          "kwargs": {
-            "conf": {
-              "post_construct": {
-                "request_param": "request"
-              }
-            }
-          }
+          "kwargs": {}
         },
         "accesstoken": {
           "class": "oidcrp.oidc.access_token.AccessToken",
@@ -271,9 +303,9 @@
         }
       },
       "federation": {
-        "entity_id": "https://{domain}:{port}",
+        "entity_id": "https://{domain}",
         "keys": {
-          "private_path": "private/fed_keys_auto.json",
+          "private_path": "base_data/foodle.uninett.no/foodle.uninett.no/jwks.json",
           "key_defs": [
             {
               "type": "RSA",
@@ -288,9 +320,16 @@
               "use": [
                 "sig"
               ]
+            },
+            {
+              "type": "EC",
+              "crv": "P-384",
+              "use": [
+                "sig"
+              ]
             }
           ],
-          "public_path": "static/fed_keys_auto.json",
+          "public_path": "base_data/ntnu.no/foodle.uninett.no/jwks.json",
           "read_only": false
         },
         "endpoint": {
@@ -302,20 +341,19 @@
             }
           }
         },
-        "authority_hints": "./authority_hints.json",
-        "trusted_roots": "./trusted_roots.json",
+        "authority_hints": "ntnu_authority_hints.json",
+        "trusted_roots": "trusted_roots.json",
         "priority": [],
         "entity_type": "openid_relying_party",
         "opponent_entity_type": "openid_provider",
-        "registration_type": "automatic"
+        "registration_type": "explicit"
       }
     }
   },
   "webserver": {
-    "port": 4001,
     "server_cert": "certs/cert_auto.pem",
     "server_key": "certs/key_auto.pem",
     "ca_bundle": "",
-    "domain": "127.0.0.1"
+    "domain": "foodle.uninett.no"
   }
 }

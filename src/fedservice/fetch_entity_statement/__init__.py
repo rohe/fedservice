@@ -5,7 +5,7 @@ from cryptojwt import KeyJar
 from fedservice.entity_statement.create import create_entity_statement
 
 
-class EntityStatementAPI:
+class FetchEntityStatement:
     def __init__(self, iss, entity_id_pattern):
         self.iss = iss
         self.keyjar = KeyJar()
@@ -14,7 +14,7 @@ class EntityStatementAPI:
         self.fe_base_path = ""
         self.auth_base_path = ""
         self.conf = None
-        self.federation_api_endpoint = ""
+        self.federation_fetch_endpoint = ""
 
     def gather_info(self, sub):
         raise NotImplementedError()

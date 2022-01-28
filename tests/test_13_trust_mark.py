@@ -12,7 +12,7 @@ from fedservice.entity.status import Status
 from fedservice.entity_statement.trust_mark import create_trust_mark
 from fedservice.entity_statement.trust_mark import unpack_trust_mark
 from fedservice.message import TrustMark
-from fedservice.metadata_api.fs2 import read_info
+from fedservice.fetch_entity_statement.fs2 import read_info
 from fedservice.trust_mark_issuer import TrustMarkIssuer
 
 KEYSPEC = [

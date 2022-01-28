@@ -2,7 +2,7 @@
 
 import os
 
-from fedservice.metadata_api.fs2 import FSEntityStatementAPI
+from fedservice.fetch_entity_statement.fs2 import FSEntityStatementAPI
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
