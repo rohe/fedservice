@@ -30,7 +30,7 @@ class Fetch(Endpoint):
 
         _sub = request.get("sub")
         if not _sub or _sub == _context.entity_id:
-            _response = {"metadata": {_context.entity_type: self.server_get("metadata")}}
+            _response = {"metadata": self.server_get("metadata")}
             _response["jwks"] = _context.keyjar.export_jwks()
             if _context.authority_hints:
                 _response["authority_hints"] = _context.authority_hints
