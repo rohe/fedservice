@@ -393,6 +393,11 @@
             ]
           }
         },
+        "extra_args": {
+          "authorization": {
+            "iss": "issuer"
+          }
+        },
         "claims": {
           "function": "oidcop.oidc.add_on.custom_scopes.add_custom_scopes",
           "kwargs": {
