@@ -1,19 +1,12 @@
 #!/usr/bin/env python3
 import json
-import os
-import sys
 
-from cryptojwt import as_unicode
-from cryptojwt.jws.jws import factory
-from fedservice.entity_statement.collect import verify_self_signed_signature
-
-from fedservice.entity_statement.collect import Collector
 from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.data import JsonLexer
 
-from fedservice import create_federation_entity
-
+from fedservice.entity_statement.collect import Collector
+from fedservice.entity_statement.collect import verify_self_signed_signature
 
 if __name__ == '__main__':
     import argparse
@@ -46,4 +39,3 @@ if __name__ == '__main__':
 
     if args.sub:
         _info = _collector.get_entity_statement(args.fed_api, args.entity_id, args.sub)
-

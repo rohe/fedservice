@@ -59,9 +59,9 @@ if __name__ == '__main__':
         federation_entity.collector.httpc_params = {"verify": False}
 
     jws = federation_entity.get_configuration_information(args.url)
-    metadata = verify_self_signed_signature(jws)
+    _entity_statement = verify_self_signed_signature(jws)
 
-    _tree = federation_entity.collect_statement_chains(metadata['iss'], metadata)
+    _tree = federation_entity.collect_statement_chains(_entity_statement['iss'], _entity_statement)
     chains = branch2lists(_tree)
     for c in chains:
         c.append(jws)

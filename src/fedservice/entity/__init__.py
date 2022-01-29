@@ -11,7 +11,6 @@ from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
 from oidcmsg.configure import Configuration
 from oidcmsg.context import OidcContext
-from oidcop.exception import ConfigurationError
 from oidcop.util import build_endpoints
 from oidcop.util import importer
 from requests import request
@@ -299,7 +298,7 @@ class FederationEntity(object):
             elif attr in endpoints:
                 metadata[attr] = endpoints[attr]
 
-        return {self.context.entity_type:metadata}
+        return {self.context.entity_type: metadata}
 
     def get_endpoints(self, *arg):
         return self.endpoint

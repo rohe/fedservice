@@ -57,17 +57,3 @@ The entity's public keys
 ### templates
 
 HTML templates used as bases for pages the server presents to the user.
-
-## How to run
-
-Running the RP that does automatic client registration
-
-````
-rp.py conf_auto.json 
-````
-
-or the one doing explicit registration
-
-````
-rp.py conf_expl.json 
-````

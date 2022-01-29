@@ -163,7 +163,7 @@ def wkof():
     _ctx = _fe.context
     iss = sub = _ctx.entity_id
     _statement = _ctx.create_entity_statement(
-        metadata={_ctx.entity_type: metadata},
+        metadata=metadata,
         iss=iss, sub=sub, authority_hints=_ctx.authority_hints,
         lifetime=_ctx.default_lifetime)
 
