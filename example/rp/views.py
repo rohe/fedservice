@@ -2,7 +2,6 @@ import logging
 from time import localtime
 from time import strftime
 
-import werkzeug
 from flask import Blueprint
 from flask import current_app
 from flask import redirect
@@ -10,7 +9,7 @@ from flask import render_template
 from flask import request
 from flask.helpers import make_response
 from flask.helpers import send_from_directory
-from oidcrp.oidc.registration import Registration
+import werkzeug
 
 logger = logging.getLogger(__name__)
 
@@ -97,21 +96,41 @@ def get_rp(op_hash):
     return rp
 
 
-@oidc_rp_views.route('/authz_cb/<op_hash>')
-def authz_cb(op_hash):
-    rp = get_rp(op_hash)
-    _context = rp.client_get("service_context")
+def guess_rp(state):
+    for _iss, _rp in current_app.rph.issuer2rp.items():
+        _context = _rp.client_get("service_context")
+        if _context.state.get_iss(request.args['state']):
+            return _iss, _rp
+    return None, None
 
-    try:
-        iss = _context.state.get_iss(request.args['state'])
-    except KeyError:
-        return make_response('Unknown state', 400)
+
+@oidc_rp_views.route('/authz_cb')
+def authz_cb():
+    # This depends on https://datatracker.ietf.org/doc/draft-ietf-oauth-iss-auth-resp
+    # being used
+    _iss = request.args.get("iss")
+    if _iss:
+        rp = get_rp(_iss)
+        _context = rp.client_get("service_context")
+        try:
+            iss = _context.state.get_iss(request.args['state'])
+        except KeyError:
+            return make_response('Unknown state', 400)
+    else:
+        # This is unsecure
+        rp, iss = guess_rp(request.args['state'])
+        if rp is None:
+            return make_response('No matching issuer', 400)
+        _context = rp.client_get("service_context")
+
+    if iss != request.args["iss"]:
+        return make_response(f"Wrong Issuer: {iss} != {request.args['iss']}", 400)
 
     logger.debug('Issuer: {}'.format(iss))
     try:
         res = current_app.rph.finalize(iss, request.args)
     except Exception as err:
-        make_response(err, 400)
+        return make_response(err, 400)
 
     if 'userinfo' in res:
         endpoints = {}
