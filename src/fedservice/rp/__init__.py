@@ -1,17 +1,15 @@
 import logging
-from typing import Callable, Any
+from typing import Any
+from typing import Callable
 from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
 from cryptojwt.key_jar import init_key_jar
-import oidcrp
 from oidcrp import rp_handler
 from oidcrp.configure import Configuration
 from oidcrp.entity import Entity
 from oidcrp.oauth2 import Client
-from oidcrp.oidc.registration import add_callbacks
-from oidcrp.util import lower_or_upper
 
 from fedservice.entity import FederationEntity
 from fedservice.entity import create_federation_entity
@@ -24,7 +22,7 @@ DEFAULT_OIDC_FED_SERVICES = {
 }
 
 
-class FederationRP(Entity):
+class FederationRP(Client):
     def __init__(self,
                  client_authn_factory: Optional[Callable] = None,
                  keyjar: Optional[KeyJar] = None,
@@ -35,7 +33,7 @@ class FederationRP(Entity):
                  httpc: Optional[Callable] = None,
                  cwd: Optional[str] = "",
                  httplib: Optional[Callable] = None):
-        Entity.__init__(self,
+        Client.__init__(self,
                         client_authn_factory=client_authn_factory,
                         keyjar=keyjar,
                         config=config,

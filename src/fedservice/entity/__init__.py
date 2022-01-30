@@ -189,6 +189,9 @@ class FederationEntity(object):
         if httpc is None:
             httpc = request
 
+        if httpc_params is None:
+            httpc_params = config.get("httpc_params", {})
+
         if not entity_id:
             entity_id = config.get("entity_id")
 
@@ -196,7 +199,7 @@ class FederationEntity(object):
                                          server_get=self.server_get)
 
         self.collector = Collector(trust_anchors=self.context.trusted_roots,
-                                   http_cli=httpc, cwd=cwd)
+                                   http_cli=httpc, cwd=cwd, httpc_params=httpc_params)
 
         if config.get("entity_id") is None:
             config['entity_id'] = entity_id

@@ -394,8 +394,11 @@
           }
         },
         "extra_args": {
-          "authorization": {
-            "iss": "issuer"
+          "function": "oidcop.oauth2.add_on.extra_args.add_support",
+          "kwargs": {
+            "authorization": {
+              "iss": "issuer"
+            }
           }
         },
         "claims": {

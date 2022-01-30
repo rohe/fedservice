@@ -1,7 +1,6 @@
-from oidcop.exception import ServiceError
 from oidcrp.exception import OtherError
-from oidcrp.oidc.authorization import Authorization
 from oidcrp.oidc import registration
+from oidcrp.oidc.authorization import Authorization
 
 
 def add_callback_uris(request_args=None, service=None, **kwargs):

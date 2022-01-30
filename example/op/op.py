@@ -71,7 +71,7 @@ def main(config_file, args):
                                      }],
                                      file_attributes=DEFAULT_FED_FILE_ATTRIBUTE_NAMES,
                                      filename=config_file)
-    app = oidc_provider_init_app(config)
+    app = oidc_provider_init_app(config, name=args.name)
 
     web_conf = config.web_conf
 
