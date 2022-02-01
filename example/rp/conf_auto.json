@@ -56,9 +56,9 @@
         ]
       }
     ],
-    "public_path": "auto/static/jwks.json",
+    "public_path": "static/auto_jwks.json",
     "read_only": false,
-    "uri_path": "auto/static/jwks.json"
+    "uri_path": "static/auto_jwks.json"
   },
   "client_preferences": {
     "application_name": "rphandler",
@@ -130,7 +130,7 @@
           ]
         }
       ],
-      "public_path": "auto/static/fed_keys.json",
+      "public_path": "static/auto_fed_keys.json",
       "read_only": false
     },
     "authority_hints": "auto/authority_hints.json",

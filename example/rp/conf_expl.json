@@ -56,9 +56,9 @@
         ]
       }
     ],
-    "public_path": "expl/static/jwks.json",
+    "public_path": "static/expl_jwks.json",
     "read_only": false,
-    "uri_path": "expl/static/jwks.json"
+    "uri_path": "static/expl_jwks.json"
   },
   "client_preferences": {
     "application_name": "rphandler",
@@ -130,7 +130,7 @@
           ]
         }
       ],
-      "public_path": "expl/static/fed_keys.json",
+      "public_path": "static/expl_fed_keys.json",
       "read_only": false
     },
     "authority_hints": "expl/authority_hints.json",

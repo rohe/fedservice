@@ -287,7 +287,7 @@ class FederationEntity(object):
     def get_endpoint_context(self, *arg):
         return self.context
 
-    def get_metadata(self):
+    def federation_endpoint_metadata(self):
         _config = self.context.config
         metadata = {}
         # collect endpoints
@@ -300,6 +300,11 @@ class FederationEntity(object):
                 metadata[attr] = _config[attr]
             elif attr in endpoints:
                 metadata[attr] = endpoints[attr]
+        return {"federation_entity": metadata}
+
+    def get_metadata(self):
+        _config = self.context.config
+        metadata = self.federation_endpoint_metadata()
 
         return {self.context.entity_type: metadata}
 

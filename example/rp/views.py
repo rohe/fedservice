@@ -39,10 +39,11 @@ def wkof():
     if _rph.issuer2rp == {}:
         cli = _rph.init_client('dummy')
     else:
-        cli = _rph.issuer2rp["dummy"]
+        # Any client will do
+        cli = _rph.issuer2rp[list(_rph.issuer2rp.keys())[0]]
 
-    _fe = cli.client_get("service_context").federation_entity
-    _jws = _fe.context.make_configuration_statement()
+    _registration = cli.client_get("service", "registration")
+    _jws = _registration.construct()
 
     response = make_response(_jws)
     response.headers['Content-Type'] = 'application/jose; charset=UTF-8'

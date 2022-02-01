@@ -11,7 +11,7 @@ def start(ents):
     cwd = os.getcwd()
 
     for ent in ents:
-        _dir, _com, _conf = ENTITY[ent]
+        _dir, _com, _conf, _sub = ENTITY[ent]
         os.chdir(_dir)
         print(os.getcwd())
         _args = [_com, ent, _conf, "&"]

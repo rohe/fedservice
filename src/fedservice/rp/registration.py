@@ -46,8 +46,10 @@ class Registration(registration.Registration):
         :return:
         """
 
-        _fe_ctx = self.client_get("service_context").federation_entity.context
+        _fe = self.client_get("service_context").federation_entity
+        _fe_ctx = _fe.context
         _md = {_fe_ctx.entity_type: request_args.to_dict()}
+        _md.update(_fe.federation_endpoint_metadata())
         return _fe_ctx.create_entity_statement(
             iss=_fe_ctx.entity_id, sub=_fe_ctx.entity_id, metadata=_md, key_jar=_fe_ctx.keyjar,
             authority_hints=_fe_ctx.proposed_authority_hints)

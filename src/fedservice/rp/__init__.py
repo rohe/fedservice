@@ -78,10 +78,10 @@ class RPHandler(rp_handler.RPHandler):
 
     def init_client(self, issuer):
         client = rp_handler.RPHandler.init_client(self, issuer)
-        client.client_get("service_context").federation_entity = self.init_federation_entity(issuer)
+        client.client_get("service_context").federation_entity = self.init_federation_entity(issuer, host=client)
         return client
 
-    def init_federation_entity(self, issuer):
+    def init_federation_entity(self, issuer, host):
         args = {k: v for k, v in self.federation_entity_config["conf"].items()}
 
         # _cnf = self.client_configs.get(issuer).get("federation")
@@ -96,6 +96,7 @@ class RPHandler(rp_handler.RPHandler):
         _federation_entity = create_federation_entity(httpc_params=self.httpc_params,
                                                       issuer=issuer, **args)
 
+        _federation_entity.host = host
         _federation_entity.context.keyjar.httpc_params = self.httpc_params
         _federation_entity.collector.web_cert_path = self.federation_entity_config.get(
             'web_cert_path')
