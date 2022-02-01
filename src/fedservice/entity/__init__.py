@@ -304,9 +304,7 @@ class FederationEntity(object):
 
     def get_metadata(self):
         _config = self.context.config
-        metadata = self.federation_endpoint_metadata()
-
-        return {self.context.entity_type: metadata}
+        return self.federation_endpoint_metadata()
 
     def get_endpoints(self, *arg):
         return self.endpoint
