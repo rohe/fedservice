@@ -11,6 +11,20 @@ UMU has one subordinate an OP.
 LU has two subordinates; one RP that does automatic registration and another
 that does explicit registration.
 
+# Setting up the test federations
+
+There is a set of information that must be the same in different places in
+the setup. For instance must the keys in the trust_roots in a leaf entity
+correspond to the keys owned by the trusted anchors.
+
+Subordinates must also be registered with their authorities.
+
+The first can be accomplished by using the script `set_trust_anchor.py`
+the second with the script `add_subordinate.py` .
+
+There for you should run the shell script `setup.sh` before trying to 
+run the federation.
+
 # Testing and verifying the example federation
 
 ## Starting/stopping entities
