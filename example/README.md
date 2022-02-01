@@ -17,7 +17,7 @@ that does explicit registration.
 
 A simple script for starting/stopping entities:
 
-    ./exec-py start RPA RPE OP LU UMU SEID SWAMID
+    ./exec.py start RPA RPE OP LU UMU SEID SWAMID
 
 This will start all entities in the example federations.
 If you want to look at the layout of the federation look at the 

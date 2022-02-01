@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import shlex
 import subprocess
 import sys
 from time import sleep
@@ -22,16 +23,16 @@ def start(ents):
         _dir, _com, _conf = ENTITY[ent]
         os.chdir(_dir)
         print(os.getcwd())
-        _args = [_com, ent, _conf, "&"]
+        _args = [_com, ent, _conf]
         print(_args)
-        _res = subprocess.run(" ".join(_args), shell=True)
+        _res = subprocess.Popen(_args, env=dict(os.environ))
         print(_res)
         sleep(1)
         os.chdir(cwd)
 
 
 def kill(ents):
-    _process = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
+    _process = subprocess.Popen(['ps', '-ax'], stdout=subprocess.PIPE)
     output, error = _process.communicate()
     # print(output)
     for line in output.splitlines():
