@@ -6,6 +6,7 @@ from typing import Union
 
 from cryptojwt import KeyJar
 from cryptojwt.key_jar import init_key_jar
+from oidcmsg.exception import MissingAttribute
 from oidcrp import rp_handler
 from oidcrp.configure import Configuration
 from oidcrp.entity import Entity
@@ -50,6 +51,13 @@ class FederationRP(Client):
                                                                        httpc=httpc,
                                                                        cwd=cwd)
 
+    def get_client_id(self):
+        if self._service_context.client_id:
+            return self._service_context.client_id
+        if self._service_context.federation_entity.context.entity_id:
+            return self._service_context.federation_entity.context.entity_id
+        raise MissingAttribute("No known client ID")
+
 
 class RPHandler(rp_handler.RPHandler):
     def __init__(self,
@@ -78,7 +86,9 @@ class RPHandler(rp_handler.RPHandler):
 
     def init_client(self, issuer):
         client = rp_handler.RPHandler.init_client(self, issuer)
-        client.client_get("service_context").federation_entity = self.init_federation_entity(issuer, host=client)
+        client.client_get("service_context").federation_entity = self.init_federation_entity(issuer,
+                                                                                             host=client)
+        client.set_client_id(client.client_get("service_context").federation_entity.context.entity_id)
         return client
 
     def init_federation_entity(self, issuer, host):

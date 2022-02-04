@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 oidc_rp_views = Blueprint('oidc_rp', __name__, url_prefix='')
 
 
-@oidc_rp_views.route('/static/<path:path>')
-def send_js(path):
-    return send_from_directory('static', path)
+@oidc_rp_views.route('/static/<path:filename>')
+def send_js(filename):
+    return send_from_directory('static', filename)
 
 
 @oidc_rp_views.route('/')
@@ -111,7 +111,7 @@ def authz_cb():
     # being used
     _iss = request.args.get("iss")
     if _iss:
-        rp = get_rp(_iss)
+        rp = current_app.rph.issuer2rp[_iss]
         _context = rp.client_get("service_context")
         try:
             iss = _context.state.get_iss(request.args['state'])
@@ -124,7 +124,7 @@ def authz_cb():
             return make_response('No matching issuer', 400)
         _context = rp.client_get("service_context")
 
-    if iss != request.args["iss"]:
+    if iss != _iss:
         return make_response(f"Wrong Issuer: {iss} != {request.args['iss']}", 400)
 
     logger.debug('Issuer: {}'.format(iss))

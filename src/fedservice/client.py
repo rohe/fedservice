@@ -5,13 +5,13 @@ from typing import Union
 from cryptojwt import KeyJar
 from oidcrp import entity
 
-from fedservice import FederationEntity
-from fedservice.configure import Configuration
+from fedservice.entity import FederationEntity
+from fedservice.configure import FedEntityConfiguration
 
 
 class Client(entity.Entity):
     def __init__(self,
-                 conf: Union[dict, Configuration],
+                 conf: Union[dict, FedEntityConfiguration],
                  keyjar: Optional[KeyJar] = None,
                  httpc: Optional[Any] = None
                  ):
@@ -19,7 +19,7 @@ class Client(entity.Entity):
 
         fed_conf = conf["federation"]
         federation_entity = FederationEntity(
-            httpd=httpc,
+            httpc=httpc,
             config=fed_conf
         )
 

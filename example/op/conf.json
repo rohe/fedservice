@@ -96,19 +96,6 @@
         ]
       },
       "template_dir": "templates",
-      "id_token": {
-        "class": "oidcop.id_token.IDToken",
-        "kwargs": {
-          "default_claims": {
-            "email": {
-              "essential": true
-            },
-            "email_verified": {
-              "essential": true
-            }
-          }
-        }
-      },
       "token_handler_args": {
         "jwks_def": {
           "private_path": "private/token_jwk.json",
@@ -151,6 +138,19 @@
         },
         "refresh": {
           "lifetime": 86400
+        },
+        "id_token": {
+          "class": "oidcop.token.id_token.IDToken",
+          "kwargs": {
+            "base_claims": {
+              "email": {
+                "essential": true
+              },
+              "email_verified": {
+                "essential": true
+              }
+            }
+          }
         }
       },
       "keys": {

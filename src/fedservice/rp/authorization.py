@@ -44,4 +44,5 @@ class FedAuthorization(Authorization):
         if not client_id:
             request_args['client_id'] = _context.federation_entity.get_context().entity_id
 
+        _context.client_id = client_id
         return request_args, post_args

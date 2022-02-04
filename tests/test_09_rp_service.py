@@ -4,7 +4,10 @@ from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
 from cryptojwt.jws.jws import factory
+from oidcmsg.oidc import AccessTokenRequest
+from oidcrp.client_auth import PrivateKeyJWT
 from oidcrp.defaults import DEFAULT_OIDC_SERVICES
+from oidcrp.defaults import JWT_BEARER
 import pytest
 
 from fedservice import eval_chain
@@ -214,3 +217,67 @@ class TestRpService(object):
             'response_types',
             'token_endpoint_auth_method'
         }
+
+
+class TestRpServiceAuto(object):
+    @pytest.fixture(autouse=True)
+    def rp_service_setup(self):
+        entity_id = 'https://foodle.uninett.no'
+        config = {
+            'redirect_uris': ['https://example.com/cli/authz_cb'],
+            "keys": {"uri_path": "static/jwks.json", "key_defs": KEY_DEFS},
+            "client_preferences": {
+                "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
+                "id_token_signed_response_alg": "ES256",
+                "token_endpoint_auth_method": "client_secret_basic",
+                "federation_type": ['automatic']
+            },
+            "services": {
+                'authorization': {
+                    'class': 'oidcrp.oidc.authorization.Authorization'
+                },
+                'access_token': {
+                    'class': 'oidcrp.oidc.access_token.AccessToken'
+                }
+            }, "federation": {
+                "entity_id": entity_id,
+                "keys": {"uri_path": "static/fed_jwks.json", "key_defs": KEY_DEFS},
+                "endpoint": {
+                    "fetch": {
+                        "path": "fetch",
+                        "class": Fetch,
+                        "kwargs": {"client_authn_method": None},
+                    }
+                },
+                "trusted_roots": ANCHOR,
+                "authority_hints": ['https://ntnu.no'],
+                "entity_type": 'openid_relying_party',
+                "opponent_entity_type": 'openid_provider',
+            }
+        }
+
+        oidc_service = DEFAULT_OIDC_SERVICES.copy()
+        oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
+        self.entity = FederationRP(services=oidc_service, config=config)
+
+        _context = self.entity.client_get("service_context")
+        _context.provider_info = {'token_endpoint': "https://op.example.org"}
+        # httpc = Publisher(os.path.join(BASE_PATH, 'base_data'))
+
+        # # The test data collector
+        # _context.federation_entity.collector = DummyCollector(
+        #     trusted_roots=ANCHOR, httpd=httpc, root_dir=os.path.join(BASE_PATH, 'base_data'))
+
+    def test_construct_client_assertion(self):
+        token_service = self.entity.client_get("service", 'accesstoken')
+        request = AccessTokenRequest()
+        pkj = PrivateKeyJWT()
+        http_args = pkj.construct(request, service=token_service, authn_endpoint='token_endpoint')
+
+        assert http_args == {}
+        _jws = factory(request["client_assertion"])
+        _payload = _jws.jwt.payload()
+        assert "iss" in _payload
+        assert _payload["iss"] == 'https://foodle.uninett.no'
+        assert _payload["sub"] == 'https://foodle.uninett.no'
+        assert request['client_assertion_type'] == JWT_BEARER
