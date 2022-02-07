@@ -23,6 +23,7 @@ from oidcmsg.oidc import deserialize_from_one_of
 from oidcmsg.oidc import dict_deser
 from oidcmsg.oidc import msg_ser_json
 
+from fedservice.exception import UnknownExtension
 from fedservice.exception import WrongSubject
 
 SINGLE_REQUIRED_DICT = (dict, True, msg_ser_json, dict_deser, False)
@@ -264,6 +265,26 @@ class EntityStatement(JsonWebToken):
         'trust_marks': SINGLE_OPTIONAL_DICT,
         'trust_anchor_id': SINGLE_OPTIONAL_STRING
     })
+
+    def verify(self, **kwargs):
+        super(EntityStatement, self).verify(**kwargs)
+
+        _extra_parameters = list(self.extra().keys())
+        if _extra_parameters:
+            _critical = self.get("crit")
+            if _critical is None:
+                pass
+            elif not _critical:
+                raise ValueError("Empty list not allowed for 'crit'")
+            else:
+                _musts = set(_critical).intersection(_extra_parameters)
+                _known = kwargs.get("known_extensions")
+                if _known:
+                    if set(_known).issuperset(set(_musts)) is False:
+                        raise UnknownExtension(_musts.difference(set(_known)))
+                else:
+                    raise UnknownExtension(_musts.intersection(_extra_parameters))
+
 
 
 class TrustMark(JsonWebToken):

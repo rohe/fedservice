@@ -28,3 +28,7 @@ class UnknownCertificate(FedServiceError):
 
 class UnknownEntity(FedServiceError):
     pass
+
+
+class UnknownExtension(FedServiceError):
+    pass

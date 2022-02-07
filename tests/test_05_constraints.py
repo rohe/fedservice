@@ -1,8 +1,13 @@
+from cryptojwt.jwt import utc_time_sans_frac
+import pytest
+
 from fedservice.entity_statement.constraints import calculate_path_length
 from fedservice.entity_statement.constraints import excluded
 from fedservice.entity_statement.constraints import permitted
 from fedservice.entity_statement.constraints import update_naming_constraints
+from fedservice.exception import UnknownExtension
 from fedservice.message import Constraints
+from fedservice.message import EntityStatement
 from fedservice.message import NamingConstraints
 
 
@@ -226,3 +231,39 @@ def test_naming_excluded_1():
 
 def test_meets_restriction():
     pass
+
+
+def test_crit_known_unknown():
+    entity_id = "https://ent.example.org"
+    _now = utc_time_sans_frac()
+    _statement = EntityStatement(sub=entity_id, iss=entity_id, iat=_now, exp=_now+3600,
+                                 foo="bar", crit=["foo"])
+
+    _statement.verify(known_extensions=["foo"])
+    _statement.verify(known_extensions=["foo", "xyz"])
+
+    with pytest.raises(UnknownExtension):
+        _statement.verify()
+
+
+def test_crit_known_unknown_not_critical():
+    entity_id = "https://ent.example.org"
+    _now = utc_time_sans_frac()
+    _statement = EntityStatement(sub=entity_id, iss=entity_id, iat=_now, exp=_now+3600,
+                                 foo="bar")
+
+    _statement.verify(known_extensions=["foo"])
+    _statement.verify(known_extensions=["foo", "xyz"])
+    _statement.verify()
+
+
+def test_crit_critical_not_supported():
+    entity_id = "https://ent.example.org"
+    _now = utc_time_sans_frac()
+    _statement = EntityStatement(sub=entity_id, iss=entity_id, iat=_now, exp=_now+3600,
+                                 foo="bar", crit=["foo"])
+
+    with pytest.raises(UnknownExtension):
+        _statement.verify(known_extensions=["xyz"])
+    with pytest.raises(UnknownExtension):
+        _statement.verify()
