@@ -131,7 +131,7 @@ def authz_cb():
     try:
         res = current_app.rph.finalize(iss, request.args)
     except Exception as err:
-        return make_response(err, 400)
+        return make_response(f"{err}", 400)
 
     if 'userinfo' in res:
         endpoints = {}
@@ -142,7 +142,7 @@ def authz_cb():
                 endp = endp.capitalize()
                 endpoints[endp] = v
 
-        statement = _context.federation_entity.op_statements[0]
+        statement = _context.federation_entity.context.op_statements[0]
         _st = localtime(statement.exp)
         time_str = strftime('%a, %d %b %Y %H:%M:%S')
         return render_template('opresult.html', endpoints=endpoints,

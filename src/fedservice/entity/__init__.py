@@ -328,6 +328,9 @@ class FederationEntity(object):
         self.collector.load(dump.get("collector", {}))
         self.context.load(dump.get("context", {}))
 
+    def get_client_id(self):
+        return self.context.entity_id
+
 
 def create_federation_entity(entity_id, httpc=None, httpc_params=None, cwd="", **kwargs):
     args = {"httpc_params": httpc_params}
