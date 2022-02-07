@@ -3,6 +3,7 @@ from oidcmsg.time_util import utc_time_sans_frac
 
 from fedservice.message import EntityStatement
 from fedservice.message import Metadata
+from fedservice.message import Policy
 
 
 def test_metadata():
@@ -76,3 +77,41 @@ def test_entity_statement():
     assert set(_es['metadata']['openid_relying_party'].keys()) == {
         'application_type', 'claims', 'id_token_signing_alg_values_supported',
         'redirect_uris', 'response_types'}
+
+MSG = {
+  "exp": 1568397247,
+  "iat": 1568310847,
+  "iss": "https://edugain.geant.org",
+  "jwks": {
+    "keys": [
+      {
+        "e": "AQAB",
+        "kid": "N1pQTzFxUXZ1RXVsUkVuMG5uMnVDSURGRVdhUzdO...",
+        "kty": "RSA",
+        "n": "3EQc6cR_GSBq9km9-WCHY_lWJZWkcn0M05TGtH6D9S..."
+      }
+    ]
+  },
+  "metadata_policy": {
+    "openid_provider": {
+      "contacts": {
+        "add": "ops@edugain.geant.org"
+      }
+    },
+    "openid_relying_party": {
+      "contacts": {
+        "add": "ops@edugain.geant.org"
+      }
+    }
+  },
+  "sub": "https://swamid.se"
+}
+
+def test_metadata_policy():
+    item = EntityStatement(**MSG)
+    assert item
+    _metadata_policy = item["metadata_policy"]
+    for typ, item in _metadata_policy.items():
+        for attr, _policy in item.items():
+            _p = Policy(**_policy)
+            _p.verify()

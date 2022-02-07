@@ -7,6 +7,7 @@ from oidcmsg.exception import MissingRequiredAttribute
 from oidcmsg.message import Message
 from oidcmsg.message import OPTIONAL_LIST_OF_SP_SEP_STRINGS
 from oidcmsg.message import OPTIONAL_LIST_OF_STRINGS
+from oidcmsg.message import OPTIONAL_MESSAGE
 from oidcmsg.message import SINGLE_OPTIONAL_ANY
 from oidcmsg.message import SINGLE_OPTIONAL_INT
 from oidcmsg.message import SINGLE_OPTIONAL_JSON
@@ -23,7 +24,7 @@ from oidcmsg.oidc import deserialize_from_one_of
 from oidcmsg.oidc import dict_deser
 from oidcmsg.oidc import msg_ser_json
 
-from fedservice.exception import UnknownExtension
+from fedservice.exception import UnknownCriticalExtension
 from fedservice.exception import WrongSubject
 
 SINGLE_REQUIRED_DICT = (dict, True, msg_ser_json, dict_deser, False)
@@ -206,7 +207,7 @@ SINGLE_REQUIRED_METADATA = (Message, True, msg_ser, metadata_deser, False)
 SINGLE_OPTIONAL_METADATA = (Message, False, msg_ser, metadata_deser, False)
 
 
-class MetadataPolicy(Message):
+class Policy(Message):
     """The metadata policy verbs."""
     c_param = {
         "subset_of": OPTIONAL_LIST_OF_STRINGS,
@@ -217,6 +218,50 @@ class MetadataPolicy(Message):
         "default": SINGLE_OPTIONAL_ANY,
         "essential": SINGLE_OPTIONAL_BOOLEAN
     }
+
+    def verify(self, **kwargs):
+        _extra_parameters = list(self.extra().keys())
+        if _extra_parameters:
+            _critical = kwargs.get("policy_language_crit")
+            if _critical is None:
+                pass
+            elif not _critical:
+                raise ValueError("Empty list not allowed for 'policy_language_crit'")
+            else:
+                _musts = set(_critical).intersection(_extra_parameters)
+                _known = kwargs.get("known_policy_extensions")
+                if _known:
+                    if set(_known).issuperset(set(_musts)) is False:
+                        raise UnknownCriticalExtension(_musts.difference(set(_known)))
+                else:
+                    raise UnknownCriticalExtension(_musts.intersection(_extra_parameters))
+
+
+def policy_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a MetadataPolicy."""
+    return deserialize_from_one_of(val, Policy, sformat)
+
+
+SINGLE_REQUIRED_POLICY = (Message, True, msg_ser, policy_deser, False)
+SINGLE_OPTIONAL_POLICY = (Message, False, msg_ser, policy_deser, False)
+
+
+class MetadataPolicy(Message):
+    """The different types of metadata that an entity in a federation can belong to."""
+    c_param = {
+        'openid_relying_party': OPTIONAL_MESSAGE,
+        'openid_provider': OPTIONAL_MESSAGE,
+        "oauth_authorization_server": OPTIONAL_MESSAGE,
+        "oauth_client": OPTIONAL_MESSAGE,
+        "federation_entity": OPTIONAL_MESSAGE,
+        "trust_mark_issuer": OPTIONAL_MESSAGE
+    }
+
+    def verify(self, **kwargs):
+        for typ, _policy in self.items():
+            for attr, item in _policy.items():
+                _p = Policy(**item)
+                _p.verify(**kwargs)
 
 
 def metadata_policy_deser(val, sformat="json"):
@@ -281,10 +326,15 @@ class EntityStatement(JsonWebToken):
                 _known = kwargs.get("known_extensions")
                 if _known:
                     if set(_known).issuperset(set(_musts)) is False:
-                        raise UnknownExtension(_musts.difference(set(_known)))
+                        raise UnknownCriticalExtension(_musts.difference(set(_known)))
                 else:
-                    raise UnknownExtension(_musts.intersection(_extra_parameters))
+                    raise UnknownCriticalExtension(_musts.intersection(_extra_parameters))
 
+        _metadata_policy = self.get('metadata_policy')
+        if _metadata_policy:
+            _crit = self.get("policy_language_crit")
+            if _crit:
+                _metadata_policy.verify(policy_language_crit=_crit, **kwargs)
 
 
 class TrustMark(JsonWebToken):

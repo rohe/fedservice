@@ -5,7 +5,7 @@ from fedservice.entity_statement.constraints import calculate_path_length
 from fedservice.entity_statement.constraints import excluded
 from fedservice.entity_statement.constraints import permitted
 from fedservice.entity_statement.constraints import update_naming_constraints
-from fedservice.exception import UnknownExtension
+from fedservice.exception import UnknownCriticalExtension
 from fedservice.message import Constraints
 from fedservice.message import EntityStatement
 from fedservice.message import NamingConstraints
@@ -236,20 +236,20 @@ def test_meets_restriction():
 def test_crit_known_unknown():
     entity_id = "https://ent.example.org"
     _now = utc_time_sans_frac()
-    _statement = EntityStatement(sub=entity_id, iss=entity_id, iat=_now, exp=_now+3600,
+    _statement = EntityStatement(sub=entity_id, iss=entity_id, iat=_now, exp=_now + 3600,
                                  foo="bar", crit=["foo"])
 
     _statement.verify(known_extensions=["foo"])
     _statement.verify(known_extensions=["foo", "xyz"])
 
-    with pytest.raises(UnknownExtension):
+    with pytest.raises(UnknownCriticalExtension):
         _statement.verify()
 
 
 def test_crit_known_unknown_not_critical():
     entity_id = "https://ent.example.org"
     _now = utc_time_sans_frac()
-    _statement = EntityStatement(sub=entity_id, iss=entity_id, iat=_now, exp=_now+3600,
+    _statement = EntityStatement(sub=entity_id, iss=entity_id, iat=_now, exp=_now + 3600,
                                  foo="bar")
 
     _statement.verify(known_extensions=["foo"])
@@ -260,10 +260,45 @@ def test_crit_known_unknown_not_critical():
 def test_crit_critical_not_supported():
     entity_id = "https://ent.example.org"
     _now = utc_time_sans_frac()
-    _statement = EntityStatement(sub=entity_id, iss=entity_id, iat=_now, exp=_now+3600,
+    _statement = EntityStatement(sub=entity_id, iss=entity_id, iat=_now, exp=_now + 3600,
                                  foo="bar", crit=["foo"])
 
-    with pytest.raises(UnknownExtension):
+    with pytest.raises(UnknownCriticalExtension):
         _statement.verify(known_extensions=["xyz"])
-    with pytest.raises(UnknownExtension):
+    with pytest.raises(UnknownCriticalExtension):
+        _statement.verify()
+
+
+MSG = {
+    "iss": "https://edugain.geant.org",
+    "jwks": {
+        "keys": [
+            {
+                "e": "AQAB",
+                "kid": "N1pQTzFxUXZ1RXVsUkVuMG5uMnVDSURGRVdhUzdO...",
+                "kty": "RSA",
+                "n": "3EQc6cR_GSBq9km9-WCHY_lWJZWkcn0M05TGtH6D9S..."
+            }
+        ]
+    },
+    "policy_language_crit": ["regexp"],
+    "metadata_policy": {
+        "openid_provider": {
+            "contacts": {
+                "add": "ops@edugain.geant.org",
+                "regexp": "@its.umu.se$"
+            }
+        }
+    },
+    "sub": "https://swamid.se"
+}
+
+
+def test_policy_language_crit_not_supported():
+    _now = utc_time_sans_frac()
+    _statement = EntityStatement(iat=_now, exp=_now + 3600,**MSG)
+
+    _statement.verify(known_policy_extensions=["regexp"])
+
+    with pytest.raises(UnknownCriticalExtension):
         _statement.verify()

@@ -30,5 +30,5 @@ class UnknownEntity(FedServiceError):
     pass
 
 
-class UnknownExtension(FedServiceError):
+class UnknownCriticalExtension(FedServiceError):
     pass
