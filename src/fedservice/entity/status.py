@@ -4,7 +4,7 @@ from cryptojwt.jws.jws import factory
 from oidcmsg import oidc
 from oidcmsg.exception import MissingAttribute
 from oidcmsg.exception import MissingParameter
-from oidcop.endpoint import Endpoint
+from oidcmsg.server.endpoint import Endpoint
 
 from fedservice.message import EntityStatement
 

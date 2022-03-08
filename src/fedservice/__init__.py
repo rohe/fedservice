@@ -8,9 +8,9 @@ from typing import Union
 
 from cryptojwt import KeyJar
 from oidcmsg.configure import Configuration
-from oidcop.endpoint_context import EndpointContext
-from oidcop.exception import ConfigurationError
-from oidcop.util import build_endpoints
+from oidcmsg.server import build_endpoints
+from oidcmsg.server.endpoint_context import EndpointContext
+from oidcmsg.server.exception import ConfigurationError
 
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.collect import branch2lists
@@ -23,7 +23,7 @@ from fedservice.entity_statement.verify import eval_policy_chain
 from fedservice.utils import load_json
 
 __author__ = 'Roland Hedberg'
-__version__ = '3.0.0'
+__version__ = '3.1.0'
 
 logger = logging.getLogger(__name__)
 
@@ -108,5 +108,3 @@ class FederationEndpointContext(EndpointContext):
             self.tr_priority = config["priority"]
         else:
             self.tr_priority = sorted(set(trusted_roots.keys()))
-
-

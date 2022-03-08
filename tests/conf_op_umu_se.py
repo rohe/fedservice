@@ -1,4 +1,4 @@
-import oidcop.cookie_handler
+from oidcop.cookie_handler import CookieHandler
 
 DOMAIN = 'op.umu.se'
 BASE_URL = "https://{}".format(DOMAIN)
@@ -32,7 +32,7 @@ CONF = {
         },
         'code': {'kwargs': {'lifetime': 600}},
         'token': {
-            'class': 'oidcop.token.jwt_token.JWTToken',
+            'class': 'oidcmsg.server.token.jwt_token.JWTToken',
             'kwargs': {
                 'lifetime': 3600,
                 'add_claims': ['email', 'email_verified',
@@ -43,7 +43,7 @@ CONF = {
         },
         'refresh': {'kwargs': {'lifetime': 86400}},
         'id_token': {
-            'class': 'oidcop.token.id_token.IDToken',
+            'class': 'oidcmsg.server.token.id_token.IDToken',
             'kwargs': {
                 'default_claims': {'email': {'essential': True},
                                    'email_verified': {'essential': True}}}},
@@ -58,7 +58,7 @@ CONF = {
         'uri_path': 'static/umu_se_jwks.json'
     },
     "cookie_handler": {
-        "class": oidcop.cookie_handler.CookieHandler,
+        "class": CookieHandler,
         "kwargs": {
             "keys": {"key_defs": COOKIE_KEYDEFS},
             "name": {
@@ -142,12 +142,12 @@ CONF = {
         }
     },
     'userinfo': {
-        'class': 'oidcop.user_info.UserInfo',
+        'class': 'oidcmsg.server.user_info.UserInfo',
         'kwargs': {'db_file': 'users.json'}},
     'authentication': {
         'anon': {
-            'acr': 'oidcop.user_authn.authn_context.UNSPECIFIED',
-            'class': 'oidcop.user_authn.user.NoAuthn',
+            'acr': 'oidcmsg.server.user_authn.authn_context.UNSPECIFIED',
+            'class': 'oidcmsg.server.user_authn.user.NoAuthn',
             'kwargs': {'user': 'diana'}}},
     'cookie_dealer': {
         'class': 'oidcop.cookie.CookieDealer',
@@ -163,11 +163,11 @@ CONF = {
                 'path': '/',
                 'max_age': 3600}}},
     'login_hint2acrs': {
-        'class': 'oidcop.login_hint.LoginHint2Acrs',
+        'class': 'oidcmsg.server.login_hint.LoginHint2Acrs',
         'kwargs': {
             'scheme_map': {
                 'email': [
-                    'oidcop.user_authn.authn_context.INTERNETPROTOCOLPASSWORD']}}},
+                    'oidcmsg.server.user_authn.authn_context.INTERNETPROTOCOLPASSWORD']}}},
     'federation': {
         'entity_id': 'https://{}'.format(DOMAIN),
         'keys': {

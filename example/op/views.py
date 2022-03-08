@@ -17,10 +17,10 @@ from oidcmsg.oidc import AccessTokenRequest
 from oidcmsg.oidc import AuthorizationRequest
 import werkzeug
 
-from oidcop.exception import FailedAuthentication
-from oidcop.exception import InvalidClient
-from oidcop.exception import UnknownClient
-from oidcop.oidc.token import Token
+from oidcmsg.server.exception import FailedAuthentication
+from oidcmsg.server.exception import InvalidClient
+from oidcmsg.server.exception import UnknownClient
+from oidcmsg.server.oidc.token import Token
 
 # logger = logging.getLogger(__name__)
 

@@ -59,14 +59,14 @@ setup(
     classifiers=[
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: Apache Software License",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Topic :: Software Development :: Libraries :: Python Modules"],
     install_requires=[
-        'oidcrp>=2.1.4',
-        'oidcop>=2.4.0'
+        'oidcrp>=2.2.0',
+        'oidcop>=2.5.0'
     ],
     tests_require=[
         "responses",

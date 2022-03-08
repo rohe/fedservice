@@ -9,10 +9,10 @@ from typing import Union
 from cryptojwt import KeyJar
 from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
+from cryptojwt.utils import importer
 from oidcmsg.configure import Configuration
 from oidcmsg.context import OidcContext
-from oidcop.util import build_endpoints
-from oidcop.util import importer
+from oidcmsg.server import build_endpoints
 from requests import request
 
 from fedservice import message

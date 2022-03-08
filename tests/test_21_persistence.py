@@ -4,8 +4,8 @@ from time import sleep
 
 from fedservice.entity.fetch import Fetch
 from fedservice.entity_statement.collect import Collector
-from oidcop.user_authn.authn_context import UNSPECIFIED
-from oidcop.user_authn.user import NoAuthn
+from oidcmsg.server.user_authn.authn_context import UNSPECIFIED
+from oidcmsg.server.user_authn.user import NoAuthn
 import pytest
 import responses
 
@@ -44,7 +44,7 @@ class TestEndpointPersistence(object):
         conf = {
             "issuer": ENTITY_ID,
             "password": "mycket hemligt",
-            "claims_interface": {"class": "oidcop.session.claims.ClaimsInterface", "kwargs": {}},
+            "claims_interface": {"class": "oidcmsg.server.session.claims.ClaimsInterface", "kwargs": {}},
             "verify_ssl": False,
             "endpoint": {
                 "provider_config": {

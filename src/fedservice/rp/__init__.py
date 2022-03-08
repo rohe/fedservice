@@ -6,10 +6,9 @@ from typing import Union
 
 from cryptojwt import KeyJar
 from cryptojwt.key_jar import init_key_jar
+from oidcmsg.configure import Configuration
 from oidcmsg.exception import MissingAttribute
 from oidcrp import rp_handler
-from oidcrp.configure import Configuration
-from oidcrp.entity import Entity
 from oidcrp.oauth2 import Client
 
 from fedservice.entity import FederationEntity

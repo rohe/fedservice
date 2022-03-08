@@ -1,8 +1,8 @@
 import os
 
 from cryptojwt.jws.jws import factory
-from oidcop.user_authn.authn_context import UNSPECIFIED
-from oidcop.user_authn.user import NoAuthn
+from oidcmsg.server.user_authn.authn_context import UNSPECIFIED
+from oidcmsg.server.user_authn.user import NoAuthn
 import pytest
 
 from fedservice.entity.fetch import Fetch
@@ -36,7 +36,7 @@ class TestEndpoint(object):
             "grant_expires_in": 300,
             "refresh_token_expires_in": 86400,
             "verify_ssl": False,
-            "claims_interface": {"class": "oidcop.session.claims.ClaimsInterface", "kwargs": {}},
+            "claims_interface": {"class": "oidcmsg.server.session.claims.ClaimsInterface", "kwargs": {}},
             'keys': {
                 'key_defs': KEYSPEC,
                 "private_path": "own/jwks.json",
@@ -93,7 +93,9 @@ class TestEndpoint(object):
             assert i in (
                 'acr_values_supported', 'claims_parameter_supported',
                 'claims_supported', 'grant_types_supported', 'scopes_supported',
-                'id_token_encryption_alg_values_supported', 'id_token_encryption_enc_values_supported',
+                'id_token_encryption_alg_values_supported',
+                'id_token_encryption_enc_values_supported',
                 'id_token_signing_alg_values_supported', 'issuer', 'jwks_uri',
                 'request_parameter_supported', 'request_uri_parameter_supported',
-                'require_request_uri_registration', 'token_endpoint_auth_methods_supported', 'version')
+                'require_request_uri_registration', 'token_endpoint_auth_methods_supported',
+                'version')

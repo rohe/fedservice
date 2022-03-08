@@ -1,9 +1,7 @@
 import json
 import logging
-import ssl
-import sys
 
-from oidcrp.exception import ResponseError
+from oidcmsg.client.exception import ResponseError
 
 logger = logging.getLogger(__name__)
 

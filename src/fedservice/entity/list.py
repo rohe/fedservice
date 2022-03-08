@@ -2,10 +2,10 @@ import logging
 from typing import Optional
 from typing import Union
 
-from oidcmsg.message import Message
-from oidcop.endpoint import Endpoint
 from oidcmsg import oidc
-from oidcop.endpoint_context import init_service
+from oidcmsg.message import Message
+from oidcmsg.server.endpoint import Endpoint
+from oidcmsg.server.endpoint_context import init_service
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,5 @@ class List(Endpoint):
             response_args: Optional[dict] = None,
             request: Optional[Union[Message, dict]] = None,
             **kwargs
-        ) -> dict:
+    ) -> dict:
         return response_args
-

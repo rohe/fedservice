@@ -4,10 +4,10 @@ from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
 from cryptojwt.jws.jws import factory
+from oidcmsg.client.client_auth import PrivateKeyJWT
+from oidcmsg.defaults import JWT_BEARER
 from oidcmsg.oidc import AccessTokenRequest
-from oidcrp.client_auth import PrivateKeyJWT
 from oidcrp.defaults import DEFAULT_OIDC_SERVICES
-from oidcrp.defaults import JWT_BEARER
 import pytest
 
 from fedservice import eval_chain

@@ -3,8 +3,8 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
-from oidcop.configure import ASConfiguration
-from oidcop.configure import OPConfiguration
+from oidcmsg.server import ASConfiguration
+from oidcmsg.server import OPConfiguration
 from oidcop.server import Server
 
 from fedservice.entity import FederationEntity

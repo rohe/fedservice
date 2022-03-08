@@ -3,9 +3,9 @@ from oidcop.oidc.authorization import Authorization
 from oidcop.oidc.discovery import Discovery
 from oidcop.oidc.token import Token
 from oidcop.oidc.userinfo import UserInfo
-from oidcop.user_authn.authn_context import INTERNETPROTOCOLPASSWORD
+from oidcmsg.server.user_authn.authn_context import INTERNETPROTOCOLPASSWORD
 
-from oidcop.util import JSONDictDB
+from oidcmsg.server.util import JSONDictDB
 
 from fedservice.op import service
 

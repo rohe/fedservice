@@ -1,5 +1,5 @@
-from oidcop.client_authn import PrivateKeyJWT
-from oidcop.client_authn import RequestParam
+from oidcmsg.server.client_authn import PrivateKeyJWT
+from oidcmsg.server.client_authn import RequestParam
 
 from fedservice.op import registration
 

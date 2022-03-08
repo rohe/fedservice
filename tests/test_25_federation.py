@@ -5,7 +5,7 @@ from urllib.parse import parse_qs
 
 from oidcmsg.configure import Configuration
 from oidcmsg.configure import create_from_config_file
-from oidcop.utils import lower_or_upper
+from oidcmsg.configure import lower_or_upper
 import pytest
 import responses
 

@@ -1,4 +1,4 @@
-from oidcrp.exception import OtherError
+from oidcmsg.client.exception import OtherError
 from oidcrp.oidc import registration
 from oidcrp.oidc.authorization import Authorization
 

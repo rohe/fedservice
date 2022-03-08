@@ -3,11 +3,11 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
+from oidcmsg.client.configure import RPConfiguration
 from oidcmsg.configure import Base
 from oidcmsg.configure import DEFAULT_DIR_ATTRIBUTE_NAMES
 from oidcmsg.configure import set_domain_and_port
-from oidcop.configure import OPConfiguration
-from oidcrp.configure import RPConfiguration
+from oidcmsg.server.configure import OPConfiguration
 
 URIS = [
     "redirect_uris", 'post_logout_redirect_uris', 'frontchannel_logout_uri',

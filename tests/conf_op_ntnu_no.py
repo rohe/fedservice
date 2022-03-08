@@ -32,7 +32,7 @@ CONF = {
         },
         'code': {'kwargs': {'lifetime': 600}},
         'token': {
-            'class': 'oidcop.token.jwt_token.JWTToken',
+            'class': 'oidcmsg.server.token.jwt_token.JWTToken',
             'kwargs': {
                 'lifetime': 3600,
                 'add_claims': ['email', 'email_verified',
@@ -43,7 +43,7 @@ CONF = {
         },
         'refresh': {'kwargs': {'lifetime': 86400}},
         'id_token': {
-            'class': 'oidcop.token.id_token.IDToken',
+            'class': 'oidcmsg.server.token.id_token.IDToken',
             'kwargs': {
                 'default_claims': {'email': {'essential': True},
                                    'email_verified': {'essential': True}}}},
@@ -146,8 +146,8 @@ CONF = {
         'kwargs': {'db_file': 'users.json'}},
     'authentication': {
         'anon': {
-            'acr': 'oidcop.user_authn.authn_context.UNSPECIFIED',
-            'class': 'oidcop.user_authn.user.NoAuthn',
+            'acr': 'oidcmsg.server.user_authn.authn_context.UNSPECIFIED',
+            'class': 'oidcmsg.server.user_authn.user.NoAuthn',
             'kwargs': {'user': 'diana'}}},
     'cookie_dealer': {
         'class': 'oidcop.cookie.CookieDealer',
@@ -167,7 +167,7 @@ CONF = {
         'kwargs': {
             'scheme_map': {
                 'email': [
-                    'oidcop.user_authn.authn_context.INTERNETPROTOCOLPASSWORD']}}},
+                    'oidcmsg.server.user_authn.authn_context.INTERNETPROTOCOLPASSWORD']}}},
     'federation': {
         'entity_id': 'https://{}'.format(DOMAIN),
         'keys': {

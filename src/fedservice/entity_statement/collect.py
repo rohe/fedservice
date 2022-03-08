@@ -12,8 +12,8 @@ from cryptojwt.jwt import utc_time_sans_frac
 from oidcmsg.exception import MissingPage
 from oidcmsg.impexp import ImpExp
 import requests
-from requests.exceptions import SSLError
 from requests.exceptions import ConnectionError
+from requests.exceptions import SSLError
 
 from fedservice.exception import UnknownCertificate
 from .cache import ESCache
@@ -360,7 +360,8 @@ class Collector(ImpExp):
             # entity_statement is a signed JWT
             statement = unverified_entity_statement(entity_statement)
             logger.debug(
-                f"Unverified entity statement from {fed_fetch_endpoint} about {entity_id}: {statement}")
+                f"Unverified entity statement from {fed_fetch_endpoint} about {entity_id}: "
+                f"{statement}")
             self.entity_statement_cache[cache_key] = entity_statement
             time_key = "{}!exp!{}".format(authority, entity_id)
             self.entity_statement_cache[time_key] = statement["exp"]

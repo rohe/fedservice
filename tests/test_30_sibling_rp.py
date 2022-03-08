@@ -3,7 +3,7 @@ from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
 from oidcmsg.configure import create_from_config_file
-from oidcrp.configure import RPConfiguration
+from oidcmsg.client.configure import RPConfiguration
 import pytest
 import responses
 

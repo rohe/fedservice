@@ -1,10 +1,10 @@
 import logging
 
 from cryptojwt.jws.jws import factory
+from oidcmsg.client.exception import ResponseError
 from oidcmsg.oidc import ProviderConfigurationResponse
 from oidcmsg.oidc import RegistrationRequest
 from oidcmsg.oidc import RegistrationResponse
-from oidcrp.exception import ResponseError
 from oidcrp.oidc import registration
 
 from fedservice.entity_statement.collect import branch2lists
@@ -137,7 +137,8 @@ class Registration(registration.Registration):
         logger.debug("%d chains", len(chains))
         logger.debug("Evaluate policy chains")
         # Get the policies
-        policy_chains_tup = [eval_policy_chain(c, _fe_ctx.keyjar, _fe_ctx.entity_type) for c in chains]
+        policy_chains_tup = [eval_policy_chain(c, _fe_ctx.keyjar, _fe_ctx.entity_type) for c in
+                             chains]
         # Weed out unusable chains
         policy_chains_tup = [pct for pct in policy_chains_tup if pct is not None]
         # Should leave me with one. The one ending in the chosen trust anchor.

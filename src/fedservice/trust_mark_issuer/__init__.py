@@ -7,7 +7,7 @@ from typing import Union
 from cryptojwt import JWT
 from cryptojwt.jwt import utc_time_sans_frac
 from oidcmsg.configure import Configuration
-from oidcop.endpoint_context import init_service
+from oidcmsg.server.endpoint_context import init_service
 
 from fedservice.entity import FederationEntity
 

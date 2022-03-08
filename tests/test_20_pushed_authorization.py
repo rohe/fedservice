@@ -1,23 +1,18 @@
-import io
 import os
 
 from cryptojwt import JWT
-
-from fedservice.entity.fetch import Fetch
-from fedservice.op import FederationServer
+from oidcmsg.defaults import JWT_BEARER
 from oidcmsg.oauth2 import AuthorizationRequest
+from oidcmsg.server.token.id_token import IDToken
 from oidcop.cookie_handler import CookieHandler
 from oidcop.oidc.provider_config import ProviderConfiguration
 from oidcop.oidc.registration import Registration as OPRegistration
-from oidcop.server import Server
-from oidcop.token.id_token import IDToken
-from oidcrp.defaults import JWT_BEARER
 import pytest
-import yaml
 
-from fedservice.entity import FederationEntity
+from fedservice.entity.fetch import Fetch
 from fedservice.entity_statement.statement import TrustChain
 from fedservice.fetch_entity_statement.fs2 import read_info
+from fedservice.op import FederationServer
 from fedservice.op.authorization import Authorization
 from fedservice.op.pushed_authorization import PushedAuthorization
 from fedservice.rp import FederationRP
@@ -130,7 +125,7 @@ class TestEndpoint(object):
                 },
                 "code": {"lifetime": 600},
                 "token": {
-                    "class": "oidcop.token.jwt_token.JWTToken",
+                    "class": "oidcmsg.server.token.jwt_token.JWTToken",
                     "kwargs": {
                         "lifetime": 3600,
                         "add_claims": [
@@ -145,7 +140,8 @@ class TestEndpoint(object):
                 },
                 "refresh": {"lifetime": 86400},
             },
-            "claims_interface": {"class": "oidcop.session.claims.ClaimsInterface", "kwargs": {}},
+            "claims_interface": {"class": "oidcmsg.server.session.claims.ClaimsInterface",
+                                 "kwargs": {}},
             "verify_ssl": False,
             "capabilities": CAPABILITIES,
             "keys": {"uri_path": "static/jwks.json", "key_defs": KEYSPEC},
@@ -198,7 +194,7 @@ class TestEndpoint(object):
             "authentication": {
                 "anon": {
                     "acr": "http://www.swamid.se/policy/assurance/al1",
-                    "class": "oidcop.user_authn.user.NoAuthn",
+                    "class": "oidcmsg.server.user_authn.user.NoAuthn",
                     "kwargs": {"user": "diana"},
                 }
             },
@@ -256,7 +252,6 @@ class TestEndpoint(object):
             httpd=Publisher(ROOT_DIR),
             trusted_roots=ANCHOR,
             root_dir=ROOT_DIR)
-
 
     def test_pushed_auth_urlencoded(self):
         # since all endpoint used the same endpoint_context I can grab anyone
