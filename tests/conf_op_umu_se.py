@@ -1,4 +1,4 @@
-from oidcop.cookie_handler import CookieHandler
+from oidcmsg.server.cookie_handler import CookieHandler
 
 DOMAIN = 'op.umu.se'
 BASE_URL = "https://{}".format(DOMAIN)
@@ -71,10 +71,10 @@ CONF = {
     'endpoint': {
         'webfinger': {
             'path': '.well-known/webfinger',
-            'class': 'oidcop.oidc.discovery.Discovery'},
+            'class': 'oidcmsg.server.oidc.discovery.Discovery'},
         'provider_info': {
             'path': '.well-known/openid-configuration',
-            'class': 'oidcop.oidc.provider_config.ProviderConfiguration',
+            'class': 'oidcmsg.server.oidc.provider_config.ProviderConfiguration',
             'kwargs': {'client_authn_method': None}},
         'federation_info': {
             'path': '.well-known/openid-federation',
@@ -86,11 +86,11 @@ CONF = {
             'kwargs': {'client_authn_method': None}},
         'registration_api': {
             'path': 'registration_api',
-            'class': 'oidcop.oidc.read_registration.RegistrationRead',
+            'class': 'oidcmsg.server.oidc.read_registration.RegistrationRead',
             'kwargs': {'client_authn_method': ['bearer_header']}},
         'introspection': {
             'path': 'introspection',
-            'class': 'oidcop.oauth2.introspection.Introspection',
+            'class': 'oidcmsg.server.oauth2.introspection.Introspection',
             'kwargs': {
                 'client_authn_method': ['client_secret_post'],
                 'release': ['username']}},
@@ -119,18 +119,18 @@ CONF = {
         },
         'token': {
             'path': 'token',
-            'class': 'oidcop.oidc.token.Token',
+            'class': 'oidcmsg.server.oidc.token.Token',
             'kwargs': {
                 'client_authn_method': ['client_secret_post', 'client_secret_basic',
                                         'client_secret_jwt', 'private_key_jwt']}},
         'userinfo': {
             'path': 'userinfo',
-            'class': 'oidcop.oidc.userinfo.UserInfo',
+            'class': 'oidcmsg.server.oidc.userinfo.UserInfo',
             'kwargs': {
                 'claim_types_supported': ['normal', 'aggregated', 'distributed']}},
         'end_session': {
             'path': 'session',
-            'class': 'oidcop.oidc.session.Session',
+            'class': 'oidcmsg.server.oidc.session.Session',
             'kwargs': {'logout_verify_url': 'verify_logout',
                        'post_logout_uri_path': 'post_logout',
                        'signing_alg': 'ES256',
@@ -150,7 +150,7 @@ CONF = {
             'class': 'oidcmsg.server.user_authn.user.NoAuthn',
             'kwargs': {'user': 'diana'}}},
     'cookie_dealer': {
-        'class': 'oidcop.cookie.CookieDealer',
+        'class': 'oidcmsg.server.cookie.CookieDealer',
         'sign_jwk': {
             'filename': 'private/cookie_sign_umu_jwk.json',
             'type': 'OCT',
@@ -192,12 +192,12 @@ CONF = {
     },
     'add_on': {
         'pkce': {
-            'function': 'oidcop.oidc.add_on.pkce.add_pkce_support',
+            'function': 'oidcmsg.server.oidc.add_on.pkce.add_pkce_support',
             'kwargs': {
                 'essential': False,
                 'code_challenge_method': ['S256', 'S384', 'S512']}},
         'claims': {
-            'function': 'oidcop.oidc.add_on.custom_scopes.add_custom_scopes',
+            'function': 'oidcmsg.server.oidc.add_on.custom_scopes.add_custom_scopes',
             'kwargs': {
                 'research_and_scholarship': ['name', 'given_name', 'family_name',
                                              'email', 'email_verified', 'sub', 'iss',

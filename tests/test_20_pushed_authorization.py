@@ -3,10 +3,10 @@ import os
 from cryptojwt import JWT
 from oidcmsg.defaults import JWT_BEARER
 from oidcmsg.oauth2 import AuthorizationRequest
+from oidcmsg.server.cookie_handler import CookieHandler
+from oidcmsg.server.oidc.provider_config import ProviderConfiguration
+from oidcmsg.server.oidc.registration import Registration as OPRegistration
 from oidcmsg.server.token.id_token import IDToken
-from oidcop.cookie_handler import CookieHandler
-from oidcop.oidc.provider_config import ProviderConfiguration
-from oidcop.oidc.registration import Registration as OPRegistration
 import pytest
 
 from fedservice.entity.fetch import Fetch

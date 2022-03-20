@@ -1,9 +1,9 @@
 import logging
 
 from cryptojwt.jwk import pems_to_x5c
-from oidcop.oidc import provider_config
 from oidcmsg import oidc
 from oidcmsg.oidc import ProviderConfigurationResponse
+from oidcmsg.server.oidc import provider_config
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +36,12 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
         _fe_ctx = _fe.get_context()
         _md = {_fe_ctx.entity_type: request_args.to_dict()}
         if _fe.collector.use_ssc:
-            with open(_fe.collector.web_cert_path,'r') as fp:
+            with open(_fe.collector.web_cert_path, 'r') as fp:
                 pem_cert = fp.read()
             x5c = pems_to_x5c([pem_cert])
-            return _fe_ctx.create_entity_statement(_fe_ctx.entity_id, sub=_fe_ctx.entity_id, metadata=_md,
-                                               x5c=x5c)
+            return _fe_ctx.create_entity_statement(_fe_ctx.entity_id, sub=_fe_ctx.entity_id,
+                                                   metadata=_md,
+                                                   x5c=x5c)
         else:
-            return _fe_ctx.create_entity_statement(_fe_ctx.entity_id, sub=_fe_ctx.entity_id, metadata=_md)
+            return _fe_ctx.create_entity_statement(_fe_ctx.entity_id, sub=_fe_ctx.entity_id,
+                                                   metadata=_md)

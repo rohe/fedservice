@@ -5,7 +5,7 @@ from typing import Union
 from cryptojwt import KeyJar
 from oidcmsg.server import ASConfiguration
 from oidcmsg.server import OPConfiguration
-from oidcop.server import Server
+from oidcmsg.server import Server
 
 from fedservice.entity import FederationEntity
 

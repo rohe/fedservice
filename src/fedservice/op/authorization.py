@@ -2,7 +2,7 @@ import logging
 
 from oidcmsg import oidc
 from oidcmsg.oidc import RegistrationRequest
-from oidcop.oidc import authorization
+from oidcmsg.server.oidc import authorization
 
 logger = logging.getLogger(__name__)
 

@@ -10,8 +10,8 @@ from flask import request
 from flask.helpers import make_response
 from flask.helpers import send_from_directory
 from oidcmsg.oauth2 import ResponseMessage
-from oidcop.exception import InvalidClient
-from oidcop.exception import UnknownClient
+from oidcmsg.server.exception import InvalidClient
+from oidcmsg.server.exception import UnknownClient
 import werkzeug
 
 from fedservice.rp.registration import Registration

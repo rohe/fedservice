@@ -23,7 +23,7 @@ from fedservice.entity_statement.verify import eval_policy_chain
 from fedservice.utils import load_json
 
 __author__ = 'Roland Hedberg'
-__version__ = '3.1.0'
+__version__ = '3.2.0'
 
 logger = logging.getLogger(__name__)
 

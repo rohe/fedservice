@@ -1,7 +1,7 @@
 import logging
 
-from oidcop.oidc import registration
 from oidcmsg.oidc import RegistrationRequest
+from oidcmsg.server.oidc import registration
 
 from fedservice.entity_statement.policy import diff2policy
 from fedservice.entity_statement.utils import create_authority_hints
@@ -35,7 +35,8 @@ class Registration(registration.Registration):
         # Collect trust chains
         trust_chains = _fe.collect_trust_chains(request, 'openid_relying_party')
 
-        _fe.proposed_authority_hints = create_authority_hints(_fe_cntx.authority_hints, trust_chains)
+        _fe.proposed_authority_hints = create_authority_hints(_fe_cntx.authority_hints,
+                                                              trust_chains)
 
         trust_chain = _fe.pick_trust_chain(trust_chains)
         _fe.trust_chain_anchor = trust_chain.anchor

@@ -68,7 +68,7 @@ OP_CONF = {
     "httpc_param": {'verify': False, "timeout": 2},
     "claims_interface": {"class": "oidcmsg.server.session.claims.ClaimsInterface", "kwargs": {}},
     "cookie_handler": {
-        "class": "oidcop.cookie_handler.CookieHandler",
+        "class": "oidcmsg.server.cookie_handler.CookieHandler",
         "kwargs": {
             "keys": {
                 "private_path": "private/cookie_jwks.json",

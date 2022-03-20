@@ -1,6 +1,6 @@
 import os
 
-from oidcop.util import importer
+from cryptojwt.utils import importer
 
 """
         'federation_api': {

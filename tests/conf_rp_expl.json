@@ -106,19 +106,19 @@
             "kwargs": {}
         },
         "authorization": {
-            "class": "oidcrp.oidc.authorization.Authorization",
+            "class": "oidcmsg.client.oidc.authorization.Authorization",
             "kwargs": {}
         },
         "accesstoken": {
-            "class": "oidcrp.oidc.access_token.AccessToken",
+            "class": "oidcmsg.client.oidc.access_token.AccessToken",
             "kwargs": {}
         },
         "userinfo": {
-            "class": "oidcrp.oidc.userinfo.UserInfo",
+            "class": "oidcmsg.client.oidc.userinfo.UserInfo",
             "kwargs": {}
         },
         "end_session": {
-            "class": "oidcrp.oidc.end_session.EndSession",
+            "class": "oidcmsg.client.oidc.end_session.EndSession",
             "kwargs": {}
         }
     },
@@ -185,19 +185,19 @@
                     "kwargs": {}
                 },
                 "authorization": {
-                    "class": "oidcrp.oidc.authorization.Authorization",
+                    "class": "oidcmsg.client.oidc.authorization.Authorization",
                     "kwargs": {}
                 },
                 "accesstoken": {
-                    "class": "oidcrp.oidc.access_token.AccessToken",
+                    "class": "oidcmsg.client.oidc.access_token.AccessToken",
                     "kwargs": {}
                 },
                 "userinfo": {
-                    "class": "oidcrp.oidc.userinfo.UserInfo",
+                    "class": "oidcmsg.client.oidc.userinfo.UserInfo",
                     "kwargs": {}
                 },
                 "end_session": {
-                    "class": "oidcrp.oidc.end_session.EndSession",
+                    "class": "oidcmsg.client.oidc.end_session.EndSession",
                     "kwargs": {}
                 }
             }
@@ -237,19 +237,19 @@
                     "kwargs": {}
                 },
                 "authorization": {
-                    "class": "oidcrp.oidc.authorization.Authorization",
+                    "class": "oidcmsg.client.oidc.authorization.Authorization",
                     "kwargs": {}
                 },
                 "accesstoken": {
-                    "class": "oidcrp.oidc.access_token.AccessToken",
+                    "class": "oidcmsg.client.oidc.access_token.AccessToken",
                     "kwargs": {}
                 },
                 "userinfo": {
-                    "class": "oidcrp.oidc.userinfo.UserInfo",
+                    "class": "oidcmsg.client.oidc.userinfo.UserInfo",
                     "kwargs": {}
                 },
                 "end_session": {
-                    "class": "oidcrp.oidc.end_session.EndSession",
+                    "class": "oidcmsg.client.oidc.end_session.EndSession",
                     "kwargs": {}
                 }
             }

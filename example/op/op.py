@@ -10,9 +10,9 @@ from urllib.parse import urlparse
 from flask import Flask
 from oidcmsg.configure import Configuration
 from oidcmsg.configure import create_from_config_file
-from oidcop.util import get_http_params
-from oidcop.utils import create_context
-from oidcop.utils import lower_or_upper
+from oidcmsg.configure import lower_or_upper
+from oidcmsg.server.util import get_http_params
+from oidcmsg.ssl_context import create_context
 
 from fedservice.configure import DEFAULT_FED_FILE_ATTRIBUTE_NAMES
 from fedservice.configure import FedOpConfiguration

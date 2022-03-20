@@ -65,8 +65,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Topic :: Software Development :: Libraries :: Python Modules"],
     install_requires=[
-        'oidcrp>=2.2.0',
-        'oidcop>=2.5.0'
+        'oidcmsg>=2.0.0'
     ],
     tests_require=[
         "responses",

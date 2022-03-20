@@ -3,7 +3,7 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
-from oidcop import server
+from oidcmsg import server
 
 from fedservice.configure import FedOpConfiguration
 from fedservice.entity import FederationEntity

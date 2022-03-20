@@ -13,6 +13,7 @@ from cryptojwt.utils import importer
 from oidcmsg.configure import Configuration
 from oidcmsg.context import OidcContext
 from oidcmsg.server import build_endpoints
+from oidcmsg.server import do_endpoints
 from requests import request
 
 from fedservice import message
@@ -27,18 +28,18 @@ __author__ = 'Roland Hedberg'
 logger = logging.getLogger(__name__)
 
 
-def do_endpoints(conf, server_get):
-    endpoints = build_endpoints(conf["endpoint"], server_get=server_get, issuer=conf["entity_id"])
-
-    _cap = conf.get("capabilities", {})
-
-    for endpoint, endpoint_instance in endpoints.items():
-        if endpoint_instance.endpoint_info:
-            for key, val in endpoint_instance.endpoint_info.items():
-                if key not in _cap:
-                    _cap[key] = val
-
-    return endpoints
+# def do_endpoints(conf, server_get):
+#     endpoints = build_endpoints(conf["endpoint"], server_get=server_get, issuer=conf["entity_id"])
+#
+#     _cap = conf.get("capabilities", {})
+#
+#     for endpoint, endpoint_instance in endpoints.items():
+#         if endpoint_instance.endpoint_info:
+#             for key, val in endpoint_instance.endpoint_info.items():
+#                 if key not in _cap:
+#                     _cap[key] = val
+#
+#     return endpoints
 
 
 def create_self_signed_trust_marks(spec, **kwargs):
@@ -203,6 +204,8 @@ class FederationEntity(object):
 
         if config.get("entity_id") is None:
             config['entity_id'] = entity_id
+        if 'issuer' not in config:
+            config['issuer'] = config["entity_id"]
 
         if 'endpoint' in config:
             self.endpoint = do_endpoints(config, self.server_get)
