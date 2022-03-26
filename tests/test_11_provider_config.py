@@ -1,8 +1,8 @@
 import os
 
 from cryptojwt.jws.jws import factory
-from oidcmsg.server.user_authn.authn_context import UNSPECIFIED
-from oidcmsg.server.user_authn.user import NoAuthn
+from idpyoidc.server.user_authn.authn_context import UNSPECIFIED
+from idpyoidc.server.user_authn.user import NoAuthn
 import pytest
 
 from fedservice.entity.fetch import Fetch
@@ -36,7 +36,7 @@ class TestEndpoint(object):
             "grant_expires_in": 300,
             "refresh_token_expires_in": 86400,
             "verify_ssl": False,
-            "claims_interface": {"class": "oidcmsg.server.session.claims.ClaimsInterface", "kwargs": {}},
+            "claims_interface": {"class": "idpyoidc.server.session.claims.ClaimsInterface", "kwargs": {}},
             'keys': {
                 'key_defs': KEYSPEC,
                 "private_path": "own/jwks.json",

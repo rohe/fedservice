@@ -347,7 +347,7 @@
             },
             "claims_interface": {
                 "class": {
-                    "function": "oidcmsg.server.session.claims.ClaimsInterface"
+                    "function": "idpyoidc.server.session.claims.ClaimsInterface"
                 }
             },
             "add_on": {

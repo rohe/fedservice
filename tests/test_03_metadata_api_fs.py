@@ -1,7 +1,7 @@
 import os
 
 from cryptojwt.jws.jws import factory
-from oidcmsg.oidc import RegistrationResponse
+from idpyoidc.message.oidc import RegistrationResponse
 
 from fedservice.message import EntityStatement
 from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement

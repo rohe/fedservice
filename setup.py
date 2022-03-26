@@ -65,7 +65,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Topic :: Software Development :: Libraries :: Python Modules"],
     install_requires=[
-        'oidcmsg>=2.0.0'
+        'idpyoidc==1.0.0'
     ],
     tests_require=[
         "responses",

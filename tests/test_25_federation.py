@@ -3,9 +3,9 @@ import os
 import sys
 from urllib.parse import parse_qs
 
-from oidcmsg.configure import Configuration
-from oidcmsg.configure import create_from_config_file
-from oidcmsg.configure import lower_or_upper
+from idpyoidc.configure import Configuration
+from idpyoidc.configure import create_from_config_file
+from idpyoidc.configure import lower_or_upper
 import pytest
 import responses
 

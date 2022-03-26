@@ -6,10 +6,10 @@ from typing import Union
 
 from cryptojwt import KeyJar
 from cryptojwt.key_jar import init_key_jar
-from oidcmsg.configure import Configuration
-from oidcmsg.exception import MissingAttribute
-from oidcrp import rp_handler
-from oidcrp.oauth2 import Client
+from idpyoidc.configure import Configuration
+from idpyoidc.exception import MissingAttribute
+from idpyoidc.client import rp_handler
+from idpyoidc.client.oauth2 import Client
 
 from fedservice.entity import FederationEntity
 from fedservice.entity import create_federation_entity
@@ -125,7 +125,7 @@ class RPHandler(rp_handler.RPHandler):
 
         :param iss_id: The issuer ID
         :param user: A user identifier
-        :return: A :py:class:`oidcrp.oidc.Client` instance
+        :return: A :py:class:`idpyoidc.client.oidc.Client` instance
         """
 
         logger.info('client_setup: iss_id={}, user={}'.format(iss_id, user))

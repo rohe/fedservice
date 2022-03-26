@@ -3,7 +3,7 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
-from oidcrp import entity
+from idpyoidc.client import entity
 
 from fedservice.entity import FederationEntity
 from fedservice.configure import FedEntityConfiguration

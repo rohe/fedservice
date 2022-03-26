@@ -90,23 +90,23 @@
       "kwargs": {}
     },
     "authorization": {
-      "class": "oidcmsg.client.oidc.authorization.Authorization",
+      "class": "idpyoidc.client.oidc.authorization.Authorization",
       "kwargs": {}
     },
     "accesstoken": {
-      "class": "oidcmsg.client.oidc.access_token.AccessToken",
+      "class": "idpyoidc.client.oidc.access_token.AccessToken",
       "kwargs": {}
     },
     "refresh_accesstoken": {
-      "class": "oidcmsg.client.oidc.refresh_access_token.RefreshAccessToken",
+      "class": "idpyoidc.client.oidc.refresh_access_token.RefreshAccessToken",
       "kwargs": {}
     },
     "userinfo": {
-      "class": "oidcmsg.client.oidc.userinfo.UserInfo",
+      "class": "idpyoidc.client.oidc.userinfo.UserInfo",
       "kwargs": {}
     },
     "end_session": {
-      "class": "oidcmsg.client.oidc.end_session.EndSession",
+      "class": "idpyoidc.client.oidc.end_session.EndSession",
       "kwargs": {}
     }
   },

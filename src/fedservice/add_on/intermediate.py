@@ -1,7 +1,7 @@
 import logging
 from typing import Dict
 
-from oidcmsg.server.endpoint import Endpoint
+from idpyoidc.server.endpoint import Endpoint
 
 LOGGER = logging.getLogger(__name__)
 

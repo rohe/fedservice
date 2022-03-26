@@ -4,7 +4,7 @@ from cryptojwt.jwk import pems_to_x5c
 from cryptojwt.jwk import x5c_to_pems
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import build_keyjar
-from oidcmsg.exception import MissingPage
+from idpyoidc.exception import MissingPage
 import pytest
 import requests
 import responses

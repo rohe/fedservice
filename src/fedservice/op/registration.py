@@ -1,7 +1,7 @@
 import logging
 
-from oidcmsg.oidc import RegistrationRequest
-from oidcmsg.server.oidc import registration
+from idpyoidc.message.oidc import RegistrationRequest
+from idpyoidc.server.oidc import registration
 
 from fedservice.entity_statement.policy import diff2policy
 from fedservice.entity_statement.utils import create_authority_hints

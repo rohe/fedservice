@@ -9,8 +9,8 @@ from cryptojwt import KeyJar
 from cryptojwt.jwk import x5c_to_pems
 from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import utc_time_sans_frac
-from oidcmsg.exception import MissingPage
-from oidcmsg.impexp import ImpExp
+from idpyoidc.exception import MissingPage
+from idpyoidc.impexp import ImpExp
 import requests
 from requests.exceptions import ConnectionError
 from requests.exceptions import SSLError

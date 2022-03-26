@@ -2,8 +2,8 @@ import os
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
-from oidcmsg.configure import create_from_config_file
-from oidcmsg.client.configure import RPConfiguration
+from idpyoidc.configure import create_from_config_file
+from idpyoidc.client.configure import RPConfiguration
 import pytest
 import responses
 

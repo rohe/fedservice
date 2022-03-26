@@ -1,7 +1,7 @@
 import json
 import logging
 
-from oidcmsg.client.exception import ResponseError
+from idpyoidc.client.exception import ResponseError
 
 logger = logging.getLogger(__name__)
 

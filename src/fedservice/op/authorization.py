@@ -1,8 +1,8 @@
 import logging
 
-from oidcmsg import oidc
-from oidcmsg.oidc import RegistrationRequest
-from oidcmsg.server.oidc import authorization
+from idpyoidc.message import oidc
+from idpyoidc.message.oidc import RegistrationRequest
+from idpyoidc.server.oidc import authorization
 
 logger = logging.getLogger(__name__)
 

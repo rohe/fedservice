@@ -1,7 +1,7 @@
 import logging
 
 from cryptojwt.jwt import utc_time_sans_frac
-from oidcmsg.impexp import ImpExp
+from idpyoidc.impexp import ImpExp
 
 logger = logging.getLogger(__name__)
 

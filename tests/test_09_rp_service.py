@@ -4,10 +4,10 @@ from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
 from cryptojwt.jws.jws import factory
-from oidcmsg.client.client_auth import PrivateKeyJWT
-from oidcmsg.defaults import JWT_BEARER
-from oidcmsg.oidc import AccessTokenRequest
-from oidcrp.defaults import DEFAULT_OIDC_SERVICES
+from idpyoidc.client.client_auth import PrivateKeyJWT
+from idpyoidc.defaults import JWT_BEARER
+from idpyoidc.message.oidc import AccessTokenRequest
+from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 import pytest
 
 from fedservice import eval_chain
@@ -234,10 +234,10 @@ class TestRpServiceAuto(object):
             },
             "services": {
                 'authorization': {
-                    'class': 'oidcrp.oidc.authorization.Authorization'
+                    'class': 'idpyoidc.client.oidc.authorization.Authorization'
                 },
                 'access_token': {
-                    'class': 'oidcrp.oidc.access_token.AccessToken'
+                    'class': 'idpyoidc.client.oidc.access_token.AccessToken'
                 }
             }, "federation": {
                 "entity_id": entity_id,

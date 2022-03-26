@@ -7,10 +7,10 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
-from oidcmsg.configure import Configuration
-from oidcmsg.server import build_endpoints
-from oidcmsg.server.endpoint_context import EndpointContext
-from oidcmsg.server.exception import ConfigurationError
+from idpyoidc.configure import Configuration
+from idpyoidc.server import build_endpoints
+from idpyoidc.server.endpoint_context import EndpointContext
+from idpyoidc.server.exception import ConfigurationError
 
 from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.collect import branch2lists

@@ -10,10 +10,10 @@ from cryptojwt import KeyJar
 from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
 from cryptojwt.utils import importer
-from oidcmsg.configure import Configuration
-from oidcmsg.context import OidcContext
-from oidcmsg.server import build_endpoints
-from oidcmsg.server import do_endpoints
+from idpyoidc.configure import Configuration
+from idpyoidc.context import OidcContext
+from idpyoidc.server import build_endpoints
+from idpyoidc.server import do_endpoints
 from requests import request
 
 from fedservice import message

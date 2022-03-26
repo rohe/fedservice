@@ -2,10 +2,10 @@ import logging
 from typing import Optional
 from typing import Union
 
-from oidcmsg import oidc
-from oidcmsg.message import Message
-from oidcmsg.server.endpoint import Endpoint
-from oidcmsg.server.endpoint_context import init_service
+from idpyoidc.message import oidc
+from idpyoidc.message import Message
+from idpyoidc.server.endpoint import Endpoint
+from idpyoidc.server.endpoint_context import init_service
 
 logger = logging.getLogger(__name__)
 

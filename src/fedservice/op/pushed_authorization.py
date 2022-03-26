@@ -1,6 +1,6 @@
 import uuid
 
-from oidcmsg import oauth2
+from idpyoidc.message import oauth2
 
 from fedservice.op.authorization import Authorization
 

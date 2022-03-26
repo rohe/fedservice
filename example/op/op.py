@@ -8,11 +8,11 @@ import os
 from urllib.parse import urlparse
 
 from flask import Flask
-from oidcmsg.configure import Configuration
-from oidcmsg.configure import create_from_config_file
-from oidcmsg.configure import lower_or_upper
-from oidcmsg.server.util import get_http_params
-from oidcmsg.ssl_context import create_context
+from idpyoidc.configure import Configuration
+from idpyoidc.configure import create_from_config_file
+from idpyoidc.configure import lower_or_upper
+from idpyoidc.server.util import get_http_params
+from idpyoidc.ssl_context import create_context
 
 from fedservice.configure import DEFAULT_FED_FILE_ATTRIBUTE_NAMES
 from fedservice.configure import FedOpConfiguration

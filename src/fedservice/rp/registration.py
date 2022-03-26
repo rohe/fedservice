@@ -1,11 +1,11 @@
 import logging
 
 from cryptojwt.jws.jws import factory
-from oidcmsg.client.exception import ResponseError
-from oidcmsg.oidc import ProviderConfigurationResponse
-from oidcmsg.oidc import RegistrationRequest
-from oidcmsg.oidc import RegistrationResponse
-from oidcrp.oidc import registration
+from idpyoidc.client.exception import ResponseError
+from idpyoidc.message.oidc import ProviderConfigurationResponse
+from idpyoidc.message.oidc import RegistrationRequest
+from idpyoidc.message.oidc import RegistrationResponse
+from idpyoidc.client.oidc import registration
 
 from fedservice.entity_statement.collect import branch2lists
 from fedservice.entity_statement.collect import unverified_entity_statement

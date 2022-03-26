@@ -1,7 +1,7 @@
 import logging
 
-from oidcmsg import oidc
-from oidcmsg.server.endpoint import Endpoint
+from idpyoidc.message import oidc
+from idpyoidc.server.endpoint import Endpoint
 
 from fedservice.exception import FedServiceError
 from fedservice.message import EntityStatement

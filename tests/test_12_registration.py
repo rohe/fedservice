@@ -1,7 +1,7 @@
 import copy
 import os
 
-from oidcmsg.client.exception import OtherError
+from idpyoidc.client.exception import OtherError
 import pytest
 import responses
 
@@ -66,9 +66,9 @@ OP_CONF = {
     "grant_expires_in": 300,
     "refresh_token_expires_in": 86400,
     "httpc_param": {'verify': False, "timeout": 2},
-    "claims_interface": {"class": "oidcmsg.server.session.claims.ClaimsInterface", "kwargs": {}},
+    "claims_interface": {"class": "idpyoidc.server.session.claims.ClaimsInterface", "kwargs": {}},
     "cookie_handler": {
-        "class": "oidcmsg.server.cookie_handler.CookieHandler",
+        "class": "idpyoidc.server.cookie_handler.CookieHandler",
         "kwargs": {
             "keys": {
                 "private_path": "private/cookie_jwks.json",
@@ -116,7 +116,7 @@ OP_CONF = {
     "authentication": {
         "anon": {
             'acr': "urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified",
-            "class": 'oidcmsg.server.user_authn.user.NoAuthn',
+            "class": 'idpyoidc.server.user_authn.user.NoAuthn',
             "kwargs": {"user": "diana"}
         }
     },

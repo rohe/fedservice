@@ -2,7 +2,7 @@
 import argparse
 import json
 
-from oidcmsg.logging import configure_logging
+from idpyoidc.logging import configure_logging
 
 from fedservice import branch2lists
 from fedservice import eval_chain

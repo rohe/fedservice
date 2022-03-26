@@ -1,9 +1,9 @@
 import logging
 
 from cryptojwt.jwk import pems_to_x5c
-from oidcmsg import oidc
-from oidcmsg.oidc import ProviderConfigurationResponse
-from oidcmsg.server.oidc import provider_config
+from idpyoidc.message import oidc
+from idpyoidc.message.oidc import ProviderConfigurationResponse
+from idpyoidc.server.oidc import provider_config
 
 logger = logging.getLogger(__name__)
 

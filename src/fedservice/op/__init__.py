@@ -3,9 +3,9 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
-from oidcmsg.server import ASConfiguration
-from oidcmsg.server import OPConfiguration
-from oidcmsg.server import Server
+from idpyoidc.server import ASConfiguration
+from idpyoidc.server import OPConfiguration
+from idpyoidc.server import Server
 
 from fedservice.entity import FederationEntity
 

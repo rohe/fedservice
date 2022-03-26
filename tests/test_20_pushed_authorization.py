@@ -1,12 +1,12 @@
 import os
 
 from cryptojwt import JWT
-from oidcmsg.defaults import JWT_BEARER
-from oidcmsg.oauth2 import AuthorizationRequest
-from oidcmsg.server.cookie_handler import CookieHandler
-from oidcmsg.server.oidc.provider_config import ProviderConfiguration
-from oidcmsg.server.oidc.registration import Registration as OPRegistration
-from oidcmsg.server.token.id_token import IDToken
+from idpyoidc.defaults import JWT_BEARER
+from idpyoidc.message.oauth2 import AuthorizationRequest
+from idpyoidc.server.cookie_handler import CookieHandler
+from idpyoidc.server.oidc.provider_config import ProviderConfiguration
+from idpyoidc.server.oidc.registration import Registration as OPRegistration
+from idpyoidc.server.token.id_token import IDToken
 import pytest
 
 from fedservice.entity.fetch import Fetch
@@ -125,7 +125,7 @@ class TestEndpoint(object):
                 },
                 "code": {"lifetime": 600},
                 "token": {
-                    "class": "oidcmsg.server.token.jwt_token.JWTToken",
+                    "class": "idpyoidc.server.token.jwt_token.JWTToken",
                     "kwargs": {
                         "lifetime": 3600,
                         "add_claims": [
@@ -140,7 +140,7 @@ class TestEndpoint(object):
                 },
                 "refresh": {"lifetime": 86400},
             },
-            "claims_interface": {"class": "oidcmsg.server.session.claims.ClaimsInterface",
+            "claims_interface": {"class": "idpyoidc.server.session.claims.ClaimsInterface",
                                  "kwargs": {}},
             "verify_ssl": False,
             "capabilities": CAPABILITIES,
@@ -194,7 +194,7 @@ class TestEndpoint(object):
             "authentication": {
                 "anon": {
                     "acr": "http://www.swamid.se/policy/assurance/al1",
-                    "class": "oidcmsg.server.user_authn.user.NoAuthn",
+                    "class": "idpyoidc.server.user_authn.user.NoAuthn",
                     "kwargs": {"user": "diana"},
                 }
             },

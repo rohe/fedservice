@@ -1,6 +1,6 @@
-from oidcmsg.client.exception import OtherError
-from oidcrp.oidc import registration
-from oidcrp.oidc.authorization import Authorization
+from idpyoidc.client.exception import OtherError
+from idpyoidc.client.oidc import registration
+from idpyoidc.client.oidc.authorization import Authorization
 
 
 def add_callback_uris(request_args=None, service=None, **kwargs):

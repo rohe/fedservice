@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class KeyBundle(key_bundle.KeyBundle):
     """
-    Extended :py:class:`oidcmsg.key_bundle.KeyBundle` class that supports
+    Extended :py:class:`idpyoidc.key_bundle.KeyBundle` class that supports
     signed JWKS uris.
     """
 

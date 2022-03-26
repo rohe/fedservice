@@ -1,5 +1,5 @@
-from oidcmsg.oidc import RegistrationRequest
-from oidcmsg.time_util import utc_time_sans_frac
+from idpyoidc.message.oidc import RegistrationRequest
+from idpyoidc.time_util import utc_time_sans_frac
 
 from fedservice.message import EntityStatement
 from fedservice.message import Metadata

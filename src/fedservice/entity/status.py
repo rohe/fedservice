@@ -1,10 +1,10 @@
 import logging
 
 from cryptojwt.jws.jws import factory
-from oidcmsg import oidc
-from oidcmsg.exception import MissingAttribute
-from oidcmsg.exception import MissingParameter
-from oidcmsg.server.endpoint import Endpoint
+from idpyoidc.message import oidc
+from idpyoidc.exception import MissingAttribute
+from idpyoidc.exception import MissingParameter
+from idpyoidc.server.endpoint import Endpoint
 
 from fedservice.message import EntityStatement
 

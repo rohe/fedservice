@@ -2,9 +2,9 @@ import logging
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 
-from oidcmsg.client.exception import ResponseError
-from oidcmsg.oidc import ProviderConfigurationResponse
-from oidcrp.oidc.provider_info_discovery import ProviderInfoDiscovery
+from idpyoidc.client.exception import ResponseError
+from idpyoidc.message.oidc import ProviderConfigurationResponse
+from idpyoidc.client.oidc.provider_info_discovery import ProviderInfoDiscovery
 
 from fedservice.entity_statement.collect import branch2lists
 from fedservice.entity_statement.collect import verify_self_signed_signature

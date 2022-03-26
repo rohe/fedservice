@@ -9,7 +9,7 @@ from urllib.parse import urlunsplit
 
 from cryptojwt import JWT
 from cryptojwt.key_jar import init_key_jar
-from oidcmsg.configure import create_from_config_file
+from idpyoidc.configure import create_from_config_file
 
 from fedservice.configure import DEFAULT_FED_FILE_ATTRIBUTE_NAMES
 from fedservice.configure import FedEntityConfiguration

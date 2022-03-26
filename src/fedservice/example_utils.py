@@ -4,9 +4,9 @@ import os
 from typing import Dict, Optional, List
 
 from cryptojwt.key_jar import init_key_jar
-from oidcmsg.configure import create_from_config_file
-from oidcmsg.configure import Base
-from oidcmsg.configure import lower_or_upper
+from idpyoidc.configure import create_from_config_file
+from idpyoidc.configure import Base
+from idpyoidc.configure import lower_or_upper
 
 
 class Configuration(Base):

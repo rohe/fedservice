@@ -70,11 +70,11 @@
         "kwargs": {
           "client_authn_method": null,
           "subordinates": {
-            "class": "oidcmsg.storage.abfile.AbstractFileSystem",
+            "class": "idpyoidc.storage.abfile.AbstractFileSystem",
             "kwargs": {
               "fdir": "swamid/subordinates",
-              "value_conv": "oidcmsg.util.JSON",
-              "key_conv": "oidcmsg.util.QPKey"
+              "value_conv": "idpyoidc.util.JSON",
+              "key_conv": "idpyoidc.util.QPKey"
             }
           }
         }
