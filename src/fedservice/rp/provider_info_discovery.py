@@ -21,9 +21,8 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
     request_body_type = 'jose'
     response_body_type = 'jose'
 
-    def __init__(self, client_get, conf=None, client_authn_factory=None, **kwargs):
-        ProviderInfoDiscovery.__init__(
-            self, client_get, conf=conf, client_authn_factory=client_authn_factory)
+    def __init__(self, client_get, conf=None, **kwargs):
+        ProviderInfoDiscovery.__init__(self, client_get, conf=conf)
 
     def get_request_parameters(self, method="GET", **kwargs):
         try:
@@ -113,7 +112,10 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         _pi = provider_info_per_trust_anchor[_trust_anchor]
         _context.set('provider_info', _pi)
         self._update_service_context(_pi)
-        _context.set('behaviour', map_configuration_to_preference(_pi, _context.client_preferences))
+        _client = self.client_get("entity")
+        _metadata = _client.collect_metadata()
+        _metadata.update(_context.federation_entity.get_metadata())
+        _context.set('behaviour', map_configuration_to_preference(_pi, _metadata))
 
     def parse_response(self, info, sformat="", state="", **kwargs):
         # returns a list of TrustChain instances

@@ -11,9 +11,8 @@ def add_callback_uris(request_args=None, service=None, **kwargs):
 
 class FedAuthorization(Authorization):
 
-    def __init__(self, client_get, client_authn_factory=None, conf=None):
-        Authorization.__init__(self, client_get=client_get,
-                               client_authn_factory=client_authn_factory, conf=conf)
+    def __init__(self, client_get, conf=None):
+        Authorization.__init__(self, client_get=client_get, conf=conf)
         self.pre_construct.insert(0, add_callback_uris)
         self.pre_construct.append(self._automatic_registration)
 

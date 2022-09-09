@@ -1,6 +1,11 @@
+import json
 import os
+from typing import Optional
+from typing import Union
 
-from cryptojwt.jws.jws import factory
+from idpyoidc.client.configure import get_configuration
+from idpyoidc.configure import Configuration
+from idpyoidc.util import instantiate
 import pytest
 
 from fedservice.entity import FederationEntity
@@ -11,18 +16,28 @@ KEYDEFS = [
     {"type": "EC", "crv": "P-256", "use": ["sig"]},
 ]
 
-BASEDIR = os.path.abspath(os.path.dirname(__file__))
+BASE_PATH = os.path.abspath(os.path.dirname(__file__))
+ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
 
 ENTITY_ID = "https://example.com/"
+jwks = open(os.path.join(BASE_PATH, 'base_data', 'feide.no', 'feide.no', 'jwks.json')).read()
+ANCHOR = {'https://feide.no': json.loads(jwks)}
 
 
-class TestNonLeafEndpoint(object):
-    @pytest.fixture(autouse=True)
-    def create_endpoint(self):
-        conf = {
-            "httpc_params": {"verify": False, "timeout": 1},
-            "federation": {
-                "entity_id": ENTITY_ID,
+class Foo():
+    def __int__(self, config=None):
+        self.config = get_configuration(config)
+        # OidcContext.__init__(self, config, keyjar, entity_id=config.conf.get("entity_id", ""))
+
+        self.object = {entity_type: instantiate(args['class'], **args["kwargs"]) for
+                       entity_type, args in config.items()}
+
+
+def test_entity():
+    config = {
+        "federation_entity": {
+            'class': FederationEntity,
+            'kwargs': {
                 "endpoint": {
                     "fetch": {
                         "path": "fetch",
@@ -30,28 +45,15 @@ class TestNonLeafEndpoint(object):
                         "kwargs": {"client_authn_method": None},
                     }
                 },
+                "entity_id": ENTITY_ID,
                 "keys": {"uri_path": "static/fed_jwks.json", "key_defs": KEYDEFS},
-                'authority_hints': os.path.join(BASEDIR,
-                                                'base_data/op.ntnu.no/op.ntnu.no/authority.json'),
-                'trusted_roots': os.path.join(BASEDIR, 'trusted_roots.json'),
-                'priority': [],
-                'entity_type': 'federation_entity',
-                "name": "Example Entity",
-                "contacts": "operations@example.com"
+                "trusted_roots": ANCHOR,
+                "authority_hints": ['https://ntnu.no']
             }
-        }
-        server = FederationEntity(config=conf.get("federation"), entity_id=ENTITY_ID, cwd=BASEDIR)
-        self.endpoint = server.server_get("endpoint", "fetch")
+        },
+        "contacts": "operations@example.com"
+    }
+    entity = Foo()
 
-    def test_fetch(self):
-        args = self.endpoint.process_request({"iss": ENTITY_ID})
-        msg = self.endpoint.do_response(response_args=args["response_args"],
-                                        request={"iss": ENTITY_ID})
-        _res = factory(msg["response"])
-        assert _res
-        _payload = _res.jwt.payload()
-        assert "metadata" in _payload
-        _metadata = _payload["metadata"]
-        assert "federation_entity" in _metadata
-        _entity = _metadata["federation_entity"]
-        assert "name" in _entity
+    entity_configuration = entity.object["federation_entity"].construct_entity_configuration()
+    assert entity_configuration

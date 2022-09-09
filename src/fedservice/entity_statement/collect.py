@@ -21,9 +21,6 @@ from .cache import ESCache
 logger = logging.getLogger(__name__)
 
 
-class FailedConfigurationRetrieval(Exception):
-    pass
-
 
 def construct_well_known_url(entity_id, typ):
     p = urlparse(entity_id)

@@ -32,3 +32,7 @@ class UnknownEntity(FedServiceError):
 
 class UnknownCriticalExtension(FedServiceError):
     pass
+
+class FailedConfigurationRetrieval(Exception):
+    pass
+

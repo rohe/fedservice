@@ -13,7 +13,6 @@ from fedservice.entity_statement.collect import unverified_entity_statement
 from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement
 from fedservice.op import FederationServer
 from fedservice.op.provider_config import ProviderConfiguration
-from fedservice.server import Server
 from tests.utils import get_netloc
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))

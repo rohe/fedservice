@@ -24,8 +24,7 @@ class Registration(registration.Registration):
     response_body_type = 'jose'
 
     def __init__(self, client_get, conf=None, client_authn_factory=None, **kwargs):
-        registration.Registration.__init__(self, client_get, conf=conf,
-                                           client_authn_factory=client_authn_factory)
+        registration.Registration.__init__(self, client_get, conf=conf)
         #
         self.post_construct.append(self.create_entity_statement)
 
@@ -65,17 +64,6 @@ class Registration(registration.Registration):
 
     def _get_trust_anchor_id(self, entity_statement):
         return entity_statement.get('trust_anchor_id')
-
-        # _metadata = entity_statement.get('metadata')
-        # if not _metadata:
-        #     return None
-        #
-        # _fed_entity = _metadata.get('federation_entity')
-        # if not _fed_entity:
-        #     return None
-        #
-        # _trust_anchor_id = _fed_entity.get('trust_anchor_id')
-        # return _trust_anchor_id
 
     def get_trust_anchor_id(self, entity_statement):
         _fe_context = self.client_get("service_context").federation_entity.get_context()

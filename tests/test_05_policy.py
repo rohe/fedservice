@@ -291,12 +291,12 @@ def test_simple_policy_combinations(typ, superior, subordinate, result):
 
 @pytest.mark.parametrize("superior, subordinate, result", COMPLEX)
 def test_complex_policy_combinations(superior, subordinate, result):
-        if result in [PolicyError]:
-            with pytest.raises(result):
-                combine_claim_policy(superior, subordinate)
-        else:
-            cp = combine_claim_policy(superior, subordinate)
-            assert assert_equal(cp, result)
+    if result in [PolicyError]:
+        with pytest.raises(result):
+            combine_claim_policy(superior, subordinate)
+    else:
+        cp = combine_claim_policy(superior, subordinate)
+        assert assert_equal(cp, result)
 
 
 FED = {

@@ -47,6 +47,6 @@ def test_unpack_signed_jwks():
         rsps.add("GET", _signed_jwks_url, body=_jws, status=200,
                  content_type= "application/jwt")
 
-        _kb.do_remote()
+        _kb.update()
 
     assert len(_kb) == 2

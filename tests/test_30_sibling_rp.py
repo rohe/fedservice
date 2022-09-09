@@ -3,7 +3,7 @@ from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
 from idpyoidc.configure import create_from_config_file
-from idpyoidc.client.configure import RPConfiguration
+from idpyoidc.client.configure import Configuration
 import pytest
 import responses
 
@@ -50,7 +50,7 @@ class TestEndpointPersistence(object):
     def create_rph(self):
         _file = os.path.join(BASE_PATH, "conf_rp_auto.json")
         # automatic means no implicit registration
-        config = create_from_config_file(RPConfiguration,
+        config = create_from_config_file(Configuration,
                                          entity_conf=[
                                              {"class": FedEntityConfiguration,
                                               "attr": "federation",

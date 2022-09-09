@@ -53,7 +53,7 @@ setup(
     url='https://github.com/IdentityPython/oidcrp/',
     packages=["fedservice", "fedservice/entity_statement", "fedservice/rp",
               "fedservice/fetch_entity_statement", "fedservice/op", "fedservice/entity",
-              "fedservice/trust_mark_issuer",
+              "fedservice/trust_mark_issuer", "fedservice/operator",
               "fedservice/op/add_on"],
     package_dir={"": "src"},
     classifiers=[
@@ -65,7 +65,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Topic :: Software Development :: Libraries :: Python Modules"],
     install_requires=[
-        'idpyoidc==1.0.0'
+        'idpyoidc==1.3.0'
     ],
     tests_require=[
         "responses",

@@ -6,10 +6,11 @@ from typing import Union
 
 from cryptojwt import KeyJar
 from cryptojwt.key_jar import init_key_jar
-from idpyoidc.configure import Configuration
-from idpyoidc.exception import MissingAttribute
 from idpyoidc.client import rp_handler
 from idpyoidc.client.oauth2 import Client
+from idpyoidc.client.specification import oidc
+from idpyoidc.configure import Configuration
+from idpyoidc.exception import MissingAttribute
 
 from fedservice.entity import FederationEntity
 from fedservice.entity import create_federation_entity
@@ -22,9 +23,26 @@ DEFAULT_OIDC_FED_SERVICES = {
 }
 
 
-class FederationRP(Client):
+class Specification(oidc.Specification):
+    attributes = oidc.Specification.attributes.copy()
+    attributes.update({
+        "client_registration_types": []
+    })
+
     def __init__(self,
-                 client_authn_factory: Optional[Callable] = None,
+                 metadata: Optional[dict] = None,
+                 usage: Optional[dict] = None,
+                 behaviour: Optional[dict] = None,
+                 ):
+        oidc.Specification.__init__(self, metadata=metadata, usage=usage, behaviour=behaviour)
+
+
+class FederationRP(Client):
+    metadata_attributes = {
+        "client_registration_types": []
+    }
+
+    def __init__(self,
                  keyjar: Optional[KeyJar] = None,
                  config: Optional[Union[dict, Configuration]] = None,
                  services: Optional[dict] = None,
@@ -32,14 +50,15 @@ class FederationRP(Client):
                  httpc_params: Optional[dict] = None,
                  httpc: Optional[Callable] = None,
                  cwd: Optional[str] = "",
-                 httplib: Optional[Callable] = None):
+                 httplib: Optional[Callable] = None,
+                 client_type: Optional[str] = "oidc"):
         Client.__init__(self,
-                        client_authn_factory=client_authn_factory,
                         keyjar=keyjar,
                         config=config,
                         services=services,
                         jwks_uri=jwks_uri,
-                        httpc_params=httpc_params)
+                        httpc_params=httpc_params,
+                        client_type=client_type)
 
         if httpc is None and httplib:
             httpc = httplib
@@ -51,9 +70,8 @@ class FederationRP(Client):
                                                                        cwd=cwd)
 
     def get_client_id(self):
-        if self._service_context.client_id:
-            return self._service_context.client_id
-        if self._service_context.federation_entity.context.entity_id:
+        _id = self._service_context.specs.get_metadata('client_id')
+        if not _id and self._service_context.federation_entity.context.entity_id:
             return self._service_context.federation_entity.context.entity_id
         raise MissingAttribute("No known client ID")
 
@@ -67,7 +85,6 @@ class RPHandler(rp_handler.RPHandler):
                  services: Optional[dict] = None,
                  service_factory=None,
                  client_configs: Optional[Union[Configuration, dict]] = None,
-                 client_authn_factory=None,
                  client_cls: Optional[Any] = None,
                  state_db: Optional[Any] = None,
                  federation_entity_config: Optional[Union[Configuration, dict]] = None,
@@ -77,7 +94,6 @@ class RPHandler(rp_handler.RPHandler):
                                       verify_ssl=verify_ssl, services=services,
                                       service_factory=service_factory,
                                       client_configs=client_configs,
-                                      client_authn_factory=client_authn_factory,
                                       client_cls=client_cls,
                                       state_db=state_db, httpc_params=httpc_params, **kwargs)
 
@@ -87,7 +103,8 @@ class RPHandler(rp_handler.RPHandler):
         client = rp_handler.RPHandler.init_client(self, issuer)
         client.client_get("service_context").federation_entity = self.init_federation_entity(issuer,
                                                                                              host=client)
-        client.set_client_id(client.client_get("service_context").federation_entity.context.entity_id)
+        client.set_client_id(
+            client.client_get("service_context").federation_entity.context.entity_id)
         return client
 
     def init_federation_entity(self, issuer, host):

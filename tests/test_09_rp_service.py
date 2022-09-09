@@ -5,13 +5,17 @@ from urllib.parse import urlparse
 
 from cryptojwt.jws.jws import factory
 from idpyoidc.client.client_auth import PrivateKeyJWT
+from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
+from idpyoidc.client.oidc import RP
 from idpyoidc.defaults import JWT_BEARER
 from idpyoidc.message.oidc import AccessTokenRequest
-from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
+from idpyoidc.operator import Operator
 import pytest
 
 from fedservice import eval_chain
+from fedservice.entity import FederationEntity
 from fedservice.entity.fetch import Fetch
+from fedservice.entity.status import Status
 from fedservice.entity_statement.collect import branch2lists
 from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement
 from fedservice.rp import DEFAULT_OIDC_FED_SERVICES
@@ -44,38 +48,57 @@ KEY_DEFS = [
 class TestRpService(object):
     @pytest.fixture(autouse=True)
     def rp_service_setup(self):
+        oidc_service = DEFAULT_OIDC_SERVICES.copy()
+        oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
         entity_id = 'https://foodle.uninett.no'
         config = {
-            'client_id': entity_id,
-            'client_secret': 'a longesh password',
-            'redirect_uris': ['https://example.com/cli/authz_cb'],
             "keys": {"uri_path": "static/jwks.json", "key_defs": KEY_DEFS},
-            "client_preferences": {
-                "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
-                "id_token_signed_response_alg": "ES256",
-                "token_endpoint_auth_method": "client_secret_basic",
-                "federation_type": ['automatic']
+            "openid_relying_party": {
+                'class': RP,
+                'kwargs': {
+                    'client_id': entity_id,
+                    'client_secret': 'a longesh password',
+                    'redirect_uris': ['https://example.com/cli/authz_cb'],
+                    "metadata": {
+                        "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
+                        "id_token_signed_response_alg": "ES256",
+                        "token_endpoint_auth_method": "client_secret_basic",
+                        "client_registration_types": ['automatic']
+                    },
+                    "services": oidc_service
+                }
             },
-            "federation": {
-                "entity_id": entity_id,
-                "keys": {"uri_path": "static/fed_jwks.json", "key_defs": KEY_DEFS},
-                "endpoint": {
-                    "fetch": {
-                        "path": "fetch",
-                        "class": Fetch,
-                        "kwargs": {"client_authn_method": None},
+            "federation_entity": {
+                'class': FederationEntity,
+                'kwargs': {
+                    "endpoint": {
+                        "fetch": {
+                            "path": "fetch",
+                            "class": Fetch,
+                            "kwargs": {"client_authn_method": None},
+                        }
+                    },
+                    "entity_id": entity_id,
+                    "keys": {"uri_path": "static/fed_jwks.json", "key_defs": KEY_DEFS},
+                    "trusted_roots": ANCHOR,
+                    "authority_hints": ['https://ntnu.no']
+                }
+            },
+            "trust_mark_issuer": {
+                'class': "TrustMarkIssuer",
+                'kwargs': {
+                    "endpoint": {
+                        "status": {
+                            "path": "status",
+                            "class": Status,
+                            "kwargs": {"client_authn_method": None},
+                        }
                     }
-                },
-                "trusted_roots": ANCHOR,
-                "authority_hints": ['https://ntnu.no'],
-                "entity_type": 'openid_relying_party',
-                "opponent_entity_type": 'openid_provider',
+                }
             }
         }
 
-        oidc_service = DEFAULT_OIDC_SERVICES.copy()
-        oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
-        self.entity = FederationRP(services=oidc_service, config=config)
+        self.entity = Operator(config=config)
 
         httpc = Publisher(os.path.join(BASE_PATH, 'base_data'))
 
@@ -225,11 +248,12 @@ class TestRpServiceAuto(object):
         entity_id = 'https://foodle.uninett.no'
         config = {
             'redirect_uris': ['https://example.com/cli/authz_cb'],
-            "keys": {"uri_path": "static/jwks.json", "key_defs": KEY_DEFS},
-            "client_preferences": {
+            "key_conf": {"uri_path": "static/jwks.json", "key_defs": KEY_DEFS},
+            "metadata": {
                 "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
                 "id_token_signed_response_alg": "ES256",
                 "token_endpoint_auth_method": "client_secret_basic",
+                "token_endpoint_auth_signing_alg": "ES256",
                 "federation_type": ['automatic']
             },
             "services": {
@@ -241,7 +265,7 @@ class TestRpServiceAuto(object):
                 }
             }, "federation": {
                 "entity_id": entity_id,
-                "keys": {"uri_path": "static/fed_jwks.json", "key_defs": KEY_DEFS},
+                "key_conf": {"uri_path": "static/fed_jwks.json", "key_defs": KEY_DEFS},
                 "endpoint": {
                     "fetch": {
                         "path": "fetch",
@@ -258,7 +282,7 @@ class TestRpServiceAuto(object):
 
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
-        self.entity = FederationRP(services=oidc_service, config=config)
+        self.entity = FederationRP(services=oidc_service, config=config, client_type='oidc')
 
         _context = self.entity.client_get("service_context")
         _context.provider_info = {'token_endpoint': "https://op.example.org"}
