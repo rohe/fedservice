@@ -2,9 +2,9 @@ import os
 
 from cryptojwt import KeyJar
 
-from fedservice.entity_statement.collect import branch2lists
+from fedservice.entity_statement.collect import tree2chains
 from fedservice.entity_statement.collect import verify_self_signed_signature
-from fedservice.entity_statement.verify import eval_chain
+from fedservice.entity.function.verifier import eval_chain
 from tests.utils import DummyCollector
 from .utils import Publisher
 
@@ -30,7 +30,7 @@ def test_eval_chains():
 
     tree = collector.collect_superiors(_config['iss'], entity_statement)
     _node = {target: (entity_statement, tree)}
-    chains = branch2lists(_node)
+    chains = tree2chains(_node)
 
     key_jar = KeyJar()
     key_jar.import_jwks_as_json(jwks, 'https://feide.no')

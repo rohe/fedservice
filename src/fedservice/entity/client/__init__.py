@@ -7,19 +7,21 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt.key_jar import KeyJar
+from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.client.configure import Configuration
 from idpyoidc.client.defaults import SUCCESSFUL
-from idpyoidc.client.entity import Entity
 from idpyoidc.client.exception import OidcServiceError
 from idpyoidc.client.exception import ParseError
-from idpyoidc.client.http import HTTPLib
+from idpyoidc.client.service import init_services
 from idpyoidc.client.service import REQUEST_INFO
 from idpyoidc.client.service import Service
 from idpyoidc.client.util import get_deserialization_method
 from idpyoidc.exception import FormatError
 from idpyoidc.message import Message
 
+from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.entity import FederationContext
+from fedservice.node import ClientNode
 
 logger = logging.getLogger(__name__)
 
@@ -28,22 +30,25 @@ class FederationServiceContext(FederationContext):
     def __init__(self,
                  config: Optional[Union[dict, Configuration]] = None,
                  entity_id: str = "",
-                 entity_get: Callable = None,
+                 superior_get: Callable = None,
                  keyjar: Optional[KeyJar] = None,
-                 trusted_roots: Optional[dict] = None,
                  priority: Optional[List[str]] = None,
-                 trust_marks: Optional[List[str]] = None
+                 trust_marks: Optional[List[str]] = None,
+                 trusted_roots: Optional[dict] = None,
                  ):
+
+        if config is None:
+            config = {}
 
         FederationContext.__init__(self,
                                    config=config,
                                    entity_id=entity_id,
-                                   entity_get=entity_get,
+                                   superior_get=superior_get,
                                    keyjar=keyjar)
 
         self.trust_mark_issuer = None
         self.signed_trust_marks = []
-        self.trust_marks = trust_marks or config.get("trust_marks", [])
+        self.trust_marks = trust_marks
 
         if trusted_roots:
             _trusted_roots = trusted_roots
@@ -58,13 +63,9 @@ class FederationServiceContext(FederationContext):
         else:
             self.trusted_roots = _trusted_roots
 
-        # Store own keys in the key jar under the entity's ID
-        # Unnecessary if that's already been done
-        if self.entity_id not in self.keyjar.owners():
-            self.keyjar.import_jwks(self.keyjar.export_jwks(private=True), issuer_id=self.entity_id)
-
+        _key_jar = self.superior_get("attribute", "keyjar")
         for iss, jwks in self.trusted_roots.items():
-            self.keyjar.import_jwks(jwks, iss)
+            _key_jar.import_jwks(jwks, iss)
 
         if priority:
             self.tr_priority = priority
@@ -74,23 +75,19 @@ class FederationServiceContext(FederationContext):
             self.tr_priority = sorted(set(self.trusted_roots.keys()))
 
 
-class FederationEntityClient(Entity):
+class FederationEntityClient(ClientNode):
     def __init__(
             self,
-            parent_get: Callable = None,
+            superior_get: Callable = None,
             keyjar: Optional[KeyJar] = None,
-            verify_ssl: Optional[bool] = True,
             config: Optional[Union[dict, Configuration]] = None,
-            httplib: Optional[object] = None,
+            httpc: Optional[object] = None,
+            httpc_params: Optional[dict] = None,
             services: Optional[dict] = None,
             jwks_uri: Optional[str] = "",
-            httpc_params: Optional[dict] = None,
-            client_type: Optional[str] = "",
     ):
         """
 
-        :type client_type: str
-        :param client_type: What kind of client this is. Presently 'oauth2' or 'oidc'
         :param keyjar: A py:class:`idpyoidc.key_jar.KeyJar` instance
         :param config: Configuration information passed on to the
             :py:class:`idpyoidc.client.service_context.ServiceContext`
@@ -102,38 +99,41 @@ class FederationEntityClient(Entity):
         :return: Client instance
         """
 
-        if not client_type:
-            client_type = "oauth2"
+        ClientNode.__init__(self, superior_get=superior_get, httpc=httpc,
+                            keyjar=keyjar, httpc_params=httpc_params,
+                            config=config, jwks_uri=jwks_uri)
 
-        _service_context = FederationServiceContext(
-            keyjar=keyjar, config=config
-        )
+        self._service_context = FederationServiceContext(config=config, superior_get=self.node_get)
 
-        Entity.__init__(
-            self,
-            keyjar=keyjar,
-            config=config,
-            services=services,
-            jwks_uri=jwks_uri,
-            httpc_params=httpc_params,
-            client_type=client_type,
-            service_context=_service_context
-        )
+        _srvs = services or DEFAULT_OIDC_FED_SERVICES
 
-        self.http = httplib or HTTPLib(httpc_params)
+        self._service = init_services(service_definitions=_srvs, superior_get=self.node_get)
 
-        self.parent_get = parent_get
+        self.setup_client_authn_methods(config)
 
-        # if isinstance(config, Configuration):
-        #     _add_ons = config.conf.get("add_ons")
-        # else:
-        #     _add_ons = config.get("add_ons")
-        #
-        # if _add_ons:
-        #     do_add_ons(_add_ons, self._service)
+    def get_attribute(self, attr, *args):
+        val = getattr(self, attr)
+        if val:
+            return val
+        else:
+            return self.superior_get('attribute', attr)
 
-        # just ignore verify_ssl until it goes away
-        # self.verify_ssl = self.httpc_params.get("verify", True)
+    def get_service(self, service_name, *arg):
+        try:
+            return self._service[service_name]
+        except KeyError:
+            return None
+
+    def get_context(self, *args):
+        return self._service_context
+
+    def setup_client_authn_methods(self, config):
+        if config and "client_authn_methods" in config:
+            self._service_context.client_authn_method = client_auth_setup(
+                config.get("client_authn_methods")
+            )
+        else:
+            self._service_context.client_authn_method = {}
 
     def do_request(
             self,
@@ -194,7 +194,7 @@ class FederationEntityClient(Entity):
 
         if resp.status_code < 300:
             if "keyjar" not in kwargs:
-                kwargs["keyjar"] = service.client_get("service_context").keyjar
+                kwargs["keyjar"] = service.superior_get("context").keyjar
             if not response_body_type:
                 response_body_type = service.response_body_type
 
@@ -340,5 +340,5 @@ class FederationEntityClient(Entity):
                 "Error response ({}): {}".format(reqresp.status_code, reqresp.text))
             raise OidcServiceError(
                 "HTTP ERROR: %s [%s] on %s" % (
-                reqresp.text, reqresp.status_code, reqresp.url)
+                    reqresp.text, reqresp.status_code, reqresp.url)
             )

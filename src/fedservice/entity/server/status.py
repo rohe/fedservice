@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Optional
 from typing import Union
@@ -5,23 +6,26 @@ from typing import Union
 from idpyoidc.message import oidc
 from idpyoidc.message import Message
 from idpyoidc.server.endpoint import Endpoint
-from idpyoidc.server.endpoint_context import init_service
+
+from fedservice.entity.function import apply_policies
+from fedservice.entity.function import collect_trust_chains
+from fedservice.entity.function import verify_trust_chains
+from fedservice.entity_statement.create import create_entity_statement
 
 logger = logging.getLogger(__name__)
 
 
-class List(Endpoint):
+class TrustMarkStatus(Endpoint):
     request_cls = oidc.Message
-    # response_cls = EntityIDList
-    response_format = 'json'
-    name = "list"
+    response_format = "json"
+    name = "status"
 
     def __init__(self, server_get, **kwargs):
         Endpoint.__init__(self, server_get, **kwargs)
 
     def process_request(self, request=None, **kwargs):
-        _db = self.server_get("node").subordinate
-        return {'response': list(_db.keys())}
+
+        return {'response': json.dumps({'active': True})}
 
     def response_info(
             self,

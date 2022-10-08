@@ -90,13 +90,14 @@ class FederationEntity(Message):
     c_param = {
         "federation_fetch_endpoint": SINGLE_REQUIRED_STRING,
         "federation_list_endpoint": SINGLE_OPTIONAL_STRING,
-        "federation_evaluate_endpoint": SINGLE_OPTIONAL_STRING,
-        "federation_status_endpoint": SINGLE_OPTIONAL_STRING,
+        "federation_resolve_endpoint": SINGLE_OPTIONAL_STRING,
+        # "federation_status_endpoint": SINGLE_OPTIONAL_STRING,
         "name": SINGLE_OPTIONAL_STRING,
         "contacts": OPTIONAL_LIST_OF_STRINGS,
         "policy_url": SINGLE_OPTIONAL_STRING,
         "homepage_uri": SINGLE_OPTIONAL_STRING,
-        "trust_marks": SINGLE_OPTIONAL_JSON
+        "trust_marks": SINGLE_OPTIONAL_JSON,
+        "organization_name": SINGLE_OPTIONAL_STRING
     }
 
 
@@ -107,6 +108,21 @@ def federation_entity_deser(val, sformat="json"):
 
 OPTIONAL_FEDERATION_ENTITY_METADATA = (Message, False, msg_ser,
                                        federation_entity_deser, False)
+
+
+class TrustMarkIssuer(Message):
+    c_param = {
+        "federation_status_endpoint": SINGLE_OPTIONAL_STRING
+    }
+
+
+def trust_mark_issuer_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a FederationEntity."""
+    return deserialize_from_one_of(val, TrustMarkIssuer, sformat)
+
+
+OPTIONAL_TRUST_MARK_ISSUER_METADATA = (Message, False, msg_ser,
+                                       trust_mark_issuer_deser, False)
 
 
 class OauthClientMetadata(Message):
@@ -414,7 +430,7 @@ class TrustMark(JsonWebToken):
         'iss': SINGLE_REQUIRED_STRING,
         'iat': SINGLE_REQUIRED_INT,
         "id": SINGLE_REQUIRED_STRING,
-        "mark": SINGLE_OPTIONAL_STRING,
+        "logo_uri": SINGLE_OPTIONAL_STRING,
         "exp": SINGLE_OPTIONAL_INT,
         "ref": SINGLE_OPTIONAL_STRING
     })

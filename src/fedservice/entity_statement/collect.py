@@ -17,6 +17,7 @@ from requests.exceptions import SSLError
 
 from fedservice.exception import UnknownCertificate
 from .cache import ESCache
+from ..exception import FailedConfigurationRetrieval
 
 logger = logging.getLogger(__name__)
 
@@ -149,10 +150,10 @@ class Collector(ImpExp):
 
     def store_ssc_cert(self, entity_statement, entity_id):
         """
-        Convert a x5c value into a list of PEM formated certificates and write them to a file.
+        Convert a x5c value into a list of PEM formatted certificates and write them to a file.
 
         :param entity_statement: An Entity statement that should contain a x5c parameter.
-        :param entity_id: The ID of the subject of the the Entity Statement.
+        :param entity_id: The ID of the subject of the Entity Statement.
         :return: The path to the created file.
         """
         x5c = entity_statement.get("x5c")
@@ -406,24 +407,3 @@ class Collector(ImpExp):
         return superior
 
 
-def branch2lists(node):
-    res = []
-    for issuer, branch in node.items():
-        if branch is None:
-            res.append([])
-            continue
-
-        (statement, node) = branch
-        if not node:
-            res.append([statement])
-            continue
-
-        _lists = branch2lists(node)
-        for l in _lists:
-            l.append(statement)
-
-        if not res:
-            res = _lists
-        else:
-            res.extend(_lists)
-    return res

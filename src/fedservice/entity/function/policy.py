@@ -1,4 +1,8 @@
 import logging
+from typing import Optional
+
+from fedservice.entity.function import Function
+from fedservice.entity_statement.statement import TrustChain
 
 logger = logging.getLogger(__name__)
 
@@ -195,28 +199,6 @@ def combine_policy(superior, child):
     return res
 
 
-def gather_policies(chain, entity_type):
-    """
-    Gather and combine all the metadata policies that are defined in the trust chain
-    :param chain: A list of Entity Statements
-    :return: The combined metadata policy
-    """
-
-    try:
-        combined_policy = chain[0]['metadata_policy'][entity_type]
-    except KeyError:
-        combined_policy = {}
-
-    for es in chain[1:]:
-        try:
-            child = es['metadata_policy'][entity_type]
-        except KeyError:
-            pass
-        else:
-            combined_policy = combine_policy(combined_policy, child)
-
-    return combined_policy
-
 
 def union(val1, val2):
     if isinstance(val1, list):
@@ -231,76 +213,132 @@ def union(val1, val2):
     return base.union(ext)
 
 
-def apply_policy(metadata, policy):
-    """
-    Apply a metadata policy to a metadata statement.
-    The order is value, add, default and then the checks subset_of/superset_of and one_of
+class TrustChainPolicy(Function):
+    def __init__(self, superior_get):
+        Function.__init__(self, superior_get)
 
-    :param metadata: A metadata statement
-    :param policy: A metadata policy
-    :return: A metadata statement that adheres to a metadata policy
-    """
+    def gather_policies(self, chain, entity_type):
+        """
+        Gather and combine all the metadata policies that are defined in the trust chain
+        :param chain: A list of Entity Statements
+        :return: The combined metadata policy
+        """
 
-    metadata_set = set(metadata.keys())
-    policy_set = set(policy.keys())
+        try:
+            combined_policy = chain[0]['metadata_policy'][entity_type]
+        except KeyError:
+            combined_policy = {}
 
-    # Metadata claims that there exists a policy for
-    for claim in metadata_set.intersection(policy_set):
-        if "value" in policy[claim]:  # value overrides everything
-            metadata[claim] = policy[claim]["value"]
-        else:
-            if "one_of" in policy[claim]:
-                # The is for claims that can have only one value
-                if isinstance(metadata[claim], list):  # Should not be but ...
-                    _claim = [c for c in metadata[claim] if c in policy[claim]['one_of']]
-                    if _claim:
-                        metadata[claim] = _claim[0]
-                    else:
-                        raise PolicyError(
-                            "{}: None of {} among {}".format(claim, metadata[claim],
-                                                             policy[claim]['one_of']))
-                else:
-                    if metadata[claim] in policy[claim]['one_of']:
-                        pass
-                    else:
-                        raise PolicyError(
-                            "{} not among {}".format(metadata[claim], policy[claim]['one_of']))
+        for es in chain[1:]:
+            try:
+                child = es['metadata_policy'][entity_type]
+            except KeyError:
+                pass
             else:
-                # The following is for claims that can have lists of values
-                if "add" in policy[claim]:
-                    metadata[claim] = list(union(metadata[claim], policy[claim]['add']))
+                combined_policy = combine_policy(combined_policy, child)
 
-                if "subset_of" in policy[claim]:
-                    _val = set(policy[claim]['subset_of']).intersection(set(metadata[claim]))
-                    if _val:
-                        metadata[claim] = list(_val)
+        return combined_policy
+
+    @staticmethod
+    def apply_policy(metadata, policy):
+        """
+        Apply a metadata policy to a metadata statement.
+        The order is value, add, default and then the checks subset_of/superset_of and one_of
+
+        :param metadata: A metadata statement
+        :param policy: A metadata policy
+        :return: A metadata statement that adheres to a metadata policy
+        """
+
+        metadata_set = set(metadata.keys())
+        policy_set = set(policy.keys())
+
+        # Metadata claims that there exists a policy for
+        for claim in metadata_set.intersection(policy_set):
+            if "value" in policy[claim]:  # value overrides everything
+                metadata[claim] = policy[claim]["value"]
+            else:
+                if "one_of" in policy[claim]:
+                    # The is for claims that can have only one value
+                    if isinstance(metadata[claim], list):  # Should not be but ...
+                        _claim = [c for c in metadata[claim] if c in policy[claim]['one_of']]
+                        if _claim:
+                            metadata[claim] = _claim[0]
+                        else:
+                            raise PolicyError(
+                                "{}: None of {} among {}".format(claim, metadata[claim],
+                                                                 policy[claim]['one_of']))
                     else:
-                        raise PolicyError("{} not subset of {}".format(metadata[claim],
-                                                                       policy[claim]['subset_of']))
-                if "superset_of" in policy[claim]:
-                    if set(policy[claim]['superset_of']).difference(set(metadata[claim])):
-                        raise PolicyError("{} not superset of {}".format(metadata[claim],
-                                                                         policy[claim][
-                                                                             'superset_of']))
-                    else:
-                        pass
+                        if metadata[claim] in policy[claim]['one_of']:
+                            pass
+                        else:
+                            raise PolicyError(
+                                "{} not among {}".format(metadata[claim], policy[claim]['one_of']))
+                else:
+                    # The following is for claims that can have lists of values
+                    if "add" in policy[claim]:
+                        metadata[claim] = list(union(metadata[claim], policy[claim]['add']))
 
-    # In policy but not in metadata
-    for claim in policy_set.difference(metadata_set):
-        if "value" in policy[claim]:
-            metadata[claim] = policy[claim]['value']
-        elif "add" in policy[claim]:
-            metadata[claim] = policy[claim]['add']
-        elif "default" in policy[claim]:
-            metadata[claim] = policy[claim]['default']
+                    if "subset_of" in policy[claim]:
+                        _val = set(policy[claim]['subset_of']).intersection(set(metadata[claim]))
+                        if _val:
+                            metadata[claim] = list(_val)
+                        else:
+                            raise PolicyError("{} not subset of {}".format(metadata[claim],
+                                                                           policy[claim]['subset_of']))
+                    if "superset_of" in policy[claim]:
+                        if set(policy[claim]['superset_of']).difference(set(metadata[claim])):
+                            raise PolicyError("{} not superset of {}".format(metadata[claim],
+                                                                             policy[claim][
+                                                                                 'superset_of']))
+                        else:
+                            pass
 
-        if claim not in metadata:
-            if "essential" in policy[claim] and policy[claim]["essential"]:
-                raise PolicyError("Essential claim '{}' missing".format(claim))
+        # In policy but not in metadata
+        for claim in policy_set.difference(metadata_set):
+            if "value" in policy[claim]:
+                metadata[claim] = policy[claim]['value']
+            elif "add" in policy[claim]:
+                metadata[claim] = policy[claim]['add']
+            elif "default" in policy[claim]:
+                metadata[claim] = policy[claim]['default']
 
-    # All that are in metadata but not in policy should just remain
+            if claim not in metadata:
+                if "essential" in policy[claim] and policy[claim]["essential"]:
+                    raise PolicyError("Essential claim '{}' missing".format(claim))
 
-    return metadata
+        # All that are in metadata but not in policy should just remain
+
+        return metadata
+
+    def _policy(self, trust_chain: TrustChain, entity_type: str):
+        combined_policy = self.gather_policies(trust_chain.verified_chain[:-1], entity_type)
+        logger.debug("Combined policy: %s", combined_policy)
+        try:
+            metadata = trust_chain.verified_chain[-1]['metadata'][entity_type]
+        except KeyError:
+            return None
+        else:
+            # apply the combined metadata policies on the metadata
+            trust_chain.combined_policy[entity_type] = combined_policy
+            _metadata = self.apply_policy(metadata, combined_policy)
+            logger.debug(f"After applied policy: {_metadata}")
+            return _metadata
+
+    def __call__(self, trust_chain: TrustChain, entity_type: Optional[str] = ''):
+        """
+        :param trust_chain: TrustChain instance
+        :param entity_type: Which Entity Type the entity are
+        """
+        if len(trust_chain.verified_chain) > 1:
+            if entity_type:
+                trust_chain.metadata[entity_type] = self._policy(trust_chain, entity_type)
+            else:
+                for _type in trust_chain.verified_chain[-1]['metadata'].keys():
+                    trust_chain.metadata[_type] = self._policy(trust_chain, _type)
+        else:
+            trust_chain.metadata = trust_chain.verified_chain[0]["metadata"][entity_type]
+            trust_chain.combined_policy[entity_type] = {}
 
 
 def diff2policy(new, old):

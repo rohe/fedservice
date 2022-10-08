@@ -1,11 +1,19 @@
+from typing import Optional
+
 from cryptojwt import JWT
+from cryptojwt import KeyJar
 
 from fedservice.exception import ConstraintError
 from fedservice.message import TrustMark
 
 
-def create_trust_mark(entity_id, key_jar, trust_mark_id, subject='', lifetime=0, trust_mark='',
-                      reference=''):
+def create_trust_mark(entity_id: str,
+                      key_jar: KeyJar,
+                      trust_mark_id:str,
+                      subject: Optional[str]='',
+                      lifetime: Optional[int] =0,
+                      logo_uri: Optional[str] ='',
+                      reference: Optional[str]=''):
     """
     Create Trust Mark.
 
@@ -21,14 +29,15 @@ def create_trust_mark(entity_id, key_jar, trust_mark_id, subject='', lifetime=0,
     _tm = TrustMark(
         id=trust_mark_id,
     )
-    if trust_mark:
-        _tm["mark"] = trust_mark
+
+    if logo_uri:
+        _tm["logo_uri"] = logo_uri
     if reference:
         _tm["ref"] = reference
 
     if subject:
         _tm['sub'] = subject
-    else:
+    else:  # self-signed trust mark
         _tm['sub'] = entity_id
 
     # Create the Signed JWT representing the Trust Mark

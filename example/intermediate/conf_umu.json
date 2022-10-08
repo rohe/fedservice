@@ -75,10 +75,10 @@
         "class": "fedservice.entity.list.List",
         "kwargs": {
           "client_authn_method": null,
-          "subordinates": {
+          "subordinate": {
             "class": "idpyoidc.storage.abfile.AbstractFileSystem",
             "kwargs": {
-              "fdir": "umu/subordinates",
+              "fdir": "umu/subordinate",
               "value_conv": "idpyoidc.util.JSON",
               "key_conv": "idpyoidc.util.QPKey"
             }

@@ -9,7 +9,7 @@ from fedservice.entity_statement.collect import Collector
 from fedservice.entity_statement.collect import construct_entity_statement_query
 from fedservice.entity_statement.collect import verify_self_signed_signature
 from fedservice.entity_statement.constraints import meets_restrictions
-from fedservice.entity_statement.verify import verify_trust_chain
+from fedservice.entity.function.verifier import verify_trust_chain
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 

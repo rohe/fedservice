@@ -8,4 +8,7 @@ def create_authority_hints(default_hints, trust_chains):
 
     intermediates = {trust_chain.iss_path[1] for trust_chain in trust_chains if
                      len(trust_chain.iss_path)}
-    return list(set(default_hints).intersection(intermediates))
+    if not default_hints:
+        return list(intermediates)
+    else:
+        return list(set(default_hints).intersection(intermediates))

@@ -15,3 +15,11 @@ ENTITY_TYPE2METADATA_CLASS = {
     "federation_entity": FederationEntity,
     "trust_mark_issuer": TrustMarkIssuerMetadata
 }
+
+DEFAULT_OIDC_FED_SERVICES = {
+    'provider_info': {
+        'class':
+            'fedservice.entity.client.provider_info_discovery.ProviderInfoDiscovery'},
+    'registration': {
+        'class': 'fedservice.entity.client.registration.Registration'},
+}

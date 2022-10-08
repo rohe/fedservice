@@ -4,11 +4,10 @@ import json
 import os
 
 from cryptojwt.jws.jws import factory
-from cryptojwt.key_jar import init_key_jar
 
 from fedservice import FederationEntity
 from fedservice.entity_statement.collect import branch2lists
-from fedservice.entity_statement.verify import eval_chain
+from fedservice.entity.function.verifier import eval_chain
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'data')

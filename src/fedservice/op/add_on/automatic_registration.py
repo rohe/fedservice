@@ -18,7 +18,7 @@ def add_support(endpoint, **kwargs):
             auth_endpoint = endpoint.get('federation_{}'.format(endp))
 
         if auth_endpoint:
-            _context = auth_endpoint.server_get("endpoint_context")
+            _context = auth_endpoint.server_get("context")
             auto_reg = registration.Registration(auth_endpoint.server_get, **kwargs)
             auth_endpoint.automatic_registration_endpoint = auto_reg
 

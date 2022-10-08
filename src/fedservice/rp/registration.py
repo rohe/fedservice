@@ -7,11 +7,9 @@ from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.message.oidc import RegistrationResponse
 from idpyoidc.client.oidc import registration
 
-from fedservice.entity_statement.collect import branch2lists
-from fedservice.entity_statement.collect import unverified_entity_statement
-from fedservice.entity_statement.policy import apply_policy
-from fedservice.entity_statement.policy import combine_policy
-from fedservice.entity_statement.verify import eval_policy_chain
+from fedservice.entity.function import apply_policies
+from fedservice.entity.function import collect_trust_chains
+from fedservice.entity.function import verify_trust_chains
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +21,8 @@ class Registration(registration.Registration):
     request_body_type = 'jose'
     response_body_type = 'jose'
 
-    def __init__(self, client_get, conf=None, client_authn_factory=None, **kwargs):
-        registration.Registration.__init__(self, client_get, conf=conf)
+    def __init__(self, superior_get, conf=None, client_authn_factory=None, **kwargs):
+        registration.Registration.__init__(self, superior_get, conf=conf)
         #
         self.post_construct.append(self.create_entity_statement)
 
@@ -45,13 +43,20 @@ class Registration(registration.Registration):
         :return:
         """
 
-        _fe = self.client_get("service_context").federation_entity
-        _fe_ctx = _fe.context
-        _md = {_fe_ctx.entity_type: request_args.to_dict()}
-        _md.update(_fe.federation_endpoint_metadata())
-        return _fe_ctx.create_entity_statement(
-            iss=_fe_ctx.entity_id, sub=_fe_ctx.entity_id, metadata=_md, key_jar=_fe_ctx.keyjar,
-            authority_hints=_fe_ctx.proposed_authority_hints)
+        _federation_entity = self.superior_get('node').superior_get('node')["federation_entity"]
+        _federation_context = _federation_entity.context
+        # _md = {_federation_context.entity_type: request_args.to_dict()}
+        _combo = _federation_entity.superior_get('node')
+        _md = _combo.get_metadata()
+        _keyjar = _federation_entity.get_attribute("keyjar")
+        _authority_hints = _federation_entity.server.endpoint_context.authority_hints
+        _jws = _federation_context.create_entity_statement(
+            iss=_federation_context.entity_id, sub=_federation_context.entity_id,
+            metadata=_md, key_jar=_keyjar,
+            authority_hints=_authority_hints,
+            trust_marks=_federation_context.trust_marks)
+        _federation_context.entity_configuration = _jws
+        return _jws
 
     def parse_response(self, info, sformat="", state="", **kwargs):
         resp = self.parse_federation_registration_response(info, **kwargs)
@@ -66,7 +71,7 @@ class Registration(registration.Registration):
         return entity_statement.get('trust_anchor_id')
 
     def get_trust_anchor_id(self, entity_statement):
-        _fe_context = self.client_get("service_context").federation_entity.get_context()
+        _fe_context = self.superior_get("context").federation_entity.get_context()
         if len(_fe_context.op_statements) == 1:
             _id = _fe_context.op_statements[0].anchor
             _tai = self._get_trust_anchor_id(entity_statement)
@@ -85,74 +90,53 @@ class Registration(registration.Registration):
         """
         Receives a dynamic client registration response,
 
-        :param resp: An entity statement instance
+        :param resp: An entity statement as a signed JWT
         :return: A set of metadata claims
         """
-        _context = self.client_get("service_context")
-        _fe = _context.federation_entity
-        _fe_ctx = _fe.context
-        # Can not collect trust chain. Have to verify the signed JWT with keys I have
+        _federation_entity = self.superior_get('node').superior_get('node')['federation_entity']
+        # Need the federation keys
+        keyjar = _federation_entity.superior_get('attribute', 'keyjar')
 
-        kj = _fe_ctx.keyjar
+        # should have the necessary keys
         _jwt = factory(resp)
-        entity_statement = _jwt.verify_compact(resp, keys=kj.get_jwt_verify_keys(_jwt.jwt))
+        entity_statement = _jwt.verify_compact(resp, keys=keyjar.get_jwt_verify_keys(_jwt.jwt))
 
-        _trust_anchor_id = self.get_trust_anchor_id(entity_statement)
-
+        _trust_anchor_id = entity_statement['trust_anchor_id']
         logger.debug("trust_anchor_id: {}".format(_trust_anchor_id))
-        chosen = None
-        for op_statement in _fe_ctx.op_statements:
-            if op_statement.anchor == _trust_anchor_id:
-                chosen = op_statement
-                break
 
-        if not chosen:
-            raise ValueError('No matching federation operator')
+        if _trust_anchor_id not in _federation_entity.function.trust_chain_collector.trust_anchors:
+            raise ValueError("Trust anchor I don't trust")
 
-        # based on the Federation ID, conclude which OP config to use
-        op_claims = chosen.metadata
+        try:
+            chosen = _federation_entity.context.trust_chains[_trust_anchor_id]
+        except KeyError:
+            raise KeyError(f"No valid Trust Chain Anchor: {_trust_anchor_id}")
+
+        # based on the Federation ID, conclude which OP config to use and store the
+        # provider configuration in its proper place.
+        op_claims = chosen.metadata['openid_provider']
         logger.debug("OP claims: {}".format(op_claims))
         # _sc.trust_path = (chosen.anchor, _fe.op_paths[statement.anchor][0])
+        _context = self.superior_get('context')
         _context.provider_info = ProviderConfigurationResponse(**op_claims)
 
-        # To create RPs metadata collect the trust chains
-        tree = {}
-        for ah in _fe_ctx.authority_hints:
-            tree[ah] = _fe.collector.collect_intermediate(_fe_ctx.entity_id, ah)
+        _authority_hints = _federation_entity.server.endpoint_context.authority_hints
+        _chains, _ = collect_trust_chains(self.superior_get('node'),
+                                          entity_id=entity_statement['sub'],
+                                          signed_entity_configuration=resp,
+                                          stop_at=_trust_anchor_id,
+                                          authority_hints=_authority_hints)
 
-        _node = {_fe_ctx.entity_id: (resp, tree)}
-        chains = branch2lists(_node)
-        logger.debug("%d chains", len(chains))
-        logger.debug("Evaluate policy chains")
-        # Get the policies
-        policy_chains_tup = [eval_policy_chain(c, _fe_ctx.keyjar, _fe_ctx.entity_type) for c in
-                             chains]
-        # Weed out unusable chains
-        policy_chains_tup = [pct for pct in policy_chains_tup if pct is not None]
-        # Should leave me with one. The one ending in the chosen trust anchor.
-        policy_chains_tup = [pct for pct in policy_chains_tup if pct[0] == _trust_anchor_id]
-
-        if policy_chains_tup == []:
-            logger.warning("No chain that ends in chosen trust anchor (%s)", _trust_anchor_id)
-            raise ValueError("No trust chain that ends in chosen trust anchor (%s)",
-                             _trust_anchor_id)
-
-        _policy = combine_policy(policy_chains_tup[0][1],
-                                 entity_statement['metadata_policy'][_fe_ctx.entity_type])
-        logger.debug("Effective policy: {}".format(_policy))
-        _req = kwargs.get("request")
-        if _req is None:
-            _req = kwargs.get("request_body")
-        _uev = unverified_entity_statement(_req)
-        logger.debug("Registration request: {}".format(_uev))
-        _query = _uev["metadata"][_fe_ctx.entity_type]
-        _resp = apply_policy(_query, _policy)
-        _context.set("registration_response", _resp)
+        _trust_chains = verify_trust_chains(_federation_entity, _chains, resp,
+                                            _federation_entity.context.entity_configuration)
+        _trust_chains = apply_policies(_federation_entity, _trust_chains)
+        _resp = _trust_chains[0].metadata['openid_relying_party']
+        _context.registration_response = _resp
         return _resp
 
     def update_service_context(self, resp, **kwargs):
         registration.Registration.update_service_context(self, resp, **kwargs)
-        _fe = self.client_get("service_context").federation_entity
+        _fe = self.superior_get("context").federation_entity
         _fe.iss = resp['client_id']
 
     def get_response_ext(self, url, method="GET", body=None, response_body_type="",
@@ -167,7 +151,7 @@ class Registration(registration.Registration):
         :param kwargs:
         :return:
         """
-        _context = self.client_get("service_context")
+        _context = self.superior_get("context")
         _collector = _context.federation_entity.collector
 
         httpc_args = _collector.httpc_parms.copy()

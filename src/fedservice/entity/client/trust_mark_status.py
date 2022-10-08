@@ -11,31 +11,19 @@ from idpyoidc.message.oauth2 import ResponseMessage
 from fedservice import message
 
 
-def construct_entity_configuration_query(api_endpoint, issuer="", subject=""):
-    if issuer:
-        if subject:
-            query = urlencode({"iss": issuer, "sub": subject})
-        else:
-            query = urlencode({"iss": issuer})
-
-        return f"{api_endpoint}?{query}"
-    else:
-        return f"{api_endpoint}"
-
-
-class EntityStatement(Service):
-    """The service that talks to the OIDC federation Fetch endpoint."""
+class TrustMarksStatus(Service):
+    """The service that talks to the OIDC federation Status endpoint."""
 
     msg_type = oauth2.Message
     response_cls = message.EntityStatement
     error_msg = ResponseMessage
     synchronous = True
-    service_name = "entity_statement"
+    service_name = "trust_mark_status"
     http_method = "GET"
 
     def __init__(self,
                  superior_get: Callable,
-                 conf:Optional[Union[dict, Configuration]] = None):
+                 conf: Optional[Union[dict, Configuration]] = None):
         Service.__init__(self, superior_get, conf=conf)
 
     def get_request_parameters(
@@ -45,8 +33,6 @@ class EntityStatement(Service):
             request_body_type: Optional[str] = "",
             authn_method: Optional[str] = "",
             fetch_endpoint: Optional[str] = "",
-            issuer: Optional[str] = "",
-            subject: Optional[str] = "",
             **kwargs
     ) -> dict:
         """
@@ -57,8 +43,6 @@ class EntityStatement(Service):
         :param request_args: Message arguments
         :param request_body_type:
         :param fetch_endpoint:
-        :param issuer:
-        :param subject:
         :param kwargs: extra keyword arguments
         :return: Dictionary with the necessary information for the HTTP request
         """
@@ -68,14 +52,11 @@ class EntityStatement(Service):
         if not fetch_endpoint:
             raise AttributeError("Missing endpoint")
 
-        if issuer:
-            _q_args = {'iss': issuer}
-            if subject:
-                _q_args['sub'] = subject
-
-            query = urlencode(_q_args)
-            _url = f"{fetch_endpoint}?{query}"
+        if "trust_mark" in request_args:
+            _q_args = {'trust_mark': request_args["trust_mark"]}
         else:
-            _url = f"{fetch_endpoint}"
+            _q_args = {k:v for k,v in request_args.items() if k in ['sub', 'id', 'iat']}
+
+        _url = f"{fetch_endpoint}?{urlencode(_q_args)}"
 
         return {"url": _url, 'method': method}

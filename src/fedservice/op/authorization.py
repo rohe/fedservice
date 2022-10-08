@@ -19,13 +19,14 @@ class Authorization(authorization.Authorization):
         self.automatic_registration_endpoint = None
 
     def do_automatic_registration(self, entity_id):
-        _fe = self.server_get("endpoint_context").federation_entity
+        _fe = self.server_get("context").federation_entity
 
         # get self-signed entity statement
         _sses = _fe.get_configuration_information(entity_id)
 
         # Collect all the trust chains, verify them and apply policies. return the result
-        trust_chains = _fe.collect_trust_chains(_sses, "openid_relying_party")
+        trust_chains, signed_entity_configuration = _fe.collect_trust_chains(_sses,
+                                                                             "openid_relying_party")
 
         # pick one of the possible
         trust_chain = _fe.pick_trust_chain(trust_chains)
@@ -45,7 +46,7 @@ class Authorization(authorization.Authorization):
     def client_authentication(self, request, auth=None, **kwargs):
 
         _cid = request["client_id"]
-        _context = self.server_get("endpoint_context")
+        _context = self.server_get("context")
         # If this is a registered client then this should return some info
         client_info = _context.cdb.get(_cid)
         if client_info is None:
@@ -76,6 +77,5 @@ class Authorization(authorization.Authorization):
             self, request, auth, **kwargs)
 
     def extra_response_args(self, aresp):
-        aresp['trust_anchor_id'] = self.server_get(
-            "endpoint_context").federation_entity.trust_chain_anchor
+        aresp['trust_anchor_id'] = self.server_get("context").federation_entity.trust_chain_anchor
         return aresp

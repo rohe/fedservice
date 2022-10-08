@@ -6,14 +6,29 @@ from idpyoidc.client.exception import ResponseError
 from idpyoidc.message.oidc import ProviderConfigurationResponse
 from idpyoidc.client.oidc.provider_info_discovery import ProviderInfoDiscovery
 
-from fedservice.entity_statement.collect import branch2lists
+from fedservice.entity.function import apply_policies
+from fedservice.entity.function import tree2chains
+from fedservice.entity.function import verify_trust_chains
 from fedservice.entity_statement.collect import verify_self_signed_signature
 from fedservice.entity_statement.construct import map_configuration_to_preference
+from fedservice.entity_statement.statement import chains2dict
 from fedservice.entity_statement.utils import create_authority_hints
-from fedservice.entity_statement.verify import eval_chain
 from fedservice.exception import NoTrustedClaims
 
 logger = logging.getLogger(__name__)
+
+
+def pick_preferred_trust_anchor(trust_chains, federation_context):
+    if federation_context.tr_priority:
+        possible = []
+        for ta in federation_context.tr_priority:
+            for s in trust_chains:
+                if s.anchor == ta:
+                    possible.append(ta)
+    else:
+        possible = [s.anchor for s in trust_chains]
+
+    return possible[0]
 
 
 class FedProviderInfoDiscovery(ProviderInfoDiscovery):
@@ -21,14 +36,14 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
     request_body_type = 'jose'
     response_body_type = 'jose'
 
-    def __init__(self, client_get, conf=None, **kwargs):
-        ProviderInfoDiscovery.__init__(self, client_get, conf=conf)
+    def __init__(self, superior_get, conf=None, **kwargs):
+        ProviderInfoDiscovery.__init__(self, superior_get, conf=conf)
 
     def get_request_parameters(self, method="GET", **kwargs):
         try:
             _iss = kwargs["iss"]
         except KeyError:
-            _iss = self.client_get("service_context").get('issuer')
+            _iss = self.superior_get("context").get('issuer')
 
         qpart = {'iss': _iss}
 
@@ -65,7 +80,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         #     # Replace what was there before
         #     self.service_context.keyjar[self.service_context.issuer] = _kb
 
-        _context = self.client_get("service_context")
+        _context = self.superior_get("context")
         _context.set('provider_info', _pi)
         _context.federation_entity.federation = trust_root_id
 
@@ -77,44 +92,39 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         easy and the name of the federation are stored in the *federation*
         attribute while the provider info are stored in the service_context.
 
-        :param paths: A list of Statement instances
+        :param trust_chains: A list of TrustChain instances
         :param kwargs: Extra Keyword arguments
         """
 
-        _context = self.client_get("service_context")
-        _fe_context = _context.federation_entity.context
+        # First deal with federation relates things
+        _federation_entity = self.superior_get("node").superior_get('node')['federation_entity']
+        _federation_context = _federation_entity.context
 
-        if _fe_context.tr_priority:
-            possible = []
-            for ta in _fe_context.tr_priority:
-                for s in trust_chains:
-                    if s.anchor == ta:
-                        possible.append(ta)
-        else:
-            possible = [s.anchor for s in trust_chains]
-
-        _trust_anchor = possible[0]
-
-        _fe_context.trust_anchors = possible
-        _fe_context.op_statements = trust_chains
+        # If two chains lead to the same trust anchor only one remains after this
+        _federation_context.trust_chains = chains2dict(trust_chains)
 
         provider_info_per_trust_anchor = {}
-        for s in trust_chains:
-            if s.anchor in possible:
-                claims = s.metadata
-                provider_info_per_trust_anchor[s.anchor] = self.response_cls(**claims)
+        for entity_id, trust_chain in _federation_context.trust_chains.items():
+            claims = trust_chain.metadata['openid_provider']
+            provider_info_per_trust_anchor[entity_id] = self.response_cls(**claims)
 
-        #  _fe_context.provider_info_per_trust_anchor = provider_info_per_trust_anchor
+        _federation_context.proposed_authority_hints = create_authority_hints(
+            _federation_context.authority_hints, trust_chains)
 
-        _fe_context.proposed_authority_hints = create_authority_hints(
-            _fe_context.authority_hints, trust_chains)
+        if not _federation_context.proposed_authority_hints:
+            raise AttributeError("No possible authority hints")
 
-        _pi = provider_info_per_trust_anchor[_trust_anchor]
+        _anchor = pick_preferred_trust_anchor(trust_chains, _federation_context)
+
+        # And now for core OIDC related
+        _pi = provider_info_per_trust_anchor[_anchor]
+
+        _context = self.superior_get("context")
         _context.set('provider_info', _pi)
         self._update_service_context(_pi)
-        _client = self.client_get("entity")
-        _metadata = _client.collect_metadata()
-        _metadata.update(_context.federation_entity.get_metadata())
+        _client = self.superior_get("node")
+        _metadata = _client.get_metadata()
+        # _metadata.update(_federation_entity.get_metadata())
         _context.set('behaviour', map_configuration_to_preference(_pi, _metadata))
 
     def parse_response(self, info, sformat="", state="", **kwargs):
@@ -144,18 +154,21 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         :returns: A list of lists of Statement instances. The innermost lists represents
         trust chains
         """
-        entity_statement = verify_self_signed_signature(response)
-        entity_id = entity_statement['iss']
+        entity_config = verify_self_signed_signature(response)
+        entity_id = entity_config['iss']
 
-        _fe = self.client_get("service_context").federation_entity
-        _tree = _fe.collect_statement_chains(entity_id, entity_statement)
-        _node = {entity_id: (response, _tree)}
+        combo = self.superior_get('node').superior_get('node')
+        _collector = combo['federation_entity'].function.trust_chain_collector
+        _collector.config_cache[entity_id] = entity_config
+
+        _tree = _collector.collect_tree(entity_id, entity_config)
+
         logger.debug("Translate tree to chains")
-        _chains = branch2lists(_node)
+        _chains = tree2chains(_tree)
         logger.debug("%s chains", len(_chains))
-        for c in _chains:
-            c.append(response)
-        return [eval_chain(c, _fe.context.keyjar, 'openid_provider') for c in _chains]
+
+        _trust_chains = verify_trust_chains(combo['federation_entity'], _chains, response)
+        return apply_policies(combo['federation_entity'], _trust_chains)
 
     def get_response(self, *args, **kwargs):
         """
@@ -165,6 +178,6 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         :return:
         """
 
-        _fe = self.client_get("service_context").federation_entity
+        _fe = self.superior_get("context").federation_entity
         self_signed_config = _fe.collector.get_configuration_information(kwargs["iss"])
         return self.parse_response(self_signed_config)

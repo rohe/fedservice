@@ -9,16 +9,18 @@ from typing import Union
 from cryptojwt import KeyJar
 from cryptojwt.utils import importer
 from idpyoidc.configure import Configuration
-from idpyoidc.impexp import ImpExp
+from idpyoidc.context import OidcContext
 from idpyoidc.server.client_authn import client_auth_setup
 from idpyoidc.server.configure import ASConfiguration
 from idpyoidc.server.configure import OPConfiguration
 from idpyoidc.server.endpoint import Endpoint
 from idpyoidc.server.endpoint_context import EndpointContext
 from idpyoidc.server.util import build_endpoints
+from idpyoidc.util import instantiate
 
 from fedservice.entity import FederationContext
 from fedservice.entity_statement.create import create_entity_statement
+from fedservice.node import ServerNode
 
 logger = logging.getLogger(__name__)
 
@@ -41,61 +43,30 @@ class FederationServerContext(FederationContext):
     def __init__(self,
                  config: Optional[Union[dict, Configuration]] = None,
                  entity_id: str = "",
-                 entity_get: Callable = None,
-                 keyjar: Optional[KeyJar] = None,
-                 authority_hints: Optional[Union[List[str], str]] = None,
-                 default_lifetime: Optional[int] = 86400,
-                 trust_marks: Optional[List[str]] = None
+                 server_get: Callable = None,
+                 metadata: Optional[dict] = None,
+                 trust_marks: Optional[List[str]] = None,
                  ):
         FederationContext.__init__(self,
                                    config=config,
                                    entity_id=entity_id,
-                                   entity_get=entity_get,
-                                   keyjar=keyjar)
+                                   superior_get=server_get,
+                                   metadata=metadata
+                                   )
 
-        self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
-
-        if authority_hints is not None:
-            self.authority_hints = authority_hints
-        else:
-            _hints = config.get("authority_hints")
-            if _hints is None:
-                self.authority_hints = []
-            elif isinstance(_hints, str):
-                self.authority_hints = json.loads(open(_hints).read())
-            else:
-                self.authority_hints = _hints
+        self.metadata = {k: v for k, v in metadata.items() if k != 'authority_hints'}
 
         _sstm = config.get("self_signed_trust_marks")
+        _keyjar = server_get("keyjar")
         if _sstm:
             self.signed_trust_marks = create_self_signed_trust_marks(entity_id=self.entity_id,
-                                                                     keyjar=self.keyjar,
+                                                                     keyjar=_keyjar,
                                                                      spec=_sstm)
 
         self.trust_marks = trust_marks
 
-    def create_entity_statement(self, iss, sub, key_jar=None, metadata=None, metadata_policy=None,
-                                authority_hints=None, lifetime=0, jwks=None, **kwargs):
-        if jwks:
-            kwargs["jwks"] = jwks
-        else:
-            if "keys" in kwargs:
-                kwargs["jwks"] = {'keys': kwargs["keys"]}
-                del kwargs["keys"]
-
-        key_jar = key_jar or self.keyjar
-
-        if not authority_hints:
-            authority_hints = self.authority_hints
-        if not lifetime:
-            lifetime = self.default_lifetime
-
-        return create_entity_statement(iss, sub, key_jar=key_jar, metadata=metadata,
-                                       metadata_policy=metadata_policy,
-                                       authority_hints=authority_hints, lifetime=lifetime, **kwargs)
-
     def make_configuration_statement(self):
-        _metadata = self.entity_get("metadata")
+        _metadata = self.superior_get("metadata")
         kwargs = {}
         if self.authority_hints:
             kwargs["authority_hints"] = self.authority_hints
@@ -111,40 +82,58 @@ class FederationServerContext(FederationContext):
                                             metadata=_metadata, **kwargs)
 
 
-class FederationEntityServer(ImpExp):
+class FederationEntityServer(ServerNode):
     parameter = {"endpoint": [Endpoint], "endpoint_context": EndpointContext}
 
     def __init__(
             self,
+            superior_get: Callable,
             config: Optional[Union[dict, OPConfiguration, ASConfiguration]] = None,
             keyjar: Optional[KeyJar] = None,
+            context: Optional[OidcContext] = None,
             entity_id: Optional[str] = "",
             endpoint: Optional[dict] = None,
+            metadata: Optional[dict] = None,
+            subordinate: Optional[dict] = None,
+            httpc: Optional[object] = None,
+            httpc_params: Optional[dict] = None,
     ):
-        ImpExp.__init__(self)
         if config is None:
             config = {}
-
         self.conf = config
+
+        ServerNode.__init__(self, superior_get=superior_get, keyjar=keyjar, context=context,
+                            config=self.conf)
+
         if not entity_id:
-            entity_id = config.get("entity_id")
+            entity_id = superior_get('attribute', "entity_id")
 
         self.endpoint_context = FederationServerContext(
-            config=config,
-            entity_get=self.entity_get,
-            keyjar=keyjar,
-            entity_id=entity_id
+            config=self.conf,
+            server_get=self.server_get,
+            entity_id=entity_id,
+            metadata=metadata
         )
 
-        self.endpoint = build_endpoints(endpoint, entity_get=entity_get, issuer=entity_id)
+        self.endpoint = build_endpoints(endpoint, server_get=self.server_get, issuer=entity_id)
 
         # self.endpoint_context.do_add_on(endpoints=self.endpoint)
 
         self.setup_client_authn_methods()
         for endpoint_name, _ in self.endpoint.items():
-            self.endpoint[endpoint_name].server_get = self.entity_get
+            self.endpoint[endpoint_name].server_get = self.server_get
 
-    def entity_get(self, what, *arg):
+        if subordinate:
+            if 'class' in subordinate:
+                _kwargs = subordinate["kwargs"]
+                _kwargs.update({"server_get": self.server_get})
+                self.subordinate = instantiate(subordinate["class"], **_kwargs)
+            else:
+                self.subordinate = subordinate
+        else:
+            self.subordinate = {}
+
+    def server_get(self, what, *arg):
         _func = getattr(self, "get_{}".format(what), None)
         if _func:
             return _func(*arg)
@@ -159,10 +148,20 @@ class FederationEntityServer(ImpExp):
         except KeyError:
             return None
 
-    def get_endpoint_context(self, *arg):
+    def get_context(self, *arg):
         return self.endpoint_context
+
+    def get_attribute(self, attr, *args):
+        val = getattr(self, attr)
+        if val:
+            return val
+        else:
+            return self.superior_get('attribute', attr)
+
+    def get_server(self, *args):
+        return self
 
     def setup_client_authn_methods(self):
         self.endpoint_context.client_authn_method = client_auth_setup(
-            self.entity_get, self.conf.get("client_authn_methods")
+            self.server_get, self.conf.get("client_authn_methods")
         )

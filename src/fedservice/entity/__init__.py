@@ -1,28 +1,32 @@
 import json
 import logging
 from typing import Callable
-from typing import List
 from typing import Optional
 from typing import Union
 
+import requests
+from cryptojwt import as_unicode
 from cryptojwt import KeyJar
-from cryptojwt.utils import importer
+from cryptojwt.jws.jws import factory
 from idpyoidc.configure import Configuration
-from idpyoidc.context import OidcContext
+from idpyoidc.impexp import ImpExp
 from idpyoidc.util import instantiate
 
-from fedservice import message
-from fedservice.entity_statement.create import create_entity_statement
-
 __author__ = 'Roland Hedberg'
+
+from fedservice.entity_statement.create import create_entity_statement
+from fedservice.node import Node
 
 logger = logging.getLogger(__name__)
 
 
+def entity_type(metadata):
+    # assuming there is only one type apart from federation_entity and trust_mark_issuer
+    return set(metadata.keys()).difference({'federation_entity', 'trust_mark_issuer'}).pop()
 
 
-class FederationContext(OidcContext):
-    parameter = OidcContext.parameter.copy()
+class FederationContext(ImpExp):
+    parameter = ImpExp.parameter.copy()
     parameter.update({
         "default_lifetime": 0,
         "authority_hints": [],
@@ -35,57 +39,105 @@ class FederationContext(OidcContext):
     def __init__(self,
                  config: Optional[Union[dict, Configuration]] = None,
                  entity_id: str = "",
-                 entity_get: Callable = None,
-                 keyjar: Optional[KeyJar] = None,
+                 superior_get: Callable = None,
+                 default_lifetime: Optional[int] = 86400,
+                 metadata: Optional[dict] = None,
+                 tr_priority: Optional[list] = None,
+                 **kwargs
                  ):
+        ImpExp.__init__(self)
+
         if config is None:
             config = {}
 
         self.config = config
-        self.entity_get = entity_get
+        self.superior_get = superior_get
         self.entity_id = entity_id or config.get("entity_id")
+        self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
+        self.tr_priority = tr_priority or config.get("trust_root_priority", [])
 
-        OidcContext.__init__(self, config, keyjar, entity_id=self.entity_id)
+        if metadata:
+            _hints = metadata.get("authority_hints")
+            if _hints is None:
+                self.authority_hints = []
+            elif isinstance(_hints, str):
+                self.authority_hints = json.loads(open(_hints).read())
+            else:
+                self.authority_hints = _hints
+        else:
+            self.authority_hints = []
+
+        for param, default in self.parameter.items():
+            _val = kwargs.get(param)
+            if _val is not None:
+                setattr(self, param, _val)
+            else:
+                try:
+                    getattr(self, param)
+                except AttributeError:
+                    setattr(self, param, default)
+
+    def create_entity_statement(self, iss, sub, key_jar=None, metadata=None, metadata_policy=None,
+                                authority_hints=None, lifetime=0, jwks=None, **kwargs):
+        if jwks:
+            kwargs["jwks"] = jwks
+        else:
+            if "keys" in kwargs:
+                kwargs["jwks"] = {'keys': kwargs["keys"]}
+                del kwargs["keys"]
+
+        key_jar = key_jar or self.superior_get("attribute", "keyjar")
+
+        if not authority_hints:
+            authority_hints = self.authority_hints
+        if not lifetime:
+            lifetime = self.default_lifetime
+
+        return create_entity_statement(iss, sub, key_jar=key_jar, metadata=metadata,
+                                       metadata_policy=metadata_policy,
+                                       authority_hints=authority_hints, lifetime=lifetime, **kwargs)
 
 
-
-
-class FederationEntity(object):
+class FederationEntity(Node):
     name = "federation_entity"
 
     def __init__(self,
+                 superior_get: Optional[Callable] = None,
                  entity_id: str = "",
-                 keyjar: KeyJar = None,
-                 trusted_roots: dict = None,
-                 authority_hints: list = None,
+                 keyjar: Optional[KeyJar] = None,
+                 key_conf: Optional[dict] = None,
                  client: Optional[dict] = None,
                  server: Optional[dict] = None,
+                 function: Optional[dict] = None,
+                 httpc: Optional[object] = None,
+                 httpc_params: Optional[dict] = None,
+                 metadata: Optional[dict] = None,
                  **kwargs
                  ):
 
+        if superior_get is None and httpc is None:
+            httpc = requests
+
+        Node.__init__(self, superior_get=superior_get, keyjar=keyjar, httpc=httpc,
+                      httpc_params=httpc_params, key_conf=key_conf, entity_id=entity_id)
+
+        self.metadata = metadata or {}
+
         _args = {
-            "entity_get": self.entity_get,
-            "keyjar": keyjar
+            "superior_get": self.entity_get,
+            "keyjar": self.keyjar,
+            "httpc": self.httpc,
+            "httpc_params": self.httpc_params,
         }
 
-        if client:
-            _kwargs = client["kwargs"]
-            _kwargs.update(_args)
-            self.client = instantiate(client["class"], **_kwargs)
-        else:
-            self.client = None
+        self.context = FederationContext(entity_id=entity_id, superior_get=self.entity_get)
 
-        if server:
-            _kwargs = server["kwargs"]
-            _kwargs.update(_args)
-            self.server = instantiate(server["class"], **_kwargs)
-        else:
-            self.server = None
-
-        self.context = FederationContext(trusted_roots=trusted_roots,
-                                         entity_id=entity_id,
-                                         entity_get=self.entity_get,
-                                         authority_hints=authority_hints)
+        self.client = self.server = self.function = None
+        for key, val in [('client', client), ('server', server), ('function', function)]:
+            if val:
+                _kwargs = val["kwargs"]
+                _kwargs.update(_args)
+                setattr(self, key, instantiate(val["class"], **_kwargs))
 
     def entity_get(self, what, *arg):
         _func = getattr(self, "get_{}".format(what), None)
@@ -96,38 +148,76 @@ class FederationEntity(object):
     def get_context(self, *arg):
         return self.context
 
-    def get_endpoint_context(self, *arg):
-        return self.context
+    def get_attribute(self, attr, *args):
+        try:
+            val = getattr(self, attr)
+        except AttributeError:
+            return self.superior_get('attribute', attr)
+        else:
+            if val is None:
+                return self.superior_get('attribute', attr)
+            else:
+                return val
 
-    def federation_endpoint_metadata(self):
-        _config = self.context.config
-        metadata = {}
+    def get_function(self, function_name, *args):
+        if self.function:
+            return getattr(self.function, function_name)
+
+    def get_metadata(self):
+        metadata = self.metadata
+        if self.server.endpoint_context.metadata:
+            metadata.update(self.server.endpoint_context.metadata)
         # collect endpoints
         endpoints = {}
         for key, item in self.server.endpoint.items():
-            if key in ["fetch", "list", "status", "resolve"]:
-                endpoints[f"federation_{key}_endpoint"] = item.full_path
-        for attr in message.FederationEntity.c_param.keys():
-            if attr in _config:
-                metadata[attr] = _config[attr]
-            elif attr in endpoints:
-                metadata[attr] = endpoints[attr]
+            if key in ["fetch", "list", "resolve"]:
+                metadata[f"federation_{key}_endpoint"] = item.full_path
         return {"federation_entity": metadata}
-
-    def get_metadata(self):
-        return self.federation_endpoint_metadata()
 
     def get_endpoints(self, *arg):
         return self.server.endpoint
 
     def get_endpoint(self, endpoint_name, *arg):
         try:
-            return self.server.endpoint[endpoint_name]
+            return self.server.get_endpoint[endpoint_name]
+        except KeyError:
+            return None
+
+    def get_service(self, service_name, *arg):
+        try:
+            return self.client.get_service[service_name]
         except KeyError:
             return None
 
     def get_entity(self):
         return self
+
+    def pick_trust_chain(self, trust_chains):
+        """
+        Pick one trust chain out of the list of possible trust chains
+
+        :param trust_chains: A list of :py:class:`fedservice.entity_statement.statement.TrustChain
+            instances
+        :return: A :py:class:`fedservice.entity_statement.statement.TrustChain instance
+        """
+        if len(trust_chains) == 1:
+            # If there is only one, then use it
+            return trust_chains[0]
+        elif self.context.tr_priority:
+            # Go by priority
+            for fid in self.context.tr_priority:
+                for trust_chain in trust_chains:
+                    if trust_chain.anchor == fid:
+                        return trust_chain
+
+        # Can only arrive here if the federations I got back and trust are not
+        # in the priority list. So, just pick one
+        return trust_chains[0]
+
+    def get_payload(self, self_signed_statement):
+        _jws = as_unicode(self_signed_statement)
+        _jwt = factory(_jws)
+        return _jwt.jwt.payload()
 
 # class FederationEntity(object):
 #     name = "federation_entity"
@@ -183,27 +273,6 @@ class FederationEntity(object):
 #     def get_configuration_information(self, subject_id):
 #         return self.collector.get_configuration_information(subject_id)
 #
-#     def pick_trust_chain(self, trust_chains):
-#         """
-#         Pick one trust chain out of the list of possible trust chains
-#
-#         :param trust_chains: A list of :py:class:`fedservice.entity_statement.statement.TrustChain
-#             instances
-#         :return: A :py:class:`fedservice.entity_statement.statement.TrustChain instance
-#         """
-#         if len(trust_chains) == 1:
-#             # If there is only one, then use it
-#             return trust_chains[0]
-#         elif self.context.tr_priority:
-#             # Go by priority
-#             for fid in self.context.tr_priority:
-#                 for trust_chain in trust_chains:
-#                     if trust_chain.anchor == fid:
-#                         return trust_chain
-#
-#         # Can only arrive here if the federations I got back and trust are not
-#         # in the priority list. So, just pick one
-#         return trust_chains[0]
 #
 #     def get_payload(self, self_signed_statement):
 #         _jws = as_unicode(self_signed_statement)
@@ -222,7 +291,7 @@ class FederationEntity(object):
 #         # collect trust chains
 #         _tree = self.collect_statement_chains(payload['iss'], payload)
 #         _node = {payload['iss']: (self_signed_statement, _tree)}
-#         _chains = branch2lists(_node)
+#         _chains = tree2chains(_node)
 #         logger.debug("%s chains", len(_chains))
 #
 #         # verify the trust paths and apply policies

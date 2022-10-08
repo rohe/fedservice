@@ -3,8 +3,7 @@ import logging
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.client.oidc.provider_info_discovery import PROVIDER2PREFERENCE
 
-from fedservice.entity_statement.policy import apply_policy
-
+from fedservice.entity.function.policy import TrustChainPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +72,6 @@ def map_configuration_to_preference(provider_configuration, client_preference):
     :return: A ClientRegistration instance
     """
     _allowed = translate_configuration(provider_configuration)
-    args = apply_policy(client_preference, _allowed)
+    args = TrustChainPolicy.apply_policy(client_preference, _allowed)
 
     return list_to_singleton(args, RegistrationRequest)

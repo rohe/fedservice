@@ -93,7 +93,7 @@ class MetaAPIFS(MetaAPI):
     @cherrypy.expose
     def listing(self, **kwargs):
         """
-        List the subordinates of this intermediate
+        List the subordinate of this intermediate
         TODO implement
 
         :param kwargs:

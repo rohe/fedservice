@@ -1,15 +1,11 @@
 import json
 import os
-from typing import Optional
-from typing import Union
 
-from idpyoidc.client.configure import get_configuration
 from idpyoidc.configure import Configuration
 from idpyoidc.util import instantiate
-import pytest
 
 from fedservice.entity import FederationEntity
-from fedservice.entity.fetch import Fetch
+from fedservice.entity.server.fetch import Fetch
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -26,7 +22,7 @@ ANCHOR = {'https://feide.no': json.loads(jwks)}
 
 class Foo():
     def __int__(self, config=None):
-        self.config = get_configuration(config)
+        self.config = Configuration(config)
         # OidcContext.__init__(self, config, keyjar, entity_id=config.conf.get("entity_id", ""))
 
         self.object = {entity_type: instantiate(args['class'], **args["kwargs"]) for

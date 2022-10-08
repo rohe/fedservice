@@ -25,7 +25,7 @@ def get_netloc(url):
 
 class DummyCollector(Collector):
     def __init__(self, httpd=None, trusted_roots=None, root_dir='.',
-                 base_url=''):
+                 base_url='', **kwargs):
         Collector.__init__(self, http_cli=httpd, trust_anchors=trusted_roots)
         self.root_dir = root_dir
         self.base_url = base_url

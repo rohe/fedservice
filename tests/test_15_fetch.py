@@ -42,7 +42,7 @@ CONFIG = {
             "class": Fetch,
             "kwargs": {
                 "client_authn_method": None,
-                "subordinates": SUBORDINATES
+                "subordinate": SUBORDINATES
             },
         },
         "list": {
@@ -50,7 +50,7 @@ CONFIG = {
             "class": List,
             "kwargs": {
                 "client_authn_method": None,
-                "subordinates": SUBORDINATES
+                "subordinate": SUBORDINATES
             },
         }
     },

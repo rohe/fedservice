@@ -3,8 +3,11 @@ import logging
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.server.oidc import registration
 
-from fedservice.entity_statement.policy import diff2policy
-from fedservice.entity_statement.utils import create_authority_hints
+from fedservice.entity.function import apply_policies
+from fedservice.entity.function import collect_trust_chains
+from fedservice.entity.function import verify_trust_chains
+from fedservice.entity.function.policy import diff2policy
+from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
 
 logger = logging.getLogger(__name__)
 
@@ -29,28 +32,30 @@ class Registration(registration.Registration):
         :param kwargs:
         :return:
         """
-        _fe = self.server_get("endpoint_context").federation_entity
-        _fe_cntx = _fe.context
+        payload = verify_self_signed_signature(request)
+        opponent_entity_type = set(payload['metadata'].keys()).difference({'federation_entity',
+                                                                           'trust_mark_issuer'}).pop()
+        _federation_entity = self.server_get('node').superior_get('node')['federation_entity']
 
         # Collect trust chains
-        trust_chains = _fe.collect_trust_chains(request, 'openid_relying_party')
-
-        _fe.proposed_authority_hints = create_authority_hints(_fe_cntx.authority_hints,
-                                                              trust_chains)
-
-        trust_chain = _fe.pick_trust_chain(trust_chains)
-        _fe.trust_chain_anchor = trust_chain.anchor
-        req = RegistrationRequest(**trust_chain.metadata)
+        _chains, _ = collect_trust_chains(self.server_get('node'),
+                                       entity_id=payload['sub'],
+                                       signed_entity_configuration=request)
+        _trust_chains = verify_trust_chains(_federation_entity, _chains, request)
+        _trust_chains = apply_policies(_federation_entity, _trust_chains)
+        trust_chain = _federation_entity.pick_trust_chain(_trust_chains)
+        _federation_entity.trust_chain_anchor = trust_chain.anchor
+        req = RegistrationRequest(**trust_chain.metadata[opponent_entity_type])
         response_info = self.non_fed_process_request(req, **kwargs)
         if "response_args" in response_info:
-            payload = _fe.get_payload(request)
+            _context = _federation_entity.context
             _policy = diff2policy(response_info['response_args'], req)
-            entity_statement = _fe_cntx.create_entity_statement(
-                _fe_cntx.entity_id,
+            entity_statement = _context.create_entity_statement(
+                _context.entity_id,
                 payload['iss'],
                 trust_anchor_id=trust_chain.anchor,
-                metadata_policy={_fe_cntx.opponent_entity_type: _policy},
-                aud=payload['iss']
+                metadata_policy={opponent_entity_type: _policy},
+                aud=payload['iss'],
             )
             response_info["response_msg"] = entity_statement
             del response_info["response_args"]

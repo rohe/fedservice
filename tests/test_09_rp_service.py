@@ -4,22 +4,29 @@ from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
 from cryptojwt.jws.jws import factory
+from fedservice.combo import Combo
 from idpyoidc.client.client_auth import PrivateKeyJWT
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.client.oidc import RP
 from idpyoidc.defaults import JWT_BEARER
 from idpyoidc.message.oidc import AccessTokenRequest
-from idpyoidc.operator import Operator
 import pytest
 
 from fedservice import eval_chain
 from fedservice.entity import FederationEntity
-from fedservice.entity.fetch import Fetch
-from fedservice.entity.status import Status
-from fedservice.entity_statement.collect import branch2lists
+from fedservice.entity.server.fetch import Fetch
+from fedservice.entity_statement.collect import tree2chains
 from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement
+from fedservice.entity.client import FederationEntityClient
+from fedservice.entity.client.entity_configuration import \
+    EntityConfiguration as c_EntityConfiguration
+from fedservice.entity.client.entity_statement import EntityStatement
+from fedservice.entity.server import FederationEntityServer
+from fedservice.entity.server.entity_configuration import \
+    EntityConfiguration as s_EntityConfiguration
 from fedservice.rp import DEFAULT_OIDC_FED_SERVICES
 from fedservice.rp import FederationRP
+from fedservice.trust_mark_issuer.status import Status
 from .utils import DummyCollector
 from .utils import Publisher
 
@@ -52,13 +59,14 @@ class TestRpService(object):
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
         entity_id = 'https://foodle.uninett.no'
         config = {
-            "keys": {"uri_path": "static/jwks.json", "key_defs": KEY_DEFS},
+            "keys": {"key_defs": KEY_DEFS},
             "openid_relying_party": {
                 'class': RP,
                 'kwargs': {
                     'client_id': entity_id,
                     'client_secret': 'a longesh password',
                     'redirect_uris': ['https://example.com/cli/authz_cb'],
+                    "keys": {"uri_path": "static/jwks.json", "key_defs": KEY_DEFS},
                     "metadata": {
                         "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
                         "id_token_signed_response_alg": "ES256",
@@ -71,17 +79,45 @@ class TestRpService(object):
             "federation_entity": {
                 'class': FederationEntity,
                 'kwargs': {
-                    "endpoint": {
-                        "fetch": {
-                            "path": "fetch",
-                            "class": Fetch,
-                            "kwargs": {"client_authn_method": None},
+                    "kwargs": {
+                        "trusted_roots": ANCHOR,
+                        "authority_hints": ['https://ntnu.no'],
+                        "organization_name": "The example cooperation",
+                        "homepage_uri": "https://www.example.com",
+                        "contacts": "operations@example.com",
+                        "client": {
+                            'class': FederationEntityClient,
+                            'kwargs': {
+                                "services": {
+                                    "entity_configuration": {
+                                        "class": c_EntityConfiguration,
+                                        "kwargs": {}
+                                    },
+                                    "entity_statement": {
+                                        "class": EntityStatement,
+                                        "kwargs": {}
+                                    }
+                                }
+                            }
+                        },
+                        "server": {
+                            'class': FederationEntityServer,
+                            'kwargs': {
+                                "endpoint": {
+                                    "entity_configuration": {
+                                        "path": ".well-known/openid-federation",
+                                        "class": s_EntityConfiguration,
+                                        "kwargs": {}
+                                    },
+                                    "fetch": {
+                                        "path": "fetch",
+                                        "class": Fetch,
+                                        "kwargs": {}
+                                    }
+                                }
+                            }
                         }
-                    },
-                    "entity_id": entity_id,
-                    "keys": {"uri_path": "static/fed_jwks.json", "key_defs": KEY_DEFS},
-                    "trusted_roots": ANCHOR,
-                    "authority_hints": ['https://ntnu.no']
+                    }
                 }
             },
             "trust_mark_issuer": {
@@ -98,7 +134,7 @@ class TestRpService(object):
             }
         }
 
-        self.entity = Operator(config=config)
+        self.entity = Combo(config=config)
 
         httpc = Publisher(os.path.join(BASE_PATH, 'base_data'))
 
@@ -212,7 +248,7 @@ class TestRpService(object):
         )
         tree = _fe.collect_statement_chains(payload['iss'], _info['body'])
         _node = {payload['iss']: (_info['body'], tree)}
-        chains = branch2lists(_node)
+        chains = tree2chains(_node)
         statements = [eval_chain(c, _fe.context.keyjar, 'openid_relying_party') for c in chains]
 
         metadata_policy = {
