@@ -450,3 +450,35 @@ class TrustMark(JsonWebToken):
                 raise Expired()
 
         return True
+
+
+def trust_mark_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a Trust Mark."""
+    return deserialize_from_one_of(val, TrustMark, sformat)
+
+
+SINGLE_REQUIRED_TRUST_MARK = (Message, True, msg_ser, trust_mark_deser, False)
+OPTIONAL_LIST_OF_TRUST_MARKS = ([Message], False, msg_ser, trust_mark_deser, False)
+
+
+class ResolveRequest(Message):
+    c_param = {
+        "sub": SINGLE_REQUIRED_STRING,
+        "anchor": SINGLE_REQUIRED_STRING,
+        "type": SINGLE_OPTIONAL_STRING
+    }
+
+
+class ResolveResponse(JsonWebToken):
+    c_param = JsonWebToken.c_param.copy()
+    c_param.update({
+        'metadata': SINGLE_REQUIRED_METADATA,
+        'trust_chain': OPTIONAL_LIST_OF_STRINGS,
+        'trust_marks': OPTIONAL_LIST_OF_TRUST_MARKS
+    })
+
+
+class ListResponse(Message):
+    c_param = {
+        "entity_id": REQUIRED_LIST_OF_STRINGS
+    }

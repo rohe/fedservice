@@ -11,7 +11,7 @@ from idpyoidc.message.oauth2 import ResponseMessage
 from fedservice import message
 
 
-class TrustMarksStatus(Service):
+class TrustMarkStatus(Service):
     """The service that talks to the OIDC federation Status endpoint."""
 
     msg_type = oauth2.Message

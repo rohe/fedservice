@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 
 from idpyoidc.client.configure import Configuration
 from idpyoidc.client.service import Service
-from idpyoidc.constant import JOSE_ENCODED
 from idpyoidc.message import oauth2
 from oidcmsg.oauth2 import ResponseMessage
 import requests

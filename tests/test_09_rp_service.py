@@ -4,7 +4,6 @@ from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
 from cryptojwt.jws.jws import factory
-from fedservice.combo import Combo
 from idpyoidc.client.client_auth import PrivateKeyJWT
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.client.oidc import RP
@@ -12,21 +11,23 @@ from idpyoidc.defaults import JWT_BEARER
 from idpyoidc.message.oidc import AccessTokenRequest
 import pytest
 
-from fedservice import eval_chain
+from build.lib.fedservice.trust_mark_issuer.status import Status
+from fedservice.combo import Combo
+from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.entity import FederationEntity
-from fedservice.entity.server.fetch import Fetch
-from fedservice.entity_statement.collect import tree2chains
-from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement
 from fedservice.entity.client import FederationEntityClient
 from fedservice.entity.client.entity_configuration import \
     EntityConfiguration as c_EntityConfiguration
 from fedservice.entity.client.entity_statement import EntityStatement
+from fedservice.entity.function import tree2chains
+from fedservice.entity.function.policy import TrustChainPolicy
+from fedservice.entity.function.trust_chain_collector import TrustChainCollector
+from fedservice.entity.function.verifier import TrustChainVerifier
 from fedservice.entity.server import FederationEntityServer
-from fedservice.entity.server.entity_configuration import \
-    EntityConfiguration as s_EntityConfiguration
-from fedservice.rp import DEFAULT_OIDC_FED_SERVICES
-from fedservice.rp import FederationRP
-from fedservice.trust_mark_issuer.status import Status
+from fedservice.entity.server.entity_configuration import EntityConfiguration
+from fedservice.entity.server.fetch import Fetch
+from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement
+from fedservice.node import Collection
 from .utils import DummyCollector
 from .utils import Publisher
 
@@ -60,6 +61,64 @@ class TestRpService(object):
         entity_id = 'https://foodle.uninett.no'
         config = {
             "keys": {"key_defs": KEY_DEFS},
+            "federation_entity": {
+                'class': FederationEntity,
+                "function": {
+                    'class': Collection,
+                    'kwargs': {
+                        'functions': {
+                            "trust_chain_collector": {
+                                "class": TrustChainCollector,
+                                "kwargs": {
+                                    # "trust_anchors": ANCHOR,
+                                    "allowed_delta": 600
+                                }
+                            },
+                            'verifier': {
+                                'class': TrustChainVerifier,
+                                'kwargs': {}
+                            },
+                            'policy': {
+                                'class': TrustChainPolicy,
+                                'kwargs': {}
+                            }
+                        }
+                    }
+                },
+                "client": {
+                    'class': FederationEntityClient,
+                    'kwargs': {
+                        "services": {
+                            "entity_configuration": {
+                                "class": c_EntityConfiguration,
+                                "kwargs": {}
+                            },
+                            "entity_statement": {
+                                "class": EntityStatement,
+                                "kwargs": {}
+                            }
+                        }
+                    }
+                },
+                "server": {
+                    'class': FederationEntityServer,
+                    'kwargs': {
+                        "metadata": {
+                            # "authority_hints": [TA_ID],
+                            # "organization_name": "The example",
+                            # "homepage_uri": "https://www.example.com",
+                            # "contacts": "app@rp.example.com"
+                        },
+                        "endpoint": {
+                            "entity_configuration": {
+                                "path": ".well-known/openid-federation",
+                                "class": EntityConfiguration,
+                                "kwargs": {}
+                            }
+                        }
+                    }
+                }
+            },
             "openid_relying_party": {
                 'class': RP,
                 'kwargs': {
@@ -74,50 +133,6 @@ class TestRpService(object):
                         "client_registration_types": ['automatic']
                     },
                     "services": oidc_service
-                }
-            },
-            "federation_entity": {
-                'class': FederationEntity,
-                'kwargs': {
-                    "kwargs": {
-                        "trusted_roots": ANCHOR,
-                        "authority_hints": ['https://ntnu.no'],
-                        "organization_name": "The example cooperation",
-                        "homepage_uri": "https://www.example.com",
-                        "contacts": "operations@example.com",
-                        "client": {
-                            'class': FederationEntityClient,
-                            'kwargs': {
-                                "services": {
-                                    "entity_configuration": {
-                                        "class": c_EntityConfiguration,
-                                        "kwargs": {}
-                                    },
-                                    "entity_statement": {
-                                        "class": EntityStatement,
-                                        "kwargs": {}
-                                    }
-                                }
-                            }
-                        },
-                        "server": {
-                            'class': FederationEntityServer,
-                            'kwargs': {
-                                "endpoint": {
-                                    "entity_configuration": {
-                                        "path": ".well-known/openid-federation",
-                                        "class": s_EntityConfiguration,
-                                        "kwargs": {}
-                                    },
-                                    "fetch": {
-                                        "path": "fetch",
-                                        "class": Fetch,
-                                        "kwargs": {}
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
             },
             "trust_mark_issuer": {
@@ -138,13 +153,13 @@ class TestRpService(object):
 
         httpc = Publisher(os.path.join(BASE_PATH, 'base_data'))
 
-        _context = self.entity.client_get("service_context")
+        _context = self.entity.superior_get("service_context")
         # The test data collector
         _context.federation_entity.collector = DummyCollector(
             trusted_roots=ANCHOR, httpd=httpc, root_dir=os.path.join(BASE_PATH, 'base_data'))
 
-        self.disco_service = self.entity.client_get("service", 'provider_info')
-        self.registration_service = self.entity.client_get("service", 'registration')
+        self.disco_service = self.entity.superior_get("service", 'provider_info')
+        self.registration_service = self.entity.superior_get("service", 'registration')
 
     def test_1(self):
         _info = self.disco_service.get_request_parameters(iss='https://ntnu.no/op')
@@ -157,7 +172,7 @@ class TestRpService(object):
         assert list(_q.keys()) == ['iss']
 
     def test_parse_discovery_response(self):
-        _context = self.entity.client_get("service_context")
+        _context = self.entity.superior_get("service_context")
         _info = self.disco_service.get_request_parameters(iss='https://op.ntnu.no')
         http_response = _context.federation_entity.collector.http_cli('GET', _info['url'])
 
@@ -166,14 +181,14 @@ class TestRpService(object):
         statement = statements[0]
         assert statement.anchor == 'https://feide.no'
         self.disco_service.update_service_context(statements)
-        assert set(self.disco_service.client_get("service_context").get('behaviour').keys()) == {
+        assert set(self.disco_service.superior_get("service_context").get('behaviour').keys()) == {
             'grant_types', 'id_token_signed_response_alg',
             'token_endpoint_auth_method', 'federation_type'}
 
     def test_create_reqistration_request(self):
         # get the entity statement from the OP
         _info = self.disco_service.get_request_parameters(iss='https://op.ntnu.no')
-        _context = self.entity.client_get("service_context")
+        _context = self.entity.superior_get("service_context")
         http_response = _context.federation_entity.collector.http_cli('GET', _info['url'])
 
         # parse the response and collect the trust chains
@@ -186,7 +201,7 @@ class TestRpService(object):
         jws = self.registration_service.construct(request_args=req_args)
         assert jws
 
-        _sc = self.registration_service.client_get("service_context")
+        _sc = self.registration_service.superior_get("service_context")
         self.registration_service.endpoint = _sc.get('provider_info')[
             'federation_registration_endpoint']
 
@@ -218,7 +233,7 @@ class TestRpService(object):
         # parse the response and collect the trust chains
         res = self.disco_service.parse_response(jws)
 
-        _context = self.registration_service.client_get("service_context")
+        _context = self.registration_service.superior_get("service_context")
         _fe = _context.federation_entity
         _context.issuer = "https://op.ntnu.no"
         self.disco_service.update_service_context(res)
@@ -320,7 +335,7 @@ class TestRpServiceAuto(object):
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
         self.entity = FederationRP(services=oidc_service, config=config, client_type='oidc')
 
-        _context = self.entity.client_get("service_context")
+        _context = self.entity.superior_get("service_context")
         _context.provider_info = {'token_endpoint': "https://op.example.org"}
         # httpc = Publisher(os.path.join(BASE_PATH, 'base_data'))
 
@@ -329,7 +344,7 @@ class TestRpServiceAuto(object):
         #     trusted_roots=ANCHOR, httpd=httpc, root_dir=os.path.join(BASE_PATH, 'base_data'))
 
     def test_construct_client_assertion(self):
-        token_service = self.entity.client_get("service", 'accesstoken')
+        token_service = self.entity.superior_get("service", 'accesstoken')
         request = AccessTokenRequest()
         pkj = PrivateKeyJWT()
         http_args = pkj.construct(request, service=token_service, authn_endpoint='token_endpoint')

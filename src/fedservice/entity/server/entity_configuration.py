@@ -30,7 +30,7 @@ class EntityConfiguration(Endpoint):
             _metadata = _entity.get_metadata()
         _ec = create_entity_statement(iss=_entity_id,
                                       sub=_entity_id,
-                                      key_jar=_entity.superior_get('attribute', "keyjar"),
+                                      key_jar=_entity.get_attribute('keyjar'),
                                       metadata=_metadata,
                                       authority_hints=_server.endpoint_context.authority_hints)
         return {"response": _ec}

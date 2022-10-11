@@ -2,9 +2,11 @@ import os
 
 from cryptojwt import KeyJar
 
-from fedservice.entity_statement.collect import tree2chains
+from fedservice.entity.function import tree2chains
+from fedservice.entity.function.trust_chain_collector import TrustChainCollector
+from fedservice.entity.function.verifier import TrustChainVerifier
 from fedservice.entity_statement.collect import verify_self_signed_signature
-from fedservice.entity.function.verifier import eval_chain
+from fedservice.node import Node
 from tests.utils import DummyCollector
 from .utils import Publisher
 
@@ -35,7 +37,10 @@ def test_eval_chains():
     key_jar = KeyJar()
     key_jar.import_jwks_as_json(jwks, 'https://feide.no')
 
-    statements = [eval_chain(c, key_jar, 'openid_relying_party') for c in chains]
+    _node = Node(keyjar=key_jar)
+    _verifier = TrustChainVerifier(superior_get=_node.get_node)
+
+    statements = _verifier(chains)
 
     assert len(statements) == 1
     statement = statements[0]

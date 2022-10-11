@@ -2,7 +2,6 @@ import logging
 from typing import Callable
 from typing import Optional
 
-from cryptojwt import KeyBundle
 from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import utc_time_sans_frac
 
@@ -11,7 +10,6 @@ from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import Function
 from fedservice.entity.function import get_payload
 from fedservice.entity.function import verify_trust_chains
-from fedservice.entity_statement.statement import TrustChain
 
 logger = logging.getLogger(__name__)
 

@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 
 from idpyoidc.client.configure import Configuration
 from idpyoidc.client.service import Service
+from idpyoidc.message import Message
 from idpyoidc.message import oauth2
 from idpyoidc.message.oauth2 import ResponseMessage
 
@@ -68,14 +69,10 @@ class EntityStatement(Service):
         if not fetch_endpoint:
             raise AttributeError("Missing endpoint")
 
+        msg = Message()
         if issuer:
-            _q_args = {'iss': issuer}
+            msg['iss'] = issuer
             if subject:
-                _q_args['sub'] = subject
+                msg['sub'] = subject
 
-            query = urlencode(_q_args)
-            _url = f"{fetch_endpoint}?{query}"
-        else:
-            _url = f"{fetch_endpoint}"
-
-        return {"url": _url, 'method': method}
+        return {"url": msg.request(fetch_endpoint), 'method': method}

@@ -179,13 +179,13 @@ class FederationEntity(Node):
 
     def get_endpoint(self, endpoint_name, *arg):
         try:
-            return self.server.get_endpoint[endpoint_name]
+            return self.server.get_endpoint(endpoint_name)
         except KeyError:
             return None
 
     def get_service(self, service_name, *arg):
         try:
-            return self.client.get_service[service_name]
+            return self.client.get_service(service_name)
         except KeyError:
             return None
 

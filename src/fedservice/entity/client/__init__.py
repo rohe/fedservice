@@ -19,7 +19,7 @@ from idpyoidc.client.util import get_deserialization_method
 from idpyoidc.exception import FormatError
 from idpyoidc.message import Message
 
-from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
+from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_SERVICES
 from fedservice.entity import FederationContext
 from fedservice.node import ClientNode
 
@@ -105,7 +105,7 @@ class FederationEntityClient(ClientNode):
 
         self._service_context = FederationServiceContext(config=config, superior_get=self.node_get)
 
-        _srvs = services or DEFAULT_OIDC_FED_SERVICES
+        _srvs = services or DEFAULT_FEDERATION_ENTITY_SERVICES
 
         self._service = init_services(service_definitions=_srvs, superior_get=self.node_get)
 
@@ -123,6 +123,9 @@ class FederationEntityClient(ClientNode):
             return self._service[service_name]
         except KeyError:
             return None
+
+    def get_service_names(self, *args):
+        return list(self._service.keys())
 
     def get_context(self, *args):
         return self._service_context

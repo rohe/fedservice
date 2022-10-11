@@ -53,9 +53,8 @@ setup(
     url='https://github.com/IdentityPython/oidcrp/',
     packages=["fedservice", "fedservice/entity_statement",
               "fedservice/fetch_entity_statement", "fedservice/entity",
-              "fedservice/trust_mark_issuer", "fedservice/operator",
               "fedservice/op/add_on", "fedservice/entity/client", "fedservice/entity/server",
-              "fedservice/combo", "fedservice/operator"],
+              "fedservice/entity/function", "fedservice/combo"],
     package_dir={"": "src"},
     classifiers=[
         "Development Status :: 4 - Beta",
