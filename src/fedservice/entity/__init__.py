@@ -135,7 +135,7 @@ class FederationEntity(Node):
         self.client = self.server = self.function = None
         for key, val in [('client', client), ('server', server), ('function', function)]:
             if val:
-                _kwargs = val["kwargs"]
+                _kwargs = val["kwargs"].copy()
                 _kwargs.update(_args)
                 setattr(self, key, instantiate(val["class"], **_kwargs))
 
@@ -152,10 +152,16 @@ class FederationEntity(Node):
         try:
             val = getattr(self, attr)
         except AttributeError:
-            return self.superior_get('attribute', attr)
+            if self.superior_get:
+                return self.superior_get('attribute', attr)
+            else:
+                return None
         else:
             if val is None:
-                return self.superior_get('attribute', attr)
+                if self.superior_get:
+                    return self.superior_get('attribute', attr)
+                else:
+                    return None
             else:
                 return val
 

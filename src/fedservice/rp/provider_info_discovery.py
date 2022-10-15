@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 from idpyoidc.client.exception import ResponseError
 from idpyoidc.message.oidc import ProviderConfigurationResponse
-from idpyoidc.client.oidc.provider_info_discovery import ProviderInfoDiscovery
+from idpyoidc.client.oidc import provider_info_discovery
 
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import tree2chains
@@ -31,13 +31,13 @@ def pick_preferred_trust_anchor(trust_chains, federation_context):
     return possible[0]
 
 
-class FedProviderInfoDiscovery(ProviderInfoDiscovery):
+class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
     response_cls = ProviderConfigurationResponse
     request_body_type = 'jose'
     response_body_type = 'jose'
 
     def __init__(self, superior_get, conf=None, **kwargs):
-        ProviderInfoDiscovery.__init__(self, superior_get, conf=conf)
+        provider_info_discovery.ProviderInfoDiscovery.__init__(self, superior_get, conf=conf)
 
     def get_request_parameters(self, method="GET", **kwargs):
         try:
@@ -57,7 +57,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         _qurl = '{}://{}/.well-known/openid-federation?{}'.format(
             p.scheme, p.netloc, urlencode(qpart))
 
-        return {'url': _qurl, 'iss': _iss}
+        return {'method': method, 'url': _qurl, 'iss': _iss}
 
     def store_federation_info(self, statement, trust_root_id):
         """
@@ -97,7 +97,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         """
 
         # First deal with federation relates things
-        _federation_entity = self.superior_get("node").superior_get('node')['federation_entity']
+        _federation_entity = self.superior_get("entity").superior_get('node')['federation_entity']
         _federation_context = _federation_entity.context
 
         # If two chains lead to the same trust anchor only one remains after this
@@ -122,7 +122,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         _context = self.superior_get("context")
         _context.set('provider_info', _pi)
         self._update_service_context(_pi)
-        _client = self.superior_get("node")
+        _client = self.superior_get("entity")
         _metadata = _client.get_metadata()
         # _metadata.update(_federation_entity.get_metadata())
         _context.set('behaviour', map_configuration_to_preference(_pi, _metadata))
@@ -130,7 +130,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
     def parse_response(self, info, sformat="", state="", **kwargs):
         # returns a list of TrustChain instances
         trust_chains = self.parse_federation_response(info, state=state)
-        # Get rid of NULL chains (== trust chains I can't verify)
+        # Get rid of NULL chains (== trust chains I can't verify, don't trust)
         trust_chains = [s for s in trust_chains if s is not None]
 
         if not trust_chains:
@@ -157,7 +157,7 @@ class FedProviderInfoDiscovery(ProviderInfoDiscovery):
         entity_config = verify_self_signed_signature(response)
         entity_id = entity_config['iss']
 
-        combo = self.superior_get('node').superior_get('node')
+        combo = self.superior_get('entity').superior_get('node')
         _collector = combo['federation_entity'].function.trust_chain_collector
         _collector.config_cache[entity_id] = entity_config
 

@@ -125,7 +125,7 @@ class FederationEntityClient(ClientNode):
             return None
 
     def get_service_names(self, *args):
-        return list(self._service.keys())
+        return set(self._service.keys())
 
     def get_context(self, *args):
         return self._service_context

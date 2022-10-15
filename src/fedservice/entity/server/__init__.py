@@ -108,6 +108,9 @@ class FederationEntityServer(ServerNode):
         if not entity_id:
             entity_id = superior_get('attribute', "entity_id")
 
+        if metadata is None:
+            metadata = {}
+
         self.endpoint_context = FederationServerContext(
             config=self.conf,
             server_get=self.server_get,

@@ -1,12 +1,17 @@
 import json
 import os
+from typing import Callable
+from typing import List
+from typing import Optional
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
-from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import KeyJar
 
-from fedservice.entity_statement.collect import Collector
+from fedservice.entity.function import Function
+from fedservice.entity.function.trust_chain_collector import cache_key
+from fedservice.entity.function.trust_chain_collector import unverified_entity_statement
+from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
 from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement
 
 
@@ -23,36 +28,59 @@ def get_netloc(url):
     return p.netloc
 
 
-class DummyCollector(Collector):
-    def __init__(self, httpd=None, trusted_roots=None, root_dir='.',
-                 base_url='', **kwargs):
-        Collector.__init__(self, http_cli=httpd, trust_anchors=trusted_roots)
+class DummyCollector(Function):
+
+    def __init__(self,
+                 trust_anchors: dict,
+                 superior_get: Optional[Callable] = None,
+                 keyjar: Optional[KeyJar] = None,
+                 root_dir: Optional[str] = '.',
+                 base_url: Optional[str] = '',
+                 **kwargs):
+        Function.__init__(self, superior_get=superior_get)
+        self.trust_anchors = trust_anchors
+
         self.root_dir = root_dir
         self.base_url = base_url
 
-    def collect_superiors(self, subject_id, statement, **kwargs):
-        if isinstance(statement, dict):
-            entity_statement = statement
+        if keyjar:
+            self.keyjar = keyjar
         else:
-            _jwt = factory(statement)
-            if _jwt:
-                entity_statement = _jwt.jwt.payload()
-            else:
-                return None
+            self.keyjar = None
+            keyjar = superior_get("attribute", "keyjar")
 
+        for id, keys in trust_anchors.items():
+            keyjar.import_jwks(keys, id)
+
+        self.config_cache = {}
+        self.entity_statement_cache = {}
+
+    def collect_tree(self,
+                     entity_id: str,
+                     entity_configuration: dict,
+                     seen: Optional[list] = None,
+                     max_superiors: Optional[int] = 1,
+                     stop_at: Optional[str] = ""
+                     ):
         superior = {}
+        if seen is None:
+            seen = []
+
         try:
-            _hints = entity_statement['authority_hints']
+            _hints = entity_configuration['authority_hints']
         except KeyError:
             pass
         else:
-            for intermediate in _hints:
-                superior[intermediate] = self.build_path(intermediate, self.root_dir,
-                                                      entity_statement['iss'])
+            if entity_configuration['iss'] == stop_at:
+                pass
+            else:
+                for authority in _hints:
+                    superior[authority] = self.collect_branch(entity_id, authority, seen,
+                                                              max_superiors, stop_at)
 
         return superior
 
-    def get_configuration_information(self, subject_id):
+    def get_entity_configuration(self, subject_id):
         """
 
         :param subject_id:
@@ -60,58 +88,77 @@ class DummyCollector(Collector):
         """
         es_api = FSFetchEntityStatement(self.root_dir, iss=get_netloc(subject_id))
         jws = es_api.create_entity_statement(get_netloc(subject_id))
-        # config = verify_self_signed_signature(jws)
-        # return config
+        self.config_cache[subject_id] = jws
         return jws
 
-    def get_entity_statement(self, api_endpoint, issuer, subject):
+    def get_entity_statement(self, fetch_endpoint, issuer, subject):
         es_api = FSFetchEntityStatement(self.root_dir, iss=get_netloc(issuer))
-        return es_api.create_entity_statement(get_netloc(subject))
+        _jws = es_api.create_entity_statement(get_netloc(subject))
+        _cache_key = cache_key(issuer, subject)
+        self.entity_statement_cache[_cache_key] = _jws
+        return _jws
 
-    def build_path(self, intermediate, root_dir='.', sub=''):
+    def collect_branch(self, entity_id, authority, seen=None, max_superiors=10, stop_at=""):
         """
         Builds a trust path as a sequence of signed JWTs containing entity
         statements
 
-        :param root_dir: Where to find the dummy information to put in the entity
-            statement
-        :param intermediate: Which issuer to use
-        :param sub: The identifier of the subject
+        :param authority: Which issuer to use
+        :param entity_id: The identifier of the subject
         :return: An Issuer instance
         """
-        es_api = FSFetchEntityStatement(self.root_dir, iss=get_netloc(intermediate))
-        jws = es_api.create_entity_statement(get_netloc(sub))
-        superior = {}
+        if authority not in self.config_cache:
+            _jws = self.get_entity_configuration(authority)
+            self.config_cache[authority] = unverified_entity_statement(_jws)
 
-        _jwt = factory(jws)
-        entity_statement = _jwt.jwt.payload()
+        jws = self.get_entity_statement('', issuer=authority, subject=entity_id)
 
-        if 'authority_hints' in entity_statement:
-            for key in entity_statement['authority_hints']:
-                superior[key] = self.build_path(key, root_dir, intermediate)
-
-        return jws, superior
-
-
-class MockResponse(object):
-    def __init__(self, status_code, text, headers=None):
-        self.status_code = status_code
-        self.text = text
-        self.headers = headers or {}
-
-
-class Publisher(object):
-    def __init__(self, directory):
-        self.dir = directory
-
-    def __call__(self, method, url, **kwargs):
-        p = urlparse(url)
-        if p.path == '/.well-known/openid-federation':
-            _jws = open(os.path.join(self.dir, p.netloc, p.netloc, 'jws')).read().strip()
+        if jws:
+            _entity_configuration = self.config_cache[authority]
+            return jws, self.collect_tree(authority,
+                                          _entity_configuration,
+                                          stop_at=stop_at,
+                                          seen=seen,
+                                          max_superiors=max_superiors)
         else:
-            _qs = parse_qs(p.query)
-            pt = urlparse(_qs['sub'][0])
-            _jws = open(os.path.join(self.dir, p.netloc, pt.netloc, 'jws')).read().strip()
+            return None
 
-        return MockResponse(200, "{}".format(_jws),
-                            headers={'content-type': "application/jws"})
+    def __call__(self,
+                 entity_id: str,
+                 max_superiors: Optional[int] = 10,
+                 seen: Optional[List[str]] = None,
+                 stop_at: Optional[str] = ''):
+        # get leaf Entity Configuration
+        signed_entity_config = self.get_entity_configuration(entity_id)
+        entity_config = verify_self_signed_signature(signed_entity_config)
+        #
+        entity_config['_jws'] = signed_entity_config
+
+        return self.collect_tree(entity_id, entity_config, seen=seen, max_superiors=max_superiors,
+                                 stop_at=stop_at), signed_entity_config
+
+    def add_trust_anchor(self, entity_id, jwks):
+        if self.keyjar:
+            _keyjar = self.keyjar
+        elif self.superior_get:
+            _keyjar = self.superior_get('attribute', 'keyjar')
+        else:
+            raise ValueError("Missing keyjar")
+
+        _keyjar.import_jwks(jwks, entity_id)
+        self.trust_anchors[entity_id] = jwks
+
+    def get_chain(self, iss_path, trust_anchor, with_ta_ec: Optional[bool] = False):
+        # Entity configuration for the leaf
+        res = [self.config_cache[iss_path[0]]['_jws']]
+        # Entity statements up the chain
+        for i in range(len(iss_path) - 1):
+            res.append(self.entity_statement_cache[cache_key(iss_path[i + 1], iss_path[i])])
+        # Possibly add Trust Anchor entity configuration
+        if with_ta_ec:
+            res.append(self.config_cache[trust_anchor]['_jws'])
+        return res
+
+
+
+

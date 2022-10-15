@@ -46,15 +46,12 @@ class Resolve(Endpoint):
         else:
             metadata = _chain.metadata
 
-        trust_chain = _chain.verified_chain[:]
-        if kwargs.get("with_ta_ec"):
-            trust_chain.append(
-                _federation_entity.function.trust_chain_collector.config_cache[_trust_anchor][
-                    '_jws'])
+        trust_chain = _federation_entity.function.trust_chain_collector.get_chain(
+            _chain.iss_path, _trust_anchor, kwargs.get("with_ta_ec"))
 
         _jws = create_entity_statement(_federation_entity.entity_id,
                                        sub=request["sub"],
-                                       key_jar=_federation_entity.get_keyjar(),
+                                       key_jar=_federation_entity.get_attribute('keyjar'),
                                        metadata=metadata,
                                        trust_chain=trust_chain)
         return {'response': _jws}

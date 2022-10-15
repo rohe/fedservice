@@ -1,35 +1,25 @@
 import json
 import os
-from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
 from cryptojwt.jws.jws import factory
 from idpyoidc.client.client_auth import PrivateKeyJWT
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
-from idpyoidc.client.oidc import RP
 from idpyoidc.defaults import JWT_BEARER
 from idpyoidc.message.oidc import AccessTokenRequest
 import pytest
 
-from build.lib.fedservice.trust_mark_issuer.status import Status
 from fedservice.combo import Combo
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
+from fedservice.defaults import LEAF_ENDPOINT
 from fedservice.entity import FederationEntity
-from fedservice.entity.client import FederationEntityClient
-from fedservice.entity.client.entity_configuration import \
-    EntityConfiguration as c_EntityConfiguration
-from fedservice.entity.client.entity_statement import EntityStatement
 from fedservice.entity.function import tree2chains
-from fedservice.entity.function.policy import TrustChainPolicy
-from fedservice.entity.function.trust_chain_collector import TrustChainCollector
-from fedservice.entity.function.verifier import TrustChainVerifier
-from fedservice.entity.server import FederationEntityServer
-from fedservice.entity.server.entity_configuration import EntityConfiguration
 from fedservice.entity.server.fetch import Fetch
 from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement
-from fedservice.node import Collection
+from fedservice.fetch_entity_statement.fs2 import FSPublisher
+from fedservice.rp import ClientEntity
+from .build_entity import FederationEntityBuilder
 from .utils import DummyCollector
-from .utils import Publisher
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
@@ -52,131 +42,104 @@ KEY_DEFS = [
     {"type": "EC", "crv": "P-384", "use": ["sig"]}
 ]
 
+MOD_FUNCTIONS = {
+    "trust_chain_collector": {
+        "class": DummyCollector,
+        "kwargs": {
+            'trust_anchors': ANCHOR,
+            "root_dir": ROOT_DIR,
+            "allowed_delta": 600
+        }
+    },
+    'verifier': {
+        'class': 'fedservice.entity.function.verifier.TrustChainVerifier',
+        'kwargs': {}
+    },
+    'policy': {
+        'class': 'fedservice.entity.function.policy.TrustChainPolicy',
+        'kwargs': {}
+    },
+    'trust_mark_verifier': {
+        'class': 'fedservice.entity.function.trust_mark_verifier.TrustMarkVerifier',
+        'kwargs': {}
+    }
+}
+
+FOODLE_KEY_FILE = os.path.join(BASE_PATH, 'base_data', 'foodle.uninett.no', 'foodle.uninett.no',
+                               'jwks.json')
+
 
 class TestRpService(object):
+
     @pytest.fixture(autouse=True)
     def rp_service_setup(self):
+        LEAF_ID = 'https://foodle.uninett.no'
+        OP_ID = 'https://op.ntnu.no'
+        ENT = FederationEntityBuilder(
+            LEAF_ID,
+            metadata={
+                "organization_name": "The leaf operator",
+                "homepage_uri": "https://leaf.example.com",
+                "contacts": "operations@leaf.example.com"
+            }
+        )
+        ENT.add_services()
+        ENT.add_functions(**MOD_FUNCTIONS)
+        ENT.add_endpoints(**LEAF_ENDPOINT)
+
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
-        entity_id = 'https://foodle.uninett.no'
+        del oidc_service['web_finger']
         config = {
-            "keys": {"key_defs": KEY_DEFS},
+            'entity_id': LEAF_ID,
+            'key_conf': {'private_path': FOODLE_KEY_FILE},
             "federation_entity": {
                 'class': FederationEntity,
-                "function": {
-                    'class': Collection,
-                    'kwargs': {
-                        'functions': {
-                            "trust_chain_collector": {
-                                "class": TrustChainCollector,
-                                "kwargs": {
-                                    # "trust_anchors": ANCHOR,
-                                    "allowed_delta": 600
-                                }
-                            },
-                            'verifier': {
-                                'class': TrustChainVerifier,
-                                'kwargs': {}
-                            },
-                            'policy': {
-                                'class': TrustChainPolicy,
-                                'kwargs': {}
-                            }
-                        }
-                    }
-                },
-                "client": {
-                    'class': FederationEntityClient,
-                    'kwargs': {
-                        "services": {
-                            "entity_configuration": {
-                                "class": c_EntityConfiguration,
-                                "kwargs": {}
-                            },
-                            "entity_statement": {
-                                "class": EntityStatement,
-                                "kwargs": {}
-                            }
-                        }
-                    }
-                },
-                "server": {
-                    'class': FederationEntityServer,
-                    'kwargs': {
-                        "metadata": {
-                            # "authority_hints": [TA_ID],
-                            # "organization_name": "The example",
-                            # "homepage_uri": "https://www.example.com",
-                            # "contacts": "app@rp.example.com"
-                        },
-                        "endpoint": {
-                            "entity_configuration": {
-                                "path": ".well-known/openid-federation",
-                                "class": EntityConfiguration,
-                                "kwargs": {}
-                            }
-                        }
-                    }
-                }
+                'kwargs': ENT.conf
             },
             "openid_relying_party": {
-                'class': RP,
+                'class': ClientEntity,
                 'kwargs': {
-                    'client_id': entity_id,
-                    'client_secret': 'a longesh password',
-                    'redirect_uris': ['https://example.com/cli/authz_cb'],
-                    "keys": {"uri_path": "static/jwks.json", "key_defs": KEY_DEFS},
-                    "metadata": {
-                        "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
-                        "id_token_signed_response_alg": "ES256",
-                        "token_endpoint_auth_method": "client_secret_basic",
-                        "client_registration_types": ['automatic']
+                    'config': {
+                        'client_id': LEAF_ID,
+                        'client_secret': 'a longesh password',
+                        'redirect_uris': ['https://example.com/cli/authz_cb'],
+                        "keys": {"uri_path": "static/jwks.json", "key_defs": KEY_DEFS},
+                        "metadata": {
+                            "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
+                            "id_token_signed_response_alg": "ES256",
+                            "token_endpoint_auth_method": "client_secret_basic",
+                            "client_registration_types": ['automatic']
+                        }
                     },
                     "services": oidc_service
                 }
             },
-            "trust_mark_issuer": {
-                'class': "TrustMarkIssuer",
-                'kwargs': {
-                    "endpoint": {
-                        "status": {
-                            "path": "status",
-                            "class": Status,
-                            "kwargs": {"client_authn_method": None},
-                        }
-                    }
-                }
-            }
         }
 
-        self.entity = Combo(config=config)
+        self.entity = Combo(config=config,
+                            httpc=FSPublisher(os.path.join(BASE_PATH, 'base_data')))
 
-        httpc = Publisher(os.path.join(BASE_PATH, 'base_data'))
-
-        _context = self.entity.superior_get("service_context")
-        # The test data collector
-        _context.federation_entity.collector = DummyCollector(
-            trusted_roots=ANCHOR, httpd=httpc, root_dir=os.path.join(BASE_PATH, 'base_data'))
-
-        self.disco_service = self.entity.superior_get("service", 'provider_info')
-        self.registration_service = self.entity.superior_get("service", 'registration')
+        self.entity['federation_entity'].function.trust_chain_collector.add_trust_anchor(
+            'https://feide.no', json.loads(jwks))
+        self.disco_service = self.entity['openid_relying_party'].get_service('provider_info')
+        self.disco_service.superior_get("context").issuer = OP_ID
+        self.registration_service = self.entity['openid_relying_party'].get_service('registration')
 
     def test_1(self):
-        _info = self.disco_service.get_request_parameters(iss='https://ntnu.no/op')
-        assert set(_info.keys()) == {'url', 'iss'}
+        _info = self.disco_service.get_request_parameters()
+        assert set(_info.keys()) == {'method', 'url', 'iss'}
         p = urlparse(_info['url'])
         assert p.scheme == 'https'
-        assert p.netloc == 'ntnu.no'
+        assert p.netloc == 'op.ntnu.no'
         assert p.path == "/.well-known/openid-federation"
-        _q = parse_qs(p.query)
-        assert list(_q.keys()) == ['iss']
 
     def test_parse_discovery_response(self):
-        _context = self.entity.superior_get("service_context")
-        _info = self.disco_service.get_request_parameters(iss='https://op.ntnu.no')
-        http_response = _context.federation_entity.collector.http_cli('GET', _info['url'])
+        _info = self.disco_service.get_request_parameters()
+        http_response = self.entity.httpc('GET', _info['url'])
 
         statements = self.disco_service.parse_response(http_response.text)
+        # there are two Trust Anchors. I only trust one.
         assert len(statements) == 1
         statement = statements[0]
         assert statement.anchor == 'https://feide.no'
@@ -294,6 +257,7 @@ class TestRpService(object):
 
 
 class TestRpServiceAuto(object):
+
     @pytest.fixture(autouse=True)
     def rp_service_setup(self):
         entity_id = 'https://foodle.uninett.no'

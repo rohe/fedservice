@@ -6,6 +6,7 @@ from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
 from idpyoidc.impexp import ImpExp
 
+from fedservice.entity import FederationEntity
 from fedservice.entity_statement.collect import verify_self_signed_signature
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,10 @@ def collect_trust_chains(node,
                          signed_entity_configuration: Optional[str] = "",
                          stop_at: Optional[str] = "",
                          authority_hints: Optional[list] = None):
-    _federation_entity = node.superior_get('node')['federation_entity']
+    if isinstance(node, FederationEntity):
+        _federation_entity = node
+    else:
+        _federation_entity = node.superior_get('node')['federation_entity']
 
     _collector = _federation_entity.function.trust_chain_collector
 
@@ -58,14 +62,15 @@ def collect_trust_chains(node,
 
 
 def verify_trust_chains(federation_entity, chains, *entity_statements):
-    # Need the metadata from the registration request
+    #
     _verifier = federation_entity.function.verifier
     res = []
     for c in chains:
         if entity_statements:
             c.extend(entity_statements)
         trust_chain = _verifier(c)
-        res.append(trust_chain)
+        if trust_chain:
+            res.append(trust_chain)
     return res
 
 

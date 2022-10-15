@@ -33,7 +33,8 @@ def verify_self_signed_signature(statement):
 
     payload = unverified_entity_statement(statement)
     keyjar = KeyJar()
-    keyjar.import_jwks(payload['jwks'], payload['iss'])
+    if payload['iss'] not in keyjar:
+        keyjar.import_jwks(payload['jwks'], payload['iss'])
 
     _jwt = JWT(key_jar=keyjar)
     _val = _jwt.unpack(statement)
@@ -43,6 +44,14 @@ def verify_self_signed_signature(statement):
 def get_endpoint(endpoint_type, config):
     _fe = config['metadata']['federation_entity']
     return _fe.get(f"federation_{endpoint_type}_endpoint")
+
+
+def cache_key(authority, entity):
+    return f"{authority}!!{entity}"
+
+
+def time_key(authority, entity):
+    return f"{authority}!exp!{entity}"
 
 
 class TrustChainCollector(Function):
@@ -66,7 +75,7 @@ class TrustChainCollector(Function):
             self.keyjar = None
             keyjar = superior_get("attribute", "keyjar")
         for id, keys in trust_anchors.items():
-            keyjar.import_jwks_as_json(keys, id)
+            keyjar.import_jwks(keys, id)
 
     def _get_service(self, service):
         _collection = self.superior_get('node')
@@ -188,7 +197,7 @@ class TrustChainCollector(Function):
         Collect superiors one level at the time
 
         :param entity_id: The entity ID
-        :param entity_configuration: Entity Configuration
+        :param entity_configuration: Entity Configuration as a dictionary
         :param seen: A list of authorities that this process has seen. This to capture
             loops. Also used to control the allowed depth.
         :param max_superiors: The maximum number of superiors.
@@ -216,21 +225,21 @@ class TrustChainCollector(Function):
 
         return superior
 
-    def _get_entity_statement(self, entity, authority):
+    def _get_entity_statement(self, entity: str, authority: str) -> str:
         # Try to get the entity statement from the cache
-        cache_key = "{}!!{}".format(authority, entity)
-        entity_statement = self.entity_statement_cache[cache_key]
+        _cache_key = cache_key(authority, entity)
+        entity_statement = self.entity_statement_cache[_cache_key]
 
         if entity_statement is not None:
             logger.debug("Have cached statement")
             # Verify that the cached statement is not too old
             _now = utc_time_sans_frac()
-            time_key = "{}!exp!{}".format(authority, entity)
-            _exp = self.entity_statement_cache[time_key]
+            _time_key = time_key(authority, entity)
+            _exp = self.entity_statement_cache[_time_key]
             if _now > (_exp - self.allowed_delta):
                 logger.debug("Cached entity statement timed out")
-                del self.entity_statement_cache[cache_key]
-                del self.entity_statement_cache[time_key]
+                del self.entity_statement_cache[_cache_key]
+                del self.entity_statement_cache[_time_key]
                 entity_statement = None
 
         if entity_statement is None:
@@ -247,9 +256,8 @@ class TrustChainCollector(Function):
             logger.debug(
                 f"Unverified entity statement from {fed_fetch_endpoint} about {entity}: "
                 f"{statement}")
-            self.entity_statement_cache[cache_key] = entity_statement
-            time_key = "{}!exp!{}".format(authority, entity)
-            self.entity_statement_cache[time_key] = statement["exp"]
+            self.entity_statement_cache[_cache_key] = entity_statement
+            self.entity_statement_cache[time_key(authority, entity)] = statement["exp"]
 
         return entity_statement
 
@@ -311,3 +319,24 @@ class TrustChainCollector(Function):
         return self.collect_tree(entity_id, entity_config, seen=seen, max_superiors=max_superiors,
                                  stop_at=stop_at), signed_entity_config
 
+    def add_trust_anchor(self, entity_id, jwks):
+        if self.keyjar:
+            _keyjar = self.keyjar
+        elif self.superior_get:
+            _keyjar = self.superior_get('attribute', 'keyjar')
+        else:
+            raise ValueError("Missing keyjar")
+
+        _keyjar.import_jwks(jwks, entity_id)
+        self.trust_anchors[entity_id] = jwks
+
+    def get_chain(self, iss_path, trust_anchor, with_ta_ec: Optional[bool] = False):
+        # Entity configuration for the leaf
+        res = [self.config_cache[iss_path[0]]['_jws']]
+        # Entity statements up the chain
+        for i in range(len(iss_path) - 1):
+            res.append(self.entity_statement_cache[cache_key(iss_path[i + 1], iss_path[i])])
+        # Possibly add Trust Anchor entity configuration
+        if with_ta_ec:
+            res.append(self.config_cache[trust_anchor]['_jws'])
+        return res

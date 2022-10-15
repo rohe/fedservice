@@ -3,14 +3,12 @@ import logging
 from typing import Optional
 from typing import Union
 
+from cryptojwt import JWT
 from idpyoidc.message import oidc
 from idpyoidc.message import Message
 from idpyoidc.server.endpoint import Endpoint
 
-from fedservice.entity.function import apply_policies
-from fedservice.entity.function import collect_trust_chains
-from fedservice.entity.function import verify_trust_chains
-from fedservice.entity_statement.create import create_entity_statement
+from fedservice.message import TrustMark
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +22,18 @@ class TrustMarkStatus(Endpoint):
         Endpoint.__init__(self, server_get, **kwargs)
 
     def process_request(self, request=None, **kwargs):
+        _tmi = self.server_get('server').superior_get('node')
 
-        return {'response': json.dumps({'active': True})}
+        if 'trust_mark' in request:
+            _mark = self.unpack_trust_mark(request['trust_mark'])
+            if _tmi.issued.find(_mark['id'], _mark['sub']):
+                return {'response': json.dumps({'active': True})}
+        else:
+            if 'sub' in request and 'id' in request:
+                if _tmi.issued.find(request['id'], request['sub']):
+                    return {'response': json.dumps({'active': True})}
+
+        return {'response': json.dumps({'active': False})}
 
     def response_info(
             self,
@@ -34,3 +42,15 @@ class TrustMarkStatus(Endpoint):
             **kwargs
     ) -> dict:
         return response_args
+
+    def unpack_trust_mark(self, token, entity_id: Optional[str] = ""):
+        keyjar = self.server_get('attribute', 'keyjar')
+        _jwt = JWT(key_jar=keyjar, msg_cls=TrustMark, allowed_sign_algs=["RS256"])
+        _tm = _jwt.unpack(token)
+
+        if entity_id:
+            _tm.verify(entity_id=entity_id)
+        else:
+            _tm.verify()
+
+        return _tm

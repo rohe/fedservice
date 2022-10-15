@@ -331,6 +331,7 @@ class RPHandler(rp_handler.RPHandler):
                  state_db: Optional[Any] = None,
                  federation_entity_config: Optional[Union[Configuration, dict]] = None,
                  httpc_params: Optional[dict] = None,
+                 superior_get: Optional[Callable] = None,
                  **kwargs):
         rp_handler.RPHandler.__init__(self, base_url=base_url, hash_seed=hash_seed, keyjar=keyjar,
                                       verify_ssl=verify_ssl, services=services,
@@ -340,14 +341,16 @@ class RPHandler(rp_handler.RPHandler):
                                       state_db=state_db, httpc_params=httpc_params, **kwargs)
 
         self.federation_entity_config = federation_entity_config
+        self.superior_get = superior_get
 
     def init_client(self, issuer):
         client = rp_handler.RPHandler.init_client(self, issuer)
-        client.superior_get("context").federation_entity = self.init_federation_entity(
-            issuer,
-            host=client)
-        client.set_client_id(
-            client.superior_get("context").federation_entity.context.entity_id)
+        client.superior_get = self.superior_get
+        # client.superior_get("context").federation_entity = self.init_federation_entity(
+        #     issuer,
+        #     host=client)
+        # client.set_client_id(
+        #     client.superior_get("context").federation_entity.context.entity_id)
         return client
 
     def init_federation_entity(self, issuer, host):

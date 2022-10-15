@@ -31,7 +31,7 @@ class Node(ImpExp):
             config = {}
 
         self.entity_id = entity_id or config.get('entity_id', "")
-        if superior_get and superior_get('keyjar'):
+        if superior_get and superior_get('attribute', 'keyjar'):
             self.keyjar = None
         else:
             self.keyjar = self._keyjar(keyjar, conf=config, entity_id=self.entity_id,
@@ -89,7 +89,7 @@ class Node(ImpExp):
             else:
                 _keyjar = None
 
-            if keyjar and "" in _keyjar and entity_id:
+            if _keyjar and "" in _keyjar and entity_id:
                 # make sure I have the keys under my own name too (if I know it)
                 _keyjar.import_jwks_as_json(_keyjar.export_jwks_as_json(True, ""), entity_id)
 
@@ -173,6 +173,6 @@ class Collection(Node):
 
         if functions:
             for key, val in functions.items():
-                _kwargs = val["kwargs"]
+                _kwargs = val["kwargs"].copy()
                 _kwargs.update(_args)
                 setattr(self, key, instantiate(val["class"], **_kwargs))

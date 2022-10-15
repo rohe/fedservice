@@ -1,9 +1,9 @@
 import pytest
-
-from fedservice.entity_statement.policy import PolicyError
 from fedservice.entity_statement.policy import apply_policy
-from fedservice.entity_statement.policy import combine_claim_policy
-from fedservice.entity_statement.policy import combine_policy
+
+from fedservice.entity.function.policy import combine_claim_policy
+from fedservice.entity.function.policy import combine_policy
+from fedservice.entity.function.policy import PolicyError
 
 SIMPLE = [
     (

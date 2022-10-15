@@ -25,9 +25,7 @@ class Fetch(Endpoint):
         _context = self.server_get("context")
         _issuer = request.get("iss")
         if not _issuer:
-            raise FedServiceError("Issuer mandatory")
-        if _issuer != _context.entity_id:
-            raise FedServiceError("Wrong issuer")
+            _issuer = _context.entity_id
 
         _sub = request.get("sub")
         _keyjar =  self.server_get('attribute', 'keyjar')
