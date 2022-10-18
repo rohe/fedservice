@@ -1,9 +1,7 @@
 import json
-import os
 from typing import Callable
 from typing import List
 from typing import Optional
-from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
 from cryptojwt.key_jar import KeyJar
@@ -32,12 +30,12 @@ class DummyCollector(Function):
 
     def __init__(self,
                  trust_anchors: dict,
-                 superior_get: Optional[Callable] = None,
+                 upstream_get: Optional[Callable] = None,
                  keyjar: Optional[KeyJar] = None,
                  root_dir: Optional[str] = '.',
                  base_url: Optional[str] = '',
                  **kwargs):
-        Function.__init__(self, superior_get=superior_get)
+        Function.__init__(self, upstream_get=upstream_get)
         self.trust_anchors = trust_anchors
 
         self.root_dir = root_dir
@@ -47,7 +45,7 @@ class DummyCollector(Function):
             self.keyjar = keyjar
         else:
             self.keyjar = None
-            keyjar = superior_get("attribute", "keyjar")
+            keyjar = upstream_get("attribute", "keyjar")
 
         for id, keys in trust_anchors.items():
             keyjar.import_jwks(keys, id)
@@ -140,8 +138,8 @@ class DummyCollector(Function):
     def add_trust_anchor(self, entity_id, jwks):
         if self.keyjar:
             _keyjar = self.keyjar
-        elif self.superior_get:
-            _keyjar = self.superior_get('attribute', 'keyjar')
+        elif self.upstream_get:
+            _keyjar = self.upstream_get('attribute', 'keyjar')
         else:
             raise ValueError("Missing keyjar")
 

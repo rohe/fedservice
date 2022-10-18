@@ -40,7 +40,7 @@ class TrustMarkVerifier(Function):
                 return None
 
         # Get trust chain
-        _federation_entity = self.upstream_get("unit").upstream_get('Unit')
+        _federation_entity = self.upstream_get("unit").upstream_get('unit')
         _chains, _ = collect_trust_chains(_federation_entity, _trust_mark['iss'])
         _trust_chains = verify_trust_chains(_federation_entity, _chains)
 

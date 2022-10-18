@@ -43,10 +43,10 @@ class Registration(registration.Registration):
         :return:
         """
 
-        _federation_entity = self.upstream_get('Unit').upstream_get('Unit')["federation_entity"]
+        _federation_entity = self.upstream_get('unit').upstream_get('unit')["federation_entity"]
         _federation_context = _federation_entity.context
         # _md = {_federation_context.entity_type: request_args.to_dict()}
-        _combo = _federation_entity.upstream_get('Unit')
+        _combo = _federation_entity.upstream_get('unit')
         _md = _combo.get_metadata()
         _keyjar = _federation_entity.get_attribute("keyjar")
         _authority_hints = _federation_entity.server.endpoint_context.authority_hints
@@ -93,7 +93,7 @@ class Registration(registration.Registration):
         :param resp: An entity statement as a signed JWT
         :return: A set of metadata claims
         """
-        _federation_entity = self.upstream_get('Unit').upstream_get('Unit')['federation_entity']
+        _federation_entity = self.upstream_get('unit').upstream_get('unit')['federation_entity']
         # Need the federation keys
         keyjar = _federation_entity.upstream_get('attribute', 'keyjar')
 
@@ -121,7 +121,7 @@ class Registration(registration.Registration):
         _context.provider_info = ProviderConfigurationResponse(**op_claims)
 
         _authority_hints = _federation_entity.server.endpoint_context.authority_hints
-        _chains, _ = collect_trust_chains(self.upstream_get('Unit'),
+        _chains, _ = collect_trust_chains(self.upstream_get('unit'),
                                           entity_id=entity_statement['sub'],
                                           signed_entity_configuration=resp,
                                           stop_at=_trust_anchor_id,

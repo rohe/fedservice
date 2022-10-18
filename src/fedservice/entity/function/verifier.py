@@ -1,5 +1,6 @@
 import logging
 from typing import Callable
+from typing import List
 
 from cryptojwt import KeyBundle
 from cryptojwt.jws.jws import factory
@@ -85,7 +86,7 @@ class TrustChainVerifier(Function):
                 exp = entity_statement['exp']
         return exp
 
-    def __call__(self, trust_chain: list):
+    def __call__(self, chain: List[str]):
         """
 
         :param trust_chain: A chain of entity statements
@@ -94,18 +95,18 @@ class TrustChainVerifier(Function):
         :returns: A TrustChain instances
         """
         logger.debug("Evaluate trust chain")
-        verified_trust_chain = self.verify_trust_chain(trust_chain)
+        verified_trust_chain = self.verify_trust_chain(chain)
 
         if not verified_trust_chain:
             return None
 
         _expires_at = self.trust_chain_expires_at(verified_trust_chain)
 
-        statement = TrustChain(exp=_expires_at, verified_chain=verified_trust_chain)
+        trust_chain = TrustChain(exp=_expires_at, verified_chain=verified_trust_chain)
 
         iss_path = [x['iss'] for x in verified_trust_chain]
-        statement.anchor = iss_path[0]
+        trust_chain.anchor = iss_path[0]
         iss_path.reverse()
-        statement.iss_path = iss_path
+        trust_chain.iss_path = iss_path
 
-        return statement
+        return trust_chain

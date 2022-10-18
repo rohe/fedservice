@@ -22,7 +22,7 @@ class TrustMarkStatus(Endpoint):
         Endpoint.__init__(self, upstream_get, **kwargs)
 
     def process_request(self, request=None, **kwargs):
-        _tmi = self.upstream_get('server').upstream_get('Unit')
+        _tmi = self.upstream_get('server').upstream_get('unit')
 
         if 'trust_mark' in request:
             _mark = self.unpack_trust_mark(request['trust_mark'])

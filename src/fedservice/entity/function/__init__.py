@@ -1,5 +1,6 @@
 import logging
 from typing import Callable
+from typing import List
 from typing import Optional
 
 from cryptojwt import as_unicode
@@ -43,7 +44,7 @@ def collect_trust_chains(Unit,
     if isinstance(Unit, FederationEntity):
         _federation_entity = Unit
     else:
-        _federation_entity = Unit.upstream_get('Unit')['federation_entity']
+        _federation_entity = Unit.upstream_get('unit')['federation_entity']
 
     _collector = _federation_entity.function.trust_chain_collector
 
@@ -61,7 +62,7 @@ def collect_trust_chains(Unit,
     return chains, signed_entity_configuration
 
 
-def verify_trust_chains(federation_entity, chains, *entity_statements):
+def verify_trust_chains(federation_entity, chains: List[List[str]], *entity_statements):
     #
     _verifier = federation_entity.function.verifier
     res = []

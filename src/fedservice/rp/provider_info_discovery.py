@@ -97,7 +97,7 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
         """
 
         # First deal with federation relates things
-        _federation_entity = self.upstream_get("entity").upstream_get('Unit')['federation_entity']
+        _federation_entity = self.upstream_get("entity").upstream_get('unit')['federation_entity']
         _federation_context = _federation_entity.context
 
         # If two chains lead to the same trust anchor only one remains after this

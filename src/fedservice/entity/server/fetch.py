@@ -31,7 +31,7 @@ class Fetch(Endpoint):
         _keyjar =  self.upstream_get('attribute', 'keyjar')
         if not _sub or _sub == _context.entity_id:
             _server = self.upstream_get("server")
-            _entity = _server.upstream_get('Unit')
+            _entity = _server.upstream_get('unit')
             _metadata = _entity.get_metadata()
             _es = create_entity_statement(iss=_entity.context.entity_id,
                                           sub=_entity.context.entity_id,
