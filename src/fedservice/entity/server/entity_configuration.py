@@ -17,15 +17,15 @@ class EntityConfiguration(Endpoint):
     provider_info_attributes = None
     auth_method_attribute = ""
 
-    def __init__(self, server_get, **kwargs):
-        Endpoint.__init__(self, server_get=server_get, **kwargs)
+    def __init__(self, upstream_get, **kwargs):
+        Endpoint.__init__(self, upstream_get=upstream_get, **kwargs)
 
     def process_request(self, request=None, **kwargs):
-        _server = self.server_get("server")
-        _entity_id = _server.superior_get('attribute', 'entity_id')
-        _entity = _server.superior_get('node')
-        if _entity.superior_get:
-            _metadata = _entity.superior_get("metadata")
+        _server = self.upstream_get("unit")
+        _entity_id = _server.upstream_get('attribute', 'entity_id')
+        _entity = _server.upstream_get('unit')
+        if _entity.upstream_get:
+            _metadata = _entity.upstream_get("metadata")
         else:
             _metadata = _entity.get_metadata()
         _ec = create_entity_statement(iss=_entity_id,

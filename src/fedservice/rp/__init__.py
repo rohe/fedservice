@@ -9,7 +9,6 @@ from cryptojwt import KeyJar
 from cryptojwt.key_jar import init_key_jar
 from idpyoidc.client import rp_handler
 from idpyoidc.client.client_auth import client_auth_setup
-from idpyoidc.client.defaults import DEFAULT_OAUTH2_SERVICES
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.client.defaults import SUCCESSFUL
 from idpyoidc.client.exception import OidcServiceError
@@ -26,15 +25,15 @@ from idpyoidc.context import OidcContext
 from idpyoidc.exception import FormatError
 from idpyoidc.message import Message
 
-from fedservice.node import ClientNode
+from fedservice.node import ClientUnit
 
 logger = logging.getLogger(__name__)
 
 
-class ClientEntity(ClientNode):
+class ClientEntity(ClientUnit):
     def __init__(
             self,
-            superior_get: Optional[Callable] = None,
+            upstream_get: Optional[Callable] = None,
             entity_id: Optional[str] = '',
             httpc: Optional[object] = None,
             keyjar: Optional[KeyJar] = None,
@@ -44,7 +43,7 @@ class ClientEntity(ClientNode):
             httpc_params: Optional[dict] = None,
             context: Optional[OidcContext] = None,
     ):
-        ClientNode.__init__(self, superior_get=superior_get, keyjar=keyjar, httpc=httpc,
+        ClientUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, context=context, config=config,
                             jwks_uri=jwks_uri, entity_id=entity_id)
 
@@ -63,15 +62,9 @@ class ClientEntity(ClientNode):
         if not _srvs:
             _srvs = services or DEFAULT_OIDC_SERVICES
 
-        self._service = init_services(service_definitions=_srvs, superior_get=self.entity_get)
+        self._service = init_services(service_definitions=_srvs, upstream_get=self.unit_get)
 
         self.setup_client_authn_methods(config)
-
-    def entity_get(self, what, *arg):
-        _func = getattr(self, "get_{}".format(what), None)
-        if _func:
-            return _func(*arg)
-        return None
 
     def get_services(self, *arg):
         return self._service
@@ -108,7 +101,7 @@ class ClientEntity(ClientNode):
 
     def get_metadata(self, *args):
         _fed_registration = self.get_service('registration')
-        _registration = Registration(superior_get=_fed_registration.superior_get,
+        _registration = Registration(upstream_get=_fed_registration.upstream_get,
                                      conf=_fed_registration.conf)
         request = _registration.construct_request()
         return {'openid_relying_party': request.to_dict()}
@@ -172,7 +165,7 @@ class ClientEntity(ClientNode):
 
         if resp.status_code < 300:
             if "keyjar" not in kwargs:
-                kwargs["keyjar"] = service.superior_get("context").keyjar
+                kwargs["keyjar"] = service.upstream_get("context").keyjar
             if not response_body_type:
                 response_body_type = service.response_body_type
 
@@ -331,7 +324,7 @@ class RPHandler(rp_handler.RPHandler):
                  state_db: Optional[Any] = None,
                  federation_entity_config: Optional[Union[Configuration, dict]] = None,
                  httpc_params: Optional[dict] = None,
-                 superior_get: Optional[Callable] = None,
+                 upstream_get: Optional[Callable] = None,
                  **kwargs):
         rp_handler.RPHandler.__init__(self, base_url=base_url, hash_seed=hash_seed, keyjar=keyjar,
                                       verify_ssl=verify_ssl, services=services,
@@ -341,16 +334,16 @@ class RPHandler(rp_handler.RPHandler):
                                       state_db=state_db, httpc_params=httpc_params, **kwargs)
 
         self.federation_entity_config = federation_entity_config
-        self.superior_get = superior_get
+        self.upstream_get = upstream_get
 
     def init_client(self, issuer):
         client = rp_handler.RPHandler.init_client(self, issuer)
-        client.superior_get = self.superior_get
-        # client.superior_get("context").federation_entity = self.init_federation_entity(
+        client.upstream_get = self.upstream_get
+        # client.upstream_get("context").federation_entity = self.init_federation_entity(
         #     issuer,
         #     host=client)
         # client.set_client_id(
-        #     client.superior_get("context").federation_entity.context.entity_id)
+        #     client.upstream_get("context").federation_entity.context.entity_id)
         return client
 
     def init_federation_entity(self, issuer, host):
@@ -416,7 +409,7 @@ class RPHandler(rp_handler.RPHandler):
 
         logger.debug("Get provider info")
         issuer = self.do_provider_info(client, behaviour_args=behaviour_args)
-        _sc = client.superior_get("context")
+        _sc = client.upstream_get("context")
         try:
             _fe = _sc.federation_entity
         except AttributeError:

@@ -20,11 +20,11 @@ class Resolve(Endpoint):
     content_type = 'application/resolve-response+jwt'
     name = "resolve"
 
-    def __init__(self, server_get, **kwargs):
-        Endpoint.__init__(self, server_get, **kwargs)
+    def __init__(self, upstream_get, **kwargs):
+        Endpoint.__init__(self, upstream_get, **kwargs)
 
     def process_request(self, request=None, **kwargs):
-        _federation_entity = self.server_get('server').superior_get('node')
+        _federation_entity = self.upstream_get('unit').upstream_get('unit')
         _trust_anchor = request['anchor']
 
         # verified trust chains with policy adjusted metadata

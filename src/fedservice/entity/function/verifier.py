@@ -11,13 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 class TrustChainVerifier(Function):
-    def __init__(self, superior_get: Callable):
-        Function.__init__(self, superior_get)
+    def __init__(self, upstream_get: Callable):
+        Function.__init__(self, upstream_get)
 
     def trusted_anchor(self, entity_statement):
         _jwt = factory(entity_statement)
         payload = _jwt.jwt.payload()
-        _keyjar = self.superior_get("attribute", "keyjar")
+        _keyjar = self.upstream_get("attribute", "keyjar")
         if payload['iss'] not in _keyjar:
             logger.warning(
                 f"Trust chain ending in a trust anchor I do not know: {payload['iss']}", )
@@ -38,7 +38,7 @@ class TrustChainVerifier(Function):
             return ves
 
         n = len(entity_statement_list) - 1
-        _keyjar = self.superior_get("attribute", "keyjar")
+        _keyjar = self.upstream_get("attribute", "keyjar")
         for entity_statement in entity_statement_list:
             _jwt = factory(entity_statement)
             if _jwt:

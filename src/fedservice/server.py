@@ -93,7 +93,7 @@ class Server(ImpExp):
 
     def __init__(
             self,
-            superior_get: Callable,
+            upstream_get: Callable,
             config: Optional[Union[dict, Configuration]] = None,
             keyjar: Optional[KeyJar] = None,
             entity_id: Optional[str] = "",
@@ -104,10 +104,10 @@ class Server(ImpExp):
         if config is None:
             config = {}
 
-        self.superior_get = superior_get
+        self.upstream_get = upstream_get
 
         self.conf = config
-        self.entity_id = entity_id or superior_get("context").entity_id
+        self.entity_id = entity_id or upstream_get("context").entity_id
 
         if context:
             self.endpoint_context = context
@@ -118,7 +118,7 @@ class Server(ImpExp):
         if endpoint is None:
             endpoint = config.get("endpoint")
 
-        self.endpoint = build_endpoints(endpoint, server_get=self.server_get, issuer=self.entity_id)
+        self.endpoint = build_endpoints(endpoint, upstream_get=self.unit_get, issuer=self.entity_id)
 
         # self.endpoint_context.do_add_on(endpoints=self.endpoint)
 
@@ -126,7 +126,7 @@ class Server(ImpExp):
         for endpoint_name, _ in self.endpoint.items():
             self.endpoint[endpoint_name].server_get = self.server_get
 
-    def server_get(self, what, *arg):
+    def unit_get(self, what, *arg):
         _func = getattr(self, "get_{}".format(what), None)
         if _func:
             return _func(*arg)
@@ -144,7 +144,7 @@ class Server(ImpExp):
     def get_context(self, *arg):
         return self.endpoint_context
 
-    def get_entity(self, *args):
+    def get_unit(self, *args):
         return self
 
     def get_attribute(self, attr, *args):
@@ -152,11 +152,11 @@ class Server(ImpExp):
         if val:
             return val
         else:
-            return self.superior_get('attribute', attr)
+            return self.upstream_get('attribute', attr)
 
     def setup_client_authn_methods(self):
         self.endpoint_context.client_authn_method = client_auth_setup(
-            self.server_get, self.conf.get("client_authn_methods")
+            self.upstream_get, self.conf.get("client_authn_methods")
         )
 
 # class Server(server.Server):

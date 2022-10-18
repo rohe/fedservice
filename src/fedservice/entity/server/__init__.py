@@ -19,8 +19,7 @@ from idpyoidc.server.util import build_endpoints
 from idpyoidc.util import instantiate
 
 from fedservice.entity import FederationContext
-from fedservice.entity_statement.create import create_entity_statement
-from fedservice.node import ServerNode
+from fedservice.node import ServerUnit
 
 logger = logging.getLogger(__name__)
 
@@ -43,21 +42,21 @@ class FederationServerContext(FederationContext):
     def __init__(self,
                  config: Optional[Union[dict, Configuration]] = None,
                  entity_id: str = "",
-                 server_get: Callable = None,
+                 upstream_get: Callable = None,
                  metadata: Optional[dict] = None,
                  trust_marks: Optional[List[str]] = None,
                  ):
         FederationContext.__init__(self,
                                    config=config,
                                    entity_id=entity_id,
-                                   superior_get=server_get,
+                                   upstream_get=upstream_get,
                                    metadata=metadata
                                    )
 
         self.metadata = {k: v for k, v in metadata.items() if k != 'authority_hints'}
 
         _sstm = config.get("self_signed_trust_marks")
-        _keyjar = server_get("keyjar")
+        _keyjar = upstream_get('attribute', "keyjar")
         if _sstm:
             self.signed_trust_marks = create_self_signed_trust_marks(entity_id=self.entity_id,
                                                                      keyjar=_keyjar,
@@ -66,7 +65,7 @@ class FederationServerContext(FederationContext):
         self.trust_marks = trust_marks
 
     def make_configuration_statement(self):
-        _metadata = self.superior_get("metadata")
+        _metadata = self.upstream_get("metadata")
         kwargs = {}
         if self.authority_hints:
             kwargs["authority_hints"] = self.authority_hints
@@ -82,12 +81,12 @@ class FederationServerContext(FederationContext):
                                             metadata=_metadata, **kwargs)
 
 
-class FederationEntityServer(ServerNode):
+class FederationEntityServer(ServerUnit):
     parameter = {"endpoint": [Endpoint], "endpoint_context": EndpointContext}
 
     def __init__(
             self,
-            superior_get: Callable,
+            upstream_get: Callable,
             config: Optional[Union[dict, OPConfiguration, ASConfiguration]] = None,
             keyjar: Optional[KeyJar] = None,
             context: Optional[OidcContext] = None,
@@ -102,45 +101,39 @@ class FederationEntityServer(ServerNode):
             config = {}
         self.conf = config
 
-        ServerNode.__init__(self, superior_get=superior_get, keyjar=keyjar, context=context,
+        ServerUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, context=context,
                             config=self.conf)
 
         if not entity_id:
-            entity_id = superior_get('attribute', "entity_id")
+            entity_id = upstream_get('attribute', "entity_id")
 
         if metadata is None:
             metadata = {}
 
         self.endpoint_context = FederationServerContext(
             config=self.conf,
-            server_get=self.server_get,
+            upstream_get=self.unit_get,
             entity_id=entity_id,
             metadata=metadata
         )
 
-        self.endpoint = build_endpoints(endpoint, server_get=self.server_get, issuer=entity_id)
+        self.endpoint = build_endpoints(endpoint, upstream_get=self.unit_get, issuer=entity_id)
 
         # self.endpoint_context.do_add_on(endpoints=self.endpoint)
 
         self.setup_client_authn_methods()
         for endpoint_name, _ in self.endpoint.items():
-            self.endpoint[endpoint_name].server_get = self.server_get
+            self.endpoint[endpoint_name].unit_get = self.unit_get
 
         if subordinate:
             if 'class' in subordinate:
                 _kwargs = subordinate["kwargs"]
-                _kwargs.update({"server_get": self.server_get})
+                _kwargs.update({"server_get": self.unit_get})
                 self.subordinate = instantiate(subordinate["class"], **_kwargs)
             else:
                 self.subordinate = subordinate
         else:
             self.subordinate = {}
-
-    def server_get(self, what, *arg):
-        _func = getattr(self, "get_{}".format(what), None)
-        if _func:
-            return _func(*arg)
-        return None
 
     def get_endpoints(self, *arg):
         return self.endpoint
@@ -159,12 +152,12 @@ class FederationEntityServer(ServerNode):
         if val:
             return val
         else:
-            return self.superior_get('attribute', attr)
+            return self.upstream_get('attribute', attr)
 
     def get_server(self, *args):
         return self
 
     def setup_client_authn_methods(self):
         self.endpoint_context.client_authn_method = client_auth_setup(
-            self.server_get, self.conf.get("client_authn_methods")
+            self.unit_get, self.conf.get("client_authn_methods")
         )

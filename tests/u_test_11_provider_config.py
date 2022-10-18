@@ -5,12 +5,11 @@ from idpyoidc.server.user_authn.authn_context import UNSPECIFIED
 from idpyoidc.server.user_authn.user import NoAuthn
 import pytest
 
-from fedservice.entity.fetch import Fetch
+from fedservice.entity.server.fetch import Fetch
+from fedservice.fetch_entity_statement.fs2 import FSPublisher
 from fedservice.fetch_entity_statement.fs2 import read_info
-from fedservice.op import FederationServer
 from fedservice.op.provider_config import ProviderConfiguration
 from tests.utils import DummyCollector
-from tests.utils import Publisher
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
@@ -77,8 +76,8 @@ class TestEndpoint(object):
         self.endpoint = server.server_get('endpoint', 'provider_config')
 
         server.endpoint_context.federation_entity.collector = DummyCollector(
-            httpd=Publisher(os.path.join(BASE_PATH, 'data')),
-            trusted_roots=ANCHOR,
+            httpc=FSPublisher(os.path.join(BASE_PATH, 'data')),
+            trust_anchors=ANCHOR,
             root_dir=ROOT_DIR)
 
     def test_do_response(self):

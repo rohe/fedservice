@@ -16,22 +16,22 @@ class Fetch(Endpoint):
     response_format = 'jws'
     name = "fetch"
 
-    def __init__(self, server_get, **kwargs):
-        Endpoint.__init__(self, server_get=server_get, **kwargs)
+    def __init__(self, upstream_get, **kwargs):
+        Endpoint.__init__(self, upstream_get=upstream_get, **kwargs)
         self.post_construct.append(self.create_entity_statement)
         self.metadata_api = None
 
     def process_request(self, request=None, **kwargs):
-        _context = self.server_get("context")
+        _context = self.upstream_get("context")
         _issuer = request.get("iss")
         if not _issuer:
             _issuer = _context.entity_id
 
         _sub = request.get("sub")
-        _keyjar =  self.server_get('attribute', 'keyjar')
+        _keyjar =  self.upstream_get('attribute', 'keyjar')
         if not _sub or _sub == _context.entity_id:
-            _server = self.server_get("server")
-            _entity = _server.superior_get('node')
+            _server = self.upstream_get("server")
+            _entity = _server.upstream_get('Unit')
             _metadata = _entity.get_metadata()
             _es = create_entity_statement(iss=_entity.context.entity_id,
                                           sub=_entity.context.entity_id,
@@ -39,7 +39,7 @@ class Fetch(Endpoint):
                                           metadata=_metadata,
                                           authority_hints=_server.endpoint_context.authority_hints)
         else:
-            _response = self.server_get('node').subordinate[_sub]
+            _response = self.upstream_get('unit').subordinate[_sub]
             _response["authority_hints"] = [_issuer]
 
             _es = create_entity_statement(iss=_issuer,
@@ -59,7 +59,7 @@ class Fetch(Endpoint):
         :return:
         """
 
-        _context = self.server_get("context")
+        _context = self.upstream_get("context")
         _payload = request_args.to_dict()
         _sub = request.get("sub")
         if not _sub:

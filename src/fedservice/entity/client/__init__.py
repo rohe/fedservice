@@ -21,7 +21,7 @@ from idpyoidc.message import Message
 
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_SERVICES
 from fedservice.entity import FederationContext
-from fedservice.node import ClientNode
+from fedservice.node import ClientUnit
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class FederationServiceContext(FederationContext):
     def __init__(self,
                  config: Optional[Union[dict, Configuration]] = None,
                  entity_id: str = "",
-                 superior_get: Callable = None,
+                 upstream_get: Callable = None,
                  keyjar: Optional[KeyJar] = None,
                  priority: Optional[List[str]] = None,
                  trust_marks: Optional[List[str]] = None,
@@ -43,7 +43,7 @@ class FederationServiceContext(FederationContext):
         FederationContext.__init__(self,
                                    config=config,
                                    entity_id=entity_id,
-                                   superior_get=superior_get,
+                                   upstream_get=upstream_get,
                                    keyjar=keyjar)
 
         self.trust_mark_issuer = None
@@ -63,7 +63,7 @@ class FederationServiceContext(FederationContext):
         else:
             self.trusted_roots = _trusted_roots
 
-        _key_jar = self.superior_get("attribute", "keyjar")
+        _key_jar = self.upstream_get("attribute", "keyjar")
         for iss, jwks in self.trusted_roots.items():
             _key_jar.import_jwks(jwks, iss)
 
@@ -75,13 +75,13 @@ class FederationServiceContext(FederationContext):
             self.tr_priority = sorted(set(self.trusted_roots.keys()))
 
 
-class FederationEntityClient(ClientNode):
+class FederationEntityClient(ClientUnit):
     def __init__(
             self,
-            superior_get: Callable = None,
+            upstream_get: Callable = None,
             keyjar: Optional[KeyJar] = None,
             config: Optional[Union[dict, Configuration]] = None,
-            httpc: Optional[object] = None,
+            httpc: Optional[Callable] = None,
             httpc_params: Optional[dict] = None,
             services: Optional[dict] = None,
             jwks_uri: Optional[str] = "",
@@ -99,15 +99,15 @@ class FederationEntityClient(ClientNode):
         :return: Client instance
         """
 
-        ClientNode.__init__(self, superior_get=superior_get, httpc=httpc,
+        ClientUnit.__init__(self, upstream_get=upstream_get, httpc=httpc,
                             keyjar=keyjar, httpc_params=httpc_params,
                             config=config, jwks_uri=jwks_uri)
 
-        self._service_context = FederationServiceContext(config=config, superior_get=self.node_get)
+        self._service_context = FederationServiceContext(config=config, upstream_get=self.unit_get)
 
         _srvs = services or DEFAULT_FEDERATION_ENTITY_SERVICES
 
-        self._service = init_services(service_definitions=_srvs, superior_get=self.node_get)
+        self._service = init_services(service_definitions=_srvs, upstream_get=self.unit_get)
 
         self.setup_client_authn_methods(config)
 
@@ -116,7 +116,7 @@ class FederationEntityClient(ClientNode):
         if val:
             return val
         else:
-            return self.superior_get('attribute', attr)
+            return self.upstream_get('attribute', attr)
 
     def get_service(self, service_name, *arg):
         try:
@@ -187,7 +187,7 @@ class FederationEntityClient(ClientNode):
         :return:
         """
         try:
-            resp = self.http(url, method, data=body, headers=headers)
+            resp = self.httpc(url, method, data=body, headers=headers)
         except Exception as err:
             logger.error("Exception on request: {}".format(err))
             raise
@@ -197,7 +197,7 @@ class FederationEntityClient(ClientNode):
 
         if resp.status_code < 300:
             if "keyjar" not in kwargs:
-                kwargs["keyjar"] = service.superior_get("context").keyjar
+                kwargs["keyjar"] = service.upstream_get("context").keyjar
             if not response_body_type:
                 response_body_type = service.response_body_type
 

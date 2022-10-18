@@ -12,19 +12,19 @@ from fedservice.entity_statement.collect import verify_self_signed_signature
 logger = logging.getLogger(__name__)
 
 
-def tree2chains(node):
+def tree2chains(Unit):
     res = []
-    for issuer, branch in node.items():
+    for issuer, branch in Unit.items():
         if branch is None:
             res.append([])
             continue
 
-        (statement, node) = branch
-        if not node:
+        (statement, Unit) = branch
+        if not Unit:
             res.append([statement])
             continue
 
-        _lists = tree2chains(node)
+        _lists = tree2chains(Unit)
         for l in _lists:
             l.append(statement)
 
@@ -35,15 +35,15 @@ def tree2chains(node):
     return res
 
 
-def collect_trust_chains(node,
+def collect_trust_chains(Unit,
                          entity_id: str,
                          signed_entity_configuration: Optional[str] = "",
                          stop_at: Optional[str] = "",
                          authority_hints: Optional[list] = None):
-    if isinstance(node, FederationEntity):
-        _federation_entity = node
+    if isinstance(Unit, FederationEntity):
+        _federation_entity = Unit
     else:
-        _federation_entity = node.superior_get('node')['federation_entity']
+        _federation_entity = Unit.upstream_get('Unit')['federation_entity']
 
     _collector = _federation_entity.function.trust_chain_collector
 
@@ -99,6 +99,6 @@ def get_payload(self_signed_statement):
 
 class Function(ImpExp):
 
-    def __init__(self, superior_get: Callable):
+    def __init__(self, upstream_get: Callable):
         ImpExp.__init__(self)
-        self.superior_get = superior_get
+        self.upstream_get = upstream_get

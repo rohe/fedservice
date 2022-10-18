@@ -36,14 +36,14 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
     request_body_type = 'jose'
     response_body_type = 'jose'
 
-    def __init__(self, superior_get, conf=None, **kwargs):
-        provider_info_discovery.ProviderInfoDiscovery.__init__(self, superior_get, conf=conf)
+    def __init__(self, upstream_get, conf=None, **kwargs):
+        provider_info_discovery.ProviderInfoDiscovery.__init__(self, upstream_get, conf=conf)
 
     def get_request_parameters(self, method="GET", **kwargs):
         try:
             _iss = kwargs["iss"]
         except KeyError:
-            _iss = self.superior_get("context").get('issuer')
+            _iss = self.upstream_get("context").get('issuer')
 
         qpart = {'iss': _iss}
 
@@ -80,7 +80,7 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
         #     # Replace what was there before
         #     self.service_context.keyjar[self.service_context.issuer] = _kb
 
-        _context = self.superior_get("context")
+        _context = self.upstream_get("context")
         _context.set('provider_info', _pi)
         _context.federation_entity.federation = trust_root_id
 
@@ -97,7 +97,7 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
         """
 
         # First deal with federation relates things
-        _federation_entity = self.superior_get("entity").superior_get('node')['federation_entity']
+        _federation_entity = self.upstream_get("entity").upstream_get('Unit')['federation_entity']
         _federation_context = _federation_entity.context
 
         # If two chains lead to the same trust anchor only one remains after this
@@ -119,10 +119,10 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
         # And now for core OIDC related
         _pi = provider_info_per_trust_anchor[_anchor]
 
-        _context = self.superior_get("context")
+        _context = self.upstream_get("context")
         _context.set('provider_info', _pi)
         self._update_service_context(_pi)
-        _client = self.superior_get("entity")
+        _client = self.upstream_get("entity")
         _metadata = _client.get_metadata()
         # _metadata.update(_federation_entity.get_metadata())
         _context.set('behaviour', map_configuration_to_preference(_pi, _metadata))
@@ -157,7 +157,7 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
         entity_config = verify_self_signed_signature(response)
         entity_id = entity_config['iss']
 
-        combo = self.superior_get('entity').superior_get('node')
+        combo = self.upstream_get('entity').upstream_get('unit')
         _collector = combo['federation_entity'].function.trust_chain_collector
         _collector.config_cache[entity_id] = entity_config
 
@@ -178,6 +178,6 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
         :return:
         """
 
-        _fe = self.superior_get("context").federation_entity
+        _fe = self.upstream_get("context").federation_entity
         self_signed_config = _fe.collector.get_configuration_information(kwargs["iss"])
         return self.parse_response(self_signed_config)

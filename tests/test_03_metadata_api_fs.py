@@ -5,6 +5,7 @@ from idpyoidc.message.oidc import RegistrationResponse
 
 from fedservice.message import EntityStatement
 from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement
+from fedservice.message import OIDCRPMetadata
 
 BASE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "base_data")
 
@@ -20,7 +21,7 @@ def test_config_information():
 
     es = EntityStatement().from_dict(payload)
     _item = es['metadata']['openid_relying_party']
-    assert isinstance(_item, RegistrationResponse)
+    assert isinstance(_item, OIDCRPMetadata)
     assert _item['response_types'] == ['code']
 
 

@@ -214,8 +214,8 @@ def union(val1, val2):
 
 
 class TrustChainPolicy(Function):
-    def __init__(self, superior_get):
-        Function.__init__(self, superior_get)
+    def __init__(self, upstream_get):
+        Function.__init__(self, upstream_get)
 
     def gather_policies(self, chain, entity_type):
         """

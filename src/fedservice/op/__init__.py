@@ -19,24 +19,24 @@ from idpyoidc.server import init_user_info
 from idpyoidc.server import OPConfiguration
 from idpyoidc.server import populate_authn_broker
 
-from fedservice.node import ServerNode
+from fedservice.node import ServerUnit
 
 
-def do_endpoints(conf, superior_get):
+def do_endpoints(conf, upstream_get):
     _endpoints = conf.get("endpoint")
     if _endpoints:
-        return build_endpoints(_endpoints, server_get=superior_get, issuer=conf["issuer"])
+        return build_endpoints(_endpoints, upstream_get=upstream_get, issuer=conf["issuer"])
     else:
         return {}
 
 
-class ServerEntity(ServerNode):
+class ServerEntity(ServerUnit):
     parameter = {"endpoint": [Endpoint], "endpoint_context": EndpointContext}
 
     def __init__(
             self,
             config: Optional[Union[dict, OPConfiguration, ASConfiguration]] = None,
-            superior_get: Optional[Callable] = None,
+            upstream_get: Optional[Callable] = None,
             keyjar: Optional[KeyJar] = None,
             cwd: Optional[str] = "",
             cookie_handler: Optional[Any] = None,
@@ -44,7 +44,7 @@ class ServerEntity(ServerNode):
             httpc_params: Optional[dict] = None,
             entity_id: Optional[str] = ""
     ):
-        ServerNode.__init__(self, superior_get=superior_get, keyjar=keyjar, httpc=httpc,
+        ServerUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, entity_id=entity_id)
         if config is None:
             config = {}
@@ -57,7 +57,7 @@ class ServerEntity(ServerNode):
         self.config = config
         self.endpoint_context = EndpointContext(
             conf=config,
-            server_get=self.server_get,
+            upstream_get=self.server_get,
             keyjar=keyjar,
             cwd=cwd,
             cookie_handler=cookie_handler,
@@ -86,14 +86,14 @@ class ServerEntity(ServerNode):
 
         self.setup_client_authn_methods()
         for endpoint_name, _ in self.endpoint.items():
-            self.endpoint[endpoint_name].superior_get = self.server_get
+            self.endpoint[endpoint_name].upstream_get = self.unit_get
 
         _token_endp = self.endpoint.get("token")
         if _token_endp:
             _token_endp.allow_refresh = allow_refresh_token(self.endpoint_context)
 
         self.endpoint_context.claims_interface = init_service(
-            config["claims_interface"], self.server_get
+            config["claims_interface"], self.upstream_get
         )
 
         _id_token_handler = self.endpoint_context.session_manager.token_handler.handler.get(

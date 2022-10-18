@@ -15,7 +15,7 @@ from idpyoidc.util import instantiate
 __author__ = 'Roland Hedberg'
 
 from fedservice.entity_statement.create import create_entity_statement
-from fedservice.node import Node
+from fedservice.node import Unit
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ class FederationContext(ImpExp):
     def __init__(self,
                  config: Optional[Union[dict, Configuration]] = None,
                  entity_id: str = "",
-                 superior_get: Callable = None,
+                 upstream_get: Callable = None,
                  default_lifetime: Optional[int] = 86400,
                  metadata: Optional[dict] = None,
                  tr_priority: Optional[list] = None,
@@ -51,7 +51,7 @@ class FederationContext(ImpExp):
             config = {}
 
         self.config = config
-        self.superior_get = superior_get
+        self.upstream_get = upstream_get
         self.entity_id = entity_id or config.get("entity_id")
         self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
         self.tr_priority = tr_priority or config.get("trust_root_priority", [])
@@ -86,7 +86,7 @@ class FederationContext(ImpExp):
                 kwargs["jwks"] = {'keys': kwargs["keys"]}
                 del kwargs["keys"]
 
-        key_jar = key_jar or self.superior_get("attribute", "keyjar")
+        key_jar = key_jar or self.upstream_get("attribute", "keyjar")
 
         if not authority_hints:
             authority_hints = self.authority_hints
@@ -98,11 +98,11 @@ class FederationContext(ImpExp):
                                        authority_hints=authority_hints, lifetime=lifetime, **kwargs)
 
 
-class FederationEntity(Node):
+class FederationEntity(Unit):
     name = "federation_entity"
 
     def __init__(self,
-                 superior_get: Optional[Callable] = None,
+                 upstream_get: Optional[Callable] = None,
                  entity_id: str = "",
                  keyjar: Optional[KeyJar] = None,
                  key_conf: Optional[dict] = None,
@@ -115,22 +115,22 @@ class FederationEntity(Node):
                  **kwargs
                  ):
 
-        if superior_get is None and httpc is None:
+        if upstream_get is None and httpc is None:
             httpc = requests
 
-        Node.__init__(self, superior_get=superior_get, keyjar=keyjar, httpc=httpc,
+        Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                       httpc_params=httpc_params, key_conf=key_conf, entity_id=entity_id)
 
         self.metadata = metadata or {}
 
         _args = {
-            "superior_get": self.entity_get,
+            "upstream_get": self.unit_get,
             "keyjar": self.keyjar,
             "httpc": self.httpc,
             "httpc_params": self.httpc_params,
         }
 
-        self.context = FederationContext(entity_id=entity_id, superior_get=self.entity_get)
+        self.context = FederationContext(entity_id=entity_id, upstream_get=self.unit_get)
 
         self.client = self.server = self.function = None
         for key, val in [('client', client), ('server', server), ('function', function)]:
@@ -139,12 +139,6 @@ class FederationEntity(Node):
                 _kwargs.update(_args)
                 setattr(self, key, instantiate(val["class"], **_kwargs))
 
-    def entity_get(self, what, *arg):
-        _func = getattr(self, "get_{}".format(what), None)
-        if _func:
-            return _func(*arg)
-        return None
-
     def get_context(self, *arg):
         return self.context
 
@@ -152,14 +146,14 @@ class FederationEntity(Node):
         try:
             val = getattr(self, attr)
         except AttributeError:
-            if self.superior_get:
-                return self.superior_get('attribute', attr)
+            if self.upstream_get:
+                return self.upstream_get('attribute', attr)
             else:
                 return None
         else:
             if val is None:
-                if self.superior_get:
-                    return self.superior_get('attribute', attr)
+                if self.upstream_get:
+                    return self.upstream_get('attribute', attr)
                 else:
                     return None
             else:
@@ -194,9 +188,6 @@ class FederationEntity(Node):
             return self.client.get_service(service_name)
         except KeyError:
             return None
-
-    def get_entity(self):
-        return self
 
     def pick_trust_chain(self, trust_chains):
         """
@@ -296,8 +287,8 @@ class FederationEntity(Node):
 #
 #         # collect trust chains
 #         _tree = self.collect_statement_chains(payload['iss'], payload)
-#         _node = {payload['iss']: (self_signed_statement, _tree)}
-#         _chains = tree2chains(_node)
+#         _Unit = {payload['iss']: (self_signed_statement, _tree)}
+#         _chains = tree2chains(_Unit)
 #         logger.debug("%s chains", len(_chains))
 #
 #         # verify the trust paths and apply policies

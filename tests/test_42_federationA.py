@@ -8,8 +8,8 @@ from fedservice.entity.client import FederationEntityClient
 from fedservice.entity.client.entity_configuration import \
     EntityConfiguration as c_EntityConfiguration
 from fedservice.entity.client.entity_statement import EntityStatement
+from fedservice.entity.function import tree2chains
 from fedservice.entity.function.policy import TrustChainPolicy
-from fedservice.entity.function.trust_chain_collector import tree2chains
 from fedservice.entity.function.trust_chain_collector import TrustChainCollector
 from fedservice.entity.function.verifier import TrustChainVerifier
 from fedservice.entity.server import FederationEntityServer
@@ -390,8 +390,8 @@ class TestComboCollect(object):
 #     assert _config
 #
 #     tree = collector.collect_superiors(_config['iss'], entity_statement)
-#     node = {entity_id: (entity_statement, tree)}
-#     chains = tree2chains(node)
+#     Unit = {entity_id: (entity_statement, tree)}
+#     chains = tree2chains(Unit)
 #
 #     assert len(chains) == 1  # only one chain
 #     assert len(chains[0]) == 4  # And that chain contains 4 statements

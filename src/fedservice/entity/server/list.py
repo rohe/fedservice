@@ -16,11 +16,11 @@ class List(Endpoint):
     response_format = 'json'
     name = "list"
 
-    def __init__(self, server_get, **kwargs):
-        Endpoint.__init__(self, server_get, **kwargs)
+    def __init__(self, upstream_get, **kwargs):
+        Endpoint.__init__(self, upstream_get, **kwargs)
 
     def process_request(self, request=None, **kwargs):
-        _db = self.server_get("node").subordinate
+        _db = self.upstream_get("unit").subordinate
         return {'response': list(_db.keys())}
 
     def response_info(

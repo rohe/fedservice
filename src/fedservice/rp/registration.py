@@ -21,8 +21,8 @@ class Registration(registration.Registration):
     request_body_type = 'jose'
     response_body_type = 'jose'
 
-    def __init__(self, superior_get, conf=None, client_authn_factory=None, **kwargs):
-        registration.Registration.__init__(self, superior_get, conf=conf)
+    def __init__(self, upstream_get, conf=None, client_authn_factory=None, **kwargs):
+        registration.Registration.__init__(self, upstream_get, conf=conf)
         #
         self.post_construct.append(self.create_entity_statement)
 
@@ -43,10 +43,10 @@ class Registration(registration.Registration):
         :return:
         """
 
-        _federation_entity = self.superior_get('node').superior_get('node')["federation_entity"]
+        _federation_entity = self.upstream_get('Unit').upstream_get('Unit')["federation_entity"]
         _federation_context = _federation_entity.context
         # _md = {_federation_context.entity_type: request_args.to_dict()}
-        _combo = _federation_entity.superior_get('node')
+        _combo = _federation_entity.upstream_get('Unit')
         _md = _combo.get_metadata()
         _keyjar = _federation_entity.get_attribute("keyjar")
         _authority_hints = _federation_entity.server.endpoint_context.authority_hints
@@ -71,7 +71,7 @@ class Registration(registration.Registration):
         return entity_statement.get('trust_anchor_id')
 
     def get_trust_anchor_id(self, entity_statement):
-        _fe_context = self.superior_get("context").federation_entity.get_context()
+        _fe_context = self.upstream_get("context").federation_entity.get_context()
         if len(_fe_context.op_statements) == 1:
             _id = _fe_context.op_statements[0].anchor
             _tai = self._get_trust_anchor_id(entity_statement)
@@ -93,9 +93,9 @@ class Registration(registration.Registration):
         :param resp: An entity statement as a signed JWT
         :return: A set of metadata claims
         """
-        _federation_entity = self.superior_get('node').superior_get('node')['federation_entity']
+        _federation_entity = self.upstream_get('Unit').upstream_get('Unit')['federation_entity']
         # Need the federation keys
-        keyjar = _federation_entity.superior_get('attribute', 'keyjar')
+        keyjar = _federation_entity.upstream_get('attribute', 'keyjar')
 
         # should have the necessary keys
         _jwt = factory(resp)
@@ -117,11 +117,11 @@ class Registration(registration.Registration):
         op_claims = chosen.metadata['openid_provider']
         logger.debug("OP claims: {}".format(op_claims))
         # _sc.trust_path = (chosen.anchor, _fe.op_paths[statement.anchor][0])
-        _context = self.superior_get('context')
+        _context = self.upstream_get('context')
         _context.provider_info = ProviderConfigurationResponse(**op_claims)
 
         _authority_hints = _federation_entity.server.endpoint_context.authority_hints
-        _chains, _ = collect_trust_chains(self.superior_get('node'),
+        _chains, _ = collect_trust_chains(self.upstream_get('Unit'),
                                           entity_id=entity_statement['sub'],
                                           signed_entity_configuration=resp,
                                           stop_at=_trust_anchor_id,
@@ -136,7 +136,7 @@ class Registration(registration.Registration):
 
     def update_service_context(self, resp, **kwargs):
         registration.Registration.update_service_context(self, resp, **kwargs)
-        _fe = self.superior_get("context").federation_entity
+        _fe = self.upstream_get("context").federation_entity
         _fe.iss = resp['client_id']
 
     def get_response_ext(self, url, method="GET", body=None, response_body_type="",
@@ -151,7 +151,7 @@ class Registration(registration.Registration):
         :param kwargs:
         :return:
         """
-        _context = self.superior_get("context")
+        _context = self.upstream_get("context")
         _collector = _context.federation_entity.collector
 
         httpc_args = _collector.httpc_parms.copy()

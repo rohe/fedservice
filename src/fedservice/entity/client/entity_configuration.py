@@ -37,10 +37,10 @@ class EntityConfiguration(Service):
     response_body_type = "application/entity-statement+jwt"
 
     def __init__(self,
-                 superior_get: Callable,
+                 upstream_get: Callable,
                  conf:Optional[Union[dict, Configuration]] = None):
         """The service that talks to the OIDC federation well-known endpoint."""
-        Service.__init__(self, superior_get, conf=conf)
+        Service.__init__(self, upstream_get, conf=conf)
         self.httpc = requests.request
         self.httpc_params = {}
 

@@ -11,13 +11,13 @@ def add_callback_uris(request_args=None, service=None, **kwargs):
 
 class FedAuthorization(Authorization):
 
-    def __init__(self, superior_get, conf=None):
-        Authorization.__init__(self, superior_get=superior_get, conf=conf)
+    def __init__(self, upstream_get, conf=None):
+        Authorization.__init__(self, upstream_get=upstream_get, conf=conf)
         self.pre_construct.insert(0, add_callback_uris)
         self.pre_construct.append(self._automatic_registration)
 
     def _automatic_registration(self, request_args, post_args=None, **kwargs):
-        _context = self.superior_get("context")
+        _context = self.upstream_get("context")
         if post_args is None:
             post_args = {}
 

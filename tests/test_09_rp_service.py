@@ -144,7 +144,7 @@ class TestRpService(object):
         statement = statements[0]
         assert statement.anchor == 'https://feide.no'
         self.disco_service.update_service_context(statements)
-        assert set(self.disco_service.superior_get("service_context").get('behaviour').keys()) == {
+        assert set(self.disco_service.superior_get("context").get('behaviour').keys()) == {
             'grant_types', 'id_token_signed_response_alg',
             'token_endpoint_auth_method', 'federation_type'}
 
@@ -225,8 +225,8 @@ class TestRpService(object):
             "https://op.ntnu.no"
         )
         tree = _fe.collect_statement_chains(payload['iss'], _info['body'])
-        _node = {payload['iss']: (_info['body'], tree)}
-        chains = tree2chains(_node)
+        _Unit = {payload['iss']: (_info['body'], tree)}
+        chains = tree2chains(_Unit)
         statements = [eval_chain(c, _fe.context.keyjar, 'openid_relying_party') for c in chains]
 
         metadata_policy = {

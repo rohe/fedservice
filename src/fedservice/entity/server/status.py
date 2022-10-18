@@ -18,11 +18,11 @@ class TrustMarkStatus(Endpoint):
     response_format = "json"
     name = "status"
 
-    def __init__(self, server_get, **kwargs):
-        Endpoint.__init__(self, server_get, **kwargs)
+    def __init__(self, upstream_get, **kwargs):
+        Endpoint.__init__(self, upstream_get, **kwargs)
 
     def process_request(self, request=None, **kwargs):
-        _tmi = self.server_get('server').superior_get('node')
+        _tmi = self.upstream_get('server').upstream_get('Unit')
 
         if 'trust_mark' in request:
             _mark = self.unpack_trust_mark(request['trust_mark'])
@@ -44,7 +44,7 @@ class TrustMarkStatus(Endpoint):
         return response_args
 
     def unpack_trust_mark(self, token, entity_id: Optional[str] = ""):
-        keyjar = self.server_get('attribute', 'keyjar')
+        keyjar = self.upstream_get('attribute', 'keyjar')
         _jwt = JWT(key_jar=keyjar, msg_cls=TrustMark, allowed_sign_algs=["RS256"])
         _tm = _jwt.unpack(token)
 

@@ -23,4 +23,4 @@ class Client(entity.Entity):
             config=fed_conf
         )
 
-        self.superior_get("context").federation_entity = federation_entity
+        self.upstream_get("context").federation_entity = federation_entity

@@ -19,9 +19,9 @@ class List(Service):
     http_method = "GET"
 
     def __init__(self,
-                 superior_get: Callable,
+                 upstream_get: Callable,
                  conf:Optional[Union[dict, Configuration]] = None):
-        Service.__init__(self, superior_get, conf=conf)
+        Service.__init__(self, upstream_get, conf=conf)
 
     def get_request_parameters(
             self,

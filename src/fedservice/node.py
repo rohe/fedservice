@@ -13,9 +13,9 @@ from idpyoidc.server import OPConfiguration
 from idpyoidc.util import instantiate
 
 
-class Node(ImpExp):
+class Unit(ImpExp):
     def __init__(self,
-                 superior_get: Callable = None,
+                 upstream_get: Callable = None,
                  keyjar: Optional[KeyJar] = None,
                  httpc: Optional[object] = None,
                  httpc_params: Optional[dict] = None,
@@ -24,14 +24,14 @@ class Node(ImpExp):
                  key_conf: Optional[dict] = None
                  ):
         ImpExp.__init__(self)
-        self.superior_get = superior_get
+        self.upstream_get = upstream_get
         self.httpc = httpc
 
         if config is None:
             config = {}
 
         self.entity_id = entity_id or config.get('entity_id', "")
-        if superior_get and superior_get('attribute', 'keyjar'):
+        if upstream_get and upstream_get('attribute', 'keyjar'):
             self.keyjar = None
         else:
             self.keyjar = self._keyjar(keyjar, conf=config, entity_id=self.entity_id,
@@ -43,7 +43,7 @@ class Node(ImpExp):
             self.keyjar.httpc = self.httpc
             self.keyjar.httpc_params = self.httpc_params
 
-    def node_get(self, what, *arg):
+    def unit_get(self, what, *arg):
         _func = getattr(self, "get_{}".format(what), None)
         if _func:
             return _func(*arg)
@@ -53,17 +53,17 @@ class Node(ImpExp):
         try:
             val = getattr(self, attr)
         except AttributeError:
-            if self.superior_get:
-                return self.superior_get("attribute", attr)
+            if self.upstream_get:
+                return self.upstream_get("attribute", attr)
             else:
                 return None
         else:
-            if val is None and self.superior_get:
-                return self.superior_get("attribute", attr)
+            if val is None and self.upstream_get:
+                return self.upstream_get("attribute", attr)
             else:
                 return val
 
-    def get_node(self, *args):
+    def get_unit(self, *args):
         return self
 
     def _keyjar(self,
@@ -98,16 +98,16 @@ class Node(ImpExp):
             return keyjar
 
 
-def find_topmost_node(node):
-    while hasattr(node, 'superior_get'):
-        node = node.superior_get('node')
+def find_topmost_unit(unit):
+    while hasattr(unit, 'upstream_get'):
+        unit = unit.upstream_get('unit')
 
-    return node
+    return unit
 
 
-class ClientNode(Node):
+class ClientUnit(Unit):
     def __init__(self,
-                 superior_get: Callable = None,
+                 upstream_get: Callable = None,
                  httpc: Optional[object] = None,
                  httpc_params: Optional[dict] = None,
                  keyjar: Optional[KeyJar] = None,
@@ -116,15 +116,15 @@ class ClientNode(Node):
                  jwks_uri: Optional[str] = "",
                  entity_id: Optional[str] = ""
                  ):
-        Node.__init__(self, superior_get=superior_get, keyjar=keyjar, httpc=httpc,
+        Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                       httpc_params=httpc_params, config=config, entity_id=entity_id)
 
         self._service_context = context or None
 
 
-class ServerNode(Node):
+class ServerUnit(Unit):
     def __init__(self,
-                 superior_get: Callable = None,
+                 upstream_get: Callable = None,
                  keyjar: Optional[KeyJar] = None,
                  context: Optional[OidcContext] = None,
                  config: Optional[Union[Configuration, dict]] = None,
@@ -133,7 +133,7 @@ class ServerNode(Node):
                  entity_id: Optional[str] = ""
                  ):
 
-        Node.__init__(self, superior_get=superior_get, keyjar=keyjar, httpc=httpc,
+        Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                       httpc_params=httpc_params, entity_id=entity_id)
 
         if config is None:
@@ -141,7 +141,7 @@ class ServerNode(Node):
 
         if not isinstance(config, Base):
             if not entity_id:
-                entity_id = self.superior_get('attribute', 'entity_id')
+                entity_id = self.upstream_get('attribute', 'entity_id')
             config['issuer'] = entity_id
             config["base_url"] = entity_id
             config = Configuration(config)
@@ -150,12 +150,12 @@ class ServerNode(Node):
             self._service_context = context
         else:
             self._service_context = EndpointContext(
-                keyjar=keyjar, conf=config, server_get=self.get_node, entity_id=entity_id
+                keyjar=keyjar, conf=config, upstream_get=self.unit_get, entity_id=entity_id
             )
 
-class Collection(Node):
+class Collection(Unit):
     def __init__(self,
-                 superior_get: Callable = None,
+                 upstream_get: Callable = None,
                  keyjar: Optional[KeyJar] = None,
                  httpc: Optional[object] = None,
                  httpc_params: Optional[dict] = None,
@@ -165,10 +165,10 @@ class Collection(Node):
                  functions: Optional[dict] = None
                  ):
 
-        Node.__init__(self, superior_get, keyjar, httpc, httpc_params, config, entity_id, key_conf)
+        Unit.__init__(self, upstream_get, keyjar, httpc, httpc_params, config, entity_id, key_conf)
 
         _args = {
-            'superior_get': self.node_get
+            'upstream_get': self.unit_get
         }
 
         if functions:

@@ -57,13 +57,13 @@ def time_key(authority, entity):
 class TrustChainCollector(Function):
 
     def __init__(self,
-                 superior_get: Callable,
+                 upstream_get: Callable,
                  trust_anchors: dict,
                  allowed_delta=300,
                  keyjar: Optional[KeyJar] = None,
                  **kwargs
                  ):
-        Function.__init__(self, superior_get)
+        Function.__init__(self, upstream_get)
         self.trust_anchors = trust_anchors
         self.allowed_delta = allowed_delta
         self.config_cache = ESCache(allowed_delta=allowed_delta)
@@ -73,13 +73,13 @@ class TrustChainCollector(Function):
             self.keyjar = keyjar
         else:
             self.keyjar = None
-            keyjar = superior_get("attribute", "keyjar")
+            keyjar = upstream_get("attribute", "keyjar")
         for id, keys in trust_anchors.items():
             keyjar.import_jwks(keys, id)
 
     def _get_service(self, service):
-        _collection = self.superior_get('node')
-        federation_entity = _collection.superior_get('node')
+        _collection = self.upstream_get('unit')
+        federation_entity = _collection.upstream_get('unit')
         return federation_entity.client.get_service(service)
 
     def get_document(self, url: str):
@@ -89,11 +89,11 @@ class TrustChainCollector(Function):
         :param httpc_args: Arguments for the HTTP call.
         :return: Signed EntityStatement
         """
-        httpc_args = self.superior_get('attribute', 'httpc_args')
+        httpc_args = self.upstream_get('attribute', 'httpc_args')
         if httpc_args is None:
             httpc_args = {}
 
-        response = self.superior_get('attribute', 'httpc').get(url, **httpc_args)
+        response = self.upstream_get('attribute', 'httpc').get(url, **httpc_args)
         if response.status_code == 200:
             if 'application/jose' not in response.headers['Content-Type']:
                 logger.warning(f"Wrong Content-Type: {response.headers['Content-Type']}")
@@ -322,8 +322,8 @@ class TrustChainCollector(Function):
     def add_trust_anchor(self, entity_id, jwks):
         if self.keyjar:
             _keyjar = self.keyjar
-        elif self.superior_get:
-            _keyjar = self.superior_get('attribute', 'keyjar')
+        elif self.upstream_get:
+            _keyjar = self.upstream_get('attribute', 'keyjar')
         else:
             raise ValueError("Missing keyjar")
 

@@ -15,8 +15,8 @@ from fedservice.entity.server import FederationEntityServer
 from fedservice.entity.server.entity_configuration import \
     EntityConfiguration as s_EntityConfiguration
 from fedservice.entity.server.fetch import Fetch
+from fedservice.entity.server.status import TrustMarkStatus
 from fedservice.trust_mark_issuer import TrustMarkIssuer
-from fedservice.trust_mark_issuer.status import Status
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -119,7 +119,7 @@ class TestTrustIssuer(object):
             "endpoint": {
                 "trust_mark_status": {
                     'path': 'status',
-                    'class': Status,
+                    'class': TrustMarkStatus,
                     'kwargs': {}
                 }
             },

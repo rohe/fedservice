@@ -5,23 +5,17 @@ import requests
 from idpyoidc.configure import Configuration
 from idpyoidc.server.util import execute
 
-from fedservice.node import Node
+from fedservice.node import Unit
 
 
-class Combo(Node):
+class Combo(Unit):
     def __init__(self, config: Union[dict, Configuration], httpc: Optional[object] = None):
-        Node.__init__(self, config=config, httpc=httpc)
+        Unit.__init__(self, config=config, httpc=httpc)
         self._part = {}
         for key, spec in config.items():
             if 'class' in spec:
-                self._part[key] = execute(spec, superior_get=self.entity_get,
+                self._part[key] = execute(spec, upstream_get=self.unit_get,
                                           entity_id=self.entity_id, httpc=httpc)
-
-    def entity_get(self, what, *args):
-        _func = getattr(self, "get_{}".format(what), None)
-        if _func:
-            return _func(*args)
-        return None
 
     def __getitem__(self, item):
         return self._part[item]

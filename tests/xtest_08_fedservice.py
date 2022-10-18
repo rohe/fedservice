@@ -83,8 +83,8 @@ class TestRpService(object):
                                                                       leaf_entity_id)
         tree = self.fedent.collect_statement_chains(leaf_entity_id, entity_statement)
         assert tree
-        _node = {leaf_entity_id: (entity_statement, tree)}
-        chains = tree2chains(_node)
+        _Unit = {leaf_entity_id: (entity_statement, tree)}
+        chains = tree2chains(_Unit)
         assert len(chains) == 1
         assert len(chains[0]) == 4
 
@@ -92,8 +92,8 @@ class TestRpService(object):
         leaf_entity_id = 'https://foodle.uninett.no'
         _jws = self.fedent.collector.get_entity_statement('', leaf_entity_id, leaf_entity_id)
         tree = self.fedent.collect_statement_chains(leaf_entity_id, _jws)
-        _node = {leaf_entity_id: (_jws, tree)}
-        chains = tree2chains(_node)
+        _Unit = {leaf_entity_id: (_jws, tree)}
+        chains = tree2chains(_Unit)
         statements = [
             eval_chain(c, self.fedent.endpoint_context.federation.keyjar, 'openid_relying_party')
             for c in chains]

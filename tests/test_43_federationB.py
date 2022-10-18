@@ -10,8 +10,8 @@ from fedservice.entity.client import FederationEntityClient
 from fedservice.entity.client.entity_configuration import \
     EntityConfiguration as c_EntityConfiguration
 from fedservice.entity.client.entity_statement import EntityStatement
+from fedservice.entity.function import tree2chains
 from fedservice.entity.function.policy import TrustChainPolicy
-from fedservice.entity.function.trust_chain_collector import tree2chains
 from fedservice.entity.function.trust_chain_collector import TrustChainCollector
 from fedservice.entity.function.verifier import TrustChainVerifier
 from fedservice.entity.server import FederationEntityServer

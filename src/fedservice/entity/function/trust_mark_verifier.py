@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class TrustMarkVerifier(Function):
-    def __init__(self, superior_get: Callable):
-        Function.__init__(self, superior_get)
+    def __init__(self, upstream_get: Callable):
+        Function.__init__(self, upstream_get)
 
     def __call__(self, trust_mark: str, check_status: Optional[bool] = False, entity_id:
                 Optional[str] = ''):
@@ -40,14 +40,14 @@ class TrustMarkVerifier(Function):
                 return None
 
         # Get trust chain
-        _federation_entity = self.superior_get("node").superior_get('node')
+        _federation_entity = self.upstream_get("unit").upstream_get('Unit')
         _chains, _ = collect_trust_chains(_federation_entity, _trust_mark['iss'])
         _trust_chains = verify_trust_chains(_federation_entity, _chains)
 
         # Now try to verify the signature on the trust_mark
         # should have the necessary keys
         _jwt = factory(trust_mark)
-        keyjar = _federation_entity.superior_get("attribute", "keyjar")
+        keyjar = _federation_entity.upstream_get("attribute", "keyjar")
         try:
             _mark = _jwt.verify_compact(trust_mark, keys=keyjar.get_jwt_verify_keys(_jwt.jwt))
         except Exception as err:

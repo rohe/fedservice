@@ -23,13 +23,7 @@ from fedservice.entity.server.fetch import Fetch
 from fedservice.entity.server.list import List
 from fedservice.entity.server.resolve import Resolve
 from fedservice.node import Collection
-from fedservice.op import ServerEntity
-from fedservice.op.authorization import Authorization
-from fedservice.op.registration import Registration
 from fedservice.rp import ClientEntity
-from tests import CRYPT_CONFIG
-from tests import RESPONSE_TYPES_SUPPORTED
-from tests import SESSION_PARAMS
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},

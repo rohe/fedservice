@@ -35,10 +35,10 @@ class Registration(registration.Registration):
         payload = verify_self_signed_signature(request)
         opponent_entity_type = set(payload['metadata'].keys()).difference({'federation_entity',
                                                                            'trust_mark_issuer'}).pop()
-        _federation_entity = self.server_get('node').superior_get('node')['federation_entity']
+        _federation_entity = self.upstream_get('unit').upstream_get('unit')['federation_entity']
 
         # Collect trust chains
-        _chains, _ = collect_trust_chains(self.server_get('node'),
+        _chains, _ = collect_trust_chains(self.upstream_get('unit'),
                                        entity_id=payload['sub'],
                                        signed_entity_configuration=request)
         _trust_chains = verify_trust_chains(_federation_entity, _chains, request)

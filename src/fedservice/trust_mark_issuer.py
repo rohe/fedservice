@@ -99,7 +99,7 @@ def create_trust_mark(content, keyjar, entity_id):
 class TrustMarkIssuer(FederationEntity):
 
     def __init__(self,
-                 superior_get: Optional[Callable] = None,
+                 upstream_get: Optional[Callable] = None,
                  entity_id: str = "",
                  keyjar: Optional[KeyJar] = None,
                  key_conf: Optional[dict] = None,
@@ -116,7 +116,7 @@ class TrustMarkIssuer(FederationEntity):
 
         FederationEntity.__init__(
             self,
-            superior_get=superior_get,
+            upstream_get=upstream_get,
             entity_id=entity_id,
             keyjar=keyjar,
             key_conf=key_conf,

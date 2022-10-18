@@ -1,6 +1,6 @@
 import pytest
-from fedservice.entity_statement.policy import apply_policy
 
+from fedservice.entity.function.policy import TrustChainPolicy
 from fedservice.entity.function.policy import combine_claim_policy
 from fedservice.entity.function.policy import combine_policy
 from fedservice.entity.function.policy import PolicyError
@@ -396,7 +396,7 @@ RES1 = {
 
 def test_apply_policies():
     comb_policy = combine_policy(FED1, ORG1)
-    res = apply_policy(RP, comb_policy)
+    res = TrustChainPolicy.apply_policy(RP, comb_policy)
 
     assert set(res.keys()) == set(RES1.keys())
 

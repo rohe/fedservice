@@ -4,7 +4,6 @@ from typing import Union
 
 from idpyoidc.client.configure import Configuration
 from idpyoidc.client.service import Service
-from idpyoidc.message import oauth2
 from idpyoidc.message.oauth2 import ResponseMessage
 
 from fedservice import message
@@ -21,9 +20,9 @@ class Resolve(Service):
     http_method = "GET"
 
     def __init__(self,
-                 superior_get: Callable,
+                 upstream_get: Callable,
                  conf:Optional[Union[dict, Configuration]] = None):
-        Service.__init__(self, superior_get, conf=conf)
+        Service.__init__(self, upstream_get, conf=conf)
 
     def get_request_parameters(
             self,
@@ -42,7 +41,7 @@ class Resolve(Service):
         :return: List of entity IDs
         """
         if not endpoint:
-            self.superior_get('node')
+            self.upstream_get('unit')
             raise AttributeError("Missing endpoint")
 
         _req = ResolveRequest(**request_args)
