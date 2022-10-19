@@ -110,12 +110,12 @@ class FederationEntityServer(ServerUnit):
         if metadata is None:
             metadata = {}
 
-        self.endpoint_context = FederationServerContext(
-            config=self.conf,
-            upstream_get=self.unit_get,
-            entity_id=entity_id,
-            metadata=metadata
-        )
+        # self.endpoint_context = FederationServerContext(
+        #     config=self.conf,
+        #     upstream_get=self.unit_get,
+        #     entity_id=entity_id,
+        #     metadata=metadata
+        # )
 
         self.endpoint = build_endpoints(endpoint, upstream_get=self.unit_get, issuer=entity_id)
 
@@ -145,7 +145,7 @@ class FederationEntityServer(ServerUnit):
             return None
 
     def get_context(self, *arg):
-        return self.endpoint_context
+        return self._service_context
 
     def get_attribute(self, attr, *args):
         val = getattr(self, attr)
@@ -158,6 +158,6 @@ class FederationEntityServer(ServerUnit):
         return self
 
     def setup_client_authn_methods(self):
-        self.endpoint_context.client_authn_method = client_auth_setup(
+        self._service_context.client_authn_method = client_auth_setup(
             self.unit_get, self.conf.get("client_authn_methods")
         )

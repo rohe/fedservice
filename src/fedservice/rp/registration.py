@@ -44,18 +44,19 @@ class Registration(registration.Registration):
         """
 
         _federation_entity = self.upstream_get('unit').upstream_get('unit')["federation_entity"]
-        _federation_context = _federation_entity.context
         # _md = {_federation_context.entity_type: request_args.to_dict()}
         _combo = _federation_entity.upstream_get('unit')
         _md = _combo.get_metadata()
         _keyjar = _federation_entity.get_attribute("keyjar")
         _authority_hints = _federation_entity.server.endpoint_context.authority_hints
-        _jws = _federation_context.create_entity_statement(
-            iss=_federation_context.entity_id, sub=_federation_context.entity_id,
+        _context = _federation_entity.get_context()
+        _jws = _context.create_entity_statement(
+            iss=_federation_entity.entity_id,
+            sub=_federation_entity.entity_id,
             metadata=_md, key_jar=_keyjar,
             authority_hints=_authority_hints,
-            trust_marks=_federation_context.trust_marks)
-        _federation_context.entity_configuration = _jws
+            trust_marks=_context.trust_marks)
+        _federation_entity.entity_configuration = _jws
         return _jws
 
     def parse_response(self, info, sformat="", state="", **kwargs):

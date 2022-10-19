@@ -9,8 +9,9 @@ from idpyoidc.configure import Configuration
 from idpyoidc.context import OidcContext
 from idpyoidc.impexp import ImpExp
 from idpyoidc.server import EndpointContext
-from idpyoidc.server import OPConfiguration
 from idpyoidc.util import instantiate
+
+from fedservice.entity.server import FederationServerContext
 
 
 class Unit(ImpExp):
@@ -130,7 +131,8 @@ class ServerUnit(Unit):
                  config: Optional[Union[Configuration, dict]] = None,
                  httpc: Optional[object] = None,
                  httpc_params: Optional[dict] = None,
-                 entity_id: Optional[str] = ""
+                 entity_id: Optional[str] = "",
+                 metadata: Optional[dict] = None
                  ):
 
         Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
@@ -149,9 +151,13 @@ class ServerUnit(Unit):
         if context:
             self._service_context = context
         else:
-            self._service_context = EndpointContext(
-                keyjar=keyjar, conf=config, upstream_get=self.unit_get, entity_id=entity_id
+            self._service_context = FederationServerContext(
+                config=config,
+                upstream_get=self.unit_get,
+                entity_id=entity_id,
+                metadata=metadata,
             )
+
 
 class Collection(Unit):
     def __init__(self,
