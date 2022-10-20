@@ -4,6 +4,7 @@ import responses
 from cryptojwt.jws.jws import factory
 import pytest
 
+from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import LEAF_ENDPOINT
 from fedservice.entity import FederationEntity
 
@@ -26,6 +27,14 @@ LEAF_ID = "https://leaf.example.com"
 INTERMEDIATE_ID = "https://intermediate.example.com"
 TENNANT_ID = "https://example.org/tennant1"
 
+# As long as it doesn't provide the Resolve endpoint it doesn't need
+# services and functions.
+# It must have the openid-federation and fetch endpoints. It may have the
+# list and status endpoint. That's the case here.
+
+TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
+del TA_ENDPOINTS["resolve"]
+
 TA = FederationEntityBuilder(
     TA_ID,
     metadata={
@@ -34,7 +43,7 @@ TA = FederationEntityBuilder(
         "contacts": "operations@ta.example.com"
     }
 )
-TA.add_endpoints()
+TA.add_endpoints(None, **TA_ENDPOINTS)
 
 TA2 = FederationEntityBuilder(
     TA_ID2,
@@ -44,7 +53,7 @@ TA2 = FederationEntityBuilder(
         "contacts": "operations@2nd.example.com"
     }
 )
-TA2.add_endpoints()
+TA2.add_endpoints(None, **TA_ENDPOINTS)
 
 # Leaf
 
@@ -58,7 +67,7 @@ ENT = FederationEntityBuilder(
 )
 ENT.add_services()
 ENT.add_functions()
-ENT.add_endpoints(**LEAF_ENDPOINT)
+ENT.add_endpoints(None, **LEAF_ENDPOINT)
 
 # Intermediate
 
