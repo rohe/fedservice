@@ -19,7 +19,7 @@ from idpyoidc.server import init_user_info
 from idpyoidc.server import OPConfiguration
 from idpyoidc.server import populate_authn_broker
 
-from fedservice.node import ServerUnit
+from fedservice.server import ServerUnit
 
 
 def do_endpoints(conf, upstream_get):

@@ -130,7 +130,7 @@ class TestRpService(object):
 
         self.entity['federation_entity'].function.trust_chain_collector.add_trust_anchor(
             'https://feide.no', json.loads(jwks))
-        self.entity['federation_entity'].server.endpoint_context.authority_hints = [
+        self.entity['federation_entity'].server.get_context().authority_hints = [
             'https://ntnu.no']
         self.disco_service = self.entity['openid_relying_party'].get_service('provider_info')
         self.disco_service.upstream_get("context").issuer = OP_ID
@@ -316,14 +316,14 @@ class TestRpServiceAuto(object):
 
         self.entity['federation_entity'].function.trust_chain_collector.add_trust_anchor(
             'https://feide.no', json.loads(jwks))
-        self.entity['federation_entity'].server.endpoint_context.authority_hints = [
+        self.entity['federation_entity'].server.get_context().authority_hints = [
             'https://ntnu.no']
 
-        _context = self.entity.upstream_get("service_context")
+        _context = self.entity['openid_relying_party'].get_context()
         _context.provider_info = {'token_endpoint': "https://op.example.org"}
 
     def test_construct_client_assertion(self):
-        token_service = self.entity.upstream_get("service", 'accesstoken')
+        token_service = self.entity['openid_relying_party'].get_service('accesstoken')
         request = AccessTokenRequest()
         pkj = PrivateKeyJWT()
         http_args = pkj.construct(request, service=token_service, authn_endpoint='token_endpoint')

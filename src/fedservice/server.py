@@ -6,8 +6,8 @@ from typing import Callable
 from typing import Optional
 from typing import Union
 
-from cryptojwt import JWT
 from cryptojwt import KeyJar
+from idpyoidc.configure import Base
 from idpyoidc.configure import Configuration
 from idpyoidc.context import OidcContext
 from idpyoidc.impexp import ImpExp
@@ -16,6 +16,9 @@ from idpyoidc.server import client_auth_setup
 from idpyoidc.server import Endpoint
 from idpyoidc.server import EndpointContext
 from idpyoidc.server import init_service
+
+from fedservice.entity.context import FederationServerContext
+from fedservice.node import Unit
 
 logger = logging.getLogger(__name__)
 
@@ -159,18 +162,38 @@ class Server(ImpExp):
             self.upstream_get, self.conf.get("client_authn_methods")
         )
 
-# class Server(server.Server):
-#     def __init__(self,
-#                  conf: Union[dict, FedOpConfiguration],
-#                  keyjar: Optional[KeyJar] = None,
-#                  cwd: Optional[str] = "",
-#                  cookie_handler: Optional[Any] = None,
-#                  httpc: Optional[Any] = None
-#                  ):
-#         server.Server.__init__(self, conf=conf, keyjar=keyjar, cwd=cwd,
-#                                cookie_handler=cookie_handler, httpc=httpc)
-#
-#         fed_conf = conf["federation"]
-#         federation_entity = FederationEntity(httpc=httpc, config=fed_conf)
-#
-#         self.server_get("context").federation_entity = federation_entity
+
+class ServerUnit(Unit):
+    def __init__(self,
+                 upstream_get: Callable = None,
+                 keyjar: Optional[KeyJar] = None,
+                 context: Optional[OidcContext] = None,
+                 config: Optional[Union[Configuration, dict]] = None,
+                 httpc: Optional[object] = None,
+                 httpc_params: Optional[dict] = None,
+                 entity_id: Optional[str] = "",
+                 metadata: Optional[dict] = None
+                 ):
+
+        Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
+                      httpc_params=httpc_params, entity_id=entity_id)
+
+        if config is None:
+            config = {}
+
+        if not isinstance(config, Base):
+            if not entity_id:
+                entity_id = self.upstream_get('attribute', 'entity_id')
+            config['issuer'] = entity_id
+            config["base_url"] = entity_id
+            config = Configuration(config)
+
+        if context:
+            self._service_context = context
+        else:
+            self._service_context = FederationServerContext(
+                config=config,
+                upstream_get=self.unit_get,
+                entity_id=entity_id,
+                metadata=metadata,
+            )

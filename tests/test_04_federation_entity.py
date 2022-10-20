@@ -85,7 +85,7 @@ class TestClient(object):
         self.entity.function.trust_chain_collector.trust_anchors = {
             self.ta.entity_id: self.ta.keyjar.export_jwks()
         }
-        self.entity.server.endpoint_context.authority_hints = [self.ta.entity_id]
+        self.entity.server.get_context().authority_hints = [self.ta.entity_id]
 
     def test_entity_configuration_request(self):
         _serv = self.entity.get_service('entity_configuration')
@@ -149,13 +149,13 @@ class TestServer():
         self.intermediate.function.trust_chain_collector.add_trust_anchor(
             self.ta.entity_id, self.ta.keyjar.export_jwks()
         )
-        self.intermediate.server.endpoint_context.authority_hints = [self.ta.entity_id]
+        self.intermediate.server.get_context().authority_hints = [self.ta.entity_id]
 
         self.leaf = FederationEntity(**copy.deepcopy(ENT.conf))
         self.leaf.function.trust_chain_collector.add_trust_anchor(
             self.ta.entity_id, self.ta.keyjar.export_jwks()
         )
-        self.leaf.server.endpoint_context.authority_hints = [self.intermediate.entity_id]
+        self.leaf.server.get_context().authority_hints = [self.intermediate.entity_id]
 
         self.intermediate.server.subordinate = {
             self.leaf.entity_id: {
@@ -265,13 +265,13 @@ class TestFunction:
         self.intermediate.function.trust_chain_collector.add_trust_anchor(
             self.ta1.entity_id, self.ta1.keyjar.export_jwks()
         )
-        self.intermediate.server.endpoint_context.authority_hints = [self.ta1.entity_id]
+        self.intermediate.server.get_context().authority_hints = [self.ta1.entity_id]
 
         self.leaf = FederationEntity(**copy.deepcopy(ENT.conf))
         self.leaf.function.trust_chain_collector.add_trust_anchor(
             self.ta1.entity_id, self.ta1.keyjar.export_jwks()
         )
-        self.leaf.server.endpoint_context.authority_hints = [self.intermediate.entity_id]
+        self.leaf.server.get_context().authority_hints = [self.intermediate.entity_id]
 
         self.intermediate.server.subordinate = {
             self.leaf.entity_id: {
@@ -291,7 +291,7 @@ class TestFunction:
 
         self.ta2 = FederationEntity(**copy.deepcopy(TA2.conf))
 
-        self.leaf.server.endpoint_context.authority_hints.append(self.ta2.entity_id)
+        self.leaf.server.get_context().authority_hints.append(self.ta2.entity_id)
         self.leaf.function.trust_chain_collector.add_trust_anchor(
             self.ta2.entity_id, self.ta2.keyjar.export_jwks()
         )

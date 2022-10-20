@@ -48,7 +48,7 @@ class Registration(registration.Registration):
         _combo = _federation_entity.upstream_get('unit')
         _md = _combo.get_metadata()
         _keyjar = _federation_entity.get_attribute("keyjar")
-        _authority_hints = _federation_entity.server.endpoint_context.authority_hints
+        _authority_hints = _federation_entity.server.get_context().authority_hints
         _context = _federation_entity.get_context()
         _jws = _context.create_entity_statement(
             iss=_federation_entity.entity_id,
@@ -121,7 +121,7 @@ class Registration(registration.Registration):
         _context = self.upstream_get('context')
         _context.provider_info = ProviderConfigurationResponse(**op_claims)
 
-        _authority_hints = _federation_entity.server.endpoint_context.authority_hints
+        _authority_hints = _federation_entity.server.get_context().authority_hints
         _chains, _ = collect_trust_chains(self.upstream_get('unit'),
                                           entity_id=entity_statement['sub'],
                                           signed_entity_configuration=resp,

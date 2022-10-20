@@ -4,17 +4,13 @@ from typing import Union
 
 from cryptojwt import KeyJar
 from cryptojwt.key_jar import init_key_jar
-from idpyoidc.configure import Base
 from idpyoidc.configure import Configuration
-from idpyoidc.context import OidcContext
 from idpyoidc.impexp import ImpExp
-from idpyoidc.server import EndpointContext
 from idpyoidc.util import instantiate
-
-from fedservice.entity.server import FederationServerContext
 
 
 class Unit(ImpExp):
+
     def __init__(self,
                  upstream_get: Callable = None,
                  keyjar: Optional[KeyJar] = None,
@@ -107,6 +103,7 @@ def find_topmost_unit(unit):
 
 
 class ClientUnit(Unit):
+
     def __init__(self,
                  upstream_get: Callable = None,
                  httpc: Optional[object] = None,
@@ -123,43 +120,8 @@ class ClientUnit(Unit):
         self._service_context = context or None
 
 
-class ServerUnit(Unit):
-    def __init__(self,
-                 upstream_get: Callable = None,
-                 keyjar: Optional[KeyJar] = None,
-                 context: Optional[OidcContext] = None,
-                 config: Optional[Union[Configuration, dict]] = None,
-                 httpc: Optional[object] = None,
-                 httpc_params: Optional[dict] = None,
-                 entity_id: Optional[str] = "",
-                 metadata: Optional[dict] = None
-                 ):
-
-        Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
-                      httpc_params=httpc_params, entity_id=entity_id)
-
-        if config is None:
-            config = {}
-
-        if not isinstance(config, Base):
-            if not entity_id:
-                entity_id = self.upstream_get('attribute', 'entity_id')
-            config['issuer'] = entity_id
-            config["base_url"] = entity_id
-            config = Configuration(config)
-
-        if context:
-            self._service_context = context
-        else:
-            self._service_context = FederationServerContext(
-                config=config,
-                upstream_get=self.unit_get,
-                entity_id=entity_id,
-                metadata=metadata,
-            )
-
-
 class Collection(Unit):
+
     def __init__(self,
                  upstream_get: Callable = None,
                  keyjar: Optional[KeyJar] = None,

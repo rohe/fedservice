@@ -1,101 +1,19 @@
-import json
 import logging
 from typing import Callable
 from typing import Optional
-from typing import Union
 
 import requests
 from cryptojwt import as_unicode
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
-from idpyoidc.configure import Configuration
-from idpyoidc.impexp import ImpExp
 from idpyoidc.util import instantiate
 
 __author__ = 'Roland Hedberg'
 
-from fedservice.entity_statement.create import create_entity_statement
+from fedservice.entity.context import FederationContext
 from fedservice.node import Unit
 
 logger = logging.getLogger(__name__)
-
-
-def entity_type(metadata):
-    # assuming there is only one type apart from federation_entity and trust_mark_issuer
-    return set(metadata.keys()).difference({'federation_entity', 'trust_mark_issuer'}).pop()
-
-
-class FederationContext(ImpExp):
-    parameter = ImpExp.parameter.copy()
-    parameter.update({
-        "default_lifetime": 0,
-        "authority_hints": [],
-        "tr_priority": [],
-        "trust_mark_issuer": None,
-        "signed_trust_marks": [],
-        "trust_marks": []
-    })
-
-    def __init__(self,
-                 config: Optional[Union[dict, Configuration]] = None,
-                 entity_id: str = "",
-                 upstream_get: Callable = None,
-                 default_lifetime: Optional[int] = 86400,
-                 metadata: Optional[dict] = None,
-                 tr_priority: Optional[list] = None,
-                 **kwargs
-                 ):
-        ImpExp.__init__(self)
-
-        if config is None:
-            config = {}
-
-        self.config = config
-        self.upstream_get = upstream_get
-        self.entity_id = entity_id or config.get("entity_id")
-        self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
-        self.tr_priority = tr_priority or config.get("trust_root_priority", [])
-
-        if metadata:
-            _hints = metadata.get("authority_hints")
-            if _hints is None:
-                self.authority_hints = []
-            elif isinstance(_hints, str):
-                self.authority_hints = json.loads(open(_hints).read())
-            else:
-                self.authority_hints = _hints
-        else:
-            self.authority_hints = []
-
-        for param, default in self.parameter.items():
-            _val = kwargs.get(param)
-            if _val is not None:
-                setattr(self, param, _val)
-            else:
-                try:
-                    getattr(self, param)
-                except AttributeError:
-                    setattr(self, param, default)
-
-    def create_entity_statement(self, iss, sub, key_jar=None, metadata=None, metadata_policy=None,
-                                authority_hints=None, lifetime=0, jwks=None, **kwargs):
-        if jwks:
-            kwargs["jwks"] = jwks
-        else:
-            if "keys" in kwargs:
-                kwargs["jwks"] = {'keys': kwargs["keys"]}
-                del kwargs["keys"]
-
-        key_jar = key_jar or self.upstream_get("attribute", "keyjar")
-
-        if not authority_hints:
-            authority_hints = self.authority_hints
-        if not lifetime:
-            lifetime = self.default_lifetime
-
-        return create_entity_statement(iss, sub, key_jar=key_jar, metadata=metadata,
-                                       metadata_policy=metadata_policy,
-                                       authority_hints=authority_hints, lifetime=lifetime, **kwargs)
 
 
 class FederationEntity(Unit):
@@ -165,8 +83,8 @@ class FederationEntity(Unit):
 
     def get_metadata(self):
         metadata = self.metadata
-        if self.server.endpoint_context.metadata:
-            metadata.update(self.server.endpoint_context.metadata)
+        if self.server.get_context().metadata:
+            metadata.update(self.server.get_context().metadata)
         # collect endpoints
         endpoints = {}
         for key, item in self.server.endpoint.items():

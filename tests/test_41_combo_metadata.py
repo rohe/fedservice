@@ -45,6 +45,7 @@ class TestFederationEntity(object):
                     "homepage_uri": "https://www.example.com",
                     "contacts": "operations@example.com"
                 },
+                "key_conf": {"key_defs": KEYDEFS},
                 "function": {
                     "class": TrustChainCollector,
                     "kwargs": {

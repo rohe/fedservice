@@ -1,4 +1,3 @@
-from cryptojwt.jwt import JWT
 from fedservice.entity_statement.create import create_entity_statement
 from idpyoidc.message import oauth2
 from idpyoidc.server import Endpoint
@@ -32,5 +31,5 @@ class EntityConfiguration(Endpoint):
                                       sub=_entity_id,
                                       key_jar=_entity.get_attribute('keyjar'),
                                       metadata=_metadata,
-                                      authority_hints=_server.endpoint_context.authority_hints)
+                                      authority_hints=_server.get_context().authority_hints)
         return {"response": _ec}
