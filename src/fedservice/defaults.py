@@ -18,8 +18,7 @@ ENTITY_TYPE2METADATA_CLASS = {
 
 DEFAULT_OIDC_FED_SERVICES = {
     'discovery': {
-        'class':
-            'fedservice.rp.provider_info_discovery.ProviderInfoDiscovery'},
+        'class': 'fedservice.rp.provider_info_discovery.ProviderInfoDiscovery'},
     'registration': {
         'class': 'fedservice.rp.registration.Registration'},
 }

@@ -12,14 +12,14 @@ class Authorization(authorization.Authorization):
     response_cls = oidc.AuthorizationResponse
     error_msg = oidc.ResponseMessage
 
-    def __init__(self, server_get, **kwargs):
-        authorization.Authorization.__init__(self, server_get, **kwargs)
+    def __init__(self, upstream_get, **kwargs):
+        authorization.Authorization.__init__(self, upstream_get, **kwargs)
         # self.pre_construct.append(self._pre_construct)
         # self.post_parse_request.append(self._post_parse_request)
         self.automatic_registration_endpoint = None
 
     def do_automatic_registration(self, entity_id):
-        _fe = self.server_get("context").federation_entity
+        _fe = self.upstream_get("context").federation_entity
 
         # get self-signed entity statement
         _sses = _fe.get_configuration_information(entity_id)
@@ -46,7 +46,7 @@ class Authorization(authorization.Authorization):
     def client_authentication(self, request, auth=None, **kwargs):
 
         _cid = request["client_id"]
-        _context = self.server_get("context")
+        _context = self.upstream_get("context")
         # If this is a registered client then this should return some info
         client_info = _context.cdb.get(_cid)
         if client_info is None:
@@ -77,5 +77,5 @@ class Authorization(authorization.Authorization):
             self, request, auth, **kwargs)
 
     def extra_response_args(self, aresp):
-        aresp['trust_anchor_id'] = self.server_get("context").federation_entity.trust_chain_anchor
+        aresp['trust_anchor_id'] = self.upstream_get("context").federation_entity.trust_chain_anchor
         return aresp

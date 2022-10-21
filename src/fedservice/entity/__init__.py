@@ -2,11 +2,11 @@ import logging
 from typing import Callable
 from typing import Optional
 
-import requests
-from cryptojwt import as_unicode
 from cryptojwt import KeyJar
+from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
 from idpyoidc.util import instantiate
+from requests import request
 
 __author__ = 'Roland Hedberg'
 
@@ -34,7 +34,7 @@ class FederationEntity(Unit):
                  ):
 
         if upstream_get is None and httpc is None:
-            httpc = requests
+            httpc = request
 
         Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                       httpc_params=httpc_params, key_conf=key_conf, entity_id=entity_id)
@@ -69,7 +69,7 @@ class FederationEntity(Unit):
             else:
                 return None
         else:
-            if val is None:
+            if not val:
                 if self.upstream_get:
                     return self.upstream_get('attribute', attr)
                 else:
@@ -133,6 +133,16 @@ class FederationEntity(Unit):
         _jws = as_unicode(self_signed_statement)
         _jwt = factory(_jws)
         return _jwt.jwt.payload()
+
+
+def get_federation_entity(unit):
+    # Look both upstream and downstream if necessary
+    if isinstance(unit, FederationEntity):
+        return unit
+    elif unit.upstream_get:
+        return get_federation_entity(unit.upstream_get('unit'))
+    else:
+        return unit['federation_entity']
 
 # class FederationEntity(object):
 #     name = "federation_entity"

@@ -14,13 +14,13 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
     request_format = 'jws'
     response_format = 'jws'
 
-    def __init__(self, server_get, **kwargs):
-        provider_config.ProviderConfiguration.__init__(self, server_get,
+    def __init__(self, upstream_get, **kwargs):
+        provider_config.ProviderConfiguration.__init__(self, upstream_get,
                                                        **kwargs)
         self.post_construct.append(self.create_entity_statement)
 
     def process_request(self, request=None, **kwargs):
-        return {'response_args': self.server_get("context").provider_info.copy()}
+        return {'response_args': self.upstream_get("context").provider_info.copy()}
 
     def create_entity_statement(self, request_args, request=None, **kwargs):
         """
@@ -32,7 +32,7 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
         :return:
         """
 
-        _fe = self.server_get("context").federation_entity
+        _fe = self.upstream_get("context").federation_entity
         _fe_ctx = _fe.get_context()
         _md = {_fe_ctx.entity_type: request_args.to_dict()}
         if _fe.collector.use_ssc:

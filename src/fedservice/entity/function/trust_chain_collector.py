@@ -93,7 +93,7 @@ class TrustChainCollector(Function):
         if httpc_args is None:
             httpc_args = {}
 
-        response = self.upstream_get('attribute', 'httpc').get(url, **httpc_args)
+        response = self.upstream_get('attribute', 'httpc')("GET", url, **httpc_args)
         if response.status_code == 200:
             if 'application/jose' not in response.headers['Content-Type']:
                 logger.warning(f"Wrong Content-Type: {response.headers['Content-Type']}")

@@ -3,6 +3,7 @@ import logging
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.server.oidc import registration
 
+from fedservice.entity import get_federation_entity
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
@@ -18,8 +19,8 @@ class Registration(registration.Registration):
     response_format = 'jose'
     endpoint_name = "federation_registration_endpoint"
 
-    def __init__(self, server_get, **kwargs):
-        registration.Registration.__init__(self, server_get, **kwargs)
+    def __init__(self, upstream_get, **kwargs):
+        registration.Registration.__init__(self, upstream_get, **kwargs)
         self.post_construct.append(self.create_entity_statement)
 
     def parse_request(self, request, auth=None, **kwargs):
@@ -35,7 +36,7 @@ class Registration(registration.Registration):
         payload = verify_self_signed_signature(request)
         opponent_entity_type = set(payload['metadata'].keys()).difference({'federation_entity',
                                                                            'trust_mark_issuer'}).pop()
-        _federation_entity = self.upstream_get('unit').upstream_get('unit')['federation_entity']
+        _federation_entity = get_federation_entity(self)
 
         # Collect trust chains
         _chains, _ = collect_trust_chains(self.upstream_get('unit'),

@@ -1,7 +1,7 @@
 from typing import Optional
 from typing import Union
 
-import requests
+from requests import request
 from idpyoidc.configure import Configuration
 from idpyoidc.server.util import execute
 
@@ -33,7 +33,7 @@ class Combo(Unit):
 class FederationCombo(Combo):
     def __init__(self, config: Union[dict, Configuration], httpc: Optional[object] = None):
         if httpc is None:
-            httpc = requests
+            httpc = request
 
         Combo.__init__(self, config=config, httpc=httpc)
 

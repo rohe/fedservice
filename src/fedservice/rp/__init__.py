@@ -155,7 +155,7 @@ class ClientEntity(ClientUnit):
         :return:
         """
         try:
-            resp = self.httpc.get(url, data=body, headers=headers)
+            resp = self.httpc("GET", url, data=body, headers=headers)
         except Exception as err:
             logger.error("Exception on request: {}".format(err))
             raise

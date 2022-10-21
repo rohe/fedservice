@@ -192,7 +192,7 @@ class FederationEntityClient(ClientUnit):
         :return:
         """
         try:
-            resp = self.httpc(url, method, data=body, headers=headers)
+            resp = self.httpc(method, url, data=body, headers=headers)
         except Exception as err:
             logger.error("Exception on request: {}".format(err))
             raise
