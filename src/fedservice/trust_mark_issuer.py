@@ -165,3 +165,11 @@ class TrustMarkIssuer(FederationEntity):
         if 'sub' not in kwargs:
             kwargs['sub'] = _entity_id
         return packer.pack(payload=kwargs)
+
+    def get_metadata(self):
+        # federation_status_endpoint
+        metadata = {}
+        for key, item in self.server.endpoint.items():
+            if key in ["status"]:
+                metadata[f"federation_{key}_endpoint"] = item.full_path
+        return {"trust_mark_issuer": metadata}

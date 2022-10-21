@@ -130,7 +130,8 @@ class Collection(Unit):
                  config: Optional[Union[Configuration, dict]] = None,
                  entity_id: Optional[str] = "",
                  key_conf: Optional[dict] = None,
-                 functions: Optional[dict] = None
+                 functions: Optional[dict] = None,
+                 metadata: Optional[dict] = None
                  ):
 
         Unit.__init__(self, upstream_get, keyjar, httpc, httpc_params, config, entity_id, key_conf)
@@ -138,6 +139,8 @@ class Collection(Unit):
         _args = {
             'upstream_get': self.unit_get
         }
+
+        self.metadata = metadata or {}
 
         if functions:
             for key, val in functions.items():

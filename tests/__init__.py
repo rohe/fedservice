@@ -1,3 +1,4 @@
+from fedservice.combo import FederationCombo
 from fedservice.entity import FederationEntity
 
 CRYPT_CONFIG = {
@@ -32,7 +33,9 @@ def create_trust_chain_messages(leaf, *entity):
     if isinstance(leaf, str):
         pass
     else:
-        if isinstance(leaf, FederationEntity):
+        if isinstance(leaf, FederationCombo):
+            _endpoint = leaf['federation_entity'].server.get_endpoint('entity_configuration')
+        elif isinstance(leaf, FederationEntity):
             _endpoint = leaf.server.get_endpoint('entity_configuration')
         else:
             _endpoint = leaf['federation_entity'].server.get_endpoint('entity_configuration')
@@ -43,7 +46,7 @@ def create_trust_chain_messages(leaf, *entity):
         ent = entity[n]
         if isinstance(ent, FederationEntity):
             _entity = ent
-        else:
+        else:  # A Combo
             _entity = ent['federation_entity']
 
         _endpoint = _entity.server.get_endpoint('entity_configuration')

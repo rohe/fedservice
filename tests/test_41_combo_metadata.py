@@ -60,8 +60,7 @@ class TestFederationEntity(object):
         assert list(metadata.keys()) == ['federation_entity']
         assert set(metadata['federation_entity'].keys()) == {'organization_name',
                                                              'contacts',
-                                                             'homepage_uri',
-                                                             'federation_fetch_endpoint'}
+                                                             'homepage_uri'}
 
     def test_create_entity_configuration(self):
         _endpoint = self.entity.server.get_endpoint('entity_configuration')
@@ -118,83 +117,12 @@ class TestCombo(object):
             "federation_entity": {
                 'class': FederationEntity,
                 'kwargs': ENT.conf
+            },
+            "trust_mark_issuer": {
+                'class': TrustMarkIssuer,
+                'kwargs': TMI.conf
             }
         }
-
-        # config = {
-        #     "entity_id": ENTITY_ID,
-        #     "key_conf": {"key_defs": KEYDEFS},
-        #     "federation_entity": {
-        #         'class': FederationEntity,
-        #         "kwargs": {
-        #             "metadata": {
-        #                 "organization_name": "The example cooperation",
-        #                 "homepage_uri": "https://www.example.com",
-        #                 "contacts": "operations@example.com"
-        #             },
-        #             "function": {
-        #                 "class": TrustChainCollector,
-        #                 "kwargs": {
-        #                     "trust_anchors": ANCHOR,
-        #                     "allowed_delta": 600
-        #                 }
-        #             },
-        #             "client": {
-        #                 'class': FederationEntityClient,
-        #                 'kwargs': {
-        #                     "services": {
-        #                         "entity_configuration": {
-        #                             "class": c_EntityConfiguration,
-        #                             "kwargs": {}
-        #                         },
-        #                         "entity_statement": {
-        #                             "class": EntityStatement,
-        #                             "kwargs": {}
-        #                         }
-        #                     }
-        #                 }
-        #             },
-        #             "server": {
-        #                 'class': FederationEntityServer,
-        #                 'kwargs': {
-        #                     "metadata": {
-        #                         "authority_hints": ['https://ntnu.no'],
-        #                         "organization_name": "The example cooperation",
-        #                         "homepage_uri": "https://www.example.com",
-        #                         "contacts": "operations@example.com"
-        #                     },
-        #                     "endpoint": {
-        #                         "entity_configuration": {
-        #                             "path": ".well-known/openid-federation",
-        #                             "class": s_EntityConfiguration,
-        #                             "kwargs": {}
-        #                         },
-        #                         "fetch": {
-        #                             "path": "fetch",
-        #                             "class": Fetch,
-        #                             "kwargs": {}
-        #                         }
-        #                     }
-        #                 }
-        #             }
-        #         }
-        #     },
-        #     "trust_mark_issuer": {
-        #         'class': TrustMarkIssuer,
-        #         'kwargs': {
-        #             "endpoint": {
-        #                 "trust_mark_status": {
-        #                     'path': 'status',
-        #                     'class': Status,
-        #                     'kwargs': {}
-        #                 }
-        #             },
-        #             'trust_marks': {
-        #                 TM_ID: {"ref": "https://refeds.org/sirtfi"}
-        #             }
-        #         }
-        #     }
-        # }
 
         self.entity = FederationCombo(config)
 

@@ -35,6 +35,7 @@ class FederationServiceContext(FederationContext):
                  priority: Optional[List[str]] = None,
                  trust_marks: Optional[List[str]] = None,
                  trusted_roots: Optional[dict] = None,
+                 metadata: Optional[dict] = None,
                  ):
 
         if config is None:
@@ -44,7 +45,8 @@ class FederationServiceContext(FederationContext):
                                    config=config,
                                    entity_id=entity_id,
                                    upstream_get=upstream_get,
-                                   keyjar=keyjar)
+                                   keyjar=keyjar,
+                                   metadata=metadata)
 
         self.trust_mark_issuer = None
         self.signed_trust_marks = []
@@ -85,6 +87,7 @@ class FederationEntityClient(ClientUnit):
             httpc_params: Optional[dict] = None,
             services: Optional[dict] = None,
             jwks_uri: Optional[str] = "",
+            metadata: Optional[dict] = None
     ):
         """
 
@@ -103,7 +106,9 @@ class FederationEntityClient(ClientUnit):
                             keyjar=keyjar, httpc_params=httpc_params,
                             config=config, jwks_uri=jwks_uri)
 
-        self._service_context = FederationServiceContext(config=config, upstream_get=self.unit_get)
+        self._service_context = FederationServiceContext(config=config,
+                                                         upstream_get=self.unit_get,
+                                                         metadata=metadata)
 
         _srvs = services or DEFAULT_FEDERATION_ENTITY_SERVICES
 

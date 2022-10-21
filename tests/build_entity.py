@@ -72,6 +72,9 @@ class FederationEntityBuilder():
             }
         }
 
+    def set_attr(self, section, what):
+        self.conf[section]['kwargs'].update(what)
+
 
 class TrustMarkIssuerBuilder():
     def __init__(self,

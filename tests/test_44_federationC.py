@@ -1,27 +1,25 @@
-import copy
+from idpyoidc.server.oidc.token import Token
+from idpyoidc.server.user_info import UserInfo
+from oidcrp.defaults import DEFAULT_OIDC_SERVICES
 
-from idpyoidc.client.oidc import RP
-
-from fedservice.combo import FederationCombo
 import pytest
-import requests
 import responses
 
+from fedservice.combo import FederationCombo
+from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
+from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
+from fedservice.defaults import LEAF_ENDPOINT
 from fedservice.entity import FederationEntity
-from fedservice.entity.client import FederationEntityClient
-from fedservice.entity.client.entity_configuration import \
-    EntityConfiguration as c_EntityConfiguration
-from fedservice.entity.client.entity_statement import EntityStatement
+from fedservice.entity.function import apply_policies
+from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import tree2chains
-from fedservice.entity.function.policy import TrustChainPolicy
-from fedservice.entity.function.trust_chain_collector import TrustChainCollector
-from fedservice.entity.function.verifier import TrustChainVerifier
-from fedservice.entity.server import FederationEntityServer
-from fedservice.entity.server.entity_configuration import EntityConfiguration
-from fedservice.entity.server.fetch import Fetch
-from fedservice.entity.server.list import List
-from fedservice.node import Collection
+from fedservice.entity.function import verify_trust_chains
+from fedservice.op.authorization import Authorization
+from fedservice.op.registration import Registration
 from fedservice.rp import ClientEntity
+from tests import create_trust_chain_messages
+from tests import CRYPT_CONFIG
+from tests.build_entity import FederationEntityBuilder
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -33,247 +31,290 @@ RP_ID = "https://rp.example.org"
 OP_ID = "https://op.example.org"
 IM_ID = "https://im.example.org"
 
-INTERMEDIATE_CONFIG = {
-    # "entity_id": TA_ID,
-    "key_conf": {"key_defs": KEYDEFS},
-    "federation_entity": {
-        'class': FederationEntity,
-        "kwargs": {
-            "server": {
-                'class': FederationEntityServer,
-                'kwargs': {
-                    "metadata": {},
-                    "endpoint": {
-                        "entity_configuration": {
-                            "path": ".well-known/openid-federation",
-                            "class": EntityConfiguration,
-                            "kwargs": {}
-                        },
-                        "fetch": {
-                            "path": "fetch",
-                            "class": Fetch,
-                            "kwargs": {}
-                        },
-                        "list": {
-                            "path": "list",
-                            "class": List,
-                            "kwargs": {}
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
+TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
+del TA_ENDPOINTS["resolve"]
 
-TA_CONFIG = INTERMEDIATE_CONFIG.copy()
-TA_CONFIG["entity_id"] = TA_ID
-TA_CONFIG['federation_entity']['kwargs']['server']['kwargs']['metadata'] = {
-    "organization_name": "The example cooperation",
-    "homepage_uri": "https://www.example.com",
-    "contacts": "operations@example.com"
-}
+RESPONSE_TYPES_SUPPORTED = [
+    ["code"],
+    ["token"],
+    ["id_token"],
+    ["code", "token"],
+    ["code", "id_token"],
+    ["id_token", "token"],
+    ["code", "token", "id_token"],
+    ["none"],
+]
 
-IM_CONFIG = INTERMEDIATE_CONFIG.copy()
-IM_CONFIG["entity_id"] = IM_ID
-IM_CONFIG['federation_entity']['kwargs']['server']['kwargs']['metadata'] = {
-    "authority_hints": [TA_ID],
-    "organization_name": "The example cooperation",
-    "homepage_uri": "https://www.example.com",
-    "contacts": "ops@example.com"
-}
+SESSION_PARAMS = {"encrypter": CRYPT_CONFIG}
 
-LEAF_CONFIG = {
-    # "entity_id": *_ID,
-    "key_conf": {"key_defs": KEYDEFS},
-    "federation_entity": {
-        'class': FederationEntity,
-        "kwargs": {
-            "function": {
-                'class': Collection,
-                'kwargs': {
-                    'functions': {
-                        "trust_chain_collector": {
-                            "class": TrustChainCollector,
-                            "kwargs": {
-                                # "trust_anchors": ANCHOR,
-                                "allowed_delta": 600
-                            }
-                        },
-                        'verifier': {
-                            'class': TrustChainVerifier,
-                            'kwargs': {}
-                        },
-                        'policy': {
-                            'class': TrustChainPolicy,
-                            'kwargs': {}
-                        }
-                    }
-                }
-            },
-            "client": {
-                'class': FederationEntityClient,
-                'kwargs': {
-                    "services": {
-                        "entity_configuration": {
-                            "class": c_EntityConfiguration,
-                            "kwargs": {}
-                        },
-                        "entity_statement": {
-                            "class": EntityStatement,
-                            "kwargs": {}
-                        }
-                    }
-                }
-            },
-            "server": {
-                'class': FederationEntityServer,
-                'kwargs': {
-                    "metadata": {
-                        # "authority_hints": [TA_ID],
-                        # "organization_name": "The example",
-                        # "homepage_uri": "https://www.example.com",
-                        # "contacts": "app@rp.example.com"
-                    },
-                    "endpoint": {
-                        "entity_configuration": {
-                            "path": ".well-known/openid-federation",
-                            "class": EntityConfiguration,
-                            "kwargs": {}
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-RP_CONFIG = copy.deepcopy(LEAF_CONFIG)
-RP_CONFIG["entity_id"] = RP_ID
-RP_CONFIG['federation_entity']['kwargs']['server']['kwargs']['metadata'] = {
-    "authority_hints": [IM_ID],
-    "organization_name": "The example",
-    "homepage_uri": "https://www.example.com",
-    "contacts": "app@rp.example.com"
-}
-RP_CONFIG['openid_relying_party'] = {
-    'class': ClientEntity,
-    'kwargs': {
-        "config": {
-            "redirect_uris": [f"{RP_ID}/authz_cb"],
-            "behaviour": {"response_types": ["code"]},
-            "key_conf": {"key_defs": KEYDEFS},
-        }
-    }
-}
-
-OP_CONFIG = copy.deepcopy(LEAF_CONFIG)
-OP_CONFIG["entity_id"] = OP_ID
-OP_CONFIG['federation_entity']['kwargs']['server']['kwargs']['metadata'] = {
-    "authority_hints": [TA_ID],
-    "organization_name": "The example identity provider",
-    "homepage_uri": "https://www.example.com",
-    "contacts": "operations@op.example.com"
-}
-
-
-#              TA
-#          +---|---+
-#          |       |
-#          IM      OP
-#          |
-#          RP
 
 class TestComboCollect(object):
+
     @pytest.fixture(autouse=True)
     def setup(self):
-        # TRUST ANCHOR
-        self.ta = FederationCombo(TA_CONFIG, httpc=requests)
+        #              TA
+        #          +---|---+
+        #          |       |
+        #          IM      OP
+        #          |
+        #          RP
 
-        ANCHOR = {TA_ID: self.ta.keyjar.export_jwks_as_json()}
+        # TRUST ANCHOR
+
+        TA = FederationEntityBuilder(
+            TA_ID,
+            metadata={
+                "organization_name": "The example federation operator",
+                "homepage_uri": "https://ta.example.com",
+                "contacts": "operations@ta.example.com"
+            },
+            key_conf={"key_defs": KEYDEFS}
+        )
+        TA.add_endpoints(None, **TA_ENDPOINTS)
+
+        self.ta = FederationEntity(**TA.conf)
+
+        ANCHOR = {TA_ID: self.ta.keyjar.export_jwks()}
+
+        # intermediate
+
+        INT = FederationEntityBuilder(
+            IM_ID,
+            metadata={
+                "organization_name": "The organization",
+                "homepage_uri": "https://example.com",
+                "contacts": "operations@example.com"
+            },
+            key_conf={"key_defs": KEYDEFS}
+        )
+        INT.add_services()
+        INT.add_functions()
+        INT.add_endpoints(metadata={"authority_hints": [TA_ID]})
 
         # Intermediate
-        self.im = FederationCombo(IM_CONFIG, httpc=requests)
+        self.im = FederationEntity(**INT.conf)
 
         # Leaf RP
-        _config = RP_CONFIG.copy()
-        _config['federation_entity']['kwargs']['function']['kwargs'][
-            'functions']['trust_chain_collector']['kwargs']['trust_anchors'] = ANCHOR
-        self.rp = FederationCombo(_config)
+
+        oidc_service = DEFAULT_OIDC_SERVICES.copy()
+        oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
+        del oidc_service['web_finger']
+
+        RP_FE = FederationEntityBuilder(
+            metadata={
+                "organization_name": "The RP",
+                "homepage_uri": "https://rp.example.com",
+                "contacts": "operations@rp.example.com"
+            },
+        )
+        RP_FE.add_services()
+        RP_FE.add_functions()
+        RP_FE.add_endpoints(metadata={"authority_hints": [IM_ID]}, **LEAF_ENDPOINT)
+        RP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
+            'trust_anchors'] = ANCHOR
+
+        RP_CONFIG = {
+            'entity_id': RP_ID,
+            'key_conf': {"key_defs": KEYDEFS},
+            "federation_entity": {
+                'class': FederationEntity,
+                'kwargs': RP_FE.conf
+            },
+            "openid_relying_party": {
+                'class': ClientEntity,
+                'kwargs': {
+                    'config': {
+                        'client_id': RP_ID,
+                        'client_secret': 'a longesh password',
+                        'redirect_uris': ['https://example.com/cli/authz_cb'],
+                        "keys": {"uri_path": "static/jwks.json", "key_defs": KEYDEFS},
+                        "metadata": {
+                            "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
+                            "id_token_signed_response_alg": "ES256",
+                            "token_endpoint_auth_method": "client_secret_basic",
+                            "token_endpoint_auth_signing_alg": "ES256"
+                        }
+                    },
+                    "services": oidc_service
+                }
+            }
+        }
+
+        self.rp = FederationCombo(RP_CONFIG)
 
         # Leaf OP
-        _config = OP_CONFIG.copy()
-        _config['federation_entity']['kwargs']['function']['kwargs'][
-            'functions']['trust_chain_collector']['kwargs']['trust_anchors'] = ANCHOR
-        self.op = FederationCombo(_config)
 
-        _trust_anchor_federation_entity_server = self.ta['federation_entity'].server
-        _trust_anchor_federation_entity_server.subordinate[IM_ID] = {
+        OP_FE = FederationEntityBuilder(
+            OP_ID,
+            metadata={
+                "organization_name": "The OP operator",
+                "homepage_uri": "https://op.example.com",
+                "contacts": "operations@op.example.com"
+            },
+            key_conf={"key_defs": KEYDEFS}
+        )
+        OP_FE.add_services()
+        OP_FE.add_functions()
+        OP_FE.add_endpoints(metadata={"authority_hints": [TA_ID]}, **LEAF_ENDPOINT)
+        OP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
+            'trust_anchors'] = ANCHOR
+
+        OP_CONFIG = {
+            'entity_id': OP_ID,
+            'key_conf': {"key_defs": KEYDEFS},
+            "federation_entity": {
+                'class': FederationEntity,
+                'kwargs': OP_FE.conf
+            },
+            "openid_provider": {
+                'class': ClientEntity,
+                'kwargs': {
+                    'config': {
+                        "issuer": "https://example.com/",
+                        "httpc_params": {"verify": False, "timeout": 1},
+                        "capabilities": {
+                            "subject_types_supported": ["public", "pairwise", "ephemeral"],
+                            "grant_types_supported": [
+                                "authorization_code",
+                                "implicit",
+                                "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                                "refresh_token",
+                            ],
+                        },
+                        "token_handler_args": {
+                            "jwks_def": {
+                                "private_path": "private/token_jwks.json",
+                                "read_only": False,
+                                "key_defs": [
+                                    {"type": "oct", "bytes": "24", "use": ["enc"], "kid": "code"}],
+                            },
+                            "code": {"lifetime": 600, "kwargs": {"crypt_conf": CRYPT_CONFIG}},
+                            "token": {
+                                "class": "idpyoidc.server.token.jwt_token.JWTToken",
+                                "kwargs": {
+                                    "lifetime": 3600,
+                                    "add_claims_by_scope": True,
+                                    "aud": ["https://example.org/appl"],
+                                },
+                            },
+                            "refresh": {
+                                "class": "idpyoidc.server.token.jwt_token.JWTToken",
+                                "kwargs": {
+                                    "lifetime": 3600,
+                                    "aud": ["https://example.org/appl"],
+                                },
+                            },
+                            "id_token": {
+                                "class": "idpyoidc.server.token.id_token.IDToken",
+                                "kwargs": {
+                                    "base_claims": {
+                                        "email": {"essential": True},
+                                        "email_verified": {"essential": True},
+                                    }
+                                },
+                            },
+                        },
+                        "keys": {"key_defs": KEYDEFS, "uri_path": "static/jwks.json"},
+                        "endpoint": {
+                            "registration": {
+                                "path": "registration",
+                                "class": Registration,
+                                "kwargs": {"client_auth_method": None},
+                            },
+                            "authorization": {
+                                "path": "authorization",
+                                "class": Authorization,
+                                "kwargs": {
+                                    "response_types_supported": [" ".join(x) for x in
+                                                                 RESPONSE_TYPES_SUPPORTED],
+                                    "response_modes_supported": ["query", "fragment", "form_post"],
+                                    "claim_types_supported": [
+                                        "normal",
+                                        "aggregated",
+                                        "distributed",
+                                    ],
+                                    "claims_parameter_supported": True,
+                                    "request_parameter_supported": True,
+                                    "request_uri_parameter_supported": True,
+                                },
+                            },
+                            "token": {
+                                "path": "token",
+                                "class": Token,
+                                "kwargs": {
+                                    "client_authn_method": [
+                                        "client_secret_post",
+                                        "client_secret_basic",
+                                        "client_secret_jwt",
+                                        "private_key_jwt",
+                                    ]
+                                },
+                            },
+                            "userinfo": {"path": "userinfo", "class": UserInfo, "kwargs": {}},
+                        },
+                        "template_dir": "template",
+                        "session_params": SESSION_PARAMS,
+                    }},
+                "services": oidc_service
+            }
+        }
+
+        self.op = FederationCombo(OP_CONFIG)
+
+        # Setup subordinates
+
+        self.ta.server.subordinate[IM_ID] = {
             "jwks": self.im.keyjar.export_jwks(),
             'authority_hints': [TA_ID]
-        }
-        _trust_anchor_federation_entity_server.subordinate[OP_ID] = {
-            "jwks": self.op.keyjar.export_jwks(),
-            'authority_hints': [TA_ID]
+
         }
 
-        _im_federation_entity_server = self.im['federation_entity'].server
-        _im_federation_entity_server.subordinate[RP_ID] = {
+        self.ta.server.subordinate[OP_ID] = {
+            "jwks": self.op.keyjar.export_jwks(),
+            'authority_hints': [TA_ID]
+
+        }
+
+        self.im.server.subordinate[RP_ID] = {
             "jwks": self.rp.keyjar.export_jwks(),
             'authority_hints': [IM_ID]
         }
 
     def test_setup(self):
         assert self.ta
-        assert self.ta['federation_entity'].server
-        assert set(self.ta['federation_entity'].server.subordinate.keys()) == {OP_ID, IM_ID}
+        assert self.ta.server
+        assert set(self.ta.server.subordinate.keys()) == {OP_ID, IM_ID}
+
+        assert self.op
+        assert set(self.op.keys()) == {'federation_entity', 'openid_provider'}
+
+        assert self.rp
+        assert set(self.rp.keys()) == {'federation_entity', 'openid_relying_party'}
 
     def test_collect_trust_chain(self):
         # Need 2 entity configurations (leaf and TA) and 1 entity statement (TA about leaf
         # leaf = OP
 
-        where_and_what = {}
+        _msgs = create_trust_chain_messages(self.rp, self.im, self.ta)
 
-        _endpoint = self.rp['federation_entity'].server.get_endpoint('entity_configuration')
-        where_and_what[_endpoint.full_path] = _endpoint.process_request({})["response"]
-
-        _endpoint = self.im['federation_entity'].server.get_endpoint('entity_configuration')
-        where_and_what[_endpoint.full_path] = _endpoint.process_request({})["response"]
-
-        _endpoint = self.im['federation_entity'].server.get_endpoint('fetch')
-        _req = _endpoint.parse_request({'iss': IM_ID, 'sub': RP_ID})
-        where_and_what[_endpoint.full_path] = _endpoint.process_request(_req)["response"]
-
-        _endpoint = self.ta['federation_entity'].server.get_endpoint('entity_configuration')
-        where_and_what[_endpoint.full_path] = _endpoint.process_request({})["response"]
-
-        _endpoint = self.ta['federation_entity'].server.get_endpoint('fetch')
-        _req = _endpoint.parse_request({'iss': TA_ID, 'sub': IM_ID})
-        where_and_what[_endpoint.full_path] = _endpoint.process_request(_req)["response"]
-
-        assert len(where_and_what) == 5
+        assert len(_msgs) == 5
 
         with responses.RequestsMock() as rsps:
-            for _url, _jwks in where_and_what.items():
+            for _url, _jwks in _msgs.items():
                 rsps.add("GET", _url, body=_jwks,
                          adding_headers={"Content-Type": "application/json"}, status=200)
 
-            _collector = self.op['federation_entity'].function.trust_chain_collector
-            _tree, leaf_ec = _collector(RP_ID)
+            chains, leaf_ec = collect_trust_chains(self.op, RP_ID)
 
-        assert _tree
-        chains = tree2chains(_tree)
         assert len(chains) == 1
-        assert len(chains[0]) == 2
 
-        _verifier = self.op['federation_entity'].function.verifier
-        chain_0 = chains[0]
-        chain_0.append(leaf_ec)
-        trust_chain = _verifier(chain_0)
-        assert trust_chain
+        trust_chains = verify_trust_chains(self.rp, chains, leaf_ec)
+        trust_chains = apply_policies(self.rp, trust_chains)
+        assert len(trust_chains) == 1
 
-        _policy_applier = self.op['federation_entity'].function.policy
-        _policy_applier(trust_chain)
+        trust_chain = trust_chains[0]
+
         assert trust_chain.metadata
-        assert set(trust_chain.metadata.keys()) == {'federation_entity', 'openid_relying_party'}
-        assert trust_chain.metadata['federation_entity']["contacts"] == 'app@rp.example.com'
+        assert set(trust_chain.metadata.keys()) == {'federation_entity'}
+        assert set(trust_chain.metadata['federation_entity'].keys()) == {
+            'organization_name', 'homepage_uri', 'contacts'}
