@@ -25,30 +25,29 @@ BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
 ANCHOR = {'https://feide.no': read_info(os.path.join(ROOT_DIR, 'feide.no'), "feide.no", "jwks")}
 
-CONF = {
-    'entity_id': "https://example.com/trust_mark_issuer",
-    "key_conf": {"key_defs": KEYSPEC},
-    'server': {
-        'class': FederationEntityServer,
-        'kwargs': {
-            "endpoint": {
-                "status": {
-                    "path": "status",
-                    "class": TrustMarkStatus,
-                    "kwargs": {"client_authn_method": None},
-                }
-            }
-        }
-    }
-}
-
 
 class TestSignedTrustMark():
 
     @pytest.fixture(autouse=True)
     def create_entity(self):
-        #
-        self.tmi = TrustMarkIssuer(**copy.deepcopy(CONF))
+        CONF = {
+            'entity_id': "https://example.com/trust_mark_issuer",
+            "key_conf": {"key_defs": KEYSPEC},
+            'server': {
+                'class': FederationEntityServer,
+                'kwargs': {
+                    "endpoint": {
+                        "status": {
+                            "path": "status",
+                            "class": TrustMarkStatus,
+                            "kwargs": {"client_authn_method": None},
+                        }
+                    }
+                }
+            }
+        }
+
+        self.tmi = TrustMarkIssuer(**CONF)
 
     def test_create_trust_mark_self_signed(self):
         _trust_mark = self.tmi.self_signed_trust_mark(
@@ -79,59 +78,60 @@ class TestSignedTrustMark():
 
 TM_ID = "https://refeds.org/wp-content/uploads/2016/01/Sirtfi-1.0.pdf"
 
-CONFIG = {
-    'entity_id': "https://example.com/trust_mark_issuer",
-    "key_conf": {"key_defs": KEYSPEC},
-    "federation_entity": {
-        'class': FederationEntity,
-        "function": {
-            'class': Collection,
-            'kwargs': {
-                'functions': FEDERATION_ENTITY_FUNCTIONS
-            }
-        },
-        "client": {
-            'class': FederationEntityClient,
-            'kwargs': {
-                "services": FEDERATION_ENTITY_SERVICES
-            }
-        },
-        "server": {
-            'class': FederationEntityServer,
-            'kwargs': {
-                "metadata": {
-                },
-                "endpoint": LEAF_ENDPOINT
-            }
-        }
-    },
-    "trust_mark_issuer": {
-        'class': TrustMarkIssuer,
-        'kwargs': {
-            "trust_marks": {
-                TM_ID: {"ref": "https://refeds.org/sirtfi"}
-            },
-            'server': {
-                'class': FederationEntityServer,
-                'kwargs': {
-                    "endpoint": {
-                        "status": {
-                            "path": "status",
-                            "class": TrustMarkStatus,
-                            "kwargs": {"client_authn_method": None},
-                        }
-                    },
-                }
-            }
-        }
-    }
-}
 
 class TestCombo():
 
     @pytest.fixture(autouse=True)
     def create_entity(self):
         #
+        CONFIG = {
+            'entity_id': "https://example.com/trust_mark_issuer",
+            "key_conf": {"key_defs": KEYSPEC},
+            "federation_entity": {
+                'class': FederationEntity,
+                "function": {
+                    'class': Collection,
+                    'kwargs': {
+                        'functions': FEDERATION_ENTITY_FUNCTIONS
+                    }
+                },
+                "client": {
+                    'class': FederationEntityClient,
+                    'kwargs': {
+                        "services": FEDERATION_ENTITY_SERVICES
+                    }
+                },
+                "server": {
+                    'class': FederationEntityServer,
+                    'kwargs': {
+                        "metadata": {
+                        },
+                        "endpoint": LEAF_ENDPOINT
+                    }
+                }
+            },
+            "trust_mark_issuer": {
+                'class': TrustMarkIssuer,
+                'kwargs': {
+                    "trust_marks": {
+                        TM_ID: {"ref": "https://refeds.org/sirtfi"}
+                    },
+                    'server': {
+                        'class': FederationEntityServer,
+                        'kwargs': {
+                            "endpoint": {
+                                "status": {
+                                    "path": "status",
+                                    "class": TrustMarkStatus,
+                                    "kwargs": {"client_authn_method": None},
+                                }
+                            },
+                        }
+                    }
+                }
+            }
+        }
+
         self.combo = Combo(config=CONFIG)
         self.tmi = self.combo['trust_mark_issuer']
 
@@ -172,4 +172,3 @@ class TestCombo():
 
         resp = self.tmi.server.endpoint['status'].process_request({'trust_mark': _trust_mark})
         assert resp == {'response': '{"active": true}'}
-

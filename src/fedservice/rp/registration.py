@@ -2,11 +2,12 @@ import logging
 
 from cryptojwt.jws.jws import factory
 from idpyoidc.client.exception import ResponseError
+from idpyoidc.client.oidc import registration
 from idpyoidc.message.oidc import ProviderConfigurationResponse
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.message.oidc import RegistrationResponse
-from idpyoidc.client.oidc import registration
 
+from fedservice.entity import get_federation_entity
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
@@ -43,19 +44,22 @@ class Registration(registration.Registration):
         :return:
         """
 
-        _federation_entity = self.upstream_get('unit').upstream_get('unit')["federation_entity"]
+        _federation_entity = get_federation_entity(self)
         # _md = {_federation_context.entity_type: request_args.to_dict()}
         _combo = _federation_entity.upstream_get('unit')
         _md = _combo.get_metadata()
         _keyjar = _federation_entity.get_attribute("keyjar")
         _authority_hints = _federation_entity.server.get_context().authority_hints
         _context = _federation_entity.get_context()
+        _entity_id = _federation_entity.upstream_get('attribute', 'entity_id')
         _jws = _context.create_entity_statement(
-            iss=_federation_entity.entity_id,
-            sub=_federation_entity.entity_id,
-            metadata=_md, key_jar=_keyjar,
+            iss=_entity_id,
+            sub=_entity_id,
+            metadata=_md,
+            key_jar=_keyjar,
             authority_hints=_authority_hints,
             trust_marks=_context.trust_marks)
+        # store for later reference
         _federation_entity.entity_configuration = _jws
         return _jws
 
@@ -94,7 +98,7 @@ class Registration(registration.Registration):
         :param resp: An entity statement as a signed JWT
         :return: A set of metadata claims
         """
-        _federation_entity = self.upstream_get('unit').upstream_get('unit')['federation_entity']
+        _federation_entity = get_federation_entity(self)
         # Need the federation keys
         keyjar = _federation_entity.upstream_get('attribute', 'keyjar')
 
@@ -129,7 +133,7 @@ class Registration(registration.Registration):
                                           authority_hints=_authority_hints)
 
         _trust_chains = verify_trust_chains(_federation_entity, _chains, resp,
-                                            _federation_entity.context.entity_configuration)
+                                            _federation_entity.entity_configuration)
         _trust_chains = apply_policies(_federation_entity, _trust_chains)
         _resp = _trust_chains[0].metadata['openid_relying_party']
         _context.registration_response = _resp

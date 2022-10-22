@@ -40,8 +40,8 @@ class Registration(registration.Registration):
 
         # Collect trust chains
         _chains, _ = collect_trust_chains(self.upstream_get('unit'),
-                                       entity_id=payload['sub'],
-                                       signed_entity_configuration=request)
+                                          entity_id=payload['sub'],
+                                          signed_entity_configuration=request)
         _trust_chains = verify_trust_chains(_federation_entity, _chains, request)
         _trust_chains = apply_policies(_federation_entity, _trust_chains)
         trust_chain = _federation_entity.pick_trust_chain(_trust_chains)
@@ -52,7 +52,7 @@ class Registration(registration.Registration):
             _context = _federation_entity.context
             _policy = diff2policy(response_info['response_args'], req)
             entity_statement = _context.create_entity_statement(
-                _context.entity_id,
+                _federation_entity.upstream_get('attribute', 'entity_id'),
                 payload['iss'],
                 trust_anchor_id=trust_chain.anchor,
                 metadata_policy={opponent_entity_type: _policy},

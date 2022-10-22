@@ -7,7 +7,6 @@ from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
 from idpyoidc.impexp import ImpExp
 
-from fedservice.entity import FederationEntity
 from fedservice.entity import get_federation_entity
 from fedservice.entity_statement.collect import verify_self_signed_signature
 
