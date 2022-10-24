@@ -21,11 +21,18 @@ class Registration(registration.Registration):
     endpoint_name = 'federation_registration_endpoint'
     request_body_type = 'jose'
     response_body_type = 'jose'
+    name = 'registration'
 
     def __init__(self, upstream_get, conf=None, client_authn_factory=None, **kwargs):
         registration.Registration.__init__(self, upstream_get, conf=conf)
         #
         self.post_construct.append(self.create_entity_statement)
+
+    def get_provider_info_attributes(self):
+        _pia = construct_provider_info(self.provider_info_attributes, **self.kwargs)
+        if self.endpoint_name:
+            _pia[self.endpoint_name] = self.full_path
+        return _pia
 
     @staticmethod
     def carry_receiver(request, **kwargs):

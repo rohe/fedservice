@@ -31,6 +31,7 @@ def do_endpoints(conf, upstream_get):
 
 
 class ServerEntity(ServerUnit):
+    name = 'openid-provider'
     parameter = {"endpoint": [Endpoint], "endpoint_context": EndpointContext}
 
     def __init__(
@@ -42,10 +43,11 @@ class ServerEntity(ServerUnit):
             cookie_handler: Optional[Any] = None,
             httpc: Optional[Any] = None,
             httpc_params: Optional[dict] = None,
-            entity_id: Optional[str] = ""
+            entity_id: Optional[str] = "",
+            key_conf: Optional[dict] = None
     ):
         ServerUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
-                            httpc_params=httpc_params, entity_id=entity_id)
+                            httpc_params=httpc_params, entity_id=entity_id, key_conf=key_conf)
         if config is None:
             config = {}
 

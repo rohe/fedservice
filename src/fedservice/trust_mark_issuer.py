@@ -91,12 +91,13 @@ class SimpleDB(object):
         return self._db[item]
 
 
-def create_trust_mark(content, keyjar, entity_id):
+def create_trust_mark(keyjar, entity_id, **kwargs):
     packer = JWT(key_jar=keyjar, iss=entity_id)
-    return packer.pack(payload=content)
+    return packer.pack(payload=kwargs)
 
 
 class TrustMarkIssuer(FederationEntity):
+    name = 'trust_mark_issuer'
 
     def __init__(self,
                  upstream_get: Optional[Callable] = None,

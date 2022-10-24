@@ -9,6 +9,8 @@ from fedservice.node import Unit
 
 
 class Combo(Unit):
+    name = 'root'
+
     def __init__(self, config: Union[dict, Configuration], httpc: Optional[object] = None):
         Unit.__init__(self, config=config, httpc=httpc)
         self._part = {}

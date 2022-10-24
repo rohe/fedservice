@@ -105,3 +105,16 @@ LEAF_ENDPOINT = {
         "kwargs": {}
     }
 }
+
+TRUST_MARK_ISSUER_ENDPOINTS = {
+    "entity_configuration": {
+        "path": ".well-known/openid-federation",
+        "class": 'fedservice.entity.server.entity_configuration.EntityConfiguration',
+        "kwargs": {}
+    },
+    "status": {
+        "path": "status",
+        "class": 'fedservice.entity.server.status.TrustMarkStatus',
+        "kwargs": {}
+    }
+}

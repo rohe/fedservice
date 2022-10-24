@@ -8,8 +8,8 @@ from idpyoidc.client.oidc import provider_info_discovery
 
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import tree2chains
+from fedservice.entity.function import verify_self_signed_signature
 from fedservice.entity.function import verify_trust_chains
-from fedservice.entity_statement.collect import verify_self_signed_signature
 from fedservice.entity_statement.construct import map_configuration_to_preference
 from fedservice.entity_statement.statement import chains2dict
 from fedservice.entity_statement.utils import create_authority_hints
@@ -35,6 +35,7 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
     response_cls = ProviderConfigurationResponse
     request_body_type = 'jose'
     response_body_type = 'jose'
+    name = "provider_config"
 
     def __init__(self, upstream_get, conf=None, **kwargs):
         provider_info_discovery.ProviderInfoDiscovery.__init__(self, upstream_get, conf=conf)

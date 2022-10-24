@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class FederationEntityServer(ServerUnit):
+    name = 'federation_entity'
     parameter = {"endpoint": [Endpoint], "endpoint_context": EndpointContext}
 
     def __init__(

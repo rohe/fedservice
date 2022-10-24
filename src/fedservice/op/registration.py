@@ -18,6 +18,9 @@ class Registration(registration.Registration):
     request_placement = 'body'
     response_format = 'jose'
     endpoint_name = "federation_registration_endpoint"
+    provider_info_attributes = {
+        "client_registration_types_supported": ["automatic", "explicit"]
+    }
 
     def __init__(self, upstream_get, **kwargs):
         registration.Registration.__init__(self, upstream_get, **kwargs)

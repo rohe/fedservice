@@ -10,6 +10,7 @@ from idpyoidc.util import instantiate
 
 
 class Unit(ImpExp):
+    name = ''
 
     def __init__(self,
                  upstream_get: Callable = None,
@@ -28,11 +29,12 @@ class Unit(ImpExp):
             config = {}
 
         self.entity_id = entity_id or config.get('entity_id', "")
-        if upstream_get and upstream_get('attribute', 'keyjar'):
-            self.keyjar = None
-        else:
+
+        if keyjar or key_conf or config.get('key_conf') or config.get('jwks'):
             self.keyjar = self._keyjar(keyjar, conf=config, entity_id=self.entity_id,
                                        key_conf=key_conf)
+        else:
+            self.keyjar = None
 
         self.httpc_params = httpc_params or config.get("httpc_params", {})
 
@@ -69,7 +71,10 @@ class Unit(ImpExp):
                 entity_id: Optional[str] = "",
                 key_conf: Optional[dict] = None):
         if keyjar is None:
-            if conf:
+            if key_conf:
+                keys_args = {k: v for k, v in key_conf.items() if k != "uri_path"}
+                _keyjar = init_key_jar(**keys_args)
+            elif conf:
                 if "keys" in conf:
                     keys_args = {k: v for k, v in conf["keys"].items() if k != "uri_path"}
                     _keyjar = init_key_jar(**keys_args)
@@ -80,9 +85,6 @@ class Unit(ImpExp):
                     _keyjar = KeyJar()
                     if "jwks" in conf:
                         _keyjar.import_jwks(conf["jwks"], "")
-            elif key_conf:
-                keys_args = {k: v for k, v in key_conf.items() if k != "uri_path"}
-                _keyjar = init_key_jar(**keys_args)
             else:
                 _keyjar = None
 
@@ -103,6 +105,7 @@ def find_topmost_unit(unit):
 
 
 class ClientUnit(Unit):
+    name = ''
 
     def __init__(self,
                  upstream_get: Callable = None,
@@ -112,10 +115,12 @@ class ClientUnit(Unit):
                  context: Optional[ImpExp] = None,
                  config: Optional[Union[Configuration, dict]] = None,
                  jwks_uri: Optional[str] = "",
-                 entity_id: Optional[str] = ""
+                 entity_id: Optional[str] = "",
+                 key_conf: Optional[dict] = None
                  ):
         Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
-                      httpc_params=httpc_params, config=config, entity_id=entity_id)
+                      httpc_params=httpc_params, config=config, entity_id=entity_id,
+                      key_conf=key_conf)
 
         self._service_context = context or None
 

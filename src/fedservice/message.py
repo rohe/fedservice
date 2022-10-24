@@ -3,6 +3,7 @@ import logging
 
 from cryptojwt.exception import Expired
 from cryptojwt.jwt import utc_time_sans_frac
+from idpyoidc import message
 from idpyoidc.exception import MissingRequiredAttribute
 from idpyoidc.message import Message
 from idpyoidc.message import OPTIONAL_LIST_OF_SP_SEP_STRINGS
@@ -16,6 +17,7 @@ from idpyoidc.message import SINGLE_OPTIONAL_STRING
 from idpyoidc.message import SINGLE_REQUIRED_INT
 from idpyoidc.message import SINGLE_REQUIRED_STRING
 from idpyoidc.message import msg_ser
+from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.message.oidc import JsonWebToken
 from idpyoidc.message.oidc import ProviderConfigurationResponse
 from idpyoidc.message.oidc import RegistrationRequest
@@ -482,3 +484,45 @@ class ListResponse(Message):
     c_param = {
         "entity_id": REQUIRED_LIST_OF_STRINGS
     }
+
+
+class ProviderConfigurationResponse(message.oidc.ProviderConfigurationResponse):
+    c_param = message.oidc.ProviderConfigurationResponse.c_param.copy()
+    c_param.update({
+        'client_registration_types_supported': REQUIRED_LIST_OF_STRINGS,
+        'federation_registration_endpoint': SINGLE_OPTIONAL_STRING,
+        'request_authentication_methods_supported': SINGLE_OPTIONAL_JSON,
+        'request_authentication_signing_alg_values_supported': OPTIONAL_LIST_OF_STRINGS,
+        'organization_name': SINGLE_OPTIONAL_STRING,
+        'signed_jwks_uri': SINGLE_OPTIONAL_STRING,
+        'jwks': SINGLE_OPTIONAL_JSON
+    })
+
+
+class RegistrationRequest(message.oidc.RegistrationRequest):
+    c_param = message.oidc.RegistrationRequest.c_param.copy()
+    c_param.update({
+        'client_registration_types': REQUIRED_LIST_OF_STRINGS,
+        'organization_name': SINGLE_OPTIONAL_STRING,
+        'signed_jwks_uri': SINGLE_OPTIONAL_STRING,
+        'jwks': SINGLE_OPTIONAL_JSON
+    })
+
+
+class RegistrationResponse(ResponseMessage):
+    """
+    Response to client_register registration requests
+    """
+
+    c_param = ResponseMessage.c_param.copy()
+    c_param.update(
+        {
+            "client_id": SINGLE_REQUIRED_STRING,
+            "client_secret": SINGLE_OPTIONAL_STRING,
+            "registration_access_token": SINGLE_OPTIONAL_STRING,
+            "registration_client_uri": SINGLE_OPTIONAL_STRING,
+            "client_id_issued_at": SINGLE_OPTIONAL_INT,
+            "client_secret_expires_at": SINGLE_OPTIONAL_INT,
+        }
+    )
+    c_param.update(RegistrationRequest.c_param)

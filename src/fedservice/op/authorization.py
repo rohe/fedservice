@@ -12,6 +12,20 @@ class Authorization(authorization.Authorization):
     response_cls = oidc.AuthorizationResponse
     error_msg = oidc.ResponseMessage
 
+    provider_info_attributes = authorization.Authorization.provider_info_attributes.copy()
+    provider_info_attributes.update({
+        "request_authentication_signing_alg_values_supported": ["RS256"],
+        "request_authentication_methods_supported": {
+            "authorization_endpoint": [
+                "request_object"
+            ],
+            "pushed_authorization_request_endpoint": [
+                "request_object",
+                "private_key_jwt",
+            ]
+        }
+    })
+
     def __init__(self, upstream_get, **kwargs):
         authorization.Authorization.__init__(self, upstream_get, **kwargs)
         # self.pre_construct.append(self._pre_construct)

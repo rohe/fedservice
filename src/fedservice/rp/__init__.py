@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 
 
 class ClientEntity(ClientUnit):
+    name = 'openid_relying_party'
+
     def __init__(
             self,
             upstream_get: Optional[Callable] = None,
@@ -42,16 +44,17 @@ class ClientEntity(ClientUnit):
             jwks_uri: Optional[str] = "",
             httpc_params: Optional[dict] = None,
             context: Optional[OidcContext] = None,
+            key_conf: Optional[dict] = None
     ):
         ClientUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, context=context, config=config,
-                            jwks_uri=jwks_uri, entity_id=entity_id)
+                            jwks_uri=jwks_uri, entity_id=entity_id, key_conf=key_conf)
 
         if context:
             self._service_context = context
         else:
             self._service_context = ServiceContext(
-                keyjar=keyjar, config=config, jwks_uri=jwks_uri, httpc_params=self.httpc_params
+                config=config, jwks_uri=jwks_uri, httpc_params=self.httpc_params
             )
 
         if config:

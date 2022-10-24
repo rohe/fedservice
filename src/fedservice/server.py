@@ -172,11 +172,12 @@ class ServerUnit(Unit):
                  httpc: Optional[object] = None,
                  httpc_params: Optional[dict] = None,
                  entity_id: Optional[str] = "",
-                 metadata: Optional[dict] = None
+                 metadata: Optional[dict] = None,
+                 key_conf: Optional[dict] = None
                  ):
 
         Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
-                      httpc_params=httpc_params, entity_id=entity_id)
+                      httpc_params=httpc_params, entity_id=entity_id,  key_conf=key_conf)
 
         if config is None:
             config = {}

@@ -6,6 +6,7 @@ from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import utc_time_sans_frac
 
 from fedservice import message
+from fedservice.entity import get_federation_entity
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import Function
 from fedservice.entity.function import get_payload
@@ -40,14 +41,15 @@ class TrustMarkVerifier(Function):
                 return None
 
         # Get trust chain
-        _federation_entity = self.upstream_get("unit").upstream_get('unit')
+        _federation_entity = get_federation_entity(self)
         _chains, _ = collect_trust_chains(_federation_entity, _trust_mark['iss'])
         _trust_chains = verify_trust_chains(_federation_entity, _chains)
 
         # Now try to verify the signature on the trust_mark
         # should have the necessary keys
         _jwt = factory(trust_mark)
-        keyjar = _federation_entity.upstream_get("attribute", "keyjar")
+        keyjar = _federation_entity.get_attribute('keyjar')
+
         try:
             _mark = _jwt.verify_compact(trust_mark, keys=keyjar.get_jwt_verify_keys(_jwt.jwt))
         except Exception as err:

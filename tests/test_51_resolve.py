@@ -1,7 +1,7 @@
-import pytest
-import responses
 from cryptojwt.jws.jws import factory
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
+import pytest
+import responses
 
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
@@ -17,11 +17,6 @@ from tests.build_entity import FederationEntityBuilder
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
     {"type": "EC", "crv": "P-256", "use": ["sig"]},
-]
-
-COOKIE_KEYDEFS = [
-    {"type": "oct", "kid": "sig", "use": ["sig"]},
-    {"type": "oct", "kid": "enc", "use": ["enc"]},
 ]
 
 TA_ID = "https://ta.example.org"
