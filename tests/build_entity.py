@@ -16,9 +16,6 @@ class FederationEntityBuilder():
                  entity_id: Optional[str] = '',
                  metadata: Optional[dict] = None,
                  key_conf: Optional[dict] = None):
-        if key_conf is None:
-            key_conf = {"key_defs": KEYDEFS}
-
         self.conf = {
             "entity_id": entity_id,
             "key_conf": key_conf,
@@ -65,7 +62,7 @@ class FederationEntityBuilder():
             metadata = {}
 
         self.conf['function'] = {
-            'class': 'fedservice.node.Collection',
+            'class': 'idpyoidc.node.Collection',
             'kwargs': {
                 'metadata': metadata,
                 'functions': functions

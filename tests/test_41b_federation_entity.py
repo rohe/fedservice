@@ -35,6 +35,11 @@ TENNANT_ID = "https://example.org/tennant1"
 TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
 del TA_ENDPOINTS["resolve"]
 
+KEYDEFS = [
+    {"type": "RSA", "key": "", "use": ["sig"]},
+    {"type": "EC", "crv": "P-256", "use": ["sig"]},
+]
+
 
 class TestClient(object):
 
@@ -46,7 +51,8 @@ class TestClient(object):
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
-            }
+            },
+            key_conf={"key_defs": KEYDEFS}
         )
         TA.add_endpoints(None, **TA_ENDPOINTS)
 
@@ -58,7 +64,8 @@ class TestClient(object):
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
-            }
+            },
+            key_conf={"key_defs": KEYDEFS}
         )
         ENT.add_services()
         ENT.add_functions()
@@ -134,7 +141,8 @@ class TestServer():
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
-            }
+            },
+            key_conf={"key_defs": KEYDEFS}
         )
         TA.add_endpoints(None, **TA_ENDPOINTS)
 
@@ -146,7 +154,8 @@ class TestServer():
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
-            }
+            },
+            key_conf={"key_defs": KEYDEFS}
         )
         INT.add_services()
         INT.add_functions()
@@ -160,7 +169,8 @@ class TestServer():
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
-            }
+            },
+            key_conf={"key_defs": KEYDEFS}
         )
         ENT.add_services()
         ENT.add_functions()
@@ -290,7 +300,8 @@ class TestFunction:
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
-            }
+            },
+            key_conf={"key_defs": KEYDEFS}
         )
         TA.add_endpoints(None, **TA_ENDPOINTS)
         TA2 = FederationEntityBuilder(
@@ -299,7 +310,8 @@ class TestFunction:
                 "organization_name": "The second federation operator",
                 "homepage_uri": "https://2nd.example.com",
                 "contacts": "operations@2nd.example.com"
-            }
+            },
+            key_conf={"key_defs": KEYDEFS}
         )
         TA2.add_endpoints(None, **TA_ENDPOINTS)
 
@@ -311,7 +323,8 @@ class TestFunction:
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
-            }
+            },
+            key_conf={"key_defs": KEYDEFS}
         )
         INT.add_services()
         INT.add_functions()
@@ -325,7 +338,8 @@ class TestFunction:
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
-            }
+            },
+            key_conf={"key_defs": KEYDEFS}
         )
         ENT.add_services()
         ENT.add_functions()

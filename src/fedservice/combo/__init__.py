@@ -5,7 +5,7 @@ from requests import request
 from idpyoidc.configure import Configuration
 from idpyoidc.server.util import execute
 
-from fedservice.node import Unit
+from idpyoidc.node import Unit
 
 
 class Combo(Unit):

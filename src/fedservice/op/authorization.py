@@ -1,8 +1,15 @@
 import logging
+from typing import Optional
 
 from idpyoidc.message import oidc
 from idpyoidc.message.oidc import RegistrationRequest
+from idpyoidc.node import topmost_unit
 from idpyoidc.server.oidc import authorization
+
+from fedservice.entity.function import apply_policies
+from fedservice.entity.function import collect_trust_chains
+from fedservice.entity.function import verify_trust_chains
+from fedservice.exception import NoTrustedChains
 
 logger = logging.getLogger(__name__)
 
@@ -20,38 +27,50 @@ class Authorization(authorization.Authorization):
                 "request_object"
             ],
             "pushed_authorization_request_endpoint": [
-                "request_object",
                 "private_key_jwt",
             ]
         }
     })
 
-    def __init__(self, upstream_get, **kwargs):
+    def __init__(self, upstream_get, conf: Optional[dict] = None, **kwargs):
         authorization.Authorization.__init__(self, upstream_get, **kwargs)
         # self.pre_construct.append(self._pre_construct)
         # self.post_parse_request.append(self._post_parse_request)
-        self.automatic_registration_endpoint = None
+        self.automatic_registration_endpoint = {}
+        self.config = conf or {}
+
+    def find_client_keys(self, iss):
+        return self.do_automatic_registration(iss)
 
     def do_automatic_registration(self, entity_id):
-        _fe = self.upstream_get("context").federation_entity
+        chains, signed_entity_configuration = collect_trust_chains(self, entity_id)
+        trust_chains = verify_trust_chains(self, chains, signed_entity_configuration)
+        trust_chains = apply_policies(self, trust_chains)
 
-        # get self-signed entity statement
-        _sses = _fe.get_configuration_information(entity_id)
-
-        # Collect all the trust chains, verify them and apply policies. return the result
-        trust_chains, signed_entity_configuration = _fe.collect_trust_chains(_sses,
-                                                                             "openid_relying_party")
+        if not trust_chains:
+            raise NoTrustedChains()
 
         # pick one of the possible
-        trust_chain = _fe.pick_trust_chain(trust_chains)
+        trust_chain = trust_chains[0]
+        _fe = topmost_unit(self)['federation_entity']
         _fe.trust_chain_anchor = trust_chain.anchor
 
         # handle the registration request as in the non-federation case.
-        req = RegistrationRequest(**trust_chain.metadata)
+        # If there is a jwks_uri in the metadata import keys
+        _jwks_uri = trust_chain.metadata['openid_relying_party'].get('jwks_uri')
+        if _jwks_uri:
+            _keyjar = self.upstream_get('attribute', 'keyjar')
+            _keyjar.add_url(entity_id, _jwks_uri)
+
+        req = RegistrationRequest(**trust_chain.metadata['openid_relying_party'])
         req['client_id'] = entity_id
-        new_id = self.automatic_registration_endpoint.kwargs.get("new_id", False)
-        response_info = self.automatic_registration_endpoint.non_fed_process_request(req,
-                                                                                     new_id=new_id)
+        kwargs = {}
+        kwargs['new_id'] = self.config.get("new_id", False)
+
+        op = topmost_unit(self)['openid_provider']
+        _registration = op.get_endpoint("registration")
+        response_info = _registration.non_fed_process_request(req=req, **kwargs)
+
         try:
             return response_info["response_args"]["client_id"]
         except KeyError:

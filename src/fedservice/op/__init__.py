@@ -46,10 +46,12 @@ class ServerEntity(ServerUnit):
             entity_id: Optional[str] = "",
             key_conf: Optional[dict] = None
     ):
-        ServerUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
-                            httpc_params=httpc_params, entity_id=entity_id, key_conf=key_conf)
         if config is None:
             config = {}
+
+        ServerUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
+                            httpc_params=httpc_params, entity_id=entity_id, key_conf=key_conf,
+                            config=config)
 
         if not isinstance(config, Base):
             config['issuer'] = entity_id
@@ -60,7 +62,6 @@ class ServerEntity(ServerUnit):
         self.endpoint_context = EndpointContext(
             conf=config,
             upstream_get=self.server_get,
-            keyjar=keyjar,
             cwd=cwd,
             cookie_handler=cookie_handler,
             httpc=httpc,

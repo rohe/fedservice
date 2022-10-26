@@ -90,6 +90,7 @@ class TestComboCollect(object):
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
             },
+            key_conf={"key_defs": KEYDEFS}
         )
         RP_FE.add_services()
         RP_FE.add_functions()
@@ -140,10 +141,11 @@ class TestComboCollect(object):
     def test_trust_mark_verifier(self):
         where_and_what = create_trust_chain_messages(self.tmi, self.ta)
 
-        _trust_mark = create_trust_mark(self.tmi.entity_id,
-                                        self.tmi.keyjar,
-                                        trust_mark_id=rndstr(),
-                                        subject=self.rp.entity_id,
+        _trust_mark = create_trust_mark(entity_id=self.tmi.entity_id,
+                                        keyjar=self.tmi.get_attribute('keyjar'),
+
+                                        id=rndstr(),
+                                        sub=self.rp.entity_id,
                                         lifetime=3600,
                                         reference='https://refeds.org/sirtfi')
 

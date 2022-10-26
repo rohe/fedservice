@@ -11,7 +11,7 @@ from requests import request
 __author__ = 'Roland Hedberg'
 
 from fedservice.entity.context import FederationContext
-from fedservice.node import Unit
+from idpyoidc.node import Unit
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,6 @@ class FederationEntity(Unit):
 
         _args = {
             "upstream_get": self.unit_get,
-            "keyjar": self.keyjar,
             "httpc": self.httpc,
             "httpc_params": self.httpc_params,
         }

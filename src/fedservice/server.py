@@ -18,7 +18,7 @@ from idpyoidc.server import EndpointContext
 from idpyoidc.server import init_service
 
 from fedservice.entity.context import FederationServerContext
-from fedservice.node import Unit
+from idpyoidc.node import Unit
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +176,7 @@ class ServerUnit(Unit):
                  key_conf: Optional[dict] = None
                  ):
 
-        Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
+        Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc, config=config,
                       httpc_params=httpc_params, entity_id=entity_id,  key_conf=key_conf)
 
         if config is None:

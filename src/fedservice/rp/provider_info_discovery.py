@@ -3,8 +3,9 @@ from urllib.parse import urlencode
 from urllib.parse import urlparse
 
 from idpyoidc.client.exception import ResponseError
-from idpyoidc.message.oidc import ProviderConfigurationResponse
 from idpyoidc.client.oidc import provider_info_discovery
+from idpyoidc.message.oidc import ProviderConfigurationResponse
+from idpyoidc.node import topmost_unit
 
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import tree2chains
@@ -126,7 +127,8 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
         _client = self.upstream_get("entity")
         _metadata = _client.get_metadata()
         # _metadata.update(_federation_entity.get_metadata())
-        _context.set('behaviour', map_configuration_to_preference(_pi, _metadata))
+        _context.set('behaviour',
+                     map_configuration_to_preference(_pi, _metadata['openid_relying_party']))
 
     def parse_response(self, info, sformat="", state="", **kwargs):
         # returns a list of TrustChain instances
@@ -158,7 +160,7 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
         entity_config = verify_self_signed_signature(response)
         entity_id = entity_config['iss']
 
-        combo = self.upstream_get('entity').upstream_get('unit')
+        combo = topmost_unit(self)
         _collector = combo['federation_entity'].function.trust_chain_collector
         _collector.config_cache[entity_id] = entity_config
 

@@ -19,13 +19,13 @@ from idpyoidc.client.service import init_services
 from idpyoidc.client.service import REQUEST_INFO
 from idpyoidc.client.service import Service
 from idpyoidc.client.service_context import ServiceContext
+from idpyoidc.client.util import do_add_ons
 from idpyoidc.client.util import get_deserialization_method
 from idpyoidc.configure import Configuration
 from idpyoidc.context import OidcContext
 from idpyoidc.exception import FormatError
 from idpyoidc.message import Message
-
-from fedservice.node import ClientUnit
+from idpyoidc.node import ClientUnit
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,9 @@ class ClientEntity(ClientUnit):
             context: Optional[OidcContext] = None,
             key_conf: Optional[dict] = None
     ):
+        if config is None:
+            config = {}
+
         ClientUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, context=context, config=config,
                             jwks_uri=jwks_uri, entity_id=entity_id, key_conf=key_conf)
@@ -54,20 +57,20 @@ class ClientEntity(ClientUnit):
             self._service_context = context
         else:
             self._service_context = ServiceContext(
-                config=config, jwks_uri=jwks_uri, httpc_params=self.httpc_params
+                config=config, jwks_uri=jwks_uri, key_conf=key_conf
             )
 
-        if config:
-            _srvs = config.get("services")
-        else:
-            _srvs = None
+        _srvs = services or config.get("services")
 
         if not _srvs:
-            _srvs = services or DEFAULT_OIDC_SERVICES
+            _srvs = DEFAULT_OIDC_SERVICES
 
         self._service = init_services(service_definitions=_srvs, upstream_get=self.unit_get)
 
         self.setup_client_authn_methods(config)
+
+        if "add_ons" in config:
+            do_add_ons(config["add_ons"], self._service)
 
     def get_services(self, *arg):
         return self._service
@@ -110,12 +113,12 @@ class ClientEntity(ClientUnit):
         return {'openid_relying_party': request.to_dict()}
 
     def do_request(
-        self,
-        request_type: str,
-        response_body_type: Optional[str] = "",
-        request_args: Optional[dict] = None,
-        behaviour_args: Optional[dict] = None,
-        **kwargs
+            self,
+            request_type: str,
+            response_body_type: Optional[str] = "",
+            request_args: Optional[dict] = None,
+            behaviour_args: Optional[dict] = None,
+            **kwargs
     ):
         _srv = self._service[request_type]
 
@@ -138,14 +141,14 @@ class ClientEntity(ClientUnit):
         self._service_context.set("client_id", client_id)
 
     def get_response(
-        self,
-        service: Service,
-        url: str,
-        method: Optional[str] = "GET",
-        body: Optional[dict] = None,
-        response_body_type: Optional[str] = "",
-        headers: Optional[dict] = None,
-        **kwargs
+            self,
+            service: Service,
+            url: str,
+            method: Optional[str] = "GET",
+            body: Optional[dict] = None,
+            response_body_type: Optional[str] = "",
+            headers: Optional[dict] = None,
+            **kwargs
     ):
         """
 
@@ -168,7 +171,7 @@ class ClientEntity(ClientUnit):
 
         if resp.status_code < 300:
             if "keyjar" not in kwargs:
-                kwargs["keyjar"] = service.upstream_get("context").keyjar
+                kwargs["keyjar"] = service.upstream_get("attribute",'keyjar')
             if not response_body_type:
                 response_body_type = service.response_body_type
 
@@ -181,14 +184,14 @@ class ClientEntity(ClientUnit):
         return self.parse_request_response(service, resp, response_body_type, **kwargs)
 
     def service_request(
-        self,
-        service: Service,
-        url: str,
-        method: Optional[str] = "GET",
-        body: Optional[dict] = None,
-        response_body_type: Optional[str] = "",
-        headers: Optional[dict] = None,
-        **kwargs
+            self,
+            service: Service,
+            url: str,
+            method: Optional[str] = "GET",
+            body: Optional[dict] = None,
+            response_body_type: Optional[str] = "",
+            headers: Optional[dict] = None,
+            **kwargs
     ) -> Message:
         """
         The method that sends the request and handles the response returned.
@@ -315,6 +318,7 @@ class ClientEntity(ClientUnit):
 
 
 class RPHandler(rp_handler.RPHandler):
+
     def __init__(self,
                  base_url: Optional[str] = '',
                  hash_seed: Optional[str] = "",

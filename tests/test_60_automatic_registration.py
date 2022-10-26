@@ -1,10 +1,10 @@
 import os
 
+import pytest
+import responses
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.oidc.token import Token
 from idpyoidc.server.oidc.userinfo import UserInfo
-import pytest
-import responses
 
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
@@ -15,8 +15,8 @@ from fedservice.op import ServerEntity
 from fedservice.op.authorization import Authorization
 from fedservice.op.registration import Registration
 from fedservice.rp import ClientEntity
-from . import CRYPT_CONFIG
 from . import create_trust_chain_messages
+from . import CRYPT_CONFIG
 from .build_entity import FederationEntityBuilder
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
@@ -55,6 +55,7 @@ SESSION_PARAMS = {"encrypter": CRYPT_CONFIG}
 
 
 class TestAutomatic(object):
+
     @pytest.fixture(autouse=True)
     def create_endpoint(self):
         #              TA
@@ -106,6 +107,7 @@ class TestAutomatic(object):
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
         del oidc_service['web_finger']
+        oidc_service['authorization'] = {"class": "fedservice.rp.authorization.Authorization"}
 
         RP_FE = FederationEntityBuilder(
             metadata={
@@ -140,8 +142,23 @@ class TestAutomatic(object):
                             "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
                             "id_token_signed_response_alg": "ES256",
                             "token_endpoint_auth_method": "client_secret_basic",
-                            "token_endpoint_auth_signing_alg": "ES256"
-                        }
+                            "token_endpoint_auth_signing_alg": "ES256",
+                            "client_registration_types": ["automatic"],
+                        },
+                        "authorization_request_endpoints": [
+                            'authorization_endpoint', 'pushed_authorization_request_endpoint'
+                        ],
+                        "add_ons": {
+                            "pushed_authorization": {
+                                "function": "idpyoidc.client.oauth2.add_on.pushed_authorization.add_support",
+                                "kwargs": {
+                                    "body_format": "jws",
+                                    "signing_algorithm": "RS256",
+                                    "http_client": None,
+                                    "merge_rule": "lax",
+                                },
+                            }
+                        },
                     },
                     "services": oidc_service
                 }
@@ -159,8 +176,7 @@ class TestAutomatic(object):
                 "organization_name": "The OP operator",
                 "homepage_uri": "https://op.example.com",
                 "contacts": "operations@op.example.com"
-            },
-            key_conf={"key_defs": KEYDEFS}
+            }
         )
         OP_FE.add_services()
         OP_FE.add_functions()
@@ -223,7 +239,7 @@ class TestAutomatic(object):
                                 },
                             },
                         },
-                        "keys": {"key_defs": KEYDEFS, "uri_path": "static/jwks.json"},
+                        "key_conf": {"key_defs": KEYDEFS, "uri_path": "static/jwks.json"},
                         "endpoint": {
                             "registration": {
                                 "path": "registration",
@@ -296,6 +312,9 @@ class TestAutomatic(object):
         }
 
     def test_automatic_registration_new_client_id(self):
+        # No clients registered with the OP at the beginning
+        assert len(self.op['openid_provider'].get_context().cdb.keys()) == 0
+
         ####################################################
         # [1] Let the RP gather some provider info discovery
 
@@ -323,14 +342,24 @@ class TestAutomatic(object):
         _auth_service = self.rp['openid_relying_party'].get_service('authorization')
         authn_request = _auth_service.construct()
 
-        # The OP handles the authorization request
-        req = self.op['openid_provider'].get_endpoint['authorization'].parse_request(
-            authn_request.to_dict())
+        _msgs = create_trust_chain_messages(self.rp, self.im, self.ta)
+        # add the jwks_uri
+        _msgs[self.rp['openid_relying_party'].get_context().jwks_uri] = self.rp[
+            'openid_relying_party'].keyjar.export_jwks_as_json()
+
+        with responses.RequestsMock() as rsps:
+            for _url, _jwks in _msgs.items():
+                rsps.add("GET", _url, body=_jwks,
+                         adding_headers={"Content-Type": "application/json"}, status=200)
+
+            # The OP handles the authorization request
+            req = self.op['openid_provider'].get_endpoint('authorization').parse_request(
+                authn_request.to_dict())
+
         assert "response_type" in req
 
-        # client_ids = list(self.authorization_endpoint.server_get("endpoint_context").cdb.keys())
-        # assert len(client_ids) == 2  # dynamic and entity_id
-        # assert ENTITY_ID in client_ids
+        # Assert that the client's entity_id has been registered as a client
+        assert self.rp.entity_id in self.op['openid_provider'].get_context().cdb
 
 #     def test_automatic_registration_keep_client_id(self):
 #         # This is cheating. Getting the OP provider info

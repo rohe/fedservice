@@ -155,8 +155,7 @@ class TestComboCollect(object):
                 "organization_name": "The OP operator",
                 "homepage_uri": "https://op.example.com",
                 "contacts": "operations@op.example.com"
-            },
-            key_conf={"key_defs": KEYDEFS}
+            }
         )
         OP_FE.add_services()
         OP_FE.add_functions()
@@ -301,7 +300,7 @@ class TestComboCollect(object):
         assert set(self.rp.keys()) == {'federation_entity', 'openid_relying_party'}
 
     def test_collect_trust_chain(self):
-        # Need 2 entity configurations (leaf and TA) and 1 entity statement (TA about leaf
+        # Need 2 entity configurations (leaf and TA) and 1 entity statement (TA about leaf)
         # leaf = OP
 
         _msgs = create_trust_chain_messages(self.rp, self.im, self.ta)

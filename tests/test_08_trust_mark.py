@@ -13,7 +13,7 @@ from fedservice.entity.server import FederationEntityServer
 from fedservice.entity.server.status import TrustMarkStatus
 from fedservice.message import TrustMark
 from fedservice.fetch_entity_statement.fs2 import read_info
-from fedservice.node import Collection
+from idpyoidc.node import Collection
 from fedservice.trust_mark_issuer import TrustMarkIssuer
 
 KEYSPEC = [

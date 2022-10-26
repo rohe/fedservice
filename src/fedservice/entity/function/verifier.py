@@ -3,6 +3,7 @@ from typing import Callable
 from typing import List
 
 from cryptojwt import KeyBundle
+from cryptojwt.exception import MissingKey
 from cryptojwt.jws.jws import factory
 
 from fedservice.entity.function import Function
@@ -45,6 +46,10 @@ class TrustChainVerifier(Function):
             if _jwt:
                 logger.debug("JWS header: %s", _jwt.headers())
                 keys = _keyjar.get_jwt_verify_keys(_jwt.jwt)
+                if keys == []:
+                    logger.error(f'No keys matching: {_jwt.jwt.headers}')
+                    raise MissingKey(f'No keys matching: {_jwt.jwt.headers}')
+
                 _key_spec = ['{}:{}:{}'.format(k.kty, k.use, k.kid) for k in keys]
                 logger.debug("Possible verification keys: %s", _key_spec)
                 res = _jwt.verify_compact(keys=keys)

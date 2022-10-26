@@ -9,6 +9,7 @@ from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.defaults import JWT_BEARER
 from idpyoidc.message.oidc import AccessTokenRequest
 import pytest
+from idpyoidc.node import topmost_unit
 
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
@@ -155,7 +156,7 @@ class TestRpService(object):
         assert statement.anchor == 'https://feide.no'
         self.disco_service.update_service_context(statements)
         assert set(self.disco_service.upstream_get("context").get('behaviour').keys()) == {
-            'openid_relying_party'}
+            'application_type', 'response_types', 'grant_types', 'redirect_uris'}
         # 'grant_types', 'id_token_signed_response_alg',
         # 'token_endpoint_auth_method', 'federation_type'}
 
@@ -210,7 +211,8 @@ class TestRpService(object):
         self.registration_service.endpoint = _context.get('provider_info')[
             'federation_registration_endpoint']
 
-        _fe = self.entity["federation_entity"]
+        combo = topmost_unit(self.registration_service)
+        _fe = combo['federation_entity']
         # construct the client registration request
         req_args = {'entity_id': _fe.context.entity_id}
         jws = self.registration_service.construct(request_args=req_args)
@@ -227,13 +229,13 @@ class TestRpService(object):
         payload = _req_jwt.jwt.payload()
 
         # The OP as federation entity
-        keyjar = _fe.get_attribute('keyjar')
-        del keyjar["https://op.ntnu.no"]
+        keyjar = combo.get_attribute('keyjar')
         # make sure I have the private keys
         keyjar.import_jwks(
             es_api.keyjar.export_jwks(True, "https://op.ntnu.no"),
             "https://op.ntnu.no"
         )
+
         chains, _ = collect_trust_chains(_fe, entity_id=payload['iss'],
                                          signed_entity_configuration=_info['body'])
 
@@ -247,11 +249,18 @@ class TestRpService(object):
 
         # This is the registration response from the OP
         _jwt = _fe.context.create_entity_statement(
-            'https://op.ntnu.no', 'https://foodle.uninett.no',
+            'https://op.ntnu.no',
+            'https://foodle.uninett.no',
             metadata_policy={'openid_relying_party': metadata_policy},
             key_jar=OP_KEYJAR,
             trust_anchor_id=trust_chains[0].anchor)
 
+        # On the RP's side
+        keyjar = self.entity['openid_relying_party'].get_attribute('keyjar')
+        keyjar.import_jwks(
+            es_api.keyjar.export_jwks(issuer_id="https://op.ntnu.no"),
+            "https://op.ntnu.no"
+        )
         claims = self.registration_service.parse_response(_jwt, request=_info['body'])
 
         assert set(claims.keys()) == {'application_type',

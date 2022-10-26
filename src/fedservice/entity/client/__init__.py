@@ -21,7 +21,7 @@ from idpyoidc.message import Message
 
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_SERVICES
 from fedservice.entity import FederationContext
-from fedservice.node import ClientUnit
+from idpyoidc.node import ClientUnit
 
 logger = logging.getLogger(__name__)
 
