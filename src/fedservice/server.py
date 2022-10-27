@@ -176,8 +176,10 @@ class ServerUnit(Unit):
                  key_conf: Optional[dict] = None
                  ):
 
+        self.entity_id = entity_id or config.get('entity_id')
+
         Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc, config=config,
-                      httpc_params=httpc_params, entity_id=entity_id,  key_conf=key_conf)
+                      httpc_params=httpc_params, issuer_id=self.entity_id,  key_conf=key_conf)
 
         if config is None:
             config = {}

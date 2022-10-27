@@ -11,8 +11,13 @@ from idpyoidc.node import Unit
 class Combo(Unit):
     name = 'root'
 
-    def __init__(self, config: Union[dict, Configuration], httpc: Optional[object] = None):
-        Unit.__init__(self, config=config, httpc=httpc)
+    def __init__(self,
+                 config: Union[dict, Configuration],
+                 httpc: Optional[object] = None,
+                 entity_id: Optional[str] = ''
+                 ):
+        self.entity_id = entity_id or config.get('entity_id')
+        Unit.__init__(self, config=config, httpc=httpc, issuer_id=self.entity_id)
         self._part = {}
         for key, spec in config.items():
             if 'class' in spec:

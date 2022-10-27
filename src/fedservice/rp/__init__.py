@@ -51,7 +51,7 @@ class ClientEntity(ClientUnit):
 
         ClientUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, context=context, config=config,
-                            jwks_uri=jwks_uri, entity_id=entity_id, key_conf=key_conf)
+                            entity_id=entity_id, key_conf=key_conf)
 
         if context:
             self._service_context = context

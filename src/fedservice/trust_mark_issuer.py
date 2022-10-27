@@ -128,6 +128,9 @@ class TrustMarkIssuer(FederationEntity):
             httpc_params=httpc_params,
             metadata=metadata)
 
+        if upstream_get:  # Not to have keys on my own if there is a superior
+            self.keyjar = None
+
         self.trust_marks = trust_marks or {}
 
         self.tm_lifetime = {}

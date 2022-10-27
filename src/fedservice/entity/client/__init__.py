@@ -104,7 +104,7 @@ class FederationEntityClient(ClientUnit):
 
         ClientUnit.__init__(self, upstream_get=upstream_get, httpc=httpc,
                             keyjar=keyjar, httpc_params=httpc_params,
-                            config=config, jwks_uri=jwks_uri)
+                            config=config)
 
         self._service_context = FederationServiceContext(config=config,
                                                          upstream_get=self.unit_get,
