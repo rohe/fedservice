@@ -127,7 +127,7 @@ class ClientEntity(ClientUnit):
         if not response_body_type:
             response_body_type = _srv.response_body_type
 
-        logger.debug("do_request info: {}".format(_info))
+        logger.debug(f"do_request info: {_info}")
 
         try:
             _state = kwargs["state"]
@@ -163,7 +163,7 @@ class ClientEntity(ClientUnit):
         try:
             resp = self.httpc("GET", url, data=body, headers=headers)
         except Exception as err:
-            logger.error("Exception on request: {}".format(err))
+            logger.error(f"Exception on request: {err}")
             raise
 
         if 300 <= resp.status_code < 400:
@@ -256,7 +256,7 @@ class ClientEntity(ClientUnit):
         #     response_body_type = self.response_body_type
 
         if reqresp.status_code in SUCCESSFUL:
-            logger.debug('response_body_type: "{}"'.format(response_body_type))
+            logger.debug(f'response_body_type: "{response_body_type}"')
             _deser_method = get_deserialization_method(reqresp)
 
             if _deser_method != response_body_type:
@@ -270,7 +270,7 @@ class ClientEntity(ClientUnit):
             else:
                 value_type = response_body_type
 
-            logger.debug("Successful response: {}".format(reqresp.text))
+            logger.debug(f"Successful response: {reqresp.text}")
 
             try:
                 return service.parse_response(reqresp.text, value_type, state, **kwargs)
@@ -281,9 +281,9 @@ class ClientEntity(ClientUnit):
             return reqresp
         elif reqresp.status_code == 500:
             logger.error("(%d) %s" % (reqresp.status_code, reqresp.text))
-            raise ParseError("ERROR: Something went wrong: %s" % reqresp.text)
+            raise ParseError(f"ERROR: Something went wrong: {reqresp.text}")
         elif 400 <= reqresp.status_code < 500:
-            logger.error("Error response ({}): {}".format(reqresp.status_code, reqresp.text))
+            logger.error(f"Error response ({reqresp.status_code}): {reqresp.text}")
             # expecting an error response
             _deser_method = get_deserialization_method(reqresp)
             if not _deser_method:
@@ -311,9 +311,9 @@ class ClientEntity(ClientUnit):
             err_resp["status_code"] = reqresp.status_code
             return err_resp
         else:
-            logger.error("Error response ({}): {}".format(reqresp.status_code, reqresp.text))
+            logger.error(f"Error response ({reqresp.status_code}): {reqresp.text}")
             raise OidcServiceError(
-                "HTTP ERROR: %s [%s] on %s" % (reqresp.text, reqresp.status_code, reqresp.url)
+                f"HTTP ERROR: {reqresp.text} [{reqresp.status_code}] on {reqresp.url}"
             )
 
 
@@ -391,7 +391,7 @@ class RPHandler(rp_handler.RPHandler):
         :return: A :py:class:`idpyoidc.client.oidc.Client` instance
         """
 
-        logger.info('client_setup: iss_id={}, user={}'.format(iss_id, user))
+        logger.info(f'client_setup: iss_id={iss_id}, user={user}')
 
         if not iss_id:
             if not user:

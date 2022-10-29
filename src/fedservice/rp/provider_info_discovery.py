@@ -110,11 +110,10 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
             claims = trust_chain.metadata['openid_provider']
             provider_info_per_trust_anchor[entity_id] = self.response_cls(**claims)
 
-        _federation_context.proposed_authority_hints = create_authority_hints(
-            _federation_context.authority_hints, trust_chains)
-
-        if not _federation_context.proposed_authority_hints:
-            raise AttributeError("No possible authority hints")
+        # _federation_context.proposed_authority_hints = create_authority_hints(trust_chains)
+        #
+        # if not _federation_context.proposed_authority_hints:
+        #     raise AttributeError("No possible authority hints")
 
         _anchor = pick_preferred_trust_anchor(trust_chains, _federation_context)
 

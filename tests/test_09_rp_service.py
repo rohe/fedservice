@@ -90,7 +90,8 @@ class TestRpService(object):
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com",
                 "client_registration_types": ['explicit']
-            }
+            },
+            authority_hints=['https://ntnu.no']
         )
         ENT.add_services()
         ENT.add_functions(**MOD_FUNCTIONS)
@@ -131,8 +132,6 @@ class TestRpService(object):
 
         self.entity['federation_entity'].function.trust_chain_collector.add_trust_anchor(
             'https://feide.no', json.loads(jwks))
-        self.entity['federation_entity'].server.get_context().authority_hints = [
-            'https://ntnu.no']
         self.disco_service = self.entity['openid_relying_party'].get_service('provider_info')
         self.disco_service.upstream_get("context").issuer = OP_ID
         self.registration_service = self.entity['openid_relying_party'].get_service('registration')

@@ -70,11 +70,12 @@ class TestComboCollect(object):
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_conf={"key_defs": KEYDEFS},
+            authority_hints=[TA_ID]
         )
         INT.add_services()
         INT.add_functions()
-        INT.add_endpoints(metadata={"authority_hints": [TA_ID]})
+        INT.add_endpoints()
 
         # Intermediate
         self.im = FederationEntity(**INT.conf)
@@ -90,11 +91,12 @@ class TestComboCollect(object):
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_conf={"key_defs": KEYDEFS},
+            authority_hints=[TA_ID]
         )
         RP_FE.add_services()
         RP_FE.add_functions()
-        RP_FE.add_endpoints(metadata={"authority_hints": [IM_ID]}, **LEAF_ENDPOINT)
+        RP_FE.add_endpoints(**LEAF_ENDPOINT)
         RP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
             'trust_anchors'] = ANCHOR
 
@@ -112,10 +114,11 @@ class TestComboCollect(object):
                 "organization_name": "The Trust Mark Issuer",
                 "homepage_uri": "https://tmi.example.com",
                 "contacts": "operations@tmi.example.com"
-            }
+            },
+            authority_hints=[TA_ID]
         )
         # default endpoint = status
-        TMI.add_endpoints(metadata={"authority_hints": [TA_ID]}, **TRUST_MARK_ISSUER_ENDPOINTS)
+        TMI.add_endpoints(**TRUST_MARK_ISSUER_ENDPOINTS)
 
         self.tmi = TrustMarkIssuer(**TMI.conf)
 
@@ -143,7 +146,6 @@ class TestComboCollect(object):
 
         _trust_mark = create_trust_mark(entity_id=self.tmi.entity_id,
                                         keyjar=self.tmi.get_attribute('keyjar'),
-
                                         id=rndstr(),
                                         sub=self.rp.entity_id,
                                         lifetime=3600,

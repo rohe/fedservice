@@ -131,7 +131,7 @@ class TrustChainCollector(Function):
                 self_signed_config = self.get_document(_tres["url"])
                 logger.debug(f'Self signed statement: {self_signed_config}')
             else:
-                raise MissingPage("No such page: '{}'".format(_tres["url"]))
+                raise MissingPage(f"No such page: '{_tres['url']}'")
         except SSLError as err:
             logger.error(err)
             raise

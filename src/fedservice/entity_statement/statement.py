@@ -53,7 +53,7 @@ class TrustChain(object):
     def is_expired(self):
         now = utc_time_sans_frac()
         if self.exp < now:
-            logger.debug('is_expired: {} < {}'.format(self.exp, now))
+            logger.debug(f'is_expired: {self.exp} < {now}')
             return True
         else:
             return False

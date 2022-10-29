@@ -50,7 +50,7 @@ class TrustChainVerifier(Function):
                     logger.error(f'No keys matching: {_jwt.jwt.headers}')
                     raise MissingKey(f'No keys matching: {_jwt.jwt.headers}')
 
-                _key_spec = ['{}:{}:{}'.format(k.kty, k.use, k.kid) for k in keys]
+                _key_spec = [f'{k.kty}:{k.use}:{k.kid}' for k in keys]
                 logger.debug("Possible verification keys: %s", _key_spec)
                 res = _jwt.verify_compact(keys=keys)
                 logger.debug("Verified entity statement: %s", res)
@@ -68,7 +68,7 @@ class TrustChainVerifier(Function):
                     else:
                         new = [k for k in _kb if k not in old]
                         if new:
-                            _key_spec = ['{}:{}:{}'.format(k.kty, k.use, k.kid) for k in new]
+                            _key_spec = [f'{k.kty}:{k.use}:{k.kid}' for k in new]
                             logger.debug(
                                 "New keys added to the federation key jar for '{}': {}".format(
                                     res['sub'], _key_spec)

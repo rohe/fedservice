@@ -65,7 +65,8 @@ class TestClient(object):
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_conf={"key_defs": KEYDEFS},
+            authority_hints=[TA_ID]
         )
         ENT.add_services()
         ENT.add_functions()
@@ -77,7 +78,6 @@ class TestClient(object):
         self.entity.function.trust_chain_collector.trust_anchors = {
             self.ta.entity_id: self.ta.keyjar.export_jwks()
         }
-        self.entity.server.get_context().authority_hints = [self.ta.entity_id]
 
     def test_entity_configuration_request(self):
         _serv = self.entity.get_service('entity_configuration')
@@ -155,7 +155,8 @@ class TestServer():
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_conf={"key_defs": KEYDEFS},
+            authority_hints=[TA_ID]
         )
         INT.add_services()
         INT.add_functions()
@@ -170,7 +171,8 @@ class TestServer():
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_conf={"key_defs": KEYDEFS},
+            authority_hints=[INTERMEDIATE_ID]
         )
         ENT.add_services()
         ENT.add_functions()
@@ -182,13 +184,11 @@ class TestServer():
         self.intermediate.function.trust_chain_collector.add_trust_anchor(
             self.ta.entity_id, self.ta.keyjar.export_jwks()
         )
-        self.intermediate.server.get_context().authority_hints = [self.ta.entity_id]
 
         self.leaf = FederationEntity(**ENT.conf)
         self.leaf.function.trust_chain_collector.add_trust_anchor(
             self.ta.entity_id, self.ta.keyjar.export_jwks()
         )
-        self.leaf.server.get_context().authority_hints = [self.intermediate.entity_id]
 
         self.intermediate.server.subordinate = {
             self.leaf.entity_id: {
@@ -292,6 +292,11 @@ class TestFunction:
     @pytest.fixture(autouse=True)
     def create_entities(self):
         # Two chains leaf->intermediate->trust_anchor_1 and leaf->trust_anchor_2
+        #       TA     TA2
+        #       |      |
+        #      IM      |
+        #       \      |
+        #        +--- LEAF
 
         # trust anchor 1 and 2
         TA = FederationEntityBuilder(
@@ -324,7 +329,8 @@ class TestFunction:
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_conf={"key_defs": KEYDEFS},
+            authority_hints=[TA_ID]
         )
         INT.add_services()
         INT.add_functions()
@@ -339,7 +345,8 @@ class TestFunction:
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_conf={"key_defs": KEYDEFS},
+            authority_hints=[INTERMEDIATE_ID, TA_ID2]
         )
         ENT.add_services()
         ENT.add_functions()
@@ -351,13 +358,11 @@ class TestFunction:
         self.intermediate.function.trust_chain_collector.add_trust_anchor(
             self.ta1.entity_id, self.ta1.keyjar.export_jwks()
         )
-        self.intermediate.server.get_context().authority_hints = [self.ta1.entity_id]
 
         self.leaf = FederationEntity(**ENT.conf)
         self.leaf.function.trust_chain_collector.add_trust_anchor(
             self.ta1.entity_id, self.ta1.keyjar.export_jwks()
         )
-        self.leaf.server.get_context().authority_hints = [self.intermediate.entity_id]
 
         self.intermediate.server.subordinate = {
             self.leaf.entity_id: {
@@ -377,7 +382,6 @@ class TestFunction:
 
         self.ta2 = FederationEntity(**TA2.conf)
 
-        self.leaf.server.get_context().authority_hints.append(self.ta2.entity_id)
         self.leaf.function.trust_chain_collector.add_trust_anchor(
             self.ta2.entity_id, self.ta2.keyjar.export_jwks()
         )

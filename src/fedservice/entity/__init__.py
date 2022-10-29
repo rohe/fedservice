@@ -30,6 +30,7 @@ class FederationEntity(Unit):
                  httpc: Optional[object] = None,
                  httpc_params: Optional[dict] = None,
                  metadata: Optional[dict] = None,
+                 authority_hints: Optional[list] = None,
                  **kwargs
                  ):
 
@@ -41,14 +42,14 @@ class FederationEntity(Unit):
                       httpc_params=httpc_params, key_conf=key_conf, issuer_id=entity_id)
 
         self.metadata = metadata or {}
-
         _args = {
             "upstream_get": self.unit_get,
             "httpc": self.httpc,
             "httpc_params": self.httpc_params,
         }
 
-        self.context = FederationContext(entity_id=entity_id, upstream_get=self.unit_get)
+        self.context = FederationContext(entity_id=entity_id, upstream_get=self.unit_get,
+                                         authority_hints=authority_hints)
 
         self.client = self.server = self.function = None
         for key, val in [('client', client), ('server', server), ('function', function)]:
@@ -107,6 +108,9 @@ class FederationEntity(Unit):
         except KeyError:
             return None
 
+    def get_authority_hints(self, *args):
+        return self.context.authority_hints
+
     def pick_trust_chain(self, trust_chains):
         """
         Pick one trust chain out of the list of possible trust chains
@@ -143,182 +147,3 @@ def get_federation_entity(unit):
         return get_federation_entity(unit.upstream_get('unit'))
     else:
         return unit['federation_entity']
-
-# class FederationEntity(object):
-#     name = "federation_entity"
-#
-#     def __init__(self,
-#                  entity_id: str = "",
-#                  config: Optional[Union[dict, Configuration]] = None,
-#                  httpc: Optional[Any] = None,
-#                  cwd: Optional[str] = '',
-#                  httpc_params: Optional[dict] = None):
-#
-#         if config is None:
-#             config = {}
-#
-#
-#         self.context = FederationContext(config=config, entity_id=entity_id,
-#                                          entity_get=self.entity_get)
-#
-#         self.collector = Collector(trust_anchors=self.context.trusted_roots,
-#                                    http_cli=httpc, cwd=cwd, httpc_params=httpc_params)
-#
-#         if config.get("entity_id") is None:
-#             config['entity_id'] = entity_id
-#         if 'issuer' not in config:
-#             config['issuer'] = config["entity_id"]
-#
-#         if 'endpoint' in config:
-#             self.endpoint = do_endpoints(config, self.entity_get)
-#         else:
-#             self.endpoint = {}
-#
-#         if "service" in config:
-#             self.service = do_services(config, self.entity_get())
-#
-#     def collect_statement_chains(self, entity_id, statement):
-#         return self.collector.collect_superiors(entity_id, statement)
-#
-#     def eval_chains(self, chains, entity_type='', apply_policies=True):
-#         """
-#
-#         :param chains: A list of lists of signed JWT
-#         :param entity_type: The leafs entity type
-#         :param apply_policies: Apply metadata policies from the list on the the metadata of the
-#             leaf entity
-#         :return: List of TrustChain instances
-#         """
-#         _context = self.context
-#         if not entity_type:
-#             entity_type = _context.opponent_entity_type
-#
-#         return [eval_chain(c, _context.keyjar, entity_type, apply_policies) for c in chains]
-#
-#     def get_configuration_information(self, subject_id):
-#         return self.collector.get_configuration_information(subject_id)
-#
-#
-#     def get_payload(self, self_signed_statement):
-#         _jws = as_unicode(self_signed_statement)
-#         _jwt = factory(_jws)
-#         return _jwt.jwt.payload()
-#
-#     def collect_trust_chains(self, self_signed_statement, metadata_type):
-#         """
-#
-#         :param self_signed_statement: A Self signed Entity Statement
-#         :param metadata_type: One of the metadata types defined in the specification
-#         :return:
-#         """
-#         payload = self.get_payload(self_signed_statement)
-#
-#         # collect trust chains
-#         _tree = self.collect_statement_chains(payload['iss'], payload)
-#         _Unit = {payload['iss']: (self_signed_statement, _tree)}
-#         _chains = tree2chains(_Unit)
-#         logger.debug("%s chains", len(_chains))
-#
-#         # verify the trust paths and apply policies
-#         return [eval_chain(c, self.context.keyjar, metadata_type) for c in _chains]
-#
-#     def entity_get(self, what, *arg):
-#         _func = getattr(self, "get_{}".format(what), None)
-#         if _func:
-#             return _func(*arg)
-#         return None
-#
-#     def get_context(self, *arg):
-#         return self.context
-#
-#     def get_endpoint_context(self, *arg):
-#         return self.context
-#
-#     def federation_endpoint_metadata(self):
-#         _config = self.context.config
-#         metadata = {}
-#         # collect endpoints
-#         endpoints = {}
-#         for key, item in self.endpoint.items():
-#             if key in ["fetch", "list", "status", "evaluate"]:
-#                 endpoints[f"federation_{key}_endpoint"] = item.full_path
-#         for attr in message.FederationEntity.c_param.keys():
-#             if attr in _config:
-#                 metadata[attr] = _config[attr]
-#             elif attr in endpoints:
-#                 metadata[attr] = endpoints[attr]
-#         return {"federation_entity": metadata}
-#
-#     def get_metadata(self):
-#         return self.federation_endpoint_metadata()
-#
-#     def get_endpoints(self, *arg):
-#         return self.endpoint
-#
-#     def get_endpoint(self, endpoint_name, *arg):
-#         try:
-#             return self.endpoint[endpoint_name]
-#         except KeyError:
-#             return None
-#
-#     def get_entity(self):
-#         return self
-#
-#     def dump(self):
-#         return {
-#             "context": self.context.dump(),
-#             "collector": self.collector.dump()
-#         }
-#
-#     def load(self, dump):
-#         self.collector.load(dump.get("collector", {}))
-#         self.context.load(dump.get("context", {}))
-#
-#     def get_client_id(self):
-#         return self.context.entity_id
-#
-#     def do_services(self, config):
-#
-#
-# def create_federation_entity(entity_id, httpc=None, httpc_params=None, cwd="", **kwargs):
-#     args = {"httpc_params": httpc_params}
-#     _conf = {}
-#
-#     _key_conf = kwargs.get("keys")
-#     if _key_conf:
-#         kwargs["key_conf"] = _key_conf
-#
-#     for param in ['trusted_roots', 'authority_hints']:
-#         try:
-#             _conf[param] = load_json(kwargs[param])
-#         except KeyError:
-#             pass
-#
-#     for param in ['entity_type', 'priority', 'opponent_entity_type',
-#                   'registration_type', 'cwd', 'endpoint']:
-#         try:
-#             _conf[param] = kwargs[param]
-#         except KeyError:
-#             pass
-#
-#     for _key in ['key_conf', 'db_conf', 'issuer']:
-#         _value = kwargs.get(_key)
-#         if _value:
-#             _conf[_key] = _value
-#
-#     if _conf:
-#         _conf['httpc_params'] = args['httpc_params']
-#         args['config'] = _conf
-#
-#     federation_entity = FederationEntity(entity_id, httpc=httpc, cwd=cwd, **args)
-#
-#     add_ons = kwargs.get("add_on")
-#     if add_ons:
-#         for spec in add_ons.values():
-#             if isinstance(spec["function"], str):
-#                 _func = importer(spec["function"])
-#             else:
-#                 _func = spec["function"]
-#             _func(federation_entity, **spec["kwargs"])
-#
-#     return federation_entity

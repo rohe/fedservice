@@ -56,7 +56,8 @@ class TestComboCollect(object):
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
             },
-            key_conf = {"key_defs": KEYDEFS}
+            key_conf = {"key_defs": KEYDEFS},
+            authority_hints=[TA_ID]
         )
         INT.add_services()
         INT.add_functions()
@@ -71,11 +72,12 @@ class TestComboCollect(object):
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_conf={"key_defs": KEYDEFS},
+            authority_hints=[IM_ID]
         )
         RP.add_services()
         RP.add_functions()
-        RP.add_endpoints(metadata={"authority_hints": [IM_ID]}, **LEAF_ENDPOINT)
+        RP.add_endpoints({}, **LEAF_ENDPOINT)
 
         # Leaf OP
 
@@ -86,11 +88,12 @@ class TestComboCollect(object):
                 "homepage_uri": "https://op.example.com",
                 "contacts": "operations@op.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_conf={"key_defs": KEYDEFS},
+            authority_hints=[TA_ID]
         )
         OP.add_services()
         OP.add_functions()
-        OP.add_endpoints(metadata={"authority_hints": [TA_ID]}, **LEAF_ENDPOINT)
+        OP.add_endpoints({}, **LEAF_ENDPOINT)
 
         # TRUST ANCHOR
         self.ta = FederationEntity(**TA.conf, httpc=requests)

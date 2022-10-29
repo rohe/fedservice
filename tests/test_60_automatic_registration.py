@@ -91,11 +91,12 @@ class TestAutomatic(object):
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_conf={"key_defs": KEYDEFS},
+            authority_hints=[TA_ID]
         )
         INT.add_services()
         INT.add_functions()
-        INT.add_endpoints(metadata={"authority_hints": [TA_ID]})
+        INT.add_endpoints()
 
         # Intermediate
         self.im = FederationEntity(**INT.conf)
@@ -115,10 +116,11 @@ class TestAutomatic(object):
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
             },
+            authority_hints=[IM_ID]
         )
         RP_FE.add_services()
         RP_FE.add_functions()
-        RP_FE.add_endpoints(metadata={"authority_hints": [IM_ID]}, **LEAF_ENDPOINT)
+        RP_FE.add_endpoints(**LEAF_ENDPOINT)
         RP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
             'trust_anchors'] = ANCHOR
 
@@ -176,11 +178,12 @@ class TestAutomatic(object):
                 "organization_name": "The OP operator",
                 "homepage_uri": "https://op.example.com",
                 "contacts": "operations@op.example.com"
-            }
+            },
+            authority_hints=[TA_ID]
         )
         OP_FE.add_services()
         OP_FE.add_functions()
-        OP_FE.add_endpoints(metadata={"authority_hints": [TA_ID]}, **LEAF_ENDPOINT)
+        OP_FE.add_endpoints(**LEAF_ENDPOINT)
         OP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
             'trust_anchors'] = ANCHOR
 

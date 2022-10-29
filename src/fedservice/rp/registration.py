@@ -56,7 +56,7 @@ class Registration(registration.Registration):
         _combo = _federation_entity.upstream_get('unit')
         _md = _combo.get_metadata()
         _keyjar = _federation_entity.get_attribute("keyjar")
-        _authority_hints = _federation_entity.server.get_context().authority_hints
+        _authority_hints = _federation_entity.get_authority_hints()
         _context = _federation_entity.get_context()
         _entity_id = _federation_entity.upstream_get('attribute', 'entity_id')
         _jws = _context.create_entity_statement(
@@ -114,7 +114,7 @@ class Registration(registration.Registration):
         entity_statement = _jwt.verify_compact(resp, keys=keyjar.get_jwt_verify_keys(_jwt.jwt))
 
         _trust_anchor_id = entity_statement['trust_anchor_id']
-        logger.debug("trust_anchor_id: {}".format(_trust_anchor_id))
+        logger.debug(f"trust_anchor_id: {_trust_anchor_id}")
 
         if _trust_anchor_id not in _federation_entity.function.trust_chain_collector.trust_anchors:
             raise ValueError("Trust anchor I don't trust")
@@ -127,17 +127,16 @@ class Registration(registration.Registration):
         # based on the Federation ID, conclude which OP config to use and store the
         # provider configuration in its proper place.
         op_claims = chosen.metadata['openid_provider']
-        logger.debug("OP claims: {}".format(op_claims))
+        logger.debug(f"OP claims: {op_claims}")
         # _sc.trust_path = (chosen.anchor, _fe.op_paths[statement.anchor][0])
         _context = self.upstream_get('context')
         _context.provider_info = ProviderConfigurationResponse(**op_claims)
 
-        _authority_hints = _federation_entity.server.get_context().authority_hints
         _chains, _ = collect_trust_chains(self.upstream_get('unit'),
                                           entity_id=entity_statement['sub'],
                                           signed_entity_configuration=resp,
                                           stop_at=_trust_anchor_id,
-                                          authority_hints=_authority_hints)
+                                          authority_hints=_federation_entity.get_authority_hints())
 
         _trust_chains = verify_trust_chains(_federation_entity, _chains, resp,
                                             _federation_entity.entity_configuration)
@@ -175,7 +174,7 @@ class Registration(registration.Registration):
         try:
             resp = _collector.http_cli(method, url, data=body, headers=headers, **httpc_args)
         except Exception as err:
-            logger.error('Exception on request: {}'.format(err))
+            logger.error(f'Exception on request: {err}')
             raise
 
         if 300 <= resp.status_code < 400:

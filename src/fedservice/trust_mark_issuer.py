@@ -112,6 +112,7 @@ class TrustMarkIssuer(FederationEntity):
                  metadata: Optional[dict] = None,
                  trust_marks: Optional[dict] = None,
                  trust_mark_db: Optional[object] = None,
+                 authority_hints: Optional[list] = None,
                  **kwargs
                  ):
 
@@ -126,7 +127,9 @@ class TrustMarkIssuer(FederationEntity):
             function=function,
             httpc=httpc,
             httpc_params=httpc_params,
-            metadata=metadata)
+            metadata=metadata,
+            authority_hints=authority_hints
+        )
 
         if upstream_get:  # Not to have keys on my own if there is a superior
             self.keyjar = None

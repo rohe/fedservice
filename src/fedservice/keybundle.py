@@ -49,20 +49,19 @@ class KeyBundle(key_bundle.KeyBundle):
         try:
             if response.headers["Content-Type"] == 'application/json':
                 logger.debug(
-                    "Loaded JWKS: %s from %s" % (response.text, self.source))
+                    f"Loaded JWKS: {response.text} from {self.source}")
                 try:
                     return json.loads(response.text)
                 except ValueError:
                     return None
             elif response.headers["Content-Type"] == 'application/jwt':
                 logger.debug(
-                    "Signed JWKS: %s from %s" % (response.text, self.source))
+                    f"Signed JWKS: {response.text} from {self.source}")
                 _jwt = JWT(key_jar=self.federation_keys)
                 _resp = _jwt.unpack(response.text)
                 return _resp
             else:
-                logger.error('Wrong content type: {}'.format(
-                    response.headers['Content-Type']))
+                logger.error(f"Wrong content type: {response.headers['Content-Type']}")
                 raise ValueError('Content-type mismatch')
         except KeyError:
             pass

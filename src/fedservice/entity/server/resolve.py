@@ -6,6 +6,7 @@ from idpyoidc.message import oidc
 from idpyoidc.message import Message
 from idpyoidc.server.endpoint import Endpoint
 
+from fedservice.entity import get_federation_entity
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
@@ -24,7 +25,7 @@ class Resolve(Endpoint):
         Endpoint.__init__(self, upstream_get, **kwargs)
 
     def process_request(self, request=None, **kwargs):
-        _federation_entity = self.upstream_get('unit').upstream_get('unit')
+        _federation_entity = get_federation_entity(self)
         _trust_anchor = request['anchor']
 
         # verified trust chains with policy adjusted metadata

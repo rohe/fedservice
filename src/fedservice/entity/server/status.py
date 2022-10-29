@@ -21,7 +21,7 @@ class TrustMarkStatus(Endpoint):
     def __init__(self, upstream_get, **kwargs):
         Endpoint.__init__(self, upstream_get, **kwargs)
 
-    def process_request(self, request=None, **kwargs):
+    def process_request(self, request: Optional[dict] = None, **kwargs):
         _tmi = self.upstream_get('server').upstream_get('unit')
 
         if 'trust_mark' in request:

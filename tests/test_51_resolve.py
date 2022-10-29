@@ -67,11 +67,12 @@ class TestComboCollect(object):
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_conf={"key_defs": KEYDEFS},
+            authority_hints=[TA_ID]
         )
         INT.add_services()
         INT.add_functions()
-        INT.add_endpoints(metadata={"authority_hints": [TA_ID]})
+        INT.add_endpoints()
 
         # Intermediate
         self.im = FederationEntity(**INT.conf)
@@ -90,10 +91,11 @@ class TestComboCollect(object):
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
             },
+            authority_hints=[IM_ID]
         )
         RP_FE.add_services()
         RP_FE.add_functions()
-        RP_FE.add_endpoints(metadata={"authority_hints": [IM_ID]}, **LEAF_ENDPOINT)
+        RP_FE.add_endpoints(None, **LEAF_ENDPOINT)
         RP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
             'trust_anchors'] = ANCHOR
 
@@ -135,11 +137,12 @@ class TestComboCollect(object):
                 "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
-            }
+            },
+            authority_hints=[TA_ID]
         )
         RESOLVER.add_services()
         RESOLVER.add_functions()
-        RESOLVER.add_endpoints(metadata={"authority_hints": [TA_ID]})
+        RESOLVER.add_endpoints()
         RESOLVER.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
             'trust_anchors'] = ANCHOR
         self.resolver = FederationEntity(**RESOLVER.conf)

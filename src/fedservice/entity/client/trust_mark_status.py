@@ -3,8 +3,10 @@ from typing import Optional
 from typing import Union
 from urllib.parse import urlencode
 
+from cryptojwt.jws.jws import factory
 from idpyoidc.client.configure import Configuration
 from idpyoidc.client.service import Service
+from idpyoidc.exception import MissingAttribute
 from idpyoidc.message import oauth2
 from idpyoidc.message.oauth2 import ResponseMessage
 
@@ -49,13 +51,15 @@ class TrustMarkStatus(Service):
         if not method:
             method = self.http_method
 
-        if not fetch_endpoint:
-            raise AttributeError("Missing endpoint")
-
         if "trust_mark" in request_args:
             _q_args = {'trust_mark': request_args["trust_mark"]}
+            _jws = factory(request_args["trust_mark"])
+            tm_payload = _jws.jwt.payload()
+            fetch_endpoint = tm_payload['iss']
         else:
-            _q_args = {k:v for k,v in request_args.items() if k in ['sub', 'id', 'iat']}
+            _q_args = {k: v for k, v in request_args.items() if k in ['sub', 'id', 'iat']}
+            if not fetch_endpoint:
+                raise MissingAttribute('fetch_endpoint')
 
         _url = f"{fetch_endpoint}?{urlencode(_q_args)}"
 

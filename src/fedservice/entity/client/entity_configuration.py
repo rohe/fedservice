@@ -19,12 +19,12 @@ WELL_KNOWN_PATTERN = "{}/.well-known/openid-federation"
 
 def construct_well_known_url(entity_id, typ):
     p = urlparse(entity_id)
-    return '{}://{}/.well-known/{}'.format(p.scheme, p.netloc, typ)
+    return f'{p.scheme}://{p.netloc}/.well-known/{typ}'
 
 
 def construct_tenant_well_known_url(entity_id, typ):
     p = urlparse(entity_id)
-    return '{}://{}{}/.well-known/{}'.format(p.scheme, p.netloc, p.path, typ)
+    return f'{p.scheme}://{p.netloc}{p.path}/.well-known/{typ}'
 
 
 class EntityConfiguration(Service):

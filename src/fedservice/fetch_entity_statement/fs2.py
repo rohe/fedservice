@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def read_info(dir, sub, typ='metadata'):
-    file_name = os.path.join(dir, sub, "{}.json".format(typ))
+    file_name = os.path.join(dir, sub, f"{typ}.json")
     if os.path.isfile(file_name):
         return json.loads(open(file_name).read())
     else:

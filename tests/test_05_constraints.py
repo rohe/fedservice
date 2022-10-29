@@ -5,6 +5,7 @@ from fedservice.entity_statement.constraints import calculate_path_length
 from fedservice.entity_statement.constraints import excluded
 from fedservice.entity_statement.constraints import permitted
 from fedservice.entity_statement.constraints import update_naming_constraints
+from fedservice.entity_statement.statement import TrustChain
 from fedservice.exception import UnknownCriticalExtension
 from fedservice.message import Constraints
 from fedservice.message import EntityStatement
@@ -302,3 +303,4 @@ def test_policy_language_crit_not_supported():
 
     with pytest.raises(UnknownCriticalExtension):
         _statement.verify()
+

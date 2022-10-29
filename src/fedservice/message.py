@@ -6,6 +6,7 @@ from cryptojwt.jwt import utc_time_sans_frac
 from idpyoidc import message
 from idpyoidc.exception import MissingRequiredAttribute
 from idpyoidc.message import Message
+from idpyoidc.message import msg_ser
 from idpyoidc.message import OPTIONAL_LIST_OF_SP_SEP_STRINGS
 from idpyoidc.message import OPTIONAL_LIST_OF_STRINGS
 from idpyoidc.message import OPTIONAL_MESSAGE
@@ -16,17 +17,16 @@ from idpyoidc.message import SINGLE_OPTIONAL_JSON
 from idpyoidc.message import SINGLE_OPTIONAL_STRING
 from idpyoidc.message import SINGLE_REQUIRED_INT
 from idpyoidc.message import SINGLE_REQUIRED_STRING
-from idpyoidc.message import msg_ser
 from idpyoidc.message.oauth2 import ResponseMessage
+from idpyoidc.message.oidc import deserialize_from_one_of
+from idpyoidc.message.oidc import dict_deser
 from idpyoidc.message.oidc import JsonWebToken
+from idpyoidc.message.oidc import msg_ser_json
 from idpyoidc.message.oidc import ProviderConfigurationResponse
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.message.oidc import RegistrationResponse
 from idpyoidc.message.oidc import SINGLE_OPTIONAL_BOOLEAN
 from idpyoidc.message.oidc import SINGLE_OPTIONAL_DICT
-from idpyoidc.message.oidc import deserialize_from_one_of
-from idpyoidc.message.oidc import dict_deser
-from idpyoidc.message.oidc import msg_ser_json
 
 from fedservice.exception import UnknownCriticalExtension
 from fedservice.exception import WrongSubject
@@ -452,6 +452,20 @@ class TrustMark(JsonWebToken):
                 raise Expired()
 
         return True
+
+
+class TrustMarkRequest(Message):
+    c_param = {
+        "sub": SINGLE_OPTIONAL_STRING,
+        "id": SINGLE_OPTIONAL_STRING,
+        "iat": SINGLE_OPTIONAL_INT,
+        "trust_mark": SINGLE_OPTIONAL_STRING
+    }
+
+    def verify(self, **kwargs):
+        if 'trust_mark' not in self:
+            if 'sub' not in self or 'id' not in self:
+                raise AttributeError('Must have both "sub" and "id" or "trust_mark"')
 
 
 def trust_mark_deser(val, sformat="json"):

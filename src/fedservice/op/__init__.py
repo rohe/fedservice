@@ -31,7 +31,7 @@ def do_endpoints(conf, upstream_get):
 
 
 class ServerEntity(ServerUnit):
-    name = 'openid-provider'
+    name = 'openid_provider'
     parameter = {"endpoint": [Endpoint], "endpoint_context": EndpointContext}
 
     def __init__(
@@ -61,7 +61,7 @@ class ServerEntity(ServerUnit):
         self.config = config
         self.endpoint_context = EndpointContext(
             conf=config,
-            upstream_get=self.server_get,
+            upstream_get=self.unit_get,
             cwd=cwd,
             cookie_handler=cookie_handler,
             httpc=httpc,
@@ -70,14 +70,14 @@ class ServerEntity(ServerUnit):
 
         self.setup_authentication(self.endpoint_context)
 
-        self.endpoint = do_endpoints(config, self.server_get)
+        self.endpoint = do_endpoints(config, self.unit_get)
         _cap = get_provider_capabilities(config, self.endpoint)
 
         self.endpoint_context.provider_info = self.endpoint_context.create_providerinfo(_cap)
         self.endpoint_context.do_add_on(endpoints=self.endpoint)
 
         self.endpoint_context.session_manager = create_session_manager(
-            self.server_get,
+            self.unit_get,
             self.endpoint_context.th_args,
             sub_func=self.endpoint_context._sub_func,
             conf=config,
@@ -105,12 +105,6 @@ class ServerEntity(ServerUnit):
         if _id_token_handler:
             self.endpoint_context.provider_info.update(_id_token_handler.provider_info)
 
-    def server_get(self, what, *arg):
-        _func = getattr(self, "get_{}".format(what), None)
-        if _func:
-            return _func(*arg)
-        return None
-
     def get_endpoints(self, *arg):
         return self.endpoint
 
@@ -132,15 +126,15 @@ class ServerEntity(ServerUnit):
     def setup_authz(self):
         authz_spec = self.config.get("authz")
         if authz_spec:
-            return init_service(authz_spec, self.server_get)
+            return init_service(authz_spec, self.unit_get)
         else:
-            return authz.Implicit(self.server_get)
+            return authz.Implicit(self.unit_get)
 
     def setup_authentication(self, target):
         _conf = self.config.get("authentication")
         if _conf:
             target.authn_broker = populate_authn_broker(
-                _conf, self.server_get, target.template_handler
+                _conf, self.unit_get, target.template_handler
             )
         else:
             target.authn_broker = {}
@@ -170,5 +164,5 @@ class ServerEntity(ServerUnit):
 
     def setup_client_authn_methods(self):
         self.endpoint_context.client_authn_method = client_auth_setup(
-            self.server_get, self.config.get("client_authn_methods")
+            self.unit_get, self.config.get("client_authn_methods")
         )

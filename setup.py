@@ -53,7 +53,7 @@ setup(
     url='https://github.com/IdentityPython/oidcrp/',
     packages=["fedservice", "fedservice/entity_statement",
               "fedservice/fetch_entity_statement", "fedservice/entity",
-              "fedservice/rp", "fedservice/op", "fedservice/op/add_on",
+              "fedservice/rp", "fedservice/op",
               "fedservice/entity/client", "fedservice/entity/server",
               "fedservice/entity/function", "fedservice/combo"
               ],

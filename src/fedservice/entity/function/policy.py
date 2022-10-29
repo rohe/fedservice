@@ -129,7 +129,7 @@ def combine_claim_policy(superior, child):
                     return {"value": superior["value"], "essential": child["essential"]}
                 else:
                     raise PolicyError(
-                        "value can only be combined with essential, not {}".format(child_set))
+                        f"value can only be combined with essential, not {child_set}")
             elif "value" in child_set:
                 if child["value"] != superior["value"]:  # Not OK
                     raise PolicyError("Child can not set another value then superior")
@@ -137,7 +137,7 @@ def combine_claim_policy(superior, child):
                     return superior
             else:
                 raise PolicyError(
-                    "Not allowed combination of policies: {} + {}".format(superior, child))
+                    f"Not allowed combination of policies: {superior} + {child}")
         return superior
     else:
         if "essential" in superior_set and "essential" in child_set:
@@ -273,7 +273,7 @@ class TrustChainPolicy(Function):
                             pass
                         else:
                             raise PolicyError(
-                                "{} not among {}".format(metadata[claim], policy[claim]['one_of']))
+                                f"{metadata[claim]} not among {policy[claim]['one_of']}")
                 else:
                     # The following is for claims that can have lists of values
                     if "add" in policy[claim]:
@@ -305,7 +305,7 @@ class TrustChainPolicy(Function):
 
             if claim not in metadata:
                 if "essential" in policy[claim] and policy[claim]["essential"]:
-                    raise PolicyError("Essential claim '{}' missing".format(claim))
+                    raise PolicyError(f"Essential claim '{claim}' missing")
 
         # All that are in metadata but not in policy should just remain
 

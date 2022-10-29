@@ -1,4 +1,4 @@
-def create_authority_hints(default_hints, trust_chains):
+def create_authority_hints(trust_chains):
     """
 
     :param default_hints: The authority hints provided to the entity at startup
@@ -6,9 +6,4 @@ def create_authority_hints(default_hints, trust_chains):
     :return: An authority_hints dictionary
     """
 
-    intermediates = {trust_chain.iss_path[1] for trust_chain in trust_chains if
-                     len(trust_chain.iss_path)}
-    if not default_hints:
-        return list(intermediates)
-    else:
-        return list(set(default_hints).intersection(intermediates))
+    return {trust_chain.iss_path[0] for trust_chain in trust_chains if len(trust_chain.iss_path)}

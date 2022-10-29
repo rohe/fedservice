@@ -1,22 +1,11 @@
 import json
 import os
 
+import pytest
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import init_key_jar
-from idpyoidc.server.util import execute
-import pytest
 
-from fedservice.defaults import LEAF_ENDPOINT
 from fedservice.entity import FederationEntity
-from fedservice.entity.client import FederationEntityClient
-from fedservice.entity.client.entity_configuration import \
-    EntityConfiguration as c_EntityConfiguration
-from fedservice.entity.client.entity_statement import EntityStatement
-from fedservice.entity.server import FederationEntityServer
-from fedservice.entity.server.entity_configuration import \
-    EntityConfiguration as s_EntityConfiguration
-from fedservice.entity.server.fetch import Fetch
-from fedservice.entity.server.list import List
 from tests.build_entity import FederationEntityBuilder
 
 KEYDEFS = [
@@ -48,11 +37,12 @@ class TestFederationEntity(object):
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"uri_path": "static/fed_jwks.json", "key_defs": KEYDEFS}
+            key_conf={"uri_path": "static/fed_jwks.json", "key_defs": KEYDEFS},
+            authority_hints=['https://ntnu.no']
         )
         ENT.add_services()
         ENT.add_functions()
-        ENT.add_endpoints(metadata={"authority_hints": ['https://ntnu.no']})
+        ENT.add_endpoints()
         ENT.set_attr(
             'server',
             {

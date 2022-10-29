@@ -15,11 +15,14 @@ class FederationEntityBuilder():
     def __init__(self,
                  entity_id: Optional[str] = '',
                  metadata: Optional[dict] = None,
-                 key_conf: Optional[dict] = None):
+                 key_conf: Optional[dict] = None,
+                 authority_hints: Optional[list] = None
+                 ):
         self.conf = {
             "entity_id": entity_id,
             "key_conf": key_conf,
-            "metadata": metadata
+            "metadata": metadata,
+            "authority_hints": authority_hints
         }
 
     def add_services(self, metadata: Optional[dict] = None, **services):
@@ -78,7 +81,8 @@ class TrustMarkIssuerBuilder():
                  entity_id: Optional[str] = '',
                  metadata: Optional[dict] = None,
                  key_conf: Optional[dict] = None,
-                 trust_marks: Optional[dict] = None
+                 trust_marks: Optional[dict] = None,
+                 authority_hints: Optional[list] = None,
                  ):
         if key_conf is None:
             key_conf = {"key_defs": KEYDEFS}
@@ -89,7 +93,8 @@ class TrustMarkIssuerBuilder():
             "entity_id": entity_id,
             "key_conf": key_conf,
             "metadata": metadata,
-            "trust_marks": trust_marks
+            "trust_marks": trust_marks,
+            "authority_hints": authority_hints
         }
 
     def add_endpoints(self, metadata: Optional[dict] = None, **endpoints):

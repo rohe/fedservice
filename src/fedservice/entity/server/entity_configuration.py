@@ -21,8 +21,8 @@ class EntityConfiguration(Endpoint):
 
     def process_request(self, request=None, **kwargs):
         _server = self.upstream_get("unit")
-        _entity_id = _server.upstream_get('attribute', 'entity_id')
         _entity = _server.upstream_get('unit')
+        _entity_id = _entity.get_attribute('entity_id')
         if _entity.upstream_get:
             _metadata = _entity.upstream_get("metadata")
         else:
@@ -31,5 +31,5 @@ class EntityConfiguration(Endpoint):
                                       sub=_entity_id,
                                       key_jar=_entity.get_attribute('keyjar'),
                                       metadata=_metadata,
-                                      authority_hints=_server.get_context().authority_hints)
+                                      authority_hints=_server.upstream_get('authority_hints'))
         return {"response": _ec}

@@ -24,7 +24,7 @@ class FederationContext(ImpExp):
         "tr_priority": [],
         "trust_mark_issuer": None,
         "signed_trust_marks": [],
-        "trust_marks": []
+        "trust_marks": [],
     })
 
     def __init__(self,
@@ -33,9 +33,13 @@ class FederationContext(ImpExp):
                  upstream_get: Callable = None,
                  default_lifetime: Optional[int] = 86400,
                  metadata: Optional[dict] = None,
-                 tr_priority: Optional[list] = None,
+                 priority: Optional[list] = None,
+                 trust_marks: Optional[list] = None,
+                 trusted_roots: Optional[dict] = None,
+                 authority_hints: Optional[list] = None,
                  **kwargs
                  ):
+
         ImpExp.__init__(self)
 
         if config is None:
@@ -45,16 +49,33 @@ class FederationContext(ImpExp):
         self.upstream_get = upstream_get
         self.entity_id = entity_id or config.get("entity_id")
         self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
-        self.tr_priority = tr_priority or config.get("trust_root_priority", [])
+        self.trust_marks = trust_marks or config.get('trust_marks')
 
-        if metadata:
-            _hints = metadata.get("authority_hints")
-            if _hints is None:
-                self.authority_hints = []
-            elif isinstance(_hints, str):
-                self.authority_hints = json.loads(open(_hints).read())
+        if trusted_roots:
+            _trusted_roots = trusted_roots
+        else:
+            _trusted_roots = config.get("trusted_roots")
+
+        if _trusted_roots is None:
+            # Must be trust anchor then
+            self.trusted_roots = {}
+        elif isinstance(_trusted_roots, str):
+            self.trusted_roots = json.loads(open(_trusted_roots).read())
+        else:
+            self.trusted_roots = _trusted_roots
+
+        if priority:
+            self.tr_priority = priority
+        elif 'priority' in config:
+            self.tr_priority = config["priority"]
+        else:
+            self.tr_priority = sorted(set(self.trusted_roots.keys()))
+
+        if authority_hints:
+            if isinstance(authority_hints, str):   # Allow it to be a file name
+                self.authority_hints = json.loads(open(authority_hints).read())
             else:
-                self.authority_hints = _hints
+                self.authority_hints = authority_hints
         else:
             self.authority_hints = []
 
@@ -89,20 +110,6 @@ class FederationContext(ImpExp):
                                        authority_hints=authority_hints, lifetime=lifetime, **kwargs)
 
 
-def create_self_signed_trust_marks(spec, **kwargs):
-    if isinstance(spec["function"], str):
-        _func = importer(spec["function"])
-    else:
-        _func = spec["function"]
-
-    res = []
-    for id, content in spec["kwargs"].items():
-        _args = kwargs.copy()
-        _args.update(content)
-        res.append(_func(id=id, sub=id, **_args))
-    return res
-
-
 class FederationServerContext(FederationContext):
     def __init__(self,
                  config: Optional[Union[dict, Configuration]] = None,
@@ -110,12 +117,14 @@ class FederationServerContext(FederationContext):
                  upstream_get: Callable = None,
                  metadata: Optional[dict] = None,
                  trust_marks: Optional[List[str]] = None,
+                 authority_hints: Optional[list] = None,
                  ):
         FederationContext.__init__(self,
                                    config=config,
                                    entity_id=entity_id,
                                    upstream_get=upstream_get,
-                                   metadata=metadata
+                                   metadata=metadata,
+                                   authority_hints=authority_hints,
                                    )
         if metadata is None:
             metadata = {}
@@ -123,26 +132,11 @@ class FederationServerContext(FederationContext):
         self.metadata = {k: v for k, v in metadata.items() if k != 'authority_hints'}
 
         _sstm = config.get("self_signed_trust_marks")
-        _keyjar = upstream_get('attribute', "keyjar")
         if _sstm:
-            self.signed_trust_marks = create_self_signed_trust_marks(entity_id=self.entity_id,
-                                                                     keyjar=_keyjar,
-                                                                     spec=_sstm)
+            _keyjar = upstream_get('attribute', "keyjar")
+            self.signed_trust_marks = self.create_entity_statement(iss=self.entity_id,
+                                                                   sub=self.entity_id,
+                                                                   keyjar=_keyjar,
+                                                                   trust_marks=_sstm)
 
         self.trust_marks = trust_marks
-
-    def make_configuration_statement(self):
-        _metadata = self.upstream_get("metadata")
-        kwargs = {}
-        if self.authority_hints:
-            kwargs["authority_hints"] = self.authority_hints
-        if self.trust_marks:
-            kwargs["trust_marks"] = self.trust_marks
-        if self.signed_trust_marks:
-            if "trust_marks" in kwargs:
-                kwargs["trust_marks"].extend(self.signed_trust_marks)
-            else:
-                kwargs["trust_marks"] = self.signed_trust_marks
-
-        return self.create_entity_statement(iss=self.entity_id, sub=self.entity_id,
-                                            metadata=_metadata, **kwargs)

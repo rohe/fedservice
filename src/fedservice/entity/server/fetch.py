@@ -37,7 +37,7 @@ class Fetch(Endpoint):
                                           sub=_entity.context.entity_id,
                                           key_jar=_keyjar,
                                           metadata=_metadata,
-                                          authority_hints=_server.endpoint_context.authority_hints)
+                                          authority_hints=self.upstream_get('authority_hints'))
         else:
             _response = self.upstream_get('unit').subordinate[_sub]
             _response["authority_hints"] = [_issuer]

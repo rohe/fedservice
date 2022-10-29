@@ -130,7 +130,7 @@ class Server(ImpExp):
             self.endpoint[endpoint_name].server_get = self.server_get
 
     def unit_get(self, what, *arg):
-        _func = getattr(self, "get_{}".format(what), None)
+        _func = getattr(self, f"get_{what}", None)
         if _func:
             return _func(*arg)
         return None
