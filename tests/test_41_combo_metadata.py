@@ -6,16 +6,6 @@ import pytest
 from fedservice.combo import FederationCombo
 from fedservice.defaults import LEAF_ENDPOINT
 from fedservice.entity import FederationEntity
-from fedservice.entity.client import FederationEntityClient
-from fedservice.entity.client.entity_configuration import \
-    EntityConfiguration as c_EntityConfiguration
-from fedservice.entity.client.entity_statement import EntityStatement
-from fedservice.entity.function.trust_chain_collector import TrustChainCollector
-from fedservice.entity.server import FederationEntityServer
-from fedservice.entity.server.entity_configuration import \
-    EntityConfiguration as s_EntityConfiguration
-from fedservice.entity.server.fetch import Fetch
-from fedservice.entity.server.status import TrustMarkStatus
 from fedservice.trust_mark_issuer import TrustMarkIssuer
 from tests.build_entity import FederationEntityBuilder
 from tests.build_entity import TrustMarkIssuerBuilder

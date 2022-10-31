@@ -8,8 +8,8 @@ from idpyoidc.client.client_auth import PrivateKeyJWT
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.defaults import JWT_BEARER
 from idpyoidc.message.oidc import AccessTokenRequest
-import pytest
 from idpyoidc.node import topmost_unit
+import pytest
 
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
@@ -155,7 +155,13 @@ class TestRpService(object):
         assert statement.anchor == 'https://feide.no'
         self.disco_service.update_service_context(statements)
         assert set(self.disco_service.upstream_get("context").get('behaviour').keys()) == {
-            'application_type', 'response_types', 'grant_types', 'redirect_uris'}
+            'application_type',
+            'grant_types',
+            'id_token_signed_response_alg',
+            'redirect_uris',
+            'response_types',
+            'token_endpoint_auth_method'
+        }
         # 'grant_types', 'id_token_signed_response_alg',
         # 'token_endpoint_auth_method', 'federation_type'}
 
@@ -193,7 +199,12 @@ class TestRpService(object):
         assert set(payload.keys()) == {'trust_marks', 'sub', 'iss', 'metadata', 'jwks', 'exp',
                                        'iat', 'authority_hints'}
         assert set(payload['metadata']['openid_relying_party'].keys()) == {
-            'grant_types', 'application_type', 'redirect_uris', 'response_types'}
+            'application_type',
+            'grant_types',
+            'id_token_signed_response_alg',
+            'redirect_uris',
+            'response_types',
+            'token_endpoint_auth_method'}
 
     def test_parse_registration_response(self):
         # construct the entity statement the OP should return
@@ -267,8 +278,10 @@ class TestRpService(object):
                                       'client_secret',
                                       'contacts',
                                       'grant_types',
+                                      'id_token_signed_response_alg',
                                       'redirect_uris',
-                                      'response_types'}
+                                      'response_types',
+                                      'token_endpoint_auth_method'}
 
 
 class TestRpServiceAuto(object):

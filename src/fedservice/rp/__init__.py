@@ -53,6 +53,10 @@ class ClientEntity(ClientUnit):
                             httpc_params=httpc_params, context=context, config=config,
                             entity_id=entity_id, key_conf=key_conf)
 
+        if 'metadata' in config:
+            config.update(config['metadata'])
+            del config['metadata']
+
         if context:
             self._service_context = context
         else:

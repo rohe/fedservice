@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class FederationEntityServer(ServerUnit):
-    name = 'federation_entity'
+    name = 'federation_entitygi'
     parameter = {"endpoint": [Endpoint], "endpoint_context": EndpointContext}
 
     def __init__(
@@ -32,9 +32,11 @@ class FederationEntityServer(ServerUnit):
             entity_id: Optional[str] = "",
             endpoint: Optional[dict] = None,
             metadata: Optional[dict] = None,
-            subordinate: Optional[dict] = None,
+            # subordinate: Optional[dict] = None,
+            # policy: Optional[dict] = None,
             httpc: Optional[object] = None,
             httpc_params: Optional[dict] = None,
+            **kwargs
     ):
         if config is None:
             config = {}
@@ -54,15 +56,18 @@ class FederationEntityServer(ServerUnit):
         for endpoint_name, _ in self.endpoint.items():
             self.endpoint[endpoint_name].unit_get = self.unit_get
 
-        if subordinate:
-            if 'class' in subordinate:
-                _kwargs = subordinate["kwargs"]
-                _kwargs.update({"server_get": self.unit_get})
-                self.subordinate = instantiate(subordinate["class"], **_kwargs)
-            else:
-                self.subordinate = subordinate
-        else:
-            self.subordinate = {}
+        self.policy = {}
+        self.subordinate = {}
+
+        for attr in ['policy', 'subordinate']:
+            spec = kwargs.get(attr)
+            if spec:
+                if 'class' in spec:
+                    _kwargs = spec["kwargs"]
+                    _kwargs.update({"server_get": self.unit_get})
+                    setattr(self, attr, instantiate(spec["class"], **_kwargs))
+                else:
+                    setattr(self, attr, spec)
 
     def get_endpoints(self, *arg):
         return self.endpoint
