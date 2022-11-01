@@ -2,6 +2,7 @@ import os
 
 import pytest
 import responses
+from cryptojwt.jws.jws import factory
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.oidc.token import Token
 from idpyoidc.server.oidc.userinfo import UserInfo
@@ -328,10 +329,15 @@ class TestAutomatic(object):
 
         assert self.rp['openid_relying_party'].get_context().provider_info
 
+        ####################################################
+        # [2] Let the RP construct the registration request
+
         _reg_service = self.rp['openid_relying_party'].get_service('registration')
         reg_request = _reg_service.construct()
 
-        _msgs = create_trust_chain_messages(self.rp, self.im, self.ta)
+        ###############################################################
+        # [3] The OP receives a registration request and responds to it
+        _msgs = create_trust_chain_messages(self.rp.entity_id, self.im, self.ta)
         # add the jwks_uri
         _msgs[self.rp['openid_relying_party'].get_context().jwks_uri] = self.rp[
             'openid_relying_party'].keyjar.export_jwks_as_json()
@@ -342,11 +348,93 @@ class TestAutomatic(object):
                          adding_headers={"Content-Type": "application/json"}, status=200)
 
             # The OP handles the registration request
-            req = self.op['openid_provider'].get_endpoint('registration').parse_request(
-                reg_request.to_dict())
+            resp = self.op['openid_provider'].get_endpoint('registration').process_request(
+                reg_request)
 
-        assert "response_type" in req
+        assert resp["response_code"] == 201
 
-        # Assert that the client's entity_id has been registered as a client
-        assert self.rp.entity_id in self.op['openid_provider'].get_context().cdb
+        _jws = factory(resp['response_msg'])
+        _payload = _jws.jwt.payload()
+        assert _payload['iss'] == self.op.entity_id
+        assert _payload['sub'] == self.rp.entity_id
+        assert _payload['trust_anchor_id'] == self.ta.entity_id
+        assert _payload['aud'] == self.rp.entity_id
 
+
+        ###########################################################################
+        # [4] The RP receives the registration response and calculates the metadata
+
+        _msgs = create_trust_chain_messages(self.rp.entity_id, self.im, self.ta)
+        # Don't need the Entity Configuration for the RP
+        del _msgs[f"{self.ta.entity_id}/.well-known/openid-federation"]
+
+        with responses.RequestsMock() as rsps:
+            for _url, _jwks in _msgs.items():
+                rsps.add("GET", _url, body=_jwks,
+                         adding_headers={"Content-Type": "application/json"}, status=200)
+
+            reg_resp = _reg_service.parse_response(resp['response_msg'])
+
+        assert reg_resp
+        assert 'client_id' in reg_resp
+
+
+    # def test_create_explicit_registration_request(self):
+    #     # phase 1 : the RP gathers the OpenID Providers metadata
+    #     _rp = self.rp['openid_relying_party']
+    #     _rp._service_context.issuer = self.op.entity_id
+    #     provider_info = _rp.get_service('provider_info')
+    #
+    #     # Just to verify that the request URL is the right one
+    #     req = provider_info.get_request_parameters()
+    #     assert req['url'] == 'https://op.example.org/.well-known/openid-federation?iss=https%3A%2F%2Fop.example.org'
+    #
+    #     where_and_what = create_trust_chain_messages(self.op, self.ta)
+    #
+    #     with responses.RequestsMock() as rsps:
+    #         for _url, _jwks in where_and_what.items():
+    #             rsps.add("GET", _url, body=_jwks,
+    #                      adding_headers={"Content-Type": "application/json"}, status=200)
+    #
+    #         _rp.do_request('provider_info')
+    #
+    #     # Phase 2: The RP creates a registration request
+    #     _rp = self.rp['openid_relying_party']
+    #     _registration = _rp.get_service('registration')
+    #
+    #     req = _registration.get_request_parameters()
+    #     assert req['url'] == 'https://op.example.org/registration'
+    #
+    #     where_and_what = create_trust_chain_messages(self.rp.entity_id, self.im, self.ta)
+    #
+    #     # Phase 3: The OP receives a registration request and responds to it.
+    #
+    #     with responses.RequestsMock() as rsps:
+    #         for _url, _jwks in where_and_what.items():
+    #             rsps.add("GET", _url, body=_jwks,
+    #                      adding_headers={"Content-Type": "application/json"}, status=200)
+    #
+    #         _endpoint = self.op['openid_provider'].get_endpoint('registration')
+    #         resp = _endpoint.process_request(req['body'])
+    #
+    #     assert resp['response_code'] == 201
+    #     _jws = factory(resp['response_msg'])
+    #     _payload = _jws.jwt.payload()
+    #     assert _payload['iss'] == self.op.entity_id
+    #     assert _payload['sub'] == self.rp.entity_id
+    #     assert _payload['trust_anchor_id'] == self.ta.entity_id
+    #     assert _payload['aud'] == self.rp.entity_id
+    #
+    #     # The Entity Configuration is cached
+    #     del where_and_what[f"{self.ta.entity_id}/.well-known/openid-federation"]
+    #
+    #     # Phase 4: The RP receives the registration response and calculates the metadata
+    #     with responses.RequestsMock() as rsps:
+    #         for _url, _jwks in where_and_what.items():
+    #             rsps.add("GET", _url, body=_jwks,
+    #                      adding_headers={"Content-Type": "application/json"}, status=200)
+    #
+    #         reg_resp = _registration.parse_response(resp['response_msg'])
+    #
+    #     assert reg_resp
+    #     assert 'client_id' in reg_resp

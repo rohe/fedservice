@@ -49,6 +49,7 @@ class Registration(registration.Registration):
         _trust_chains = apply_policies(_federation_entity, _trust_chains)
         trust_chain = _federation_entity.pick_trust_chain(_trust_chains)
         _federation_entity.trust_chain_anchor = trust_chain.anchor
+        # Perform non-federation registration
         req = RegistrationRequest(**trust_chain.metadata[opponent_entity_type])
         response_info = self.non_fed_process_request(req, **kwargs)
         if "response_args" in response_info:

@@ -7,6 +7,7 @@ from cryptojwt.exception import MissingKey
 from cryptojwt.jws.jws import factory
 
 from fedservice.entity.function import Function
+from fedservice.entity_statement.constraints import meets_restrictions
 from fedservice.entity_statement.statement import TrustChain
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,10 @@ class TrustChainVerifier(Function):
 
                 ves.append(res)
 
-        return ves
+        if ves and meets_restrictions(ves):
+            return ves
+        else:
+            return []
 
     def trust_chain_expires_at(self, trust_chain):
         exp = -1

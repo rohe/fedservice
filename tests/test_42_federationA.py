@@ -123,3 +123,5 @@ class TestComboCollect(object):
         assert set(trust_chain.metadata.keys()) == {'federation_entity'}
         assert set(trust_chain.metadata['federation_entity'].keys()) == {
             'organization_name', 'homepage_uri', 'contacts'}
+
+        assert trust_chain.is_expired() is False

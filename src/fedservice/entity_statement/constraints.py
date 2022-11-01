@@ -1,6 +1,7 @@
 from typing import List
 
 from fedservice.entity_statement.statement import TrustChain
+from fedservice.message import EntityStatement
 
 
 def calculate_path_length(constraints, current_max_path_length, max_assigned):
@@ -114,7 +115,7 @@ def permitted(subject_id: str, permitted_id: List[str]):
     return False
 
 
-def meets_restrictions(trust_chain: TrustChain):
+def meets_restrictions(trust_chain: List[EntityStatement]) -> bool:
     """
     Verifies that the trust chain fulfills the constraints specified in it.
 

@@ -28,11 +28,11 @@ class Registration(registration.Registration):
         #
         self.post_construct.append(self.create_entity_statement)
 
-    def get_provider_info_attributes(self):
-        _pia = construct_provider_info(self.provider_info_attributes, **self.kwargs)
-        if self.endpoint_name:
-            _pia[self.endpoint_name] = self.full_path
-        return _pia
+    # def get_provider_info_attributes(self):
+    #     _pia = construct_provider_info(self.provider_info_attributes, **self.kwargs)
+    #     if self.endpoint_name:
+    #         _pia[self.endpoint_name] = self.full_path
+    #     return _pia
 
     @staticmethod
     def carry_receiver(request, **kwargs):
@@ -81,22 +81,6 @@ class Registration(registration.Registration):
 
     def _get_trust_anchor_id(self, entity_statement):
         return entity_statement.get('trust_anchor_id')
-
-    def get_trust_anchor_id(self, entity_statement):
-        _fe_context = self.upstream_get("context").federation_entity.get_context()
-        if len(_fe_context.op_statements) == 1:
-            _id = _fe_context.op_statements[0].anchor
-            _tai = self._get_trust_anchor_id(entity_statement)
-            if _tai and _tai != _id:
-                logger.warning(
-                    "The trust anchor id given in the registration response does not match what "
-                    "is in the discovery document")
-                ValueError('Trust Anchor Id mismatch')
-        else:
-            _id = self._get_trust_anchor_id(entity_statement)
-            if _id is None:
-                raise ValueError("Don't know which trust anchor to use")
-        return _id
 
     def parse_federation_registration_response(self, resp, **kwargs):
         """
@@ -150,45 +134,3 @@ class Registration(registration.Registration):
         _fe = self.upstream_get("context").federation_entity
         _fe.iss = resp['client_id']
 
-    def get_response_ext(self, url, method="GET", body=None, response_body_type="",
-                         headers=None, **kwargs):
-        """
-
-        :param url:
-        :param method:
-        :param body:
-        :param response_body_type:
-        :param headers:
-        :param kwargs:
-        :return:
-        """
-        _context = self.upstream_get("context")
-        _collector = _context.federation_entity.collector
-
-        httpc_args = _collector.httpc_parms.copy()
-        # have I seen it before
-        cert_path = _collector.get_cert_path(_context.provider_info["issuer"])
-        if cert_path:
-            httpc_args["verify"] = cert_path
-
-        try:
-            resp = _collector.http_cli(method, url, data=body, headers=headers, **httpc_args)
-        except Exception as err:
-            logger.error(f'Exception on request: {err}')
-            raise
-
-        if 300 <= resp.status_code < 400:
-            return {'http_response': resp}
-
-        if "keyjar" not in kwargs:
-            kwargs["keyjar"] = _context.keyjar
-        if not response_body_type:
-            response_body_type = self.response_body_type
-
-        if response_body_type == 'html':
-            return resp.text
-
-        if body:
-            kwargs['request_body'] = body
-
-        return self.parse_response(resp, response_body_type, **kwargs)

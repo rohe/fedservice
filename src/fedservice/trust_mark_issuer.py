@@ -40,21 +40,20 @@ class FileDB(object):
         with open(self.config[id], "a") as fp:
             fp.write(json.dumps(tm_info) + '\n')
 
-    def _match(self, id, sub, iat, tmi):
-        if id == tmi["id"]:
-            if sub == tmi["sub"]:
-                if iat:
-                    if iat == tmi['iat']:
-                        return True
-                else:
+    def _match(self, sub, iat, tmi):
+        if sub == tmi["sub"]:
+            if iat:
+                if iat == tmi['iat']:
                     return True
+            else:
+                return True
         return False
 
     def find(self, id: str, sub: str, iat: Optional[int] = 0):
         with open(self.config[id], "r") as fp:
             for line in reversed(list(fp)):
                 _tmi = json.loads(line.rstrip())
-                if self._match(id, sub, iat, _tmi):
+                if self._match(sub, iat, _tmi):
                     return True
         return False
 
@@ -111,7 +110,7 @@ class TrustMarkIssuer(FederationEntity):
                  httpc_params: Optional[dict] = None,
                  metadata: Optional[dict] = None,
                  trust_marks: Optional[dict] = None,
-                 trust_mark_db: Optional[object] = None,
+                 trust_mark_db: Optional[dict] = None,
                  authority_hints: Optional[list] = None,
                  **kwargs
                  ):
