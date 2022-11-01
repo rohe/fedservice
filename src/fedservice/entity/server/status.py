@@ -1,16 +1,26 @@
 import json
 import logging
+from typing import Callable
 from typing import Optional
 from typing import Union
 
 from cryptojwt import JWT
-from idpyoidc.message import oidc
 from idpyoidc.message import Message
+from idpyoidc.message import oidc
+from idpyoidc.server import init_service
 from idpyoidc.server.endpoint import Endpoint
+from idpyoidc.util import instantiate
 
 from fedservice.message import TrustMark
+from fedservice.trust_mark_issuer import SimpleDB
+from fedservice.trust_mark_issuer import TrustMarkIssuer
 
 logger = logging.getLogger(__name__)
+
+
+def create_trust_mark(keyjar, entity_id, **kwargs):
+    packer = JWT(key_jar=keyjar, iss=entity_id)
+    return packer.pack(payload=kwargs)
 
 
 class TrustMarkStatus(Endpoint):
@@ -18,19 +28,30 @@ class TrustMarkStatus(Endpoint):
     response_format = "json"
     name = "status"
 
-    def __init__(self, upstream_get, **kwargs):
+    def __init__(self,
+                 upstream_get: Callable,
+                 trust_mark_issuer: Union[TrustMarkIssuer, dict],
+                 **kwargs):
         Endpoint.__init__(self, upstream_get, **kwargs)
+        if isinstance(trust_mark_issuer, dict):
+            self.trust_mark_issuer = instantiate(trust_mark_issuer['class'],
+                                                 upstream_get=upstream_get,
+                                                 **trust_mark_issuer[kwargs])
+        else:
+            trust_mark_issuer.upstream_get = upstream_get
+            self.trust_mark_issuer = trust_mark_issuer
 
-    def process_request(self, request: Optional[dict] = None, **kwargs):
-        _tmi = self.upstream_get('server').upstream_get('unit')
+    def process_request(self,
+                        request: Optional[dict] = None,
+                        **kwargs) -> dict:
 
         if 'trust_mark' in request:
-            _mark = self.unpack_trust_mark(request['trust_mark'])
-            if _tmi.issued.find(_mark['id'], _mark['sub']):
+            _mark = self.trust_mark_issuer.unpack_trust_mark(request['trust_mark'])
+            if self.trust_mark_issuer.find(_mark['id'], _mark['sub']):
                 return {'response': json.dumps({'active': True})}
         else:
             if 'sub' in request and 'id' in request:
-                if _tmi.issued.find(request['id'], request['sub']):
+                if self.trust_mark_issuer.find(request['id'], request['sub']):
                     return {'response': json.dumps({'active': True})}
 
         return {'response': json.dumps({'active': False})}
@@ -43,14 +64,3 @@ class TrustMarkStatus(Endpoint):
     ) -> dict:
         return response_args
 
-    def unpack_trust_mark(self, token, entity_id: Optional[str] = ""):
-        keyjar = self.upstream_get('attribute', 'keyjar')
-        _jwt = JWT(key_jar=keyjar, msg_cls=TrustMark, allowed_sign_algs=["RS256"])
-        _tm = _jwt.unpack(token)
-
-        if entity_id:
-            _tm.verify(entity_id=entity_id)
-        else:
-            _tm.verify()
-
-        return _tm

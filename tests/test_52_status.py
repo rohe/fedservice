@@ -10,7 +10,6 @@ from fedservice.trust_mark_issuer import TrustMarkIssuer
 from fedservice.trust_mark_issuer import create_trust_mark
 from tests import create_trust_chain_messages
 from tests.build_entity import FederationEntityBuilder
-from tests.build_entity import TrustMarkIssuerBuilder
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -106,9 +105,8 @@ class TestComboCollect(object):
         # Trust Mark Issuer
         ########################################
 
-        TMI = TrustMarkIssuerBuilder(
+        TMI = FederationEntityBuilder(
             entity_id=TRUST_MARK_ISSUER_ID,
-            trust_marks={TM_ID: {"ref": "https://refeds.org/sirtfi"}},
             key_conf={'key_defs': KEYDEFS},
             metadata={
                 "organization_name": "The Trust Mark Issuer",
@@ -118,9 +116,12 @@ class TestComboCollect(object):
             authority_hints=[TA_ID]
         )
         # default endpoint = status
+        _endpoints = TRUST_MARK_ISSUER_ENDPOINTS
+        _endpoints['status']['kwargs']['trust_marks'] = {
+            TM_ID: {"ref": "https://refeds.org/sirtfi"}}
         TMI.add_endpoints(**TRUST_MARK_ISSUER_ENDPOINTS)
 
-        self.tmi = TrustMarkIssuer(**TMI.conf)
+        self.tmi = FederationEntity(**TMI.conf)
 
         self.ta.server.subordinate[IM_ID] = {
             "jwks": self.im.keyjar.export_jwks(),

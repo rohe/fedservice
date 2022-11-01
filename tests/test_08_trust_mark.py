@@ -1,19 +1,11 @@
-import os
 from urllib.parse import urlparse
 
 import pytest
 from cryptojwt.jws.jws import factory
-from idpyoidc.node import Collection
 
-from fedservice.combo import Combo
-from fedservice.defaults import FEDERATION_ENTITY_FUNCTIONS
-from fedservice.defaults import FEDERATION_ENTITY_SERVICES
-from fedservice.defaults import LEAF_ENDPOINT
+from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.entity import FederationEntity
-from fedservice.entity.client import FederationEntityClient
-from fedservice.entity.server import FederationEntityServer
 from fedservice.entity.server.status import TrustMarkStatus
-from fedservice.fetch_entity_statement.fs2 import read_info
 from fedservice.message import TrustMark
 from fedservice.message import TrustMarkRequest
 from fedservice.trust_mark_issuer import TrustMarkIssuer
@@ -24,199 +16,135 @@ KEYSPEC = [
     {"type": "EC", "crv": "P-256", "use": ["sig"]},
 ]
 
-BASE_PATH = os.path.abspath(os.path.dirname(__file__))
-ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
-ANCHOR = {'https://feide.no': read_info(os.path.join(ROOT_DIR, 'feide.no'), "feide.no", "jwks")}
+TM_ID = "https://refeds.org/wp-content/uploads/2016/01/Sirtfi-1.0.pdf"
+TA_ID = "https://anchor.example.com"
+
+TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
+del TA_ENDPOINTS["resolve"]
+del TA_ENDPOINTS['status']
 
 
 class TestSignedTrustMark():
 
     @pytest.fixture(autouse=True)
     def create_entity(self):
-        CONF = {
-            'entity_id': "https://example.com/trust_mark_issuer",
-            "key_conf": {"key_defs": KEYSPEC},
-            'server': {
-                'class': FederationEntityServer,
-                'kwargs': {
-                    "endpoint": {
-                        "status": {
-                            "path": "status",
-                            "class": TrustMarkStatus,
-                            "kwargs": {"client_authn_method": None},
-                        }
-                    }
-                }
-            }
-        }
-
-        self.tmi = TrustMarkIssuer(**CONF)
-
-    def test_create_trust_mark_self_signed(self):
-        _trust_mark = self.tmi.self_signed_trust_mark(
-            id='https://openid.net/certification',
-            logo_uri=("http://openid.net/wordpress-content/uploads/2016/05/"
-                      "oid-l-certification-mark-l-cmyk-150dpi-90mm.jpg")
-        )
-        # Unpack and verify the Trust Mark
-        _mark = self.tmi.server.endpoint['status'].unpack_trust_mark(_trust_mark)
-
-        assert isinstance(_mark, TrustMark)
-        assert _mark["id"] == "https://openid.net/certification"
-        assert _mark['iss'] == _mark['sub']
-        assert _mark['iss'] == self.tmi.entity_id
-        assert set(_mark.keys()) == {'iss', 'sub', 'iat', 'id', 'logo_uri'}
-
-    def test_create_unpack_trust_3rd_party(self):
-        _sub = "https://op.ntnu.no"
-        self.tmi.trust_marks["https://refeds.org/sirtfi"] = {}
-        _trust_mark = self.tmi.create_trust_mark("https://refeds.org/sirtfi", _sub)
-
-        _mark = self.tmi.server.endpoint['status'].unpack_trust_mark(_trust_mark, _sub)
-
-        assert isinstance(_mark, TrustMark)
-        assert set(self.tmi.issued.keys()) == {"https://refeds.org/sirtfi"}
-        assert set(self.tmi.issued['https://refeds.org/sirtfi'].keys()) == {_sub}
-
-
-TM_ID = "https://refeds.org/wp-content/uploads/2016/01/Sirtfi-1.0.pdf"
-
-
-class TestCombo():
-
-    @pytest.fixture(autouse=True)
-    def create_entity(self):
-        #
-        CONFIG = {
-            'entity_id': "https://example.com/trust_mark_issuer",
-            "key_conf": {"key_defs": KEYSPEC},
-            "federation_entity": {
-                'class': FederationEntity,
-                "function": {
-                    'class': Collection,
-                    'kwargs': {
-                        'functions': FEDERATION_ENTITY_FUNCTIONS
-                    }
-                },
-                "client": {
-                    'class': FederationEntityClient,
-                    'kwargs': {
-                        "services": FEDERATION_ENTITY_SERVICES
-                    }
-                },
-                "server": {
-                    'class': FederationEntityServer,
-                    'kwargs': {
-                        "metadata": {
-                        },
-                        "endpoint": LEAF_ENDPOINT
-                    }
-                }
-            },
-            "trust_mark_issuer": {
-                'class': TrustMarkIssuer,
-                'kwargs': {
-                    "trust_marks": {
-                        TM_ID: {"ref": "https://refeds.org/sirtfi"}
-                    },
-                    'server': {
-                        'class': FederationEntityServer,
-                        'kwargs': {
-                            "endpoint": {
-                                "status": {
-                                    "path": "status",
-                                    "class": TrustMarkStatus,
-                                    "kwargs": {"client_authn_method": None},
-                                }
-                            },
-                        }
-                    }
-                }
-            }
-        }
-
-        self.combo = Combo(config=CONFIG)
-        self.tmi = self.combo['trust_mark_issuer']
-
-        # And a client
-        self.tmi.trust_marks["https://refeds.org/sirtfi"] = {}
-        _trust_mark = self.tmi.create_trust_mark("https://refeds.org/sirtfi", "https://example.org")
-
-        ENT = FederationEntityBuilder(
-            'https://entity.example.com',
+        # The Trust Anchor
+        TA = FederationEntityBuilder(
+            TA_ID,
             metadata={
-                "organization_name": "The leaf operator",
-                "homepage_uri": "https://leaf.example.com",
-                "contacts": "operations@leaf.example.com"
+                "organization_name": "The example federation operator",
+                "homepage_uri": "https://ta.example.com",
+                "contacts": "operations@ta.example.com"
             },
-            key_conf={"uri_path": "static/fed_jwks.json", "key_defs": KEYSPEC},
+            key_conf={"key_defs": KEYSPEC}
         )
-        ENT.add_services()
-        ENT.add_functions()
-        ENT.set_attr('client', {'trust_marks': [_trust_mark]})
-        self.entity = FederationEntity(**ENT.conf)
+        TA.add_endpoints(**TA_ENDPOINTS)
+        TA.add_services(trust_mark_status={
+            "class": 'fedservice.entity.client.trust_mark_status.TrustMarkStatus',
+            "kwargs": {}
+        })
 
-    def test_setup(self):
-        assert self.combo
-        assert self.tmi
+        self.ta = FederationEntity(**TA.conf)
+
+        # The trust mark issuer
+        self.tmi = TrustMarkIssuer(trust_mark_specification={})
+        # Federation entity with only status endpoint
+        TM = FederationEntityBuilder(
+            "https://example.com/entity",
+            metadata={
+                "organization_name": "Trust Mark Issuer 'R US"
+            },
+            key_conf={"key_defs": KEYSPEC}
+        )
+        TM.add_endpoints(
+            status={
+                "path": "status",
+                "class": TrustMarkStatus,
+                "kwargs": {
+                    'trust_mark_issuer': self.tmi
+                }
+            },
+            entity_configuration={
+                "path": ".well-known/openid-federation",
+                "class": 'fedservice.entity.server.entity_configuration.EntityConfiguration',
+                "kwargs": {}
+            }
+        )
+
+        self.fe = FederationEntity(**TM.conf)
 
     def test_create_trust_mark_self_signed(self):
-        _trust_mark = self.tmi.self_signed_trust_mark(
+        _endpoint = self.fe.server.get_endpoint('status')
+        _issuer = _endpoint.trust_mark_issuer
+        _trust_mark = _issuer.self_signed_trust_mark(
             id='https://openid.net/certification',
             logo_uri=("http://openid.net/wordpress-content/uploads/2016/05/"
                       "oid-l-certification-mark-l-cmyk-150dpi-90mm.jpg")
         )
+
         # Unpack and verify the Trust Mark
-        _mark = self.tmi.server.endpoint['status'].unpack_trust_mark(_trust_mark)
+        _mark = _issuer.unpack_trust_mark(_trust_mark)
 
         assert isinstance(_mark, TrustMark)
         assert _mark["id"] == "https://openid.net/certification"
         assert _mark['iss'] == _mark['sub']
-        assert _mark['iss'] == self.tmi.entity_id
+        assert _mark['iss'] == self.fe.entity_id
         assert set(_mark.keys()) == {'iss', 'sub', 'iat', 'id', 'logo_uri'}
 
     def test_create_unpack_trust_3rd_party(self):
         _sub = "https://op.ntnu.no"
-        self.tmi.trust_marks["https://refeds.org/sirtfi"] = {}
+
+        self.tmi.trust_mark_specification["https://refeds.org/sirtfi"] = {}
         _trust_mark = self.tmi.create_trust_mark("https://refeds.org/sirtfi", _sub)
 
-        _mark = self.tmi.server.endpoint['status'].unpack_trust_mark(_trust_mark, _sub)
+        _mark = self.tmi.unpack_trust_mark(_trust_mark, _sub)
 
         assert isinstance(_mark, TrustMark)
-        assert set(self.tmi.issued.keys()) == {"https://refeds.org/sirtfi"}
-        assert set(self.tmi.issued['https://refeds.org/sirtfi'].keys()) == {_sub,
-                                                                            'https://example.org'}
 
     def test_process_request(self):
         _sub = "https://op.ntnu.no"
-        self.tmi.trust_marks["https://refeds.org/sirtfi"] = {}
+        _endpoint = self.fe.server.endpoint['status']
+        _issuer = _endpoint.trust_mark_issuer
+        _issuer.trust_mark_specification["https://refeds.org/sirtfi"] = {}
         _trust_mark = self.tmi.create_trust_mark("https://refeds.org/sirtfi", _sub)
 
-        resp = self.tmi.server.endpoint['status'].process_request({'trust_mark': _trust_mark})
+        resp = _endpoint.process_request({'trust_mark': _trust_mark})
         assert resp == {'response': '{"active": true}'}
 
     def test_request_response_mark(self):
-        tms = self.entity.get_service('trust_mark_status')
-        _context = self.entity.client.get_context()
-        req = tms.get_request_parameters({'trust_mark': _context.trust_marks[0]})
-        p = urlparse(req['url'])
-        tmr = TrustMarkRequest().from_urlencoded(p.query)
-        resp = self.tmi.server.endpoint['status'].process_request(tmr.to_dict())
+        _sub = "https://op.ntnu.no"
+        _endpoint = self.fe.server.endpoint['status']
+        _issuer = _endpoint.trust_mark_issuer
+        _issuer.trust_mark_specification["https://refeds.org/sirtfi"] = {}
+        _trust_mark = self.tmi.create_trust_mark("https://refeds.org/sirtfi", _sub)
+
+        _jws = factory(_trust_mark)
+        _payload = _jws.jwt.payload()
+        resp = self.fe.server.endpoint['status'].process_request(_payload)
         assert resp == {'response': '{"active": true}'}
 
     def test_request_response_args(self):
-        tms = self.entity.get_service('trust_mark_status')
-        _context = self.entity.client.get_context()
-        _jws = factory(_context.trust_marks[0])
-        tm_payload = _jws.jwt.payload()
+        # Create a Trust Mark
+        _sub = "https://op.ntnu.no"
+        _endpoint = self.fe.server.endpoint['status']
+        _issuer = _endpoint.trust_mark_issuer
+        _issuer.trust_mark_specification["https://refeds.org/sirtfi"] = {}
+        _trust_mark = self.tmi.create_trust_mark("https://refeds.org/sirtfi", _sub)
+
+        # Ask for a verification of the Trust Mark
+        _jws = factory(_trust_mark)
+        _payload = _jws.jwt.payload()
+
+        tms = self.ta.get_service('trust_mark_status')
         req = tms.get_request_parameters(
             request_args={
-                'sub': tm_payload['sub'],
-                'id': tm_payload['id']
+                'sub': _payload['sub'],
+                'id': _payload['id']
             },
-            fetch_endpoint=self.tmi.server.endpoint['status'].full_path
+            fetch_endpoint=self.fe.server.endpoint['status'].full_path
         )
         p = urlparse(req['url'])
         tmr = TrustMarkRequest().from_urlencoded(p.query)
-        resp = self.tmi.server.endpoint['status'].process_request(tmr.to_dict())
+
+        resp = self.fe.server.endpoint['status'].process_request(tmr.to_dict())
         assert resp == {'response': '{"active": true}'}
