@@ -333,7 +333,7 @@ class TestComboCollect(object):
 
     def test_provider_info_discovery(self):
         _rp = self.rp['openid_relying_party']
-        _rp._service_context.issuer = self.op.entity_id
+        _rp.get_context().issuer = self.op.entity_id
         provider_info = _rp.get_service('provider_info')
 
         # Just to verify that the request URL is the right one

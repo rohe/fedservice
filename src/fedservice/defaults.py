@@ -68,12 +68,12 @@ DEFAULT_FEDERATION_ENTITY_ENDPOINTS = {
         "path": "resolve",
         "class": 'fedservice.entity.server.resolve.Resolve',
         "kwargs": {}
-    },
-    "status": {
-        "path": "status",
-        "class": 'fedservice.entity.server.status.TrustMarkStatus',
-        "kwargs": {}
     }
+    # "status": {
+    #     "path": "status",
+    #     "class": 'fedservice.entity.server.status.TrustMarkStatus',
+    #     "kwargs": {}
+    # }
 }
 
 FEDERATION_ENTITY_FUNCTIONS = {

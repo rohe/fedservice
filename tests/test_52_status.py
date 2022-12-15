@@ -6,6 +6,7 @@ from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import LEAF_ENDPOINT
 from fedservice.defaults import TRUST_MARK_ISSUER_ENDPOINTS
 from fedservice.entity import FederationEntity
+from fedservice.entity.server.status import TrustMarkStatus
 from fedservice.trust_mark_issuer import TrustMarkIssuer
 from fedservice.trust_mark_issuer import create_trust_mark
 from tests import create_trust_chain_messages
@@ -105,6 +106,8 @@ class TestComboCollect(object):
         # Trust Mark Issuer
         ########################################
 
+        self.tmi = TrustMarkIssuer(trust_mark_specification={})
+
         TMI = FederationEntityBuilder(
             entity_id=TRUST_MARK_ISSUER_ID,
             key_conf={'key_defs': KEYDEFS},
@@ -119,7 +122,21 @@ class TestComboCollect(object):
         _endpoints = TRUST_MARK_ISSUER_ENDPOINTS
         _endpoints['status']['kwargs']['trust_marks'] = {
             TM_ID: {"ref": "https://refeds.org/sirtfi"}}
-        TMI.add_endpoints(**TRUST_MARK_ISSUER_ENDPOINTS)
+
+        TMI.add_endpoints(
+            status={
+                "path": "status",
+                "class": TrustMarkStatus,
+                "kwargs": {
+                    'trust_mark_issuer': self.tmi
+                }
+            },
+            entity_configuration={
+                "path": ".well-known/openid-federation",
+                "class": 'fedservice.entity.server.entity_configuration.EntityConfiguration',
+                "kwargs": {}
+            }
+        )
 
         self.tmi = FederationEntity(**TMI.conf)
 

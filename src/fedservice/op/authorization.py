@@ -1,5 +1,7 @@
 import logging
+from typing import List
 from typing import Optional
+from typing import Sequence
 
 from idpyoidc.message import oidc
 from idpyoidc.message.oidc import RegistrationRequest
@@ -35,16 +37,26 @@ class Authorization(authorization.Authorization):
     def __init__(self, upstream_get, conf: Optional[dict] = None, **kwargs):
         authorization.Authorization.__init__(self, upstream_get, **kwargs)
         # self.pre_construct.append(self._pre_construct)
-        # self.post_parse_request.append(self._post_parse_request)
-        self.automatic_registration_endpoint = {}
+        self.post_parse_request.append(self._reset_client_id)
+        self.new_client_id = kwargs.get('new_client_id', False)
         self.config = conf or {}
 
-    def find_client_keys(self, iss):
-        return self.do_automatic_registration(iss)
+    def _reset_client_id(self, request, client_id, context, **kwargs):
+        request['client_id'] = client_id
+        return request
 
-    def do_automatic_registration(self, entity_id):
-        chains, signed_entity_configuration = collect_trust_chains(self, entity_id)
-        trust_chains = verify_trust_chains(self, chains, signed_entity_configuration)
+    def find_client_keys(self, iss):
+        return self.do_automatic_registration(iss, [])
+
+    def do_automatic_registration(self, entity_id:str, provided_trust_chain: List[str]):
+        if provided_trust_chain:
+            # So I get the TA's entity statement first
+            provided_trust_chain.reverse()
+            trust_chains = verify_trust_chains(self, [provided_trust_chain])
+        else:
+            chains, signed_entity_configuration = collect_trust_chains(self, entity_id)
+            trust_chains = verify_trust_chains(self, chains, signed_entity_configuration)
+
         trust_chains = apply_policies(self, trust_chains)
 
         if not trust_chains:
@@ -65,7 +77,7 @@ class Authorization(authorization.Authorization):
         req = RegistrationRequest(**trust_chain.metadata['openid_relying_party'])
         req['client_id'] = entity_id
         kwargs = {}
-        kwargs['new_id'] = self.config.get("new_id", False)
+        kwargs['new_id'] = self.new_client_id
 
         op = topmost_unit(self)['openid_provider']
         _registration = op.get_endpoint("registration")
@@ -83,8 +95,10 @@ class Authorization(authorization.Authorization):
         # If this is a registered client then this should return some info
         client_info = _context.cdb.get(_cid)
         if client_info is None:
-            if self.automatic_registration_endpoint:  # try the federation way
-                registered_client_id = self.do_automatic_registration(_cid)
+            if 'automatic' in _context.provider_info.get('client_registration_types_supported'):
+                # try the federation way
+                _trust_chain = request.get('trust_chain', [])
+                registered_client_id = self.do_automatic_registration(_cid, _trust_chain)
                 if registered_client_id is None:
                     return {
                         'error': 'unauthorized_client',

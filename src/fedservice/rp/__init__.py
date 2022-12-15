@@ -54,9 +54,9 @@ class ClientEntity(ClientUnit):
             del config['metadata']
 
         if context:
-            self._service_context = context
+            self._context = context
         else:
-            self._service_context = ServiceContext(
+            self._context = ServiceContext(
                 config=config, jwks_uri=jwks_uri, key_conf=key_conf
             )
 
@@ -76,7 +76,7 @@ class ClientEntity(ClientUnit):
         return self._service
 
     def get_context(self, *arg):
-        return self._service_context
+        return self._context
 
     def get_service(self, service_name, *arg):
         try:
@@ -99,11 +99,11 @@ class ClientEntity(ClientUnit):
 
     def setup_client_authn_methods(self, config):
         if config and "client_authn_methods" in config:
-            self._service_context.client_authn_method = client_auth_setup(
+            self._context.client_authn_method = client_auth_setup(
                 config.get("client_authn_methods")
             )
         else:
-            self._service_context.client_authn_method = {}
+            self._context.client_authn_method = {}
 
     def get_metadata(self, *args):
         _fed_registration = self.get_service('registration')
@@ -138,7 +138,7 @@ class ClientEntity(ClientUnit):
         )
 
     def set_client_id(self, client_id):
-        self._service_context.set("client_id", client_id)
+        self._context.set("client_id", client_id)
 
     def get_response(
             self,

@@ -98,9 +98,8 @@ class TrustChainVerifier(Function):
     def __call__(self, chain: List[str]):
         """
 
-        :param trust_chain: A chain of entity statements
-        :param entity_type: Which type of metadata you want returned
-        :param apply_policies: Apply policies to the metadata or not
+        :param chain: A chain of Entity Statements. The first one issued by a TA about an
+            entity, the last an Entity Configuration.
         :returns: A TrustChain instances
         """
         logger.debug("Evaluate trust chain")

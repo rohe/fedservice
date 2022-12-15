@@ -1,4 +1,7 @@
 from typing import List
+from typing import Union
+
+from idpyoidc.message import Message
 
 from fedservice.entity_statement.statement import TrustChain
 from fedservice.message import EntityStatement
@@ -90,7 +93,8 @@ def add_constraints(new_constraints: dict, naming_constraints: dict):
     return naming_constraints
 
 
-def update_naming_constraints(constraints: dict, naming_constraints: dict):
+def update_naming_constraints(constraints: Union[dict, Message],
+                              naming_constraints: Union[dict, Message]):
     try:
         new_constraints = constraints['naming_constraints']
     except KeyError:

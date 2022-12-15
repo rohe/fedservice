@@ -228,8 +228,7 @@ class TestServer():
         assert self.ta.function is None
         assert self.ta.client is None
 
-        assert set(self.ta.server.endpoint.keys()) == {'entity_configuration',
-                                                       'fetch', 'list', 'status'}
+        assert set(self.ta.server.endpoint.keys()) == {'entity_configuration', 'fetch', 'list'}
 
     def test_entity_configuration(self):
         _endpoint = self.leaf.get_endpoint('entity_configuration')

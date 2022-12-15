@@ -19,8 +19,8 @@ from fedservice.server import ServerUnit
 logger = logging.getLogger(__name__)
 
 
-class FederationEntityServer(ServerUnit):
-    name = 'federation_entitygi'
+class FederationServerEntity(ServerUnit):
+    name = 'federation_entity'
     parameter = {"endpoint": [Endpoint], "endpoint_context": EndpointContext}
 
     def __init__(
@@ -79,7 +79,7 @@ class FederationEntityServer(ServerUnit):
             return None
 
     def get_context(self, *arg):
-        return self._service_context
+        return self._context
 
     def get_attribute(self, attr, *args):
         val = getattr(self, attr)
@@ -92,6 +92,6 @@ class FederationEntityServer(ServerUnit):
         return self
 
     def setup_client_authn_methods(self):
-        self._service_context.client_authn_method = client_auth_setup(
+        self._context.client_authn_method = client_auth_setup(
             self.unit_get, self.conf.get("client_authn_methods")
         )

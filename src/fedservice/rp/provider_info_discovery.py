@@ -13,7 +13,6 @@ from fedservice.entity.function import verify_self_signed_signature
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity_statement.construct import map_configuration_to_preference
 from fedservice.entity_statement.statement import chains2dict
-from fedservice.entity_statement.utils import create_authority_hints
 from fedservice.exception import NoTrustedClaims
 
 logger = logging.getLogger(__name__)
@@ -61,30 +60,30 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
 
         return {'method': method, 'url': _qurl, 'iss': _iss}
 
-    def store_federation_info(self, statement, trust_root_id):
-        """
-
-        :param statement: A
-            :py:class:`fedservice.entity_statement.statement.Statement` instance
-        """
-        # Only use trusted claims
-        trusted_claims = statement.metadata
-        if trusted_claims is None:
-            raise NoTrustedClaims()
-        _pi = self.response_cls(**trusted_claims)
-
-        # Temporarily (?) taken out
-        # if 'signed_jwks_uri' in _pi:
-        #     _kb = KeyBundle(source=_pi['signed_jwks_uri'],
-        #                     verify_keys=statement.signing_keys,
-        #                     verify_ssl=False)
-        #     _kb.do_remote()
-        #     # Replace what was there before
-        #     self.service_context.keyjar[self.service_context.issuer] = _kb
-
-        _context = self.upstream_get("context")
-        _context.set('provider_info', _pi)
-        _context.federation_entity.federation = trust_root_id
+    # def store_federation_info(self, statement, trust_root_id):
+    #     """
+    #
+    #     :param statement: A
+    #         :py:class:`fedservice.entity_statement.statement.Statement` instance
+    #     """
+    #     # Only use trusted claims
+    #     trusted_claims = statement.metadata
+    #     if trusted_claims is None:
+    #         raise NoTrustedClaims()
+    #     _pi = self.response_cls(**trusted_claims)
+    #
+    #     # Temporarily (?) taken out
+    #     # if 'signed_jwks_uri' in _pi:
+    #     #     _kb = KeyBundle(source=_pi['signed_jwks_uri'],
+    #     #                     verify_keys=statement.signing_keys,
+    #     #                     verify_ssl=False)
+    #     #     _kb.do_remote()
+    #     #     # Replace what was there before
+    #     #     self.service_context.keyjar[self.service_context.issuer] = _kb
+    #
+    #     _context = self.upstream_get("context")
+    #     _context.set('provider_info', _pi)
+    #     _context.federation_entity.federation = trust_root_id
 
     def update_service_context(self, trust_chains, **kwargs):
         """

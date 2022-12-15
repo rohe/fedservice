@@ -18,7 +18,6 @@ class TrustChain(object):
 
     def __init__(self,
                  exp: int = 0,
-                 signing_keys: Optional[List[KeyJar]] = None,
                  verified_chain: Optional[list] = None):
         """
         :param exp: Expiration time
@@ -28,7 +27,6 @@ class TrustChain(object):
         self.err = {}
         self.metadata = {}
         self.exp = exp
-        self.signing_keys = signing_keys
         self.verified_chain = verified_chain
         self.combined_policy = {}
 
@@ -57,6 +55,16 @@ class TrustChain(object):
             return True
         else:
             return False
+
+    def export_chain(self):
+        """
+        Exports the verified chain in such a way that it can be used as value on the
+        trust_chain claim in an authorization or explicit registration request.
+        :return:
+        """
+        _chain = self.verified_chain
+        _chain.reverse()
+        return _chain
 
 
 def chains2dict(trust_chains: TrustChain) -> dict:
