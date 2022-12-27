@@ -174,22 +174,3 @@ class ServerUnit(Unit):
         Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc, config=config,
                       httpc_params=httpc_params, issuer_id=self.entity_id,  key_conf=key_conf)
 
-        if config is None:
-            config = {}
-
-        if not isinstance(config, Base):
-            if not entity_id:
-                entity_id = self.upstream_get('attribute', 'entity_id')
-            config['issuer'] = entity_id
-            config["base_url"] = entity_id
-            config = Configuration(config)
-
-        if context:
-            self._service_context = context
-        else:
-            self._service_context = FederationServerContext(
-                config=config,
-                upstream_get=self.unit_get,
-                entity_id=entity_id,
-                metadata=metadata,
-            )

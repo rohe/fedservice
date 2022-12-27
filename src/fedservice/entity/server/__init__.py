@@ -5,6 +5,7 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
+from fedservice.entity.context import FederationServerContext
 from idpyoidc.context import OidcContext
 from idpyoidc.server.client_authn import client_auth_setup
 from idpyoidc.server.configure import ASConfiguration
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class FederationEntityServer(ServerUnit):
     name = 'federation_entitygi'
-    parameter = {"endpoint": [Endpoint], "endpoint_context": EndpointContext}
+    parameter = {"endpoint": [Endpoint], "context": EndpointContext}
 
     def __init__(
             self,
@@ -42,13 +43,22 @@ class FederationEntityServer(ServerUnit):
             config = {}
         self.conf = config
 
+        if not entity_id:
+            entity_id = upstream_get('attribute', "entity_id")
+        self.endpoint = build_endpoints(endpoint, upstream_get=self.unit_get, issuer=entity_id)
+
         ServerUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, context=context,
                             config=self.conf, metadata=metadata)
 
-        if not entity_id:
-            entity_id = upstream_get('attribute', "entity_id")
-
-        self.endpoint = build_endpoints(endpoint, upstream_get=self.unit_get, issuer=entity_id)
+        if context:
+            self.context = context
+        else:
+            self.context = FederationServerContext(
+                config=config,
+                upstream_get=self.unit_get,
+                entity_id=entity_id,
+                metadata=metadata,
+            )
 
         # self.endpoint_context.do_add_on(endpoints=self.endpoint)
 
@@ -79,7 +89,7 @@ class FederationEntityServer(ServerUnit):
             return None
 
     def get_context(self, *arg):
-        return self._service_context
+        return self.context
 
     def get_attribute(self, attr, *args):
         val = getattr(self, attr)
@@ -92,6 +102,6 @@ class FederationEntityServer(ServerUnit):
         return self
 
     def setup_client_authn_methods(self):
-        self._service_context.client_authn_method = client_auth_setup(
+        self.context.client_authn_method = client_auth_setup(
             self.unit_get, self.conf.get("client_authn_methods")
         )

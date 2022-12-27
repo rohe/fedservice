@@ -4,6 +4,7 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
+from fedservice.entity.metadata import OPMetadata
 from idpyoidc.configure import Base
 from idpyoidc.server import ASConfiguration
 from idpyoidc.server import Endpoint
@@ -32,7 +33,7 @@ def do_endpoints(conf, upstream_get):
 
 class ServerEntity(ServerUnit):
     name = 'openid_provider'
-    parameter = {"endpoint": [Endpoint], "endpoint_context": EndpointContext}
+    parameter = {"endpoint": [Endpoint], "context": EndpointContext}
 
     def __init__(
             self,
@@ -59,51 +60,25 @@ class ServerEntity(ServerUnit):
             config = OPConfiguration(config)
 
         self.config = config
-        self.endpoint_context = EndpointContext(
+
+        self.endpoint = do_endpoints(config, self.unit_get)
+
+        self.context = EndpointContext(
             conf=config,
             upstream_get=self.unit_get,
             cwd=cwd,
             cookie_handler=cookie_handler,
             httpc=httpc,
+            metadata_class=OPMetadata()
         )
-        self.endpoint_context.authz = self.setup_authz()
-
-        self.setup_authentication(self.endpoint_context)
-
-        self.endpoint = do_endpoints(config, self.unit_get)
-        _cap = get_provider_capabilities(config, self.endpoint)
-
-        self.endpoint_context.provider_info = self.endpoint_context.create_providerinfo(_cap)
-        self.endpoint_context.do_add_on(endpoints=self.endpoint)
-
-        self.endpoint_context.session_manager = create_session_manager(
-            self.unit_get,
-            self.endpoint_context.th_args,
-            sub_func=self.endpoint_context._sub_func,
-            conf=config,
-        )
-        self.endpoint_context.do_userinfo()
-        # Must be done after userinfo
-        self.setup_login_hint_lookup()
-        self.endpoint_context.set_remember_token()
-
-        self.setup_client_authn_methods()
-        for endpoint_name, _ in self.endpoint.items():
-            self.endpoint[endpoint_name].upstream_get = self.unit_get
 
         _token_endp = self.endpoint.get("token")
         if _token_endp:
-            _token_endp.allow_refresh = allow_refresh_token(self.endpoint_context)
+            _token_endp.allow_refresh = allow_refresh_token(self.context)
 
-        self.endpoint_context.claims_interface = init_service(
+        self.context.claims_interface = init_service(
             config["claims_interface"], self.upstream_get
         )
-
-        _id_token_handler = self.endpoint_context.session_manager.token_handler.handler.get(
-            "id_token"
-        )
-        if _id_token_handler:
-            self.endpoint_context.provider_info.update(_id_token_handler.provider_info)
 
     def get_endpoints(self, *arg):
         return self.endpoint
@@ -115,13 +90,14 @@ class ServerEntity(ServerUnit):
             return None
 
     def get_context(self, *arg):
-        return self.endpoint_context
+        return self.context
 
     def get_server(self, *args):
         return self
 
     def get_metadata(self, *args):
-        return {'openid_provider': self.endpoint_context.provider_info}
+        # static ! Should this be done dynamically ?
+        return {'openid_provider': self.context.provider_info}
 
     def setup_authz(self):
         authz_spec = self.config.get("authz")
@@ -154,15 +130,15 @@ class ServerEntity(ServerUnit):
             if _kwargs:
                 _userinfo_conf = _kwargs.get("userinfo")
                 if _userinfo_conf:
-                    _userinfo = init_user_info(_userinfo_conf, self.endpoint_context.cwd)
+                    _userinfo = init_user_info(_userinfo_conf, self.context.cwd)
 
             if _userinfo is None:
-                _userinfo = self.endpoint_context.userinfo
+                _userinfo = self.context.userinfo
 
-            self.endpoint_context.login_hint_lookup = init_service(_conf)
-            self.endpoint_context.login_hint_lookup.userinfo = _userinfo
+            self.context.login_hint_lookup = init_service(_conf)
+            self.context.login_hint_lookup.userinfo = _userinfo
 
     def setup_client_authn_methods(self):
-        self.endpoint_context.client_authn_method = client_auth_setup(
+        self.context.client_authn_method = client_auth_setup(
             self.unit_get, self.config.get("client_authn_methods")
         )

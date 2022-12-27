@@ -83,7 +83,6 @@ class TestComboCollect(object):
 
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
-        del oidc_service['web_finger']
 
         RP_FE = FederationEntityBuilder(
             metadata={

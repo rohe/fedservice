@@ -5,7 +5,7 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
-from idpyoidc.client.client_auth import client_auth_setup
+from fedservice.entity.metadata import OPMetadata
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.client.defaults import SUCCESSFUL
 from idpyoidc.client.exception import OidcServiceError
@@ -22,6 +22,8 @@ from idpyoidc.exception import FormatError
 from idpyoidc.message import Message
 from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.node import ClientUnit
+
+from fedservice.entity.metadata import RPMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +55,6 @@ class ClientEntity(ClientUnit):
             config.update(config['metadata'])
             del config['metadata']
 
-        if context:
-            self._service_context = context
-        else:
-            self._service_context = ServiceContext(
-                config=config, jwks_uri=jwks_uri, key_conf=key_conf
-            )
-
         _srvs = services or config.get("services")
 
         if not _srvs:
@@ -67,7 +62,13 @@ class ClientEntity(ClientUnit):
 
         self._service = init_services(service_definitions=_srvs, upstream_get=self.unit_get)
 
-        self.setup_client_authn_methods(config)
+        if context:
+            self.context = context
+        else:
+            self.context = ServiceContext(
+                config=config, jwks_uri=jwks_uri, key_conf=key_conf, upstream_get=self.unit_get,
+                keyjar=self.keyjar, metadata_class=RPMetadata()
+            )
 
         if "add_ons" in config:
             do_add_ons(config["add_ons"], self._service)
@@ -76,7 +77,7 @@ class ClientEntity(ClientUnit):
         return self._service
 
     def get_context(self, *arg):
-        return self._service_context
+        return self.context
 
     def get_service(self, service_name, *arg):
         try:
@@ -96,14 +97,6 @@ class ClientEntity(ClientUnit):
 
     def get_client_id(self):
         return self.entity_id
-
-    def setup_client_authn_methods(self, config):
-        if config and "client_authn_methods" in config:
-            self._service_context.client_authn_method = client_auth_setup(
-                config.get("client_authn_methods")
-            )
-        else:
-            self._service_context.client_authn_method = {}
 
     def get_metadata(self, *args):
         _fed_registration = self.get_service('registration')
@@ -138,7 +131,7 @@ class ClientEntity(ClientUnit):
         )
 
     def set_client_id(self, client_id):
-        self._service_context.set("client_id", client_id)
+        self.context.set("client_id", client_id)
 
     def get_response(
             self,

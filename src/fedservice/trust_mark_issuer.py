@@ -5,7 +5,6 @@ from typing import Optional
 
 from cryptojwt import JWT
 from cryptojwt import KeyJar
-from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import utc_time_sans_frac
 from idpyoidc.node import create_keyjar
 from idpyoidc.server import init_service

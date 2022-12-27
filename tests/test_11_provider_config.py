@@ -9,6 +9,7 @@ from fedservice.entity import FederationEntity
 from fedservice.op import ServerEntity
 from fedservice.op.authorization import Authorization
 from fedservice.op.provider_config import ProviderConfiguration
+from fedservice.trust_mark_issuer import TrustMarkIssuer
 from tests import CRYPT_CONFIG
 from tests import RESPONSE_TYPES_SUPPORTED
 from tests import SESSION_PARAMS
@@ -70,6 +71,13 @@ class TestEndpoint(object):
         OP_FE.add_endpoints()
         OP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
             'trust_anchors'] = ANCHOR
+        OP_FE.conf['server']['kwargs']['endpoint']['status']['kwargs'][
+            'trust_mark_issuer'] = {
+            'class': TrustMarkIssuer,
+            'kwargs': {
+                'key_conf': {"key_defs": KEYSPEC}
+            }
+        }
 
         OP_CONFIG = {
             'entity_id': OP_ID,
@@ -177,20 +185,14 @@ class TestEndpoint(object):
         assert set(payload['metadata'].keys()) == {'openid_provider'}
         assert set(payload['metadata']['openid_provider'].keys()) == {
             'authorization_endpoint',
-            'claim_types_supported',
             'claims_parameter_supported',
-            'claims_supported',
-            'client_authn_method',
+            'client_registration_types_supported',
             'grant_types_supported',
-            'id_token_encryption_alg_values_supported',
-            'id_token_encryption_enc_values_supported',
             'id_token_signing_alg_values_supported',
             'issuer',
             'jwks_uri',
             'request_authentication_methods_supported',
             'request_authentication_signing_alg_values_supported',
-            'request_object_encryption_alg_values_supported',
-            'request_object_encryption_enc_values_supported',
             'request_object_signing_alg_values_supported',
             'request_parameter_supported',
             'request_uri_parameter_supported',

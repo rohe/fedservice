@@ -4,10 +4,12 @@ from typing import List
 from typing import Optional
 from typing import Union
 
-from cryptojwt.utils import importer
+from cryptojwt import KeyJar
 from idpyoidc.configure import Configuration
 from idpyoidc.impexp import ImpExp
+from idpyoidc.server import client_auth_setup
 
+from fedservice.entity.metadata import FederationEntityMetadata
 from fedservice.entity_statement.create import create_entity_statement
 
 
@@ -32,11 +34,12 @@ class FederationContext(ImpExp):
                  entity_id: str = "",
                  upstream_get: Callable = None,
                  default_lifetime: Optional[int] = 86400,
-                 metadata: Optional[dict] = None,
                  priority: Optional[list] = None,
                  trust_marks: Optional[list] = None,
                  trusted_roots: Optional[dict] = None,
                  authority_hints: Optional[list] = None,
+                 keyjar: Optional[KeyJar] = None,
+                 metadata: Optional[dict] = None,
                  **kwargs
                  ):
 
@@ -50,6 +53,8 @@ class FederationContext(ImpExp):
         self.entity_id = entity_id or config.get("entity_id")
         self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
         self.trust_marks = trust_marks or config.get('trust_marks')
+
+        self.metadata = FederationEntityMetadata(prefer=metadata)
 
         if trusted_roots:
             _trusted_roots = trusted_roots
@@ -72,7 +77,7 @@ class FederationContext(ImpExp):
             self.tr_priority = sorted(set(self.trusted_roots.keys()))
 
         if authority_hints:
-            if isinstance(authority_hints, str):   # Allow it to be a file name
+            if isinstance(authority_hints, str):  # Allow it to be a file name
                 self.authority_hints = json.loads(open(authority_hints).read())
             else:
                 self.authority_hints = authority_hints
@@ -88,6 +93,31 @@ class FederationContext(ImpExp):
                     getattr(self, param)
                 except AttributeError:
                     setattr(self, param, default)
+
+        _keyjar = self.metadata.load_conf(config, supports=self.supports(), keyjar=keyjar)
+
+        self.setup_client_authn_methods()
+
+    def supports(self):
+        res = {}
+        if self.upstream_get:
+            _services = self.upstream_get('services')
+            if _services:
+                for service in _services:
+                    res.update(service.supports())
+
+            _endpoints = self.upstream_get('endpoints')
+            if _endpoints:
+                for name, endp in _endpoints.items():
+                    res.update(endp.supports())
+
+        res.update(self.metadata.supports())
+        return res
+
+    def setup_client_authn_methods(self):
+        self.client_authn_methods = client_auth_setup(
+            self.upstream_get, self.config.get("client_authn_methods")
+        )
 
     def create_entity_statement(self, iss, sub, key_jar=None, metadata=None, metadata_policy=None,
                                 authority_hints=None, lifetime=0, jwks=None, **kwargs):
@@ -111,6 +141,7 @@ class FederationContext(ImpExp):
 
 
 class FederationServerContext(FederationContext):
+
     def __init__(self,
                  config: Optional[Union[dict, Configuration]] = None,
                  entity_id: str = "",
@@ -126,10 +157,6 @@ class FederationServerContext(FederationContext):
                                    metadata=metadata,
                                    authority_hints=authority_hints,
                                    )
-        if metadata is None:
-            metadata = {}
-
-        self.metadata = {k: v for k, v in metadata.items() if k != 'authority_hints'}
 
         _sstm = config.get("self_signed_trust_marks")
         if _sstm:

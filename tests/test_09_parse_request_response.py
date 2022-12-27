@@ -62,7 +62,7 @@ class TestClient:
 
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
-        del oidc_service['web_finger']
+        # del oidc_service['web_finger']
         config = {
             'entity_id': LEAF_ID,
             'key_conf': {'key_defs': KEY_DEFS},

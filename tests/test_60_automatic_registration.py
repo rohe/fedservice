@@ -15,6 +15,7 @@ from fedservice.op import ServerEntity
 from fedservice.op.authorization import Authorization
 from fedservice.op.registration import Registration
 from fedservice.rp import ClientEntity
+from fedservice.trust_mark_issuer import TrustMarkIssuer
 from . import create_trust_chain_messages
 from . import CRYPT_CONFIG
 from .build_entity import FederationEntityBuilder
@@ -77,6 +78,13 @@ class TestAutomatic(object):
             key_conf={"key_defs": KEYDEFS}
         )
         TA.add_endpoints(None, **TA_ENDPOINTS)
+        TA.conf['server']['kwargs']['endpoint']['status']['kwargs'][
+            'trust_mark_issuer'] = {
+            'class': TrustMarkIssuer,
+            'kwargs': {
+                'key_conf': {"key_defs": KEYDEFS}
+            }
+        }
 
         self.ta = FederationEntity(**TA.conf)
 
@@ -107,7 +115,6 @@ class TestAutomatic(object):
 
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
-        del oidc_service['web_finger']
         oidc_service['authorization'] = {"class": "fedservice.rp.authorization.Authorization"}
 
         RP_FE = FederationEntityBuilder(
@@ -137,6 +144,7 @@ class TestAutomatic(object):
                     # OIDC core keys
                     "key_conf": {"uri_path": "static/jwks.json", "key_defs": KEYDEFS},
                     'config': {
+                        'base_url': RP_ID,
                         'client_id': RP_ID,
                         'client_secret': 'a longesh password',
                         'redirect_uris': ['https://example.com/cli/authz_cb'],
@@ -200,15 +208,13 @@ class TestAutomatic(object):
                     'config': {
                         "issuer": "https://example.com/",
                         "httpc_params": {"verify": False, "timeout": 1},
-                        "capabilities": {
-                            "subject_types_supported": ["public", "pairwise", "ephemeral"],
-                            "grant_types_supported": [
-                                "authorization_code",
-                                "implicit",
-                                "urn:ietf:params:oauth:grant-type:jwt-bearer",
-                                "refresh_token",
-                            ],
-                        },
+                        "subject_types_supported": ["public", "pairwise", "ephemeral"],
+                        "grant_types_supported": [
+                            "authorization_code",
+                            "implicit",
+                            "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                            "refresh_token",
+                        ],
                         "token_handler_args": {
                             "jwks_def": {
                                 "private_path": "private/token_jwks.json",
@@ -287,7 +293,8 @@ class TestAutomatic(object):
                         },
                         "template_dir": "template",
                         "session_params": SESSION_PARAMS,
-                    }},
+                    }
+                },
                 'key_conf': {"key_defs": KEYDEFS},
                 "services": oidc_service
             }
@@ -328,8 +335,8 @@ class TestAutomatic(object):
         _msgs = create_trust_chain_messages(self.op, self.ta)
 
         # add the jwks_uri
-        _msgs[self.op['openid_provider'].endpoint_context.jwks_uri] = self.op[
-            'openid_provider'].keyjar.export_jwks_as_json()
+        _jwks_uri = self.op['openid_provider'].get_context().get_preference('jwks_uri')
+        _msgs[_jwks_uri] = self.op['openid_provider'].keyjar.export_jwks_as_json()
 
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():
@@ -342,13 +349,17 @@ class TestAutomatic(object):
 
         assert self.rp['openid_relying_party'].get_context().provider_info
 
+        # automatic registration == not explict registration
+        _context = self.rp['openid_relying_party'].get_context()
+        _context.metadata.preferred_to_registered(supported=_context.supports())
+
         _auth_service = self.rp['openid_relying_party'].get_service('authorization')
         authn_request = _auth_service.construct()
 
         _msgs = create_trust_chain_messages(self.rp, self.im, self.ta)
         # add the jwks_uri
-        _msgs[self.rp['openid_relying_party'].get_context().jwks_uri] = self.rp[
-            'openid_relying_party'].keyjar.export_jwks_as_json()
+        _jwks_uri = self.rp['openid_relying_party'].get_context().get_preference('jwks_uri')
+        _msgs[_jwks_uri] = self.rp['openid_relying_party'].keyjar.export_jwks_as_json()
 
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():

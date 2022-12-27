@@ -11,9 +11,7 @@ from fedservice.entity.function import apply_policies
 from fedservice.entity.function import tree2chains
 from fedservice.entity.function import verify_self_signed_signature
 from fedservice.entity.function import verify_trust_chains
-from fedservice.entity_statement.construct import map_configuration_to_preference
 from fedservice.entity_statement.statement import chains2dict
-from fedservice.entity_statement.utils import create_authority_hints
 from fedservice.exception import NoTrustedClaims
 
 logger = logging.getLogger(__name__)
@@ -100,7 +98,7 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
 
         # First deal with federation relates things
         _federation_entity = self.upstream_get("entity").upstream_get('unit')['federation_entity']
-        _federation_context = _federation_entity.context
+        _federation_context = _federation_entity.get_context()
 
         # If two chains lead to the same trust anchor only one remains after this
         _federation_context.trust_chains = chains2dict(trust_chains)
@@ -123,11 +121,11 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
         _context = self.upstream_get("context")
         _context.set('provider_info', _pi)
         self._update_service_context(_pi)
-        _client = self.upstream_get("entity")
-        _metadata = _client.get_metadata()
+        # _client = self.upstream_get("entity")
+        # _metadata = _client.get_metadata()
         # _metadata.update(_federation_entity.get_metadata())
-        _context.set('behaviour',
-                     map_configuration_to_preference(_pi, _metadata['openid_relying_party']))
+        # _context.set('behaviour',
+        #              map_configuration_to_preference(_pi, _metadata['openid_relying_party']))
 
     def parse_response(self, info, sformat="", state="", **kwargs):
         # returns a list of TrustChain instances

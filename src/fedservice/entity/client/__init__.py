@@ -81,15 +81,15 @@ class FederationEntityClient(ClientUnit):
                             keyjar=keyjar, httpc_params=httpc_params,
                             config=config)
 
+        _srvs = services or DEFAULT_FEDERATION_ENTITY_SERVICES
+
+        self._service = init_services(service_definitions=_srvs, upstream_get=self.unit_get)
+
         self._service_context = FederationServiceContext(config=config,
                                                          upstream_get=self.unit_get,
                                                          metadata=metadata,
                                                          trust_marks=trust_marks,
                                                          priority=priority)
-
-        _srvs = services or DEFAULT_FEDERATION_ENTITY_SERVICES
-
-        self._service = init_services(service_definitions=_srvs, upstream_get=self.unit_get)
 
         self.setup_client_authn_methods(config)
 
@@ -109,6 +109,9 @@ class FederationEntityClient(ClientUnit):
     def get_service_names(self, *args):
         return set(self._service.keys())
 
+    def get_services(self, *args):
+        return self._service.values()
+
     def get_context(self, *args):
         return self._service_context
 
@@ -119,31 +122,6 @@ class FederationEntityClient(ClientUnit):
             )
         else:
             self._service_context.client_authn_method = {}
-
-    # def do_request(
-    #         self,
-    #         request_type: str,
-    #         response_body_type: Optional[str] = "",
-    #         request_args: Optional[dict] = None,
-    #         behaviour_args: Optional[dict] = None,
-    #         **kwargs
-    # ):
-    #     _srv = self._service[request_type]
-    #
-    #     _info = _srv.get_request_parameters(request_args=request_args, **kwargs)
-    #
-    #     if not response_body_type:
-    #         response_body_type = _srv.response_body_type
-    #
-    #     logger.debug("do_request info: {}".format(_info))
-    #
-    #     try:
-    #         _state = kwargs["state"]
-    #     except:
-    #         _state = ""
-    #     return self.service_request(
-    #         _srv, response_body_type=response_body_type, state=_state, **_info
-    #     )
 
     def set_client_id(self, client_id):
         self._service_context.client_id = client_id

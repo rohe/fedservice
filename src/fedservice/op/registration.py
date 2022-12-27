@@ -18,7 +18,7 @@ class Registration(registration.Registration):
     request_placement = 'body'
     response_format = 'jose'
     endpoint_name = "federation_registration_endpoint"
-    provider_info_attributes = {
+    _status = {
         "client_registration_types_supported": ["automatic", "explicit"]
     }
 
