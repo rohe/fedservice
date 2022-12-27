@@ -18,6 +18,7 @@ from idpyoidc.message import SINGLE_OPTIONAL_STRING
 from idpyoidc.message import SINGLE_REQUIRED_INT
 from idpyoidc.message import SINGLE_REQUIRED_STRING
 from idpyoidc.message.oauth2 import ResponseMessage
+from idpyoidc.message import oauth2 as OAuth2Message
 from idpyoidc.message.oidc import deserialize_from_one_of
 from idpyoidc.message.oidc import dict_deser
 from idpyoidc.message.oidc import JsonWebToken
@@ -37,7 +38,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class AuthorizationServerMetadata(Message):
-    """Metadata for an OAuth2 Authorization Server."""
+    """Metadata for an OAuth2 Authorization Server. With Federation additions"""
     c_param = {
         "issuer": SINGLE_REQUIRED_STRING,
         "authorization_endpoint": SINGLE_OPTIONAL_STRING,
@@ -59,7 +60,12 @@ class AuthorizationServerMetadata(Message):
         "introspection_endpoint": SINGLE_OPTIONAL_STRING,
         "introspection_endpoint_auth_methods_supported": SINGLE_OPTIONAL_JSON,
         "introspection_endpoint_auth_signing_alg_values_supported": SINGLE_OPTIONAL_JSON,
-        "code_challenge_methods_supported": SINGLE_OPTIONAL_JSON
+        "code_challenge_methods_supported": SINGLE_OPTIONAL_JSON,
+        # below Federation additions
+        'client_registration_types_supported': OPTIONAL_LIST_OF_STRINGS,
+        'federation_registration_endpoint': SINGLE_OPTIONAL_STRING,
+        'request_authentication_methods_supported': SINGLE_OPTIONAL_JSON,
+        'request_authentication_signing_alg_values_supported': OPTIONAL_LIST_OF_STRINGS,
     }
 
 
@@ -123,29 +129,13 @@ def trust_mark_issuer_deser(val, sformat="json"):
     return deserialize_from_one_of(val, TrustMarkIssuer, sformat)
 
 
-OPTIONAL_TRUST_MARK_ISSUER_METADATA = (Message, False, msg_ser,
-                                       trust_mark_issuer_deser, False)
-
-
-class OauthClientMetadata(Message):
+class OauthClientMetadata(OAuth2Message.OauthClientMetadata):
     """Metadata for an OAuth2 Client."""
-    c_param = {
-        "redirect_uris": OPTIONAL_LIST_OF_STRINGS,
-        "token_endpoint_auth_method": SINGLE_OPTIONAL_STRING,
-        "grant_type": OPTIONAL_LIST_OF_STRINGS,
-        "response_types": OPTIONAL_LIST_OF_STRINGS,
-        "client_name": SINGLE_OPTIONAL_STRING,
-        "client_uri": SINGLE_OPTIONAL_STRING,
-        "logo_uri": SINGLE_OPTIONAL_STRING,
-        "scope": OPTIONAL_LIST_OF_SP_SEP_STRINGS,
-        "contacts": OPTIONAL_LIST_OF_STRINGS,
-        "tos_uri": SINGLE_OPTIONAL_STRING,
-        "policy_uri": SINGLE_OPTIONAL_STRING,
-        "jwks_uri": SINGLE_OPTIONAL_STRING,
-        "jwks": SINGLE_OPTIONAL_JSON,
-        "software_id": SINGLE_OPTIONAL_STRING,
-        "software_version": SINGLE_OPTIONAL_STRING
-    }
+    c_param = OAuth2Message.OauthClientMetadata.c_param.copy()
+    c_param.update({
+        "organization_name": SINGLE_OPTIONAL_STRING,
+        "signed_jwks_uri": SINGLE_OPTIONAL_STRING,
+    })
 
 
 def oauth_client_metadata_deser(val, sformat="json"):
@@ -239,7 +229,7 @@ OPTIONAL_RP_REGISTRATION_RESPONSE = (
     Message, False, msg_ser, rp_registration_response_deser, False)
 
 
-class OPMetadata(ProviderConfigurationResponse):
+class OPMetadataMessage(ProviderConfigurationResponse):
     c_param = ProviderConfigurationResponse.c_param.copy()
     c_param.update({
         "client_registration_types_supported": REQUIRED_LIST_OF_STRINGS,
@@ -251,7 +241,7 @@ class OPMetadata(ProviderConfigurationResponse):
 
 def op_metadata_deser(val, sformat="json"):
     """Deserializes a JSON object (most likely) into a ProviderConfigurationResponse."""
-    return deserialize_from_one_of(val, OPMetadata, sformat)
+    return deserialize_from_one_of(val, OPMetadataMessage, sformat)
 
 
 OPTIONAL_OP_METADATA = (Message, False, msg_ser, op_metadata_deser, False)

@@ -2,6 +2,7 @@ import json
 import os
 from urllib.parse import urlparse
 
+import pytest
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import KeyJar
 from idpyoidc.client.client_auth import PrivateKeyJWT
@@ -9,7 +10,6 @@ from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.defaults import JWT_BEARER
 from idpyoidc.message.oidc import AccessTokenRequest
 from idpyoidc.node import topmost_unit
-import pytest
 
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
@@ -88,8 +88,7 @@ class TestRpService(object):
             metadata={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
-                "contacts": "operations@leaf.example.com",
-                "client_registration_types": ['explicit']
+                "contacts": "operations@leaf.example.com"
             },
             authority_hints=['https://ntnu.no']
         )
@@ -99,7 +98,7 @@ class TestRpService(object):
 
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
-        del oidc_service['web_finger']
+        # del oidc_service['web_finger']
         config = {
             'entity_id': LEAF_ID,
             'key_conf': {'private_path': FOODLE_JWKS},
@@ -154,16 +153,51 @@ class TestRpService(object):
         statement = statements[0]
         assert statement.anchor == 'https://feide.no'
         self.disco_service.update_service_context(statements)
-        assert set(self.disco_service.upstream_get("context").get('behaviour').keys()) == {
+        assert set(self.disco_service.upstream_get("context").prefers().keys()) == {
             'application_type',
-            'grant_types',
-            'id_token_signed_response_alg',
+            'callback_uris',
+            'client_id',
+            'client_secret',
+            'default_max_age',
+            'encrypt_request_object_supported',
+            'encrypt_userinfo_supported',
+            'grant_types_supported',
+            'id_token_encryption_alg_values_supported',
+            'id_token_encryption_enc_values_supported',
+            'id_token_signing_alg_values_supported',
+            'jwks_uri',
             'redirect_uris',
-            'response_types',
-            'token_endpoint_auth_method'
-        }
-        # 'grant_types', 'id_token_signed_response_alg',
-        # 'token_endpoint_auth_method', 'federation_type'}
+            'request_object_encryption_alg_values_supported',
+            'request_object_encryption_enc_values_supported',
+            'request_object_signing_alg_values_supported',
+            'response_modes_supported',
+            'response_types_supported',
+            'scopes_supported',
+            'subject_types_supported',
+            'token_endpoint_auth_method',
+            'token_endpoint_auth_signing_alg_values_supported',
+            'userinfo_encryption_alg_values_supported',
+            'userinfo_encryption_enc_values_supported',
+            'userinfo_signing_alg_values_supported'}
+        assert set(
+            [k for k, v in self.disco_service.upstream_get("context").prefers().items() if v]) == {
+                   'application_type',
+                   'callback_uris',
+                   'client_id',
+                   'client_secret',
+                   'default_max_age',
+                   'grant_types_supported',
+                   'id_token_signing_alg_values_supported',
+                   'jwks_uri',
+                   'redirect_uris',
+                   'request_object_signing_alg_values_supported',
+                   'response_modes_supported',
+                   'response_types_supported',
+                   'scopes_supported',
+                   'subject_types_supported',
+                   'token_endpoint_auth_method',
+                   'token_endpoint_auth_signing_alg_values_supported',
+                   'userinfo_signing_alg_values_supported'}
 
     def test_create_reqistration_request(self):
         # get the entity statement from the OP
@@ -200,11 +234,17 @@ class TestRpService(object):
                                        'iat', 'authority_hints'}
         assert set(payload['metadata']['openid_relying_party'].keys()) == {
             'application_type',
+            'default_max_age',
             'grant_types',
             'id_token_signed_response_alg',
+            'jwks_uri',
             'redirect_uris',
+            'request_object_signing_alg',
             'response_types',
-            'token_endpoint_auth_method'}
+            'subject_type',
+            'token_endpoint_auth_method',
+            'token_endpoint_auth_signing_alg',
+            'userinfo_signed_response_alg'}
 
     def test_parse_registration_response(self):
         # construct the entity statement the OP should return
@@ -277,11 +317,17 @@ class TestRpService(object):
                                       'client_id',
                                       'client_secret',
                                       'contacts',
+                                      'default_max_age',
                                       'grant_types',
                                       'id_token_signed_response_alg',
+                                      'jwks_uri',
                                       'redirect_uris',
+                                      'request_object_signing_alg',
                                       'response_types',
-                                      'token_endpoint_auth_method'}
+                                      'subject_type',
+                                      'token_endpoint_auth_method',
+                                      'token_endpoint_auth_signing_alg',
+                                      'userinfo_signed_response_alg'}
 
 
 class TestRpServiceAuto(object):
@@ -303,7 +349,6 @@ class TestRpServiceAuto(object):
 
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
-        del oidc_service['web_finger']
 
         config = {
             'entity_id': LEAF_ID,

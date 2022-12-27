@@ -1,13 +1,12 @@
-from idpyoidc.util import rndstr
 import pytest
 import responses
+from fedservice.trust_mark_issuer import TrustMarkIssuer
+from idpyoidc.util import rndstr
 
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import LEAF_ENDPOINT
 from fedservice.defaults import TRUST_MARK_ISSUER_ENDPOINTS
 from fedservice.entity import FederationEntity
-from fedservice.entity.server.status import TrustMarkStatus
-from fedservice.trust_mark_issuer import TrustMarkIssuer
 from fedservice.trust_mark_issuer import create_trust_mark
 from tests import create_trust_chain_messages
 from tests.build_entity import FederationEntityBuilder
@@ -26,6 +25,7 @@ TRUST_MARK_ISSUER_ID = "https://trust_mark_issuer.example.org"
 IM_ID = "https://im.example.org"
 
 TM_ID = "https://refeds.org/wp-content/uploads/2016/01/Sirtfi-1.0.pdf"
+
 
 class TestComboCollect(object):
 
@@ -54,6 +54,14 @@ class TestComboCollect(object):
             key_conf={"key_defs": KEYDEFS}
         )
         TA.add_endpoints(None, **TA_ENDPOINTS)
+
+        TA.conf['server']['kwargs']['endpoint']['status']['kwargs'][
+            'trust_mark_issuer'] = {
+            'class': TrustMarkIssuer,
+            'kwargs': {
+                'key_conf': {"key_defs": KEYDEFS}
+            }
+        }
 
         self.ta = FederationEntity(**TA.conf)
 
@@ -106,8 +114,6 @@ class TestComboCollect(object):
         # Trust Mark Issuer
         ########################################
 
-        self.tmi = TrustMarkIssuer(trust_mark_specification={})
-
         TMI = FederationEntityBuilder(
             entity_id=TRUST_MARK_ISSUER_ID,
             key_conf={'key_defs': KEYDEFS},
@@ -122,21 +128,14 @@ class TestComboCollect(object):
         _endpoints = TRUST_MARK_ISSUER_ENDPOINTS
         _endpoints['status']['kwargs']['trust_marks'] = {
             TM_ID: {"ref": "https://refeds.org/sirtfi"}}
-
-        TMI.add_endpoints(
-            status={
-                "path": "status",
-                "class": TrustMarkStatus,
-                "kwargs": {
-                    'trust_mark_issuer': self.tmi
-                }
-            },
-            entity_configuration={
-                "path": ".well-known/openid-federation",
-                "class": 'fedservice.entity.server.entity_configuration.EntityConfiguration',
-                "kwargs": {}
+        TMI.add_endpoints(**TRUST_MARK_ISSUER_ENDPOINTS)
+        TMI.conf['server']['kwargs']['endpoint']['status']['kwargs'][
+            'trust_mark_issuer'] = {
+            'class': TrustMarkIssuer,
+            'kwargs': {
+                'key_conf': {"key_defs": KEYDEFS}
             }
-        )
+        }
 
         self.tmi = FederationEntity(**TMI.conf)
 

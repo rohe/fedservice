@@ -1,37 +1,36 @@
 import logging
 
 from idpyoidc.message.oidc import RegistrationRequest
-from idpyoidc.client.oidc.provider_info_discovery import PROVIDER2PREFERENCE
 
 from fedservice.entity.function.policy import TrustChainPolicy
 
 logger = logging.getLogger(__name__)
 
 
-def translate_configuration(conf):
-    """
-    Map a Provider Configuration response into a metadata policy
-
-    :param conf: Attribute,value pairs from a Provider Configuration response
-    :return: Attribute,value pairs useful when constructing a Client
-        registration requests
-    """
-    policy = {}
-    cls = RegistrationRequest
-    for pro, pref in PROVIDER2PREFERENCE.items():
-        try:
-            _allow = conf[pro]
-        except KeyError:
-            pass
-        else:
-            if pref == "scope":
-                policy[pref] = {'subset_of': _allow}
-            elif isinstance(cls.c_param[pref][0], list):
-                policy[pref] = {'subset_of': _allow}
-            else:
-                policy[pref] = {'one_of': _allow}
-
-    return policy
+# def translate_configuration(conf):
+#     """
+#     Map a Provider Configuration response into a metadata policy
+#
+#     :param conf: Attribute,value pairs from a Provider Configuration response
+#     :return: Attribute,value pairs useful when constructing a Client
+#         registration requests
+#     """
+#     policy = {}
+#     cls = RegistrationRequest
+#     for pro, pref in PROVIDER2PREFERENCE.items():
+#         try:
+#             _allow = conf[pro]
+#         except KeyError:
+#             pass
+#         else:
+#             if pref == "scope":
+#                 policy[pref] = {'subset_of': _allow}
+#             elif isinstance(cls.c_param[pref][0], list):
+#                 policy[pref] = {'subset_of': _allow}
+#             else:
+#                 policy[pref] = {'one_of': _allow}
+#
+#     return policy
 
 
 def list_to_singleton(args, cls):

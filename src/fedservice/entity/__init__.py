@@ -41,15 +41,11 @@ class FederationEntity(Unit):
         Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                       httpc_params=httpc_params, key_conf=key_conf, issuer_id=entity_id)
 
-        self.metadata = metadata or {}
         _args = {
             "upstream_get": self.unit_get,
             "httpc": self.httpc,
             "httpc_params": self.httpc_params,
         }
-
-        self.context = FederationContext(entity_id=entity_id, upstream_get=self.unit_get,
-                                         authority_hints=authority_hints)
 
         self.client = self.server = self.function = None
         for key, val in [('client', client), ('server', server), ('function', function)]:
@@ -57,6 +53,11 @@ class FederationEntity(Unit):
                 _kwargs = val["kwargs"].copy()
                 _kwargs.update(_args)
                 setattr(self, key, instantiate(val["class"], **_kwargs))
+
+        self.context = FederationContext(entity_id=entity_id, upstream_get=self.unit_get,
+                                         authority_hints=authority_hints, keyjar=self.keyjar,
+                                         metadata=metadata)
+
 
     def get_context(self, *arg):
         return self.context
@@ -83,13 +84,11 @@ class FederationEntity(Unit):
             return getattr(self.function, function_name)
 
     def get_metadata(self):
-        metadata = self.metadata
-        if self.server.get_context().metadata:
-            metadata.update(self.server.get_context().metadata)
+        metadata = self.get_context().metadata.prefer
         # collect endpoints
         endpoints = {}
         for key, item in self.server.endpoint.items():
-            if key in ["fetch", "list", "resolve"]:
+            if key in ["fetch", "list", "resolve", 'status']:
                 metadata[f"federation_{key}_endpoint"] = item.full_path
         return {"federation_entity": metadata}
 

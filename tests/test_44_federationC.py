@@ -1,4 +1,5 @@
 from cryptojwt.jws.jws import factory
+from fedservice.trust_mark_issuer import TrustMarkIssuer
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.oidc.token import Token
 from idpyoidc.server.oidc.userinfo import UserInfo
@@ -72,7 +73,13 @@ class TestComboCollect(object):
             key_conf={"key_defs": KEYDEFS}
         )
         TA.add_endpoints(None, **TA_ENDPOINTS)
-
+        TA.conf['server']['kwargs']['endpoint']['status']['kwargs'][
+            'trust_mark_issuer'] = {
+            'class': TrustMarkIssuer,
+            'kwargs': {
+                'key_conf': {"key_defs": KEYDEFS}
+            }
+        }
         self.ta = FederationEntity(**TA.conf)
 
         ANCHOR = {TA_ID: self.ta.keyjar.export_jwks()}
@@ -102,7 +109,6 @@ class TestComboCollect(object):
 
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
-        del oidc_service['web_finger']
 
         RP_FE = FederationEntityBuilder(
             RP_ID,

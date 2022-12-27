@@ -4,6 +4,7 @@ import os
 import pytest
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import init_key_jar
+from fedservice.trust_mark_issuer import TrustMarkIssuer
 
 from fedservice.entity import FederationEntity
 from tests.build_entity import FederationEntityBuilder
@@ -58,7 +59,13 @@ class TestFederationEntity(object):
                 }
             }
         )
-
+        ENT.conf['server']['kwargs']['endpoint']['status']['kwargs'][
+            'trust_mark_issuer'] = {
+            'class': TrustMarkIssuer,
+            'kwargs': {
+                'key_conf': {"key_defs": KEYDEFS}
+            }
+        }
         self.entity = FederationEntity(**ENT.conf)
 
     def test_client(self):
@@ -91,7 +98,8 @@ class TestFederationEntity(object):
             assert i in ('organization_name', 'homepage_uri', 'contacts',
                          'federation_fetch_endpoint',
                          'federation_list_endpoint',
-                         'federation_resolve_endpoint')
+                         'federation_resolve_endpoint',
+                         'federation_status_endpoint')
 
     def test_fetch(self):
         _endpoint = self.entity.server.get_endpoint('fetch')

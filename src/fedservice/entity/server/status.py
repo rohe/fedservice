@@ -36,7 +36,7 @@ class TrustMarkStatus(Endpoint):
         if isinstance(trust_mark_issuer, dict):
             self.trust_mark_issuer = instantiate(trust_mark_issuer['class'],
                                                  upstream_get=upstream_get,
-                                                 **trust_mark_issuer[kwargs])
+                                                 **trust_mark_issuer['kwargs'])
         else:
             trust_mark_issuer.upstream_get = upstream_get
             self.trust_mark_issuer = trust_mark_issuer

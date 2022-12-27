@@ -1,20 +1,18 @@
 from idpyoidc.client.exception import OtherError
 from idpyoidc.client.oidc import authorization
-from idpyoidc.client.oidc import registration
 from idpyoidc.exception import UnSupported
 
 
-def add_callback_uris(request_args=None, service=None, **kwargs):
-    registration.add_callback_uris(request_args=request_args, service=service, **kwargs)
-    del request_args['redirect_uris']
-    return request_args, {}
+# def add_callback_uris(request_args=None, service=None, **kwargs):
+#     registration.add_callback_uris(request_args=request_args, service=service, **kwargs)
+#     del request_args['redirect_uris']
+#     return request_args, {}
 
 
 class Authorization(authorization.Authorization):
 
     def __init__(self, upstream_get, conf=None):
         authorization.Authorization.__init__(self, upstream_get=upstream_get, conf=conf)
-        self.pre_construct.insert(0, add_callback_uris)
         self.pre_construct.append(self._automatic_registration)
 
     def _use_authorization_endpoint(self, context, post_args, ams):
@@ -27,7 +25,7 @@ class Authorization(authorization.Authorization):
             post_args['recv'] = context.provider_info["authorization_endpoint"]
             post_args["with_jti"] = True
             post_args["lifetime"] = self.conf.get("request_object_expires_in", 300)
-            post_args['issuer'] = self.upstream_get('attribute','entity_id')
+            post_args['issuer'] = self.upstream_get('attribute', 'entity_id')
         else:
             raise OtherError("Using request object in authentication not supported by OP")
 
@@ -45,6 +43,8 @@ class Authorization(authorization.Authorization):
             post_args = {}
 
         _request_endpoints = _context.config.get('authorization_request_endpoints')
+        if not _request_endpoints:
+            _request_endpoints = _context.config.conf.get('authorization_request_endpoints')
 
         _ams = _context.provider_info.get('request_authentication_methods_supported')
         # what if request_param is already set ??

@@ -21,8 +21,8 @@ class Authorization(authorization.Authorization):
     response_cls = oidc.AuthorizationResponse
     error_msg = oidc.ResponseMessage
 
-    provider_info_attributes = authorization.Authorization.provider_info_attributes.copy()
-    provider_info_attributes.update({
+    _supports = authorization.Authorization._supports.copy()
+    _supports.update({
         "request_authentication_signing_alg_values_supported": ["RS256"],
         "request_authentication_methods_supported": {
             "authorization_endpoint": [
