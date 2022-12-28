@@ -20,7 +20,7 @@ from fedservice.server import ServerUnit
 logger = logging.getLogger(__name__)
 
 
-class FederationEntityServer(ServerUnit):
+class FederationServerEntity(ServerUnit):
     name = 'federation_entitygi'
     parameter = {"endpoint": [Endpoint], "context": EndpointContext}
 

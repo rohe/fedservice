@@ -79,13 +79,13 @@ class TestAutomatic(object):
             key_conf={"key_defs": KEYDEFS}
         )
         TA.add_endpoints(None, **TA_ENDPOINTS)
-        TA.conf['server']['kwargs']['endpoint']['status']['kwargs'][
-            'trust_mark_issuer'] = {
-            'class': TrustMarkIssuer,
-            'kwargs': {
-                'key_conf': {"key_defs": KEYDEFS}
-            }
-        }
+        # TA.conf['server']['kwargs']['endpoint']['status']['kwargs'][
+        #     'trust_mark_issuer'] = {
+        #     'class': TrustMarkIssuer,
+        #     'kwargs': {
+        #         'key_conf': {"key_defs": KEYDEFS}
+        #     }
+        # }
 
         self.ta = FederationEntity(**TA.conf)
 

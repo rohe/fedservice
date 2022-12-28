@@ -70,13 +70,13 @@ class TestEndpoint(object):
         OP_FE.add_endpoints()
         OP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
             'trust_anchors'] = ANCHOR
-        OP_FE.conf['server']['kwargs']['endpoint']['status']['kwargs'][
-            'trust_mark_issuer'] = {
-            'class': TrustMarkIssuer,
-            'kwargs': {
-                'key_conf': {"key_defs": KEYSPEC}
-            }
-        }
+        # OP_FE.conf['server']['kwargs']['endpoint']['status']['kwargs'][
+        #     'trust_mark_issuer'] = {
+        #     'class': TrustMarkIssuer,
+        #     'kwargs': {
+        #         'key_conf': {"key_defs": KEYSPEC}
+        #     }
+        # }
 
         OP_CONFIG = {
             'entity_id': OP_ID,
