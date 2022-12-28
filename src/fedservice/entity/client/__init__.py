@@ -50,7 +50,7 @@ class FederationServiceContext(FederationContext):
             _key_jar.import_jwks(jwks, iss)
 
 
-class FederationEntityClient(ClientUnit):
+class FederationClientEntity(ClientUnit):
     def __init__(
             self,
             upstream_get: Callable = None,

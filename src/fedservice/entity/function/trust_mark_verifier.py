@@ -19,8 +19,10 @@ class TrustMarkVerifier(Function):
     def __init__(self, upstream_get: Callable):
         Function.__init__(self, upstream_get)
 
-    def __call__(self, trust_mark: str, check_status: Optional[bool] = False, entity_id:
-                Optional[str] = ''):
+    def __call__(self,
+                 trust_mark: str,
+                 check_status: Optional[bool] = False,
+                 entity_id: Optional[str] = ''):
         """
         Verifies that a trust mark is issued by someone in the federation and that
         the signing key is a federation key.
@@ -31,7 +33,7 @@ class TrustMarkVerifier(Function):
 
         payload = get_payload(trust_mark)
         _trust_mark = message.TrustMark(**payload)
-        # Verify that everything that should be there is there
+        # Verify that everything that should be there are there
         _trust_mark.verify()
 
         # Has it expired ?

@@ -18,7 +18,6 @@ class Fetch(Endpoint):
 
     def __init__(self, upstream_get, **kwargs):
         Endpoint.__init__(self, upstream_get=upstream_get, **kwargs)
-        self.post_construct.append(self.create_entity_statement)
 
     def get_policy(self, entity_id):
         pass
@@ -80,20 +79,3 @@ class Fetch(Endpoint):
                                           )
         return {"response": _es}
 
-    def create_entity_statement(self, request_args, request=None, **kwargs):
-        """
-        Create a self signed entity statement
-
-        :param request_args:
-        :param request:
-        :param kwargs:
-        :return:
-        """
-
-        _context = self.upstream_get("context")
-        _payload = request_args.to_dict()
-        _sub = request.get("sub")
-        if not _sub:
-            _sub = _context.entity_id
-
-        return _context.create_entity_statement(iss=_context.entity_id, sub=_sub, **_payload)

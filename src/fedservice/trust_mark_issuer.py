@@ -51,7 +51,7 @@ class FileDB(object):
     def id_keys(self):
         return self.config.keys()
 
-    def dumps(self):
+    def dump(self):
         res = {}
         for entity_id in self.config.keys():
             res[entity_id] = []
@@ -60,12 +60,17 @@ class FileDB(object):
                     res[entity_id].append(line.rstrip())
         return res
 
-    def loads(self, str):
-        res = json.loads(str)
+    def dumps(self):
+        return json.dumps(self.dump())
+
+    def load(self, info):
         for entity_id in self.config.keys():
             with open(self.config[entity_id], "a") as fp:
-                for tm_info in res[entity_id]:
+                for tm_info in info[entity_id]:
                     fp.write(tm_info + '\n')
+
+    def loads(self, str):
+        self.load(json.loads(str))
 
 
 class SimpleDB(object):
@@ -96,8 +101,14 @@ class SimpleDB(object):
     def __getitem__(self, item):
         return self._db[item]
 
+    def dump(self):
+        return self._db
+
     def dumps(self):
         return json.dumps(self._db)
+
+    def load(self, info):
+        self._db = info
 
     def loads(self, info):
         self._db = json.loads(info)
@@ -142,18 +153,27 @@ class TrustMarkIssuer(object):
         else:
             self.issued = SimpleDB()
 
-    def create_trust_mark(self, entity_id, sub):
+    def create_trust_mark(self, id: [str], sub: [str], **kwargs) -> str:
+        """
+
+        :param id: Trust Mark identifier
+        :param sub: The receiver of the Trust Mark
+        :param kwargs: extra claims to be added to the Trust Mark's claims
+        :return: Trust Mark
+        """
         _now = utc_time_sans_frac()
-        _add = {'iat': _now, 'id': entity_id, 'sub': sub}
-        lifetime = self.tm_lifetime.get(entity_id)
+        _add = {'iat': _now, 'id': id, 'sub': sub}
+        lifetime = self.tm_lifetime.get(id)
         if lifetime:
             _add['exp'] = _now + lifetime
 
-        if entity_id not in self.trust_mark_specification:
+        if id not in self.trust_mark_specification:
             raise ValueError('Unknown trust mark ID')
 
-        content = self.trust_mark_specification[entity_id].copy()
+        content = self.trust_mark_specification[id].copy()
         content.update(_add)
+        if kwargs:
+            content.update(kwargs)
         self.issued.add(content)
 
         packer = JWT(key_jar=self.upstream_get('attribute', 'keyjar'),

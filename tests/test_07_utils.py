@@ -49,15 +49,15 @@ def test_eval_chains():
     _unit = Unit(keyjar=key_jar)
     _verifier = TrustChainVerifier(upstream_get=_unit.unit_get)
 
-    statement = _verifier(chains[0])
+    trust_chain = _verifier(chains[0])
 
-    assert statement.anchor == "https://feide.no"
+    assert trust_chain.anchor == "https://feide.no"
 
     _policy = TrustChainPolicy(upstream_get=_unit.unit_get)
-    _policy(statement)
+    _policy(trust_chain)
 
-    assert set(statement.metadata.keys()) == {'openid_relying_party'}
+    assert set(trust_chain.metadata.keys()) == {'openid_relying_party'}
 
-    assert set(statement.metadata['openid_relying_party'].keys()) == {
+    assert set(trust_chain.metadata['openid_relying_party'].keys()) == {
         'response_types', 'claims', 'contacts', 'application_type', 'redirect_uris',
         'id_token_signing_alg_values_supported', 'jwks_uri'}

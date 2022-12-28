@@ -59,13 +59,13 @@ class TestFederationEntity(object):
                 }
             }
         )
-        ENT.conf['server']['kwargs']['endpoint']['status']['kwargs'][
-            'trust_mark_issuer'] = {
-            'class': TrustMarkIssuer,
-            'kwargs': {
-                'key_conf': {"key_defs": KEYDEFS}
-            }
-        }
+        # ENT.conf['server']['kwargs']['endpoint']['status']['kwargs'][
+        #     'trust_mark_issuer'] = {
+        #     'class': TrustMarkIssuer,
+        #     'kwargs': {
+        #         'key_conf': {"key_defs": KEYDEFS}
+        #     }
+        # }
         self.entity = FederationEntity(**ENT.conf)
 
     def test_client(self):

@@ -34,7 +34,7 @@ class FederationEntityBuilder():
             metadata = {}
 
         self.conf['client'] = {
-            'class': 'fedservice.entity.client.FederationEntityClient',
+            'class': 'fedservice.entity.client.FederationClientEntity',
             'kwargs': {
                 'metadata': metadata,
                 "services": services
@@ -49,7 +49,7 @@ class FederationEntityBuilder():
             metadata = {}
 
         self.conf['server'] = {
-            'class': 'fedservice.entity.server.FederationEntityServer',
+            'class': 'fedservice.entity.server.FederationServerEntity',
             'kwargs': {
                 'metadata': metadata,
                 'endpoint': endpoints
