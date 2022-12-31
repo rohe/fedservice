@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from idpyoidc.client.configure import Configuration
 from idpyoidc.client.service import Service
 from idpyoidc.message import oauth2
-from oidcmsg.oauth2 import ResponseMessage
+from idpyoidc.message.oauth2 import ResponseMessage
 import requests
 
 from fedservice.message import EntityStatement
