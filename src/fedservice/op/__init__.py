@@ -4,22 +4,20 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
-from fedservice.entity.metadata import OPMetadata
 from idpyoidc.configure import Base
-from idpyoidc.server import ASConfiguration
-from idpyoidc.server import Endpoint
-from idpyoidc.server import EndpointContext
-from idpyoidc.server import OPConfiguration
 from idpyoidc.server import allow_refresh_token
+from idpyoidc.server import ASConfiguration
 from idpyoidc.server import authz
 from idpyoidc.server import build_endpoints
 from idpyoidc.server import client_auth_setup
-from idpyoidc.server import create_session_manager
-from idpyoidc.server import get_provider_capabilities
-from idpyoidc.server import init_service
-from idpyoidc.server import init_user_info
+from idpyoidc.server import Endpoint
+from idpyoidc.server import EndpointContext
+from idpyoidc.server import OPConfiguration
 from idpyoidc.server import populate_authn_broker
+from idpyoidc.server.endpoint_context import init_service
+from idpyoidc.server.endpoint_context import init_user_info
 
+from fedservice.entity.metadata import OPMetadata
 from fedservice.server import ServerUnit
 
 

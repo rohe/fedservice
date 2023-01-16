@@ -4,10 +4,9 @@ import os
 import pytest
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import init_key_jar
-from fedservice.trust_mark_issuer import TrustMarkIssuer
 
+from fedservice.build_entity import FederationEntityBuilder
 from fedservice.entity import FederationEntity
-from tests.build_entity import FederationEntityBuilder
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -105,7 +104,7 @@ class TestFederationEntity(object):
         _endpoint = self.entity.server.get_endpoint('fetch')
         _req = _endpoint.parse_request({'iss': ENTITY_ID, 'sub': CHILD_ID})
         _resp_args = _endpoint.process_request(_req)
-        _jwt = factory(_resp_args['response'])
+        _jwt = factory(_resp_args['response_msg'])
         payload = _jwt.jwt.payload()
         assert set(payload.keys()) == {'exp', 'jwks', 'sub', 'iat',
                                        'metadata_policy', 'iss', 'authority_hints'}
@@ -118,4 +117,4 @@ class TestFederationEntity(object):
         _endpoint = self.entity.server.get_endpoint('list')
         _req = _endpoint.parse_request({})
         _resp_args = _endpoint.process_request(_req)
-        assert _resp_args['response'] == [CHILD_ID]
+        assert _resp_args['response_msg'] == f'["{CHILD_ID}"]'

@@ -77,5 +77,5 @@ class Fetch(Endpoint):
                                           key_jar=_keyjar,
                                           **_response
                                           )
-        return {"response": _es}
+        return {"response_msg": _es}
 

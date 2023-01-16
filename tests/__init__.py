@@ -56,7 +56,7 @@ def create_trust_chain_messages(leaf, *entity):
         else:
             _sub = entity[n - 1].entity_id
         _req = _endpoint.parse_request({'iss': ent.entity_id, 'sub': _sub})
-        where_and_what[_endpoint.full_path] = _endpoint.process_request(_req)["response"]
+        where_and_what[_endpoint.full_path] = _endpoint.process_request(_req)["response_msg"]
 
     return where_and_what
 

@@ -34,7 +34,7 @@ class EntityConfiguration(Service):
     synchronous = True
     service_name = "entity_configuration"
     http_method = "GET"
-    response_body_type = "application/entity-statement+jwt"
+    response_body_type = "jwt"
 
     def __init__(self,
                  upstream_get: Callable,

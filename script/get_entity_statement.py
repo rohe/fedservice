@@ -3,10 +3,6 @@ import json
 
 from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
-from pygments.lexers.data import JsonLexer
-
-from fedservice.entity_statement.collect import Collector
-from fedservice.entity_statement.collect import verify_self_signed_signature
 
 if __name__ == '__main__':
     import argparse

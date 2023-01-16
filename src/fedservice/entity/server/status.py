@@ -7,12 +7,9 @@ from typing import Union
 from cryptojwt import JWT
 from idpyoidc.message import Message
 from idpyoidc.message import oidc
-from idpyoidc.server import init_service
 from idpyoidc.server.endpoint import Endpoint
 from idpyoidc.util import instantiate
 
-from fedservice.message import TrustMark
-from fedservice.trust_mark_issuer import SimpleDB
 from fedservice.trust_mark_issuer import TrustMarkIssuer
 
 logger = logging.getLogger(__name__)
@@ -54,7 +51,7 @@ class TrustMarkStatus(Endpoint):
                 if self.trust_mark_issuer.find(request['id'], request['sub']):
                     return {'response': json.dumps({'active': True})}
 
-        return {'response': json.dumps({'active': False})}
+        return {'response_args': json.dumps({'active': False})}
 
     def response_info(
             self,
@@ -63,4 +60,3 @@ class TrustMarkStatus(Endpoint):
             **kwargs
     ) -> dict:
         return response_args
-

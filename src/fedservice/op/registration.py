@@ -72,18 +72,18 @@ class Registration(registration.Registration):
         return registration.Registration.process_request(self, req, authn=None, **kwargs)
 
     @staticmethod
-    def create_entity_statement(response_args, request, endpoint_context,
+    def create_entity_statement(response_args, request, context,
                                 **kwargs):
         """
         wrap the non-federation response in a federation response
 
         :param response_args:
         :param request:
-        :param endpoint_context:
+        :param context:
         :param kwargs:
         :return:
         """
-        _fe = endpoint_context.federation_entity
+        _fe = context.federation_entity
         _md = {_fe.opponent_entity_type: response_args.to_dict()}
         return _fe.create_entity_statement(_fe.entity_id, sub=_fe.entity_id,
                                            metadata=_md,

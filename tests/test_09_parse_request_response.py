@@ -2,12 +2,12 @@ import pytest
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.message.oauth2 import ResponseMessage
 
+from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.defaults import LEAF_ENDPOINT
 from fedservice.entity import FederationEntity
 from fedservice.rp import ClientEntity
-from tests.build_entity import FederationEntityBuilder
 
 LEAF_ID = 'https://foodle.uninett.no'
 
@@ -112,7 +112,7 @@ class TestClient:
             }
         )
 
-        _parse_resp =self.rp.parse_request_response(self.rp.get_service('registration'), _resp)
+        _parse_resp = self.rp.parse_request_response(self.rp.get_service('registration'), _resp)
         assert _parse_resp == _resp
 
     def test_500_error(self):

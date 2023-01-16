@@ -2,6 +2,7 @@ import pytest
 import requests
 import responses
 
+from fedservice.build_entity import FederationEntityBuilder
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import LEAF_ENDPOINT
 from fedservice.entity import FederationEntity
@@ -9,7 +10,6 @@ from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from tests import create_trust_chain_messages
-from tests.build_entity import FederationEntityBuilder
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -56,7 +56,7 @@ class TestComboCollect(object):
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
             },
-            key_conf = {"key_defs": KEYDEFS},
+            key_conf={"key_defs": KEYDEFS},
             authority_hints=[TA_ID]
         )
         INT.add_services()

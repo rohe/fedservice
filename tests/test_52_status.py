@@ -1,15 +1,15 @@
 import pytest
 import responses
-from fedservice.trust_mark_issuer import TrustMarkIssuer
 from idpyoidc.util import rndstr
 
+from fedservice.build_entity import FederationEntityBuilder
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import LEAF_ENDPOINT
 from fedservice.defaults import TRUST_MARK_ISSUER_ENDPOINTS
 from fedservice.entity import FederationEntity
 from fedservice.trust_mark_issuer import create_trust_mark
+from fedservice.trust_mark_issuer import TrustMarkIssuer
 from tests import create_trust_chain_messages
-from tests.build_entity import FederationEntityBuilder
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},

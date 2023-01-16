@@ -1,9 +1,10 @@
 from urllib.parse import urlparse
 
-from cryptojwt.jws.jws import factory
 import pytest
 import responses
+from cryptojwt.jws.jws import factory
 
+from fedservice.build_entity import FederationEntityBuilder
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.entity import FederationEntity
 from fedservice.entity.server.status import TrustMarkStatus
@@ -11,7 +12,6 @@ from fedservice.message import TrustMark
 from fedservice.message import TrustMarkRequest
 from fedservice.trust_mark_issuer import TrustMarkIssuer
 from tests import create_trust_chain_messages
-from tests.build_entity import FederationEntityBuilder
 
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},
@@ -25,6 +25,7 @@ TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
 del TA_ENDPOINTS["resolve"]
 
 TRUST_MARK_ISSUER_ID = "https://entity.example.com"
+
 
 class TestSignedTrustMark():
 
@@ -178,4 +179,4 @@ class TestSignedTrustMark():
             verified_trust_mark = self.entity.function.trust_mark_verifier(_trust_mark)
 
         assert verified_trust_mark
-        assert set(verified_trust_mark.keys()) == {'iat','iss','id','sub','ref'}
+        assert set(verified_trust_mark.keys()) == {'iat', 'iss', 'id', 'sub', 'ref'}

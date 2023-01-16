@@ -3,17 +3,16 @@ import os
 import pytest
 from cryptojwt.jws.jws import factory
 
+from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.entity import FederationEntity
 from fedservice.op import ServerEntity
 from fedservice.op.authorization import Authorization
 from fedservice.op.provider_config import ProviderConfiguration
-from fedservice.trust_mark_issuer import TrustMarkIssuer
 from tests import CRYPT_CONFIG
 from tests import RESPONSE_TYPES_SUPPORTED
 from tests import SESSION_PARAMS
-from tests.build_entity import FederationEntityBuilder
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 

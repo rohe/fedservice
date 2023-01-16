@@ -1,8 +1,9 @@
-from cryptojwt.jws.jws import factory
-from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 import pytest
 import responses
+from cryptojwt.jws.jws import factory
+from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 
+from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
@@ -12,7 +13,6 @@ from fedservice.entity.function import apply_policies
 from fedservice.entity.function import verify_trust_chains
 from fedservice.rp import ClientEntity
 from tests import create_trust_chain_messages
-from tests.build_entity import FederationEntityBuilder
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -181,7 +181,7 @@ class TestComboCollect(object):
             response = resolver.process_request(resolver_query)
 
         assert response
-        _jws = factory(response["response"])
+        _jws = factory(response["response_args"])
         payload = _jws.jwt.payload()
         assert set(payload.keys()) == {'sub', 'iss', 'iat', 'exp', 'metadata', 'trust_chain',
                                        'jwks'}

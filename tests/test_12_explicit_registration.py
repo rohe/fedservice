@@ -3,11 +3,11 @@ import os
 import pytest
 import responses
 from cryptojwt.jws.jws import factory
-from fedservice.trust_mark_issuer import TrustMarkIssuer
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.oidc.token import Token
 from idpyoidc.server.oidc.userinfo import UserInfo
 
+from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
@@ -19,7 +19,6 @@ from fedservice.op.registration import Registration
 from fedservice.rp import ClientEntity
 from . import create_trust_chain_messages
 from . import CRYPT_CONFIG
-from .build_entity import FederationEntityBuilder
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
@@ -367,7 +366,6 @@ class TestAutomatic(object):
         assert _payload['sub'] == self.rp.entity_id
         assert _payload['trust_anchor_id'] == self.ta.entity_id
         assert _payload['aud'] == self.rp.entity_id
-
 
         ###########################################################################
         # [4] The RP receives the registration response and calculates the metadata

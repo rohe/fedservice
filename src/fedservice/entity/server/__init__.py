@@ -60,7 +60,7 @@ class FederationServerEntity(ServerUnit):
                 metadata=metadata,
             )
 
-        # self.endpoint_context.do_add_on(endpoints=self.endpoint)
+        # self.context.do_add_on(endpoints=self.endpoint)
 
         self.setup_client_authn_methods()
         for endpoint_name, _ in self.endpoint.items():
@@ -69,11 +69,12 @@ class FederationServerEntity(ServerUnit):
         self.policy = {}
         self.subordinate = {}
 
+        # Initiate class instance to handle policies and subordinates
         for attr in ['policy', 'subordinate']:
             spec = kwargs.get(attr)
             if spec:
                 if 'class' in spec:
-                    _kwargs = spec["kwargs"]
+                    _kwargs = spec["kwargs"].copy()
                     _kwargs.update({"server_get": self.unit_get})
                     setattr(self, attr, instantiate(spec["class"], **_kwargs))
                 else:

@@ -89,11 +89,9 @@ class TrustChainCollector(Function):
         :param httpc_args: Arguments for the HTTP call.
         :return: Signed EntityStatement
         """
-        httpc_args = self.upstream_get('attribute', 'httpc_args')
-        if httpc_args is None:
-            httpc_args = {}
-
-        response = self.upstream_get('attribute', 'httpc')("GET", url, **httpc_args)
+        _keyjar = self.upstream_get('attribute', 'keyjar')
+        _httpc_params = _keyjar.httpc_params
+        response = self.upstream_get('attribute', 'httpc')("GET", url, **_httpc_params)
         if response.status_code == 200:
             if 'application/jose' not in response.headers['Content-Type']:
                 logger.warning(f"Wrong Content-Type: {response.headers['Content-Type']}")

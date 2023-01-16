@@ -93,9 +93,15 @@ class FederationEntity(Unit):
         return {"federation_entity": metadata}
 
     def get_endpoints(self, *arg):
-        return self.server.endpoint
+        if self.server:
+            return self.server.endpoint
+        else:
+            return None
 
     def get_endpoint(self, endpoint_name, *arg):
+        if self.server is None:
+            return None
+
         try:
             return self.server.get_endpoint(endpoint_name)
         except KeyError:
@@ -109,6 +115,13 @@ class FederationEntity(Unit):
 
     def get_authority_hints(self, *args):
         return self.context.authority_hints
+
+    def get_context_attribute(self, attr, *args):
+        _val = getattr(self.context, attr, None)
+        if not _val and self.upstream_get:
+            return self.upstream_get('context_attribute', attr)
+        else:
+            return _val
 
     def pick_trust_chain(self, trust_chains):
         """

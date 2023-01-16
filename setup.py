@@ -17,6 +17,7 @@
 import re
 import sys
 
+from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
@@ -50,13 +51,8 @@ setup(
     author="Roland Hedberg",
     author_email="roland@catalogix.se",
     license="Apache 2.0",
-    url='https://github.com/IdentityPython/oidcrp/',
-    packages=["fedservice", "fedservice/entity_statement",
-              "fedservice/fetch_entity_statement", "fedservice/entity",
-              "fedservice/rp", "fedservice/op",
-              "fedservice/entity/client", "fedservice/entity/server",
-              "fedservice/entity/function", "fedservice/combo"
-              ],
+    url='https://github.com/rohe/fedservice/',
+    packages=find_packages(where="src"),
     package_dir={"": "src"},
     classifiers=[
         "Development Status :: 4 - Beta",

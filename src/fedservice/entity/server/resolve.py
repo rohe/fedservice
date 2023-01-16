@@ -55,7 +55,7 @@ class Resolve(Endpoint):
                                        key_jar=_federation_entity.get_attribute('keyjar'),
                                        metadata=metadata,
                                        trust_chain=trust_chain)
-        return {'response': _jws}
+        return {'response_args': _jws}
 
     def response_info(
             self,

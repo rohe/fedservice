@@ -1,8 +1,9 @@
-from cryptojwt.jws.jws import factory
-from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 import pytest
 import responses
+from cryptojwt.jws.jws import factory
+from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 
+from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
@@ -13,7 +14,6 @@ from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from fedservice.rp import ClientEntity
 from tests import create_trust_chain_messages
-from tests.build_entity import FederationEntityBuilder
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -200,7 +200,7 @@ class TestConstraints(object):
     def test_intermediate(self):
         _endpoint = self.ta.server.get_endpoint('fetch')
         _req = _endpoint.parse_request({'iss': self.ta.entity_id, 'sub': self.im.entity_id})
-        _jws = factory(_endpoint.process_request(_req)["response"])
+        _jws = factory(_endpoint.process_request(_req)["response_msg"])
         _payload = _jws.jwt.payload()
         assert _payload
         assert 'metadata_policy' in _payload
@@ -226,7 +226,7 @@ class TestConstraints(object):
     def test_leaf(self):
         _endpoint = self.im.server.get_endpoint('fetch')
         _req = _endpoint.parse_request({'sub': self.leaf.entity_id})
-        _jws = factory(_endpoint.process_request(_req)["response"])
+        _jws = factory(_endpoint.process_request(_req)["response_msg"])
         _payload = _jws.jwt.payload()
         assert _payload
         # The intermediate has no specific policy for the leaf and none general for entity types
@@ -253,7 +253,7 @@ class TestConstraints(object):
     def test_rp(self):
         _endpoint = self.im.server.get_endpoint('fetch')
         _req = _endpoint.parse_request({'sub': self.rp.entity_id})
-        _jws = factory(_endpoint.process_request(_req)["response"])
+        _jws = factory(_endpoint.process_request(_req)["response_msg"])
         _payload = _jws.jwt.payload()
         assert _payload
         assert 'metadata_policy' in _payload and 'metadata' in _payload

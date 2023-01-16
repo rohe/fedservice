@@ -2,13 +2,10 @@ import json
 import os
 
 import pytest
+from tests.build_entity import FederationEntityBuilder
 
-from fedservice.combo import FederationCombo
 from fedservice.defaults import LEAF_ENDPOINT
 from fedservice.entity import FederationEntity
-from fedservice.trust_mark_issuer import TrustMarkIssuer
-from tests.build_entity import FederationEntityBuilder
-from tests.build_entity import TrustMarkIssuerBuilder
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -27,6 +24,7 @@ ISSUER = "https://example.org/adm1"
 
 
 class TestFederationEntity(object):
+
     @pytest.fixture(autouse=True)
     def server_setup(self):
         ENT = FederationEntityBuilder(
@@ -57,4 +55,3 @@ class TestFederationEntity(object):
         _req = _endpoint.parse_request({})
         _resp_args = _endpoint.process_request(_req)
         assert _resp_args
-

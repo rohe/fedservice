@@ -1,13 +1,11 @@
-import copy
-
+import pytest
 import responses
 from cryptojwt.jws.jws import factory
-import pytest
 
+from fedservice.build_entity import FederationEntityBuilder
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import LEAF_ENDPOINT
 from fedservice.entity import FederationEntity
-
 # Trust Anchor
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
@@ -19,7 +17,6 @@ from fedservice.entity.function.verifier import TrustChainVerifier
 from fedservice.message import EntityStatement
 from fedservice.message import ResolveResponse
 from tests import create_trust_chain_messages
-from tests.build_entity import FederationEntityBuilder
 
 TA_ID = "https://trust_anchor.example.com"
 TA_ID2 = "https://2nd.trust_anchor.example.com"
@@ -249,7 +246,7 @@ class TestServer():
         _resp_args = _endpoint.process_request(_req)
         assert _resp_args
 
-        _jws = factory(_resp_args["response"])
+        _jws = factory(_resp_args["response_msg"])
         payload = _jws.jwt.payload()
         entity_statement = EntityStatement(**payload)
         entity_statement.verify()
@@ -262,7 +259,7 @@ class TestServer():
         _req = _endpoint.parse_request({})
         _resp_args = _endpoint.process_request(_req)
         assert _resp_args
-        assert _resp_args['response'] == [self.intermediate.entity_id]
+        assert _resp_args['response_msg'] == f'["{self.intermediate.entity_id}"]'
 
     def test_resolve(self):
         _msgs = create_trust_chain_messages(self.leaf, self.intermediate, self.ta)
@@ -280,7 +277,7 @@ class TestServer():
             _resp_args = _endpoint.process_request(_req)
 
         assert _resp_args
-        _jws = factory(_resp_args["response"])
+        _jws = factory(_resp_args["response_args"])
         payload = _jws.jwt.payload()
         entity_statement = ResolveResponse(**payload)
         entity_statement.verify()
@@ -439,3 +436,15 @@ class TestFunction:
         # Leaf trusts both trust anchors
         _trust_chains = verify_trust_chains(_federation_entity, _chains, _entity_conf)
         assert len(_trust_chains) == 2
+
+    def test_upstream_context_attribute(self):
+        assert self.leaf.client.upstream_get('context_attribute', 'entity_id') == LEAF_ID
+        assert self.leaf.function.upstream_get('context_attribute', 'entity_id') == LEAF_ID
+        assert self.leaf.function.policy.upstream_get('context_attribute', 'entity_id') == LEAF_ID
+        assert self.leaf.server.upstream_get('context_attribute', 'entity_id') == LEAF_ID
+
+    def test_upstream_attribute(self):
+        assert self.leaf.client.upstream_get('attribute', 'keyjar') == self.leaf.keyjar
+        assert self.leaf.function.upstream_get('attribute', 'keyjar') == self.leaf.keyjar
+        assert self.leaf.function.policy.upstream_get('attribute', 'keyjar') == self.leaf.keyjar
+        assert self.leaf.server.upstream_get('attribute', 'keyjar') == self.leaf.keyjar

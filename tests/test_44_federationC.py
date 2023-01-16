@@ -1,12 +1,10 @@
-from cryptojwt.jws.jws import factory
-from fedservice.trust_mark_issuer import TrustMarkIssuer
+import pytest
+import responses
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.oidc.token import Token
 from idpyoidc.server.oidc.userinfo import UserInfo
 
-import pytest
-import responses
-
+from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
@@ -21,7 +19,6 @@ from fedservice.op.registration import Registration
 from fedservice.rp import ClientEntity
 from tests import create_trust_chain_messages
 from tests import CRYPT_CONFIG
-from tests.build_entity import FederationEntityBuilder
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -344,7 +341,8 @@ class TestComboCollect(object):
 
         # Just to verify that the request URL is the right one
         req = provider_info.get_request_parameters()
-        assert req['url'] == 'https://op.example.org/.well-known/openid-federation?iss=https%3A%2F%2Fop.example.org'
+        assert req[
+                   'url'] == 'https://op.example.org/.well-known/openid-federation?iss=https%3A%2F%2Fop.example.org'
 
         where_and_what = create_trust_chain_messages(self.op, self.ta)
 
@@ -357,4 +355,3 @@ class TestComboCollect(object):
 
         assert len(trust_chains) == 1
         assert set(trust_chains[0].metadata.keys()) == {'federation_entity', 'openid_provider'}
-

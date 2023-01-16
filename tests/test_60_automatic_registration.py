@@ -6,6 +6,7 @@ from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.oidc.token import Token
 from idpyoidc.server.oidc.userinfo import UserInfo
 
+from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
@@ -15,10 +16,8 @@ from fedservice.op import ServerEntity
 from fedservice.op.authorization import Authorization
 from fedservice.op.registration import Registration
 from fedservice.rp import ClientEntity
-from fedservice.trust_mark_issuer import TrustMarkIssuer
 from . import create_trust_chain_messages
 from . import CRYPT_CONFIG
-from .build_entity import FederationEntityBuilder
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
