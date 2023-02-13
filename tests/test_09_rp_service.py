@@ -115,13 +115,15 @@ class TestRpService(object):
                         'redirect_uris': ['https://example.com/cli/authz_cb'],
                         "keys": {"uri_path": "static/jwks.json", "key_defs": KEY_DEFS},
                         "metadata": {
-                            "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
-                            "id_token_signed_response_alg": "ES256",
-                            "token_endpoint_auth_method": "client_secret_basic",
-                            "client_registration_types": ['automatic']
+                            "grant_types_supported": ['authorization_code', 'implicit',
+                                                      'refresh_token'],
+                            "id_token_signing_alg_values_supported": ["ES256"],
+                            "token_endpoint_auth_methods_supported": ["client_secret_basic"],
+                            "client_registration_types_supported": ['automatic']
                         }
                     },
-                    "services": oidc_service
+                    "services": oidc_service,
+                    "client_type": 'oidc'
                 }
             },
         }

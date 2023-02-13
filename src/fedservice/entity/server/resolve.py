@@ -20,6 +20,7 @@ class Resolve(Endpoint):
     response_format = "jose"
     content_type = 'application/resolve-response+jwt'
     name = "resolve"
+    endpoint_name = 'federation_resolve_endpoint'
 
     def __init__(self, upstream_get, **kwargs):
         Endpoint.__init__(self, upstream_get, **kwargs)

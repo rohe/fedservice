@@ -11,7 +11,7 @@ class EntityConfiguration(Endpoint):
     request_format = ""
     response_format = "jwt"
     name = "entity_configuration"
-    endpoint_name = "entity_configuration"
+    endpoint_name = ""
     default_capabilities = None
     provider_info_attributes = None
     auth_method_attribute = ""

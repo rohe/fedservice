@@ -76,11 +76,18 @@ def collect_trust_chains(unit,
             entity_configuration["authority_hints"] = authority_hints
         tree = _collector.collect_tree(entity_id, entity_configuration, stop_at=stop_at)
     else:
-        tree, signed_entity_configuration = _collector(entity_id, stop_at=stop_at)
+        _collector_response = _collector(entity_id, stop_at=stop_at)
+        if _collector_response:
+            tree, signed_entity_configuration = _collector_response
+        else:
+            tree = None
 
-    chains = tree2chains(tree)
-    logger.debug("%d chains", len(chains))
-    return chains, signed_entity_configuration
+    if tree:
+        chains = tree2chains(tree)
+        logger.debug("%d chains", len(chains))
+        return chains, signed_entity_configuration
+    else:
+        return [], None
 
 
 def verify_trust_chains(unit, chains: List[List[str]], *entity_statements):

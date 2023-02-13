@@ -5,11 +5,11 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
+from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.configure import Configuration
 from idpyoidc.impexp import ImpExp
-from idpyoidc.server import client_auth_setup
 
-from fedservice.entity.metadata import FederationEntityMetadata
+from fedservice.entity.claims import FederationEntityClaims
 from fedservice.entity_statement.create import create_entity_statement
 
 
@@ -54,7 +54,7 @@ class FederationContext(ImpExp):
         self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
         self.trust_marks = trust_marks or config.get('trust_marks')
 
-        self.metadata = FederationEntityMetadata(prefer=metadata)
+        self.claims = FederationEntityClaims(prefer=metadata)
 
         if trusted_roots:
             _trusted_roots = trusted_roots
@@ -94,7 +94,9 @@ class FederationContext(ImpExp):
                 except AttributeError:
                     setattr(self, param, default)
 
-        _keyjar = self.metadata.load_conf(config, supports=self.supports(), keyjar=keyjar)
+        if metadata:
+            config['preference'] = metadata
+        _keyjar = self.claims.load_conf(config, supports=self.supports(), keyjar=keyjar)
 
         self.setup_client_authn_methods()
 
@@ -111,13 +113,11 @@ class FederationContext(ImpExp):
                 for name, endp in _endpoints.items():
                     res.update(endp.supports())
 
-        res.update(self.metadata.supports())
+        res.update(self.claims.supports())
         return res
 
     def setup_client_authn_methods(self):
-        self.client_authn_methods = client_auth_setup(
-            self.upstream_get, self.config.get("client_authn_methods")
-        )
+        self.client_authn_methods = client_auth_setup(self.config.get("client_authn_methods"))
 
     def create_entity_statement(self, iss, sub, key_jar=None, metadata=None, metadata_policy=None,
                                 authority_hints=None, lifetime=0, jwks=None, **kwargs):

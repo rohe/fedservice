@@ -1,8 +1,10 @@
 import logging
 from ssl import SSLError
+from typing import Any
 from typing import Callable
 from typing import List
 from typing import Optional
+from typing import Tuple
 
 from cryptojwt import JWT
 from cryptojwt import KeyJar
@@ -13,6 +15,8 @@ from idpyoidc.exception import MissingPage
 from fedservice.entity.function import Function
 from fedservice.entity_statement.cache import ESCache
 from fedservice.exception import FailedConfigurationRetrieval
+
+from requests.exceptions import ConnectionError
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +95,12 @@ class TrustChainCollector(Function):
         """
         _keyjar = self.upstream_get('attribute', 'keyjar')
         _httpc_params = _keyjar.httpc_params
-        response = self.upstream_get('attribute', 'httpc')("GET", url, **_httpc_params)
+        try:
+            response = self.upstream_get('attribute', 'httpc')("GET", url, **_httpc_params)
+        except ConnectionError:
+            logger.error(f'Could not connect to {url}')
+            raise
+
         if response.status_code == 200:
             if 'application/jose' not in response.headers['Content-Type']:
                 logger.warning(f"Wrong Content-Type: {response.headers['Content-Type']}")
@@ -134,7 +143,6 @@ class TrustChainCollector(Function):
             logger.error(err)
             raise
         except ConnectionError as err:
-            logger.warning(f"Could not reach {_res['url']}")
             return None
         except Exception as err:
             logger.exception(err)
@@ -190,7 +198,7 @@ class TrustChainCollector(Function):
                      entity_configuration: dict,
                      seen: Optional[list] = None,
                      max_superiors: Optional[int] = 1,
-                     stop_at: Optional[str] = "") -> dict:
+                     stop_at: Optional[str] = "") -> Optional[dict]:
         """
         Collect superiors one level at the time
 
@@ -223,7 +231,7 @@ class TrustChainCollector(Function):
 
         return superior
 
-    def _get_entity_statement(self, entity: str, authority: str) -> str:
+    def _get_entity_statement(self, entity: str, authority: str) -> Optional[str]:
         # Try to get the entity statement from the cache
         _cache_key = cache_key(authority, entity)
         entity_statement = self.entity_statement_cache[_cache_key]
@@ -305,9 +313,11 @@ class TrustChainCollector(Function):
                  entity_id: str,
                  max_superiors: Optional[int] = 10,
                  seen: Optional[List[str]] = None,
-                 stop_at: Optional[str] = ''):
+                 stop_at: Optional[str] = '') -> tuple[dict | None, Any | None] | None:
         # get leaf Entity Configuration
         signed_entity_config = self.get_entity_configuration(entity_id)
+        if not signed_entity_config:
+            return None
         entity_config = verify_self_signed_signature(signed_entity_config)
         logger.debug(f'Verified self signed statement: {entity_config}')
         # update cache

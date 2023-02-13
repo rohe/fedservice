@@ -5,7 +5,6 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
-from fedservice.entity.metadata import OPMetadata
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.client.defaults import SUCCESSFUL
 from idpyoidc.client.exception import OidcServiceError
@@ -23,7 +22,7 @@ from idpyoidc.message import Message
 from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.node import ClientUnit
 
-from fedservice.entity.metadata import RPMetadata
+from fedservice.entity.claims import RPClaims
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +41,8 @@ class ClientEntity(ClientUnit):
             jwks_uri: Optional[str] = "",
             httpc_params: Optional[dict] = None,
             context: Optional[OidcContext] = None,
-            key_conf: Optional[dict] = None
+            key_conf: Optional[dict] = None,
+            client_type: Optional[str] = 'oauth2',
     ):
         if config is None:
             config = {}
@@ -65,9 +65,11 @@ class ClientEntity(ClientUnit):
         if context:
             self.context = context
         else:
+            if key_conf:
+                config['key_conf'] = key_conf
             self.context = ServiceContext(
                 config=config, jwks_uri=jwks_uri, key_conf=key_conf, upstream_get=self.unit_get,
-                keyjar=self.keyjar, metadata_class=RPMetadata()
+                keyjar=self.keyjar, metadata_class=RPClaims(), client_type=client_type
             )
 
         if "add_ons" in config:

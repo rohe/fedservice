@@ -9,15 +9,15 @@ from idpyoidc.server import allow_refresh_token
 from idpyoidc.server import ASConfiguration
 from idpyoidc.server import authz
 from idpyoidc.server import build_endpoints
-from idpyoidc.server import client_auth_setup
 from idpyoidc.server import Endpoint
 from idpyoidc.server import EndpointContext
 from idpyoidc.server import OPConfiguration
-from idpyoidc.server import populate_authn_broker
+from idpyoidc.server.client_authn import client_auth_setup
 from idpyoidc.server.endpoint_context import init_service
 from idpyoidc.server.endpoint_context import init_user_info
+from idpyoidc.server.user_authn.authn_context import populate_authn_broker
 
-from fedservice.entity.metadata import OPMetadata
+from fedservice.entity.claims import OPClaims
 from fedservice.server import ServerUnit
 
 
@@ -67,7 +67,7 @@ class ServerEntity(ServerUnit):
             cwd=cwd,
             cookie_handler=cookie_handler,
             httpc=httpc,
-            metadata_class=OPMetadata()
+            claims_class=OPClaims()
         )
 
         _token_endp = self.endpoint.get("token")
@@ -137,6 +137,6 @@ class ServerEntity(ServerUnit):
             self.context.login_hint_lookup.userinfo = _userinfo
 
     def setup_client_authn_methods(self):
-        self.context.client_authn_method = client_auth_setup(
+        self.context.client_authn_methods = client_auth_setup(
             self.unit_get, self.config.get("client_authn_methods")
         )

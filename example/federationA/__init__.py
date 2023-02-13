@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 from urllib.parse import urlparse
 
 import requests
@@ -500,12 +501,20 @@ _tmi = FederationEntity(**TMI.conf)
 
 # -----------------------------------------------------------------------------------------------
 
-def store_subordinate_info(authority, subordinate):
+def store_subordinate_info(authority: str,
+                           subordinate: str,
+                           metadata_policy: Optional[dict] = None,
+                           metadata: Optional[dict] = None):
     # Create subordinate information and write it to the 'subordinate' directory
     _info = {
         "jwks": subordinate.keyjar.export_jwks(),
         'authority_hints': [authority.conf['entity_id']]
     }
+    if metadata:
+        _info['metadata'] = metadata
+    if metadata_policy:
+        _info['metadata_policy'] = metadata_policy
+
     _subordinate_dir = authority.conf['server']['kwargs']['subordinate']['kwargs']['fdir']
     fname = f'{_subordinate_dir}/{QPKey().serialize(subordinate.entity_id)}'
     with open(fname, 'w') as f:
@@ -514,9 +523,9 @@ def store_subordinate_info(authority, subordinate):
 
 # SWAMID subordinates == LU, UMU and TMI
 
-store_subordinate_info(SWAMID, _umu)
-store_subordinate_info(SWAMID, _lu)
-store_subordinate_info(SWAMID, _tmi)
+store_subordinate_info(SWAMID, _umu, metadata_policy={'contacts': {'add': 'support@swamid.se'}})
+store_subordinate_info(SWAMID, _lu, metadata_policy={'contacts': {'add': 'support@swamid.se'}})
+store_subordinate_info(SWAMID, _tmi, metadata_policy={'contacts': {'add': 'support@swamid.se'}})
 
 # SEID subordinates == LU and UMU
 

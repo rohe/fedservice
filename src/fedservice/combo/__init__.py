@@ -49,3 +49,7 @@ class FederationCombo(Combo):
         for item in self._part.values():
             res.update(item.get_metadata())
         return res
+
+        _resp = self._part['federation_entity'].get_endpoint(
+            'entity_configuration').process_request()
+        return _resp['response']

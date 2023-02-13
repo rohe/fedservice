@@ -7,7 +7,6 @@ from fedservice.entity import get_federation_entity
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
-from fedservice.entity.function.policy import diff2policy
 from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
 
 logger = logging.getLogger(__name__)
@@ -54,12 +53,18 @@ class Registration(registration.Registration):
         response_info = self.non_fed_process_request(req, **kwargs)
         if "response_args" in response_info:
             _context = _federation_entity.context
-            _policy = diff2policy(response_info['response_args'], req)
+            _policy_metadata = req.to_dict()
+            _policy_metadata.update(response_info['response_args'])
+            # Should I filter out stuff I have no reason to change ?
+            _policy_metadata = {k: v for k, v in _policy_metadata.items() if k not in [
+                'application_type',
+                'jwks',
+                'redirect_uris']}
             entity_statement = _context.create_entity_statement(
                 _federation_entity.upstream_get('attribute', 'entity_id'),
                 payload['iss'],
                 trust_anchor_id=trust_chain.anchor,
-                metadata_policy={opponent_entity_type: _policy},
+                metadata={opponent_entity_type: _policy_metadata},
                 aud=payload['iss'],
             )
             response_info["response_msg"] = entity_statement

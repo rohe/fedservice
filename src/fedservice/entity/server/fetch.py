@@ -15,6 +15,7 @@ class Fetch(Endpoint):
     response_cls = EntityStatement
     response_format = 'jws'
     name = "fetch"
+    endpoint_name = "federation_fetch_endpoint"
 
     def __init__(self, upstream_get, **kwargs):
         Endpoint.__init__(self, upstream_get=upstream_get, **kwargs)

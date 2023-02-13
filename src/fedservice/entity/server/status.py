@@ -24,6 +24,7 @@ class TrustMarkStatus(Endpoint):
     request_cls = oidc.Message
     response_format = "json"
     name = "status"
+    endpoint_name = 'federation_trust_mark_status_endpoint'
 
     def __init__(self,
                  upstream_get: Callable,

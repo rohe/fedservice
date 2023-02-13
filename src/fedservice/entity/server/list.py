@@ -12,6 +12,7 @@ class List(Endpoint):
     # response_cls = EntityIDList
     response_format = 'json'
     name = "list"
+    endpoint_name = 'federation_list_endpoint'
 
     def __init__(self, upstream_get, **kwargs):
         Endpoint.__init__(self, upstream_get, **kwargs)

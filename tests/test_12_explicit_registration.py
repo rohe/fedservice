@@ -157,7 +157,8 @@ class TestAutomatic(object):
                         },
                         "authorization_request_endpoints": ['authorization_endpoint']
                     },
-                    "services": oidc_service
+                    "services": oidc_service,
+                    'client_type': 'oidc'
                 }
             }
         }
@@ -328,7 +329,7 @@ class TestAutomatic(object):
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():
                 rsps.add("GET", _url, body=_jwks,
-                         adding_headers={"Content-Type": "application/json"}, status=200)
+                         headers={"Content-Type": "application/json"}, status=200)
 
             self.rp['openid_relying_party'].do_request('provider_info')
 
@@ -352,7 +353,7 @@ class TestAutomatic(object):
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():
                 rsps.add("GET", _url, body=_jwks,
-                         adding_headers={"Content-Type": "application/json"}, status=200)
+                         headers={"Content-Type": "application/json"}, status=200)
 
             # The OP handles the registration request
             resp = self.op['openid_provider'].get_endpoint('registration').process_request(
@@ -377,7 +378,7 @@ class TestAutomatic(object):
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():
                 rsps.add("GET", _url, body=_jwks,
-                         adding_headers={"Content-Type": "application/json"}, status=200)
+                         headers={"Content-Type": "application/json"}, status=200)
 
             reg_resp = _reg_service.parse_response(resp['response_msg'])
 

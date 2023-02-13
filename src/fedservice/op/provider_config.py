@@ -25,7 +25,7 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
 
     def create_entity_statement(self, response_args, request=None, **kwargs):
         """
-        Create a self signed entity statement
+        Create a self-signed entity statement
 
         :param request_args:
         :param request:
@@ -36,14 +36,7 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
         _fe = topmost_unit(self)['federation_entity']
         _entity_type = self.upstream_get('unit').name
         _md = {_entity_type: response_args.to_dict()}
-        # if getattr(_fe.function.trust_chain_collector, 'use_ssc'):
-        #     with open(_fe.function.trust_chain_collector.web_cert_path, 'r') as fp:
-        #         pem_cert = fp.read()
-        #     x5c = pems_to_x5c([pem_cert])
-        #     return _fe_ctx.create_entity_statement(_fe.entity_id, sub=_fe.entity_id,
-        #                                            metadata=_md,
-        #                                            x5c=x5c)
-        # else:
+
         _fe = topmost_unit(self)['federation_entity']
 
         return _fe.get_context().create_entity_statement(

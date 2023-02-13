@@ -103,6 +103,6 @@ class FederationServerEntity(ServerUnit):
         return self
 
     def setup_client_authn_methods(self):
-        self.context.client_authn_method = client_auth_setup(
+        self.context.client_authn_methods = client_auth_setup(
             self.unit_get, self.conf.get("client_authn_methods")
         )

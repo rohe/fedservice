@@ -167,11 +167,11 @@ class FederationClientEntity(ClientUnit):
 
     def setup_client_authn_methods(self, config):
         if config and "client_authn_methods" in config:
-            self.context.client_authn_method = client_auth_setup(
+            self.context.client_authn_methods = client_auth_setup(
                 config.get("client_authn_methods")
             )
         else:
-            self.context.client_authn_method = {}
+            self.context.client_authn_methods = {}
 
     def set_client_id(self, client_id):
         self.context.client_id = client_id

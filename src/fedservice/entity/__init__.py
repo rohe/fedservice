@@ -84,12 +84,9 @@ class FederationEntity(Unit):
             return getattr(self.function, function_name)
 
     def get_metadata(self):
-        metadata = self.get_context().metadata.prefer
+        metadata = self.get_context().claims.prefer
         # collect endpoints
-        endpoints = {}
-        for key, item in self.server.endpoint.items():
-            if key in ["fetch", "list", "resolve", 'status']:
-                metadata[f"federation_{key}_endpoint"] = item.full_path
+        metadata.update(self.get_endpoint_claims())
         return {"federation_entity": metadata}
 
     def get_endpoints(self, *arg):
@@ -150,6 +147,18 @@ class FederationEntity(Unit):
         _jwt = factory(_jws)
         return _jwt.jwt.payload()
 
+    def supports(self):
+        _supports = self.context.supports()
+        if self.server:
+            _supports.update(self.server.context.supports())
+        return _supports
+
+    def get_endpoint_claims(self):
+        _info = {}
+        for endp in self.get_endpoints().values():
+            if endp.endpoint_name:
+                _info[endp.endpoint_name] = endp.full_path
+        return _info
 
 def get_federation_entity(unit):
     # Look both upstream and downstream if necessary

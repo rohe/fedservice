@@ -7,7 +7,7 @@ from idpyoidc import message
 from idpyoidc.exception import MissingRequiredAttribute
 from idpyoidc.message import Message
 from idpyoidc.message import msg_ser
-from idpyoidc.message import OPTIONAL_LIST_OF_SP_SEP_STRINGS
+from idpyoidc.message import oauth2 as OAuth2Message
 from idpyoidc.message import OPTIONAL_LIST_OF_STRINGS
 from idpyoidc.message import OPTIONAL_MESSAGE
 from idpyoidc.message import REQUIRED_LIST_OF_STRINGS
@@ -18,7 +18,6 @@ from idpyoidc.message import SINGLE_OPTIONAL_STRING
 from idpyoidc.message import SINGLE_REQUIRED_INT
 from idpyoidc.message import SINGLE_REQUIRED_STRING
 from idpyoidc.message.oauth2 import ResponseMessage
-from idpyoidc.message import oauth2 as OAuth2Message
 from idpyoidc.message.oidc import deserialize_from_one_of
 from idpyoidc.message.oidc import dict_deser
 from idpyoidc.message.oidc import JsonWebToken
@@ -530,3 +529,11 @@ class RegistrationResponse(ResponseMessage):
         }
     )
     c_param.update(RegistrationRequest.c_param)
+
+
+class HistroricalKeysResponse(Message):
+    c_param = {
+        'iss': SINGLE_REQUIRED_STRING,
+        'iat': SINGLE_REQUIRED_INT,
+        'jwks': SINGLE_REQUIRED_DICT
+    }
