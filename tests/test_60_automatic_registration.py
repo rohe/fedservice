@@ -146,6 +146,7 @@ class TestAutomatic(object):
                         'base_url': RP_ID,
                         'client_id': RP_ID,
                         'client_secret': 'a longesh password',
+                        'client_type': 'oidc',
                         'redirect_uris': ['https://example.com/cli/authz_cb'],
                         "metadata": {
                             "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
@@ -344,13 +345,12 @@ class TestAutomatic(object):
 
             self.rp['openid_relying_party'].do_request('provider_info')
 
+        _context = self.rp['openid_relying_party'].get_context()
         # the provider info should have been updated
-
-        assert self.rp['openid_relying_party'].get_context().provider_info
+        assert _context.provider_info
 
         # automatic registration == not explict registration
-        _context = self.rp['openid_relying_party'].get_context()
-        _context.metadata.preferred_to_registered(supported=_context.supports())
+        _context.map_preferred_to_registered(registration_response=_context.provider_info)
 
         _auth_service = self.rp['openid_relying_party'].get_service('authorization')
         authn_request = _auth_service.construct()
