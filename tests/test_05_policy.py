@@ -1,9 +1,9 @@
 import pytest
 
-from fedservice.entity.function.policy import TrustChainPolicy
-from fedservice.entity.function.policy import combine_claim_policy
-from fedservice.entity.function.policy import combine_policy
 from fedservice.entity.function.policy import PolicyError
+from fedservice.entity.function.policy import TrustChainPolicy
+from fedservice.entity.function.policy import combine
+from fedservice.entity.function.policy import combine_claim_policy
 
 SIMPLE = [
     (
@@ -341,11 +341,12 @@ RES = {
 
 
 def test_combine_policies():
-    res = combine_policy(FED, ORG)
+    res = combine({'metadata_policy': FED, 'metadata': {}},
+                  {'metadata_policy': ORG, 'metadata': {}})
 
-    assert set(res.keys()) == set(RES.keys())
+    assert set(res['metadata_policy'].keys()) == set(RES.keys())
 
-    for claim, policy in res.items():
+    for claim, policy in res['metadata_policy'].items():
         assert set(policy.keys()) == set(RES[claim].keys())
         assert assert_equal(policy, RES[claim])
 
@@ -395,8 +396,10 @@ RES1 = {
 
 
 def test_apply_policies():
-    comb_policy = combine_policy(FED1, ORG1)
-    res = TrustChainPolicy.apply_policy(RP, comb_policy)
+    comb_policy = combine({'metadata_policy': FED1, 'metadata': {}},
+                          {'metadata_policy': ORG1, 'metadata': {}})
+
+    res = TrustChainPolicy(None).apply_policy(RP, comb_policy)
 
     assert set(res.keys()) == set(RES1.keys())
 

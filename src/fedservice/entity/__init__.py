@@ -147,7 +147,7 @@ class FederationEntity(Unit):
         _jwt = factory(_jws)
         return _jwt.jwt.payload()
 
-    def supports(self):
+    def supported(self):
         _supports = self.context.supports()
         if self.server:
             _supports.update(self.server.context.supports())

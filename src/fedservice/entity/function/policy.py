@@ -300,6 +300,11 @@ class TrustChainPolicy(Function):
         return _rule
 
     def _apply_metadata_policy(self, metadata, metadata_policy):
+        """
+        Apply a metadata policy to a metadata statement.
+        The order is value, add, default and then check subset_of/superset_of and one_of
+        """
+
         policy_set = set(metadata_policy.keys())
         metadata_set = set(metadata.keys())
 
@@ -311,7 +316,8 @@ class TrustChainPolicy(Function):
                 if "one_of" in metadata_policy[claim]:
                     # The is for claims that can have only one value
                     if isinstance(metadata[claim], list):  # Should not be but ...
-                        _claim = [c for c in metadata[claim] if c in metadata_policy[claim]['one_of']]
+                        _claim = [c for c in metadata[claim] if
+                                  c in metadata_policy[claim]['one_of']]
                         if _claim:
                             metadata[claim] = _claim[0]
                         else:
@@ -327,10 +333,12 @@ class TrustChainPolicy(Function):
                 else:
                     # The following is for claims that can have lists of values
                     if "add" in metadata_policy[claim]:
-                        metadata[claim] = list(union(metadata[claim], metadata_policy[claim]['add']))
+                        metadata[claim] = list(
+                            union(metadata[claim], metadata_policy[claim]['add']))
 
                     if "subset_of" in metadata_policy[claim]:
-                        _val = set(metadata_policy[claim]['subset_of']).intersection(set(metadata[claim]))
+                        _val = set(metadata_policy[claim]['subset_of']).intersection(
+                            set(metadata[claim]))
                         if _val:
                             metadata[claim] = list(_val)
                         else:
@@ -338,7 +346,8 @@ class TrustChainPolicy(Function):
                                                                            metadata_policy[claim][
                                                                                'subset_of']))
                     if "superset_of" in metadata_policy[claim]:
-                        if set(metadata_policy[claim]['superset_of']).difference(set(metadata[claim])):
+                        if set(metadata_policy[claim]['superset_of']).difference(
+                                set(metadata[claim])):
                             raise PolicyError("{} not superset of {}".format(metadata[claim],
                                                                              metadata_policy[claim][
                                                                                  'superset_of']))
@@ -358,12 +367,13 @@ class TrustChainPolicy(Function):
                 if "essential" in metadata_policy[claim] and metadata_policy[claim]["essential"]:
                     raise PolicyError(f"Essential claim '{claim}' missing")
 
-    def apply_policy(self, metadata, policy):
-        """
-        Apply a metadata policy to a metadata statement.
-        The order is value, add, default and then the checks subset_of/superset_of and one_of
+        return metadata
 
-        :param metadata: A metadata statement
+    def apply_policy(self, metadata: dict, policy: dict) -> dict:
+        """
+        Apply a metadata policy on metadata.
+
+        :param metadata: Metadata statements
         :param policy: A dictionary with metadata and metadata_policy as keys
         :return: A metadata statement that adheres to a metadata policy
         """
