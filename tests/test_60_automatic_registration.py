@@ -148,12 +148,13 @@ class TestAutomatic(object):
                         'client_secret': 'a longesh password',
                         'client_type': 'oidc',
                         'redirect_uris': ['https://example.com/cli/authz_cb'],
-                        "metadata": {
+                        "preference": {
                             "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
                             "id_token_signed_response_alg": "ES256",
                             "token_endpoint_auth_method": "client_secret_basic",
                             "token_endpoint_auth_signing_alg": "ES256",
                             "client_registration_types": ["automatic"],
+                            "request_parameter_supported": True
                         },
                         "authorization_request_endpoints": [
                             'authorization_endpoint', 'pushed_authorization_request_endpoint'
@@ -353,7 +354,7 @@ class TestAutomatic(object):
         _context.map_preferred_to_registered(registration_response=_context.provider_info)
 
         _auth_service = self.rp['openid_relying_party'].get_service('authorization')
-        authn_request = _auth_service.construct()
+        authn_request = _auth_service.construct(request={'response_type': 'code'})
 
         _msgs = create_trust_chain_messages(self.rp, self.im, self.ta)
         # add the jwks_uri

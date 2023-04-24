@@ -2,7 +2,6 @@ import json
 import os
 from urllib.parse import urlparse
 
-import pytest
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import KeyJar
 from idpyoidc.client.client_auth import PrivateKeyJWT
@@ -10,6 +9,7 @@ from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.defaults import JWT_BEARER
 from idpyoidc.message.oidc import AccessTokenRequest
 from idpyoidc.node import topmost_unit
+import pytest
 
 from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
@@ -156,13 +156,9 @@ class TestRpService(object):
         assert statement.anchor == 'https://feide.no'
         self.disco_service.update_service_context(statements)
         assert set(self.disco_service.upstream_get("context").prefers().keys()) == {
-            'application_type',
             'callback_uris',
             'client_id',
             'client_secret',
-            'default_max_age',
-            'encrypt_request_object_supported',
-            'encrypt_userinfo_supported',
             'grant_types_supported',
             'id_token_encryption_alg_values_supported',
             'id_token_encryption_enc_values_supported',
@@ -171,35 +167,20 @@ class TestRpService(object):
             'redirect_uris',
             'request_object_encryption_alg_values_supported',
             'request_object_encryption_enc_values_supported',
-            'request_object_signing_alg_values_supported',
-            'response_modes_supported',
-            'response_types_supported',
-            'scopes_supported',
-            'subject_types_supported',
-            'token_endpoint_auth_method',
-            'token_endpoint_auth_signing_alg_values_supported',
+            'token_endpoint_auth_methods_supported',
             'userinfo_encryption_alg_values_supported',
-            'userinfo_encryption_enc_values_supported',
-            'userinfo_signing_alg_values_supported'}
+            'userinfo_encryption_enc_values_supported'}
         assert set(
             [k for k, v in self.disco_service.upstream_get("context").prefers().items() if v]) == {
-                   'application_type',
                    'callback_uris',
                    'client_id',
                    'client_secret',
-                   'default_max_age',
                    'grant_types_supported',
                    'id_token_signing_alg_values_supported',
                    'jwks_uri',
                    'redirect_uris',
-                   'request_object_signing_alg_values_supported',
-                   'response_modes_supported',
-                   'response_types_supported',
-                   'scopes_supported',
-                   'subject_types_supported',
-                   'token_endpoint_auth_method',
-                   'token_endpoint_auth_signing_alg_values_supported',
-                   'userinfo_signing_alg_values_supported'}
+                   'token_endpoint_auth_methods_supported'
+               }
 
     def test_create_reqistration_request(self):
         # get the entity statement from the OP
@@ -241,12 +222,9 @@ class TestRpService(object):
             'id_token_signed_response_alg',
             'jwks_uri',
             'redirect_uris',
-            'request_object_signing_alg',
             'response_types',
             'subject_type',
-            'token_endpoint_auth_method',
-            'token_endpoint_auth_signing_alg',
-            'userinfo_signed_response_alg'}
+            'token_endpoint_auth_method'}
 
     def test_parse_registration_response(self):
         # construct the entity statement the OP should return
@@ -324,12 +302,9 @@ class TestRpService(object):
                                       'id_token_signed_response_alg',
                                       'jwks_uri',
                                       'redirect_uris',
-                                      'request_object_signing_alg',
                                       'response_types',
                                       'subject_type',
-                                      'token_endpoint_auth_method',
-                                      'token_endpoint_auth_signing_alg',
-                                      'userinfo_signed_response_alg'}
+                                      'token_endpoint_auth_method'}
 
 
 class TestRpServiceAuto(object):

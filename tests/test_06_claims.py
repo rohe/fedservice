@@ -130,8 +130,7 @@ class TestClaimsFRP():
                                      'grant_types': ['authorization_code'],
                                      'jwks_uri': 'https://anchor.example.com/static/jwks.json',
                                      'redirect_uris': ['https://example.com/cli/authz_cb'],
-                                     'response_types': ['code'],
-                                     'token_endpoint_auth_method': 'client_secret_basic'}}
+                                     'response_types': ['code']}}
 
         # IN this case the Combo has no keys, The federation entity and the openid relying party has
         # separate keyjars. Same initial key owner IDs in both keyjars.
