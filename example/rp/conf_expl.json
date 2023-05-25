@@ -90,23 +90,23 @@
       "kwargs": {}
     },
     "authorization": {
-      "class": "oidcrp.oidc.authorization.Authorization",
+      "class": "idpyoidc.client.oidc.authorization.Authorization",
       "kwargs": {}
     },
     "accesstoken": {
-      "class": "oidcrp.oidc.access_token.AccessToken",
+      "class": "idpyoidc.client.oidc.access_token.AccessToken",
       "kwargs": {}
     },
     "refresh_accesstoken": {
-      "class": "oidcrp.oidc.refresh_access_token.RefreshAccessToken",
+      "class": "idpyoidc.client.oidc.refresh_access_token.RefreshAccessToken",
       "kwargs": {}
     },
     "userinfo": {
-      "class": "oidcrp.oidc.userinfo.UserInfo",
+      "class": "idpyoidc.client.oidc.userinfo.UserInfo",
       "kwargs": {}
     },
     "end_session": {
-      "class": "oidcrp.oidc.end_session.EndSession",
+      "class": "idpyoidc.client.oidc.end_session.EndSession",
       "kwargs": {}
     }
   },
@@ -154,113 +154,12 @@
   },
   "clients": {
     "": {
-      "client_preferences": {
-        "application_name": "rphandler",
-        "application_type": "web",
-        "contacts": [
-          "ops@example.com"
-        ],
-        "response_types": [
-          "code"
-        ],
-        "scope": [
-          "openid",
-          "profile",
-          "email",
-          "address",
-          "phone"
-        ],
-        "token_endpoint_auth_method": [
-          "private_key_jwt"
-        ]
-      },
       "redirect_uris": null,
-      "services": {
-        "discovery": {
-          "class": "fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery",
-          "kwargs": {}
-        },
-        "registration": {
-          "class": "fedservice.rp.registration.Registration",
-          "kwargs": {}
-        },
-        "authorization": {
-          "class": "oidcrp.oidc.authorization.Authorization",
-          "kwargs": {}
-        },
-        "accesstoken": {
-          "class": "oidcrp.oidc.access_token.AccessToken",
-          "kwargs": {}
-        },
-        "refresh_accesstoken": {
-          "class": "oidcrp.oidc.refresh_access_token.RefreshAccessToken",
-          "kwargs": {}
-        },
-        "userinfo": {
-          "class": "oidcrp.oidc.userinfo.UserInfo",
-          "kwargs": {}
-        },
-        "end_session": {
-          "class": "oidcrp.oidc.end_session.EndSession",
-          "kwargs": {}
-        }
-      }
-    },
     "local": {
       "issuer": "https://{domain}:5000",
-      "client_preferences": {
-        "application_name": "rphandler",
-        "application_type": "web",
-        "contacts": [
-          "ops@example.com"
-        ],
-        "response_types": [
-          "code"
-        ],
-        "scope": [
-          "openid",
-          "profile",
-          "email",
-          "address",
-          "phone"
-        ],
-        "token_endpoint_auth_method": [
-          "private_key_jwt"
-        ]
-      },
       "redirect_uris": [
         "https://{domain}:{port}/authz_cb/local"
-      ],
-      "services": {
-        "discovery": {
-          "class": "fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery",
-          "kwargs": {}
-        },
-        "registration": {
-          "class": "fedservice.rp.registration.Registration",
-          "kwargs": {}
-        },
-        "authorization": {
-          "class": "oidcrp.oidc.authorization.Authorization",
-          "kwargs": {}
-        },
-        "accesstoken": {
-          "class": "oidcrp.oidc.access_token.AccessToken",
-          "kwargs": {}
-        },
-        "refresh_accesstoken": {
-          "class": "oidcrp.oidc.refresh_access_token.RefreshAccessToken",
-          "kwargs": {}
-        },
-        "userinfo": {
-          "class": "oidcrp.oidc.userinfo.UserInfo",
-          "kwargs": {}
-        },
-        "end_session": {
-          "class": "oidcrp.oidc.end_session.EndSession",
-          "kwargs": {}
-        }
-      }
+      ]
     }
   },
   "webserver": {

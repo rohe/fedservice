@@ -3,26 +3,30 @@ import logging
 
 from cryptojwt.exception import Expired
 from cryptojwt.jwt import utc_time_sans_frac
-from oidcmsg.exception import MissingRequiredAttribute
-from oidcmsg.message import Message
-from oidcmsg.message import OPTIONAL_LIST_OF_SP_SEP_STRINGS
-from oidcmsg.message import OPTIONAL_LIST_OF_STRINGS
-from oidcmsg.message import OPTIONAL_MESSAGE
-from oidcmsg.message import SINGLE_OPTIONAL_ANY
-from oidcmsg.message import SINGLE_OPTIONAL_INT
-from oidcmsg.message import SINGLE_OPTIONAL_JSON
-from oidcmsg.message import SINGLE_OPTIONAL_STRING
-from oidcmsg.message import SINGLE_REQUIRED_INT
-from oidcmsg.message import SINGLE_REQUIRED_STRING
-from oidcmsg.message import msg_ser
-from oidcmsg.oidc import JsonWebToken
-from oidcmsg.oidc import ProviderConfigurationResponse
-from oidcmsg.oidc import RegistrationResponse
-from oidcmsg.oidc import SINGLE_OPTIONAL_BOOLEAN
-from oidcmsg.oidc import SINGLE_OPTIONAL_DICT
-from oidcmsg.oidc import deserialize_from_one_of
-from oidcmsg.oidc import dict_deser
-from oidcmsg.oidc import msg_ser_json
+from idpyoidc import message
+from idpyoidc.exception import MissingRequiredAttribute
+from idpyoidc.message import Message
+from idpyoidc.message import msg_ser
+from idpyoidc.message import oauth2 as OAuth2Message
+from idpyoidc.message import OPTIONAL_LIST_OF_STRINGS
+from idpyoidc.message import OPTIONAL_MESSAGE
+from idpyoidc.message import REQUIRED_LIST_OF_STRINGS
+from idpyoidc.message import SINGLE_OPTIONAL_ANY
+from idpyoidc.message import SINGLE_OPTIONAL_INT
+from idpyoidc.message import SINGLE_OPTIONAL_JSON
+from idpyoidc.message import SINGLE_OPTIONAL_STRING
+from idpyoidc.message import SINGLE_REQUIRED_INT
+from idpyoidc.message import SINGLE_REQUIRED_STRING
+from idpyoidc.message.oauth2 import ResponseMessage
+from idpyoidc.message.oidc import deserialize_from_one_of
+from idpyoidc.message.oidc import dict_deser
+from idpyoidc.message.oidc import JsonWebToken
+from idpyoidc.message.oidc import msg_ser_json
+from idpyoidc.message.oidc import ProviderConfigurationResponse
+from idpyoidc.message.oidc import RegistrationRequest
+from idpyoidc.message.oidc import RegistrationResponse
+from idpyoidc.message.oidc import SINGLE_OPTIONAL_BOOLEAN
+from idpyoidc.message.oidc import SINGLE_OPTIONAL_DICT
 
 from fedservice.exception import UnknownCriticalExtension
 from fedservice.exception import WrongSubject
@@ -32,22 +36,8 @@ SINGLE_REQUIRED_DICT = (dict, True, msg_ser_json, dict_deser, False)
 LOGGER = logging.getLogger(__name__)
 
 
-def registration_response_deser(val, sformat="json"):
-    """Deserializes a JSON object (most likely) into a RegistrationResponse."""
-    return deserialize_from_one_of(val, RegistrationResponse, sformat)
-
-
-def provider_info_deser(val, sformat="json"):
-    """Deserializes a JSON object (most likely) into a ProviderConfigurationResponse."""
-    return deserialize_from_one_of(val, ProviderConfigurationResponse, sformat)
-
-
-OPTIONAL_CLIENT_METADATA = (Message, False, msg_ser, registration_response_deser, False)
-OPTIONAL_PROVIDER_METADATA = (Message, False, msg_ser, provider_info_deser, False)
-
-
 class AuthorizationServerMetadata(Message):
-    """Metadata for an OAuth2 Authorization Server."""
+    """Metadata for an OAuth2 Authorization Server. With Federation additions"""
     c_param = {
         "issuer": SINGLE_REQUIRED_STRING,
         "authorization_endpoint": SINGLE_OPTIONAL_STRING,
@@ -69,7 +59,12 @@ class AuthorizationServerMetadata(Message):
         "introspection_endpoint": SINGLE_OPTIONAL_STRING,
         "introspection_endpoint_auth_methods_supported": SINGLE_OPTIONAL_JSON,
         "introspection_endpoint_auth_signing_alg_values_supported": SINGLE_OPTIONAL_JSON,
-        "code_challenge_methods_supported": SINGLE_OPTIONAL_JSON
+        "code_challenge_methods_supported": SINGLE_OPTIONAL_JSON,
+        # below Federation additions
+        'client_registration_types_supported': OPTIONAL_LIST_OF_STRINGS,
+        'federation_registration_endpoint': SINGLE_OPTIONAL_STRING,
+        'request_authentication_methods_supported': SINGLE_OPTIONAL_JSON,
+        'request_authentication_signing_alg_values_supported': OPTIONAL_LIST_OF_STRINGS,
     }
 
 
@@ -102,13 +97,14 @@ class FederationEntity(Message):
     c_param = {
         "federation_fetch_endpoint": SINGLE_REQUIRED_STRING,
         "federation_list_endpoint": SINGLE_OPTIONAL_STRING,
-        "federation_evaluate_endpoint": SINGLE_OPTIONAL_STRING,
-        "federation_status_endpoint": SINGLE_OPTIONAL_STRING,
+        "federation_resolve_endpoint": SINGLE_OPTIONAL_STRING,
+        # "federation_status_endpoint": SINGLE_OPTIONAL_STRING,
         "name": SINGLE_OPTIONAL_STRING,
         "contacts": OPTIONAL_LIST_OF_STRINGS,
         "policy_url": SINGLE_OPTIONAL_STRING,
         "homepage_uri": SINGLE_OPTIONAL_STRING,
-        "trust_marks": SINGLE_OPTIONAL_JSON
+        "trust_marks": SINGLE_OPTIONAL_JSON,
+        "organization_name": SINGLE_OPTIONAL_STRING
     }
 
 
@@ -121,25 +117,24 @@ OPTIONAL_FEDERATION_ENTITY_METADATA = (Message, False, msg_ser,
                                        federation_entity_deser, False)
 
 
-class OauthClientMetadata(Message):
-    """Metadata for an OAuth2 Client."""
+class TrustMarkIssuer(Message):
     c_param = {
-        "redirect_uris": OPTIONAL_LIST_OF_STRINGS,
-        "token_endpoint_auth_method": SINGLE_OPTIONAL_STRING,
-        "grant_type": OPTIONAL_LIST_OF_STRINGS,
-        "response_types": OPTIONAL_LIST_OF_STRINGS,
-        "client_name": SINGLE_OPTIONAL_STRING,
-        "client_uri": SINGLE_OPTIONAL_STRING,
-        "logo_uri": SINGLE_OPTIONAL_STRING,
-        "scope": OPTIONAL_LIST_OF_SP_SEP_STRINGS,
-        "contacts": OPTIONAL_LIST_OF_STRINGS,
-        "tos_uri": SINGLE_OPTIONAL_STRING,
-        "policy_uri": SINGLE_OPTIONAL_STRING,
-        "jwks_uri": SINGLE_OPTIONAL_STRING,
-        "jwks": SINGLE_OPTIONAL_JSON,
-        "software_id": SINGLE_OPTIONAL_STRING,
-        "software_version": SINGLE_OPTIONAL_STRING
+        "federation_status_endpoint": SINGLE_OPTIONAL_STRING
     }
+
+
+def trust_mark_issuer_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a FederationEntity."""
+    return deserialize_from_one_of(val, TrustMarkIssuer, sformat)
+
+
+class OauthClientMetadata(OAuth2Message.OauthClientMetadata):
+    """Metadata for an OAuth2 Client."""
+    c_param = OAuth2Message.OauthClientMetadata.c_param.copy()
+    c_param.update({
+        "organization_name": SINGLE_OPTIONAL_STRING,
+        "signed_jwks_uri": SINGLE_OPTIONAL_STRING,
+    })
 
 
 def oauth_client_metadata_deser(val, sformat="json"):
@@ -170,8 +165,89 @@ class OauthClientInformationResponse(OauthClientMetadata):
                     "client_secret_expires_at is a MUST if client_secret is present")
 
 
+def oauth_client_registration_response_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a OauthClientInformationResponse."""
+    return deserialize_from_one_of(val, OauthClientInformationResponse, sformat)
+
+
+OPTIONAL_OAUTH_CLIENT_REGISTRATION_RESPONSE = (
+    Message, False, msg_ser, oauth_client_registration_response_deser, False)
+
+
+class OAuthProtectedResourceMetadata(Message):
+    c_param = {
+        "resource": SINGLE_REQUIRED_STRING,
+        "authorization_servers": OPTIONAL_LIST_OF_STRINGS,
+        "jwks_uri": SINGLE_OPTIONAL_STRING,
+        "scopes_provided": OPTIONAL_LIST_OF_STRINGS,
+        "bearer_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "resource_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "client_registration_types": OPTIONAL_LIST_OF_STRINGS,
+        "organization_name": SINGLE_OPTIONAL_STRING,
+    }
+
+
+def oauth_protected_resource_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a OAuthProtectedResourceMetadata."""
+    return deserialize_from_one_of(val, OAuthProtectedResourceMetadata, sformat)
+
+
+OPTIONAL_OAUTH_PROTECTED_RESOURCE_METADATA = (
+    Message, False, msg_ser, oauth_protected_resource_deser, False)
+
+
+class OIDCRPMetadata(RegistrationRequest):
+    c_param = RegistrationRequest.c_param.copy()
+    c_param.update({
+        "client_registration_types": REQUIRED_LIST_OF_STRINGS
+    })
+
+
+def rp_metadata_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a OIDCRPMetadata."""
+    return deserialize_from_one_of(val, OIDCRPMetadata, sformat)
+
+
+OPTIONAL_RP_METADATA = (
+    Message, False, msg_ser, rp_metadata_deser, False)
+
+
+class OIDCRPRegistrationResponse(RegistrationResponse):
+    c_param = RegistrationResponse.c_param.copy()
+    c_param.update({
+        "client_registration_types": REQUIRED_LIST_OF_STRINGS
+    })
+
+
+def rp_registration_response_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a OIDCRPRegistrationResponse."""
+    return deserialize_from_one_of(val, OIDCRPRegistrationResponse, sformat)
+
+
+OPTIONAL_RP_REGISTRATION_RESPONSE = (
+    Message, False, msg_ser, rp_registration_response_deser, False)
+
+
+class OPMetadataMessage(ProviderConfigurationResponse):
+    c_param = ProviderConfigurationResponse.c_param.copy()
+    c_param.update({
+        "client_registration_types_supported": REQUIRED_LIST_OF_STRINGS,
+        "federation_registration_endpoint": SINGLE_OPTIONAL_STRING,
+        "request_authentication_methods_supported": SINGLE_OPTIONAL_JSON,
+        "request_authentication_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS
+    })
+
+
+def op_metadata_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a ProviderConfigurationResponse."""
+    return deserialize_from_one_of(val, OPMetadataMessage, sformat)
+
+
+OPTIONAL_OP_METADATA = (Message, False, msg_ser, op_metadata_deser, False)
+
+
 class TrustMarkIssuerMetadata(Message):
-    """Metadata for a Trust Issuer Client."""
+    """Metadata for a Trust Mark Issuer."""
     c_param = {
         "status_endpoint": SINGLE_REQUIRED_STRING
     }
@@ -189,10 +265,11 @@ OPTIONAL_TRUST_MARK_ISSUER_METADATA = (Message, False, msg_ser,
 class Metadata(Message):
     """The different types of metadata that an entity in a federation can belong to."""
     c_param = {
-        'openid_relying_party': OPTIONAL_CLIENT_METADATA,
-        'openid_provider': OPTIONAL_PROVIDER_METADATA,
+        'openid_relying_party': OPTIONAL_RP_METADATA,
+        'openid_provider': OPTIONAL_OP_METADATA,
         "oauth_authorization_server": OPTIONAL_AUTH_SERVER_METADATA,
         "oauth_client": OPTIONAL_OAUTH_CLIENT_METADATA,
+        "oauth_response_server": OPTIONAL_OAUTH_PROTECTED_RESOURCE_METADATA,
         "federation_entity": OPTIONAL_FEDERATION_ENTITY_METADATA,
         "trust_mark_issuer": OPTIONAL_TRUST_MARK_ISSUER_METADATA
     }
@@ -344,7 +421,7 @@ class TrustMark(JsonWebToken):
         'iss': SINGLE_REQUIRED_STRING,
         'iat': SINGLE_REQUIRED_INT,
         "id": SINGLE_REQUIRED_STRING,
-        "mark": SINGLE_OPTIONAL_STRING,
+        "logo_uri": SINGLE_OPTIONAL_STRING,
         "exp": SINGLE_OPTIONAL_INT,
         "ref": SINGLE_OPTIONAL_STRING
     })
@@ -364,3 +441,99 @@ class TrustMark(JsonWebToken):
                 raise Expired()
 
         return True
+
+
+class TrustMarkRequest(Message):
+    c_param = {
+        "sub": SINGLE_OPTIONAL_STRING,
+        "id": SINGLE_OPTIONAL_STRING,
+        "iat": SINGLE_OPTIONAL_INT,
+        "trust_mark": SINGLE_OPTIONAL_STRING
+    }
+
+    def verify(self, **kwargs):
+        if 'trust_mark' not in self:
+            if 'sub' not in self or 'id' not in self:
+                raise AttributeError('Must have both "sub" and "id" or "trust_mark"')
+
+
+def trust_mark_deser(val, sformat="json"):
+    """Deserializes a JSON object (most likely) into a Trust Mark."""
+    return deserialize_from_one_of(val, TrustMark, sformat)
+
+
+SINGLE_REQUIRED_TRUST_MARK = (Message, True, msg_ser, trust_mark_deser, False)
+OPTIONAL_LIST_OF_TRUST_MARKS = ([Message], False, msg_ser, trust_mark_deser, False)
+
+
+class ResolveRequest(Message):
+    c_param = {
+        "sub": SINGLE_REQUIRED_STRING,
+        "anchor": SINGLE_REQUIRED_STRING,
+        "type": SINGLE_OPTIONAL_STRING
+    }
+
+
+class ResolveResponse(JsonWebToken):
+    c_param = JsonWebToken.c_param.copy()
+    c_param.update({
+        'metadata': SINGLE_REQUIRED_METADATA,
+        'trust_chain': OPTIONAL_LIST_OF_STRINGS,
+        'trust_marks': OPTIONAL_LIST_OF_TRUST_MARKS
+    })
+
+
+class ListResponse(Message):
+    c_param = {
+        "entity_id": REQUIRED_LIST_OF_STRINGS
+    }
+
+
+class ProviderConfigurationResponse(message.oidc.ProviderConfigurationResponse):
+    c_param = message.oidc.ProviderConfigurationResponse.c_param.copy()
+    c_param.update({
+        'client_registration_types_supported': REQUIRED_LIST_OF_STRINGS,
+        'federation_registration_endpoint': SINGLE_OPTIONAL_STRING,
+        'request_authentication_methods_supported': SINGLE_OPTIONAL_JSON,
+        'request_authentication_signing_alg_values_supported': OPTIONAL_LIST_OF_STRINGS,
+        'organization_name': SINGLE_OPTIONAL_STRING,
+        'signed_jwks_uri': SINGLE_OPTIONAL_STRING,
+        'jwks': SINGLE_OPTIONAL_JSON
+    })
+
+
+class RegistrationRequest(message.oidc.RegistrationRequest):
+    c_param = message.oidc.RegistrationRequest.c_param.copy()
+    c_param.update({
+        'client_registration_types': REQUIRED_LIST_OF_STRINGS,
+        'organization_name': SINGLE_OPTIONAL_STRING,
+        'signed_jwks_uri': SINGLE_OPTIONAL_STRING,
+        'jwks': SINGLE_OPTIONAL_JSON
+    })
+
+
+class RegistrationResponse(ResponseMessage):
+    """
+    Response to client_register registration requests
+    """
+
+    c_param = ResponseMessage.c_param.copy()
+    c_param.update(
+        {
+            "client_id": SINGLE_REQUIRED_STRING,
+            "client_secret": SINGLE_OPTIONAL_STRING,
+            "registration_access_token": SINGLE_OPTIONAL_STRING,
+            "registration_client_uri": SINGLE_OPTIONAL_STRING,
+            "client_id_issued_at": SINGLE_OPTIONAL_INT,
+            "client_secret_expires_at": SINGLE_OPTIONAL_INT,
+        }
+    )
+    c_param.update(RegistrationRequest.c_param)
+
+
+class HistroricalKeysResponse(Message):
+    c_param = {
+        'iss': SINGLE_REQUIRED_STRING,
+        'iat': SINGLE_REQUIRED_INT,
+        'jwks': SINGLE_REQUIRED_DICT
+    }

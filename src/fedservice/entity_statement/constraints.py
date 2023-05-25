@@ -1,3 +1,12 @@
+from typing import List
+from typing import Union
+
+from idpyoidc.message import Message
+
+from fedservice.entity_statement.statement import TrustChain
+from fedservice.message import EntityStatement
+
+
 def calculate_path_length(constraints, current_max_path_length, max_assigned):
     try:
         _max_len = constraints['max_path_length']
@@ -53,7 +62,7 @@ def more_specific(a, b):
 #     return _updated
 
 
-def update_specs(new_constraints, old_constraints):
+def update_specs(new_constraints: list, old_constraints: list):
     _updated = []
     _replaced = False
     for _old in old_constraints:
@@ -68,7 +77,7 @@ def update_specs(new_constraints, old_constraints):
     return _updated
 
 
-def add_constraints(new_constraints, naming_constraints):
+def add_constraints(new_constraints: dict, naming_constraints: dict):
     for key in ['permitted','excluded']:
         if not naming_constraints[key]:
             if key in new_constraints and new_constraints[key]:
@@ -84,7 +93,8 @@ def add_constraints(new_constraints, naming_constraints):
     return naming_constraints
 
 
-def update_naming_constraints(constraints, naming_constraints):
+def update_naming_constraints(constraints: Union[dict, Message],
+                              naming_constraints: Union[dict, Message]):
     try:
         new_constraints = constraints['naming_constraints']
     except KeyError:
@@ -95,23 +105,23 @@ def update_naming_constraints(constraints, naming_constraints):
     return naming_constraints
 
 
-def excluded(subject_id, excluded_ids):
+def excluded(subject_id: str, excluded_ids: List[str]):
     for excl in excluded_ids:
         if more_specific(subject_id, excl):
             return True
     return False
 
 
-def permitted(subject_id, permitted_id):
+def permitted(subject_id: str, permitted_id: List[str]):
     for perm in permitted_id:
         if more_specific(subject_id, perm):
             return True
     return False
 
 
-def meets_restrictions(trust_chain):
+def meets_restrictions(trust_chain: List[EntityStatement]) -> bool:
     """
-    Verfies that the trust chain fulfills the constraints specified in it.
+    Verifies that the trust chain fulfills the constraints specified in it.
 
     :param trust_chain: A sequence of entity statements. The order is such that the leaf's is the
         last. The trust anchor's the first.

@@ -125,7 +125,7 @@ def test_naming_constr_excl_1():
     assert naming_constraints["excluded"] == ["https://.example.com"]
     assert naming_constraints["permitted"] == []
 
-    # host more specific then domain
+    # host more specific than domain
     _naming_constraints = NamingConstraints(excluded=["https://foo.example.com"])
     constraints = Constraints(naming_constraints=_naming_constraints)
     naming_constraints = update_naming_constraints(constraints, naming_constraints)
@@ -296,7 +296,7 @@ MSG = {
 
 def test_policy_language_crit_not_supported():
     _now = utc_time_sans_frac()
-    _statement = EntityStatement(iat=_now, exp=_now + 3600,**MSG)
+    _statement = EntityStatement(iat=_now, exp=_now + 3600, **MSG)
 
     _statement.verify(known_policy_extensions=["regexp"])
 

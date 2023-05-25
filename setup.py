@@ -17,6 +17,7 @@
 import re
 import sys
 
+from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
@@ -50,23 +51,19 @@ setup(
     author="Roland Hedberg",
     author_email="roland@catalogix.se",
     license="Apache 2.0",
-    url='https://github.com/IdentityPython/oidcrp/',
-    packages=["fedservice", "fedservice/entity_statement", "fedservice/rp",
-              "fedservice/fetch_entity_statement", "fedservice/op", "fedservice/entity",
-              "fedservice/trust_mark_issuer",
-              "fedservice/op/add_on"],
+    url='https://github.com/rohe/fedservice/',
+    packages=find_packages(where="src"),
     package_dir={"": "src"},
     classifiers=[
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: Apache Software License",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Topic :: Software Development :: Libraries :: Python Modules"],
     install_requires=[
-        'oidcrp>=2.1.4',
-        'oidcop>=2.4.0'
+        'idpyoidc==2.0.0'
     ],
     tests_require=[
         "responses",

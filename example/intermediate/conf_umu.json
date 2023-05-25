@@ -75,12 +75,12 @@
         "class": "fedservice.entity.list.List",
         "kwargs": {
           "client_authn_method": null,
-          "subordinates": {
-            "class": "oidcmsg.storage.abfile.AbstractFileSystem",
+          "subordinate": {
+            "class": "idpyoidc.storage.abfile.AbstractFileSystem",
             "kwargs": {
-              "fdir": "umu/subordinates",
-              "value_conv": "oidcmsg.util.JSON",
-              "key_conv": "oidcmsg.util.QPKey"
+              "fdir": "umu/subordinate",
+              "value_conv": "idpyoidc.util.JSON",
+              "key_conv": "idpyoidc.util.QPKey"
             }
           }
         }

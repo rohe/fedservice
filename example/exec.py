@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import json
 import os
-import shlex
 import subprocess
 import sys
 from time import sleep
 
 ENTITY = json.loads(open("entities.json", 'r').read())
+
 
 def start(ents):
     cwd = os.getcwd()
