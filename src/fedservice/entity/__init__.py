@@ -29,7 +29,7 @@ class FederationEntity(Unit):
                  function: Optional[dict] = None,
                  httpc: Optional[object] = None,
                  httpc_params: Optional[dict] = None,
-                 metadata: Optional[dict] = None,
+                 preference: Optional[dict] = None,
                  authority_hints: Optional[list] = None,
                  **kwargs
                  ):
@@ -56,7 +56,7 @@ class FederationEntity(Unit):
 
         self.context = FederationContext(entity_id=entity_id, upstream_get=self.unit_get,
                                          authority_hints=authority_hints, keyjar=self.keyjar,
-                                         metadata=metadata)
+                                         preference=preference)
 
 
     def get_context(self, *arg):
@@ -88,6 +88,12 @@ class FederationEntity(Unit):
         # collect endpoints
         metadata.update(self.get_endpoint_claims())
         return {"federation_entity": metadata}
+
+    def get_preferences(self):
+        preference = self.get_context().claims.prefer
+        # collect endpoints
+        preference.update(self.get_endpoint_claims())
+        return {"federation_entity": preference}
 
     def get_endpoints(self, *arg):
         if self.server:

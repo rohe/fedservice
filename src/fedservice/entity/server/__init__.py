@@ -32,7 +32,7 @@ class FederationServerEntity(ServerUnit):
             context: Optional[OidcContext] = None,
             entity_id: Optional[str] = "",
             endpoint: Optional[dict] = None,
-            metadata: Optional[dict] = None,
+            preference: Optional[dict] = None,
             # subordinate: Optional[dict] = None,
             # policy: Optional[dict] = None,
             httpc: Optional[object] = None,
@@ -48,7 +48,7 @@ class FederationServerEntity(ServerUnit):
         self.endpoint = build_endpoints(endpoint, upstream_get=self.unit_get, issuer=entity_id)
 
         ServerUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, context=context,
-                            config=self.conf, metadata=metadata)
+                            config=self.conf, preference=preference)
 
         if context:
             self.context = context
@@ -57,7 +57,7 @@ class FederationServerEntity(ServerUnit):
                 config=config,
                 upstream_get=self.unit_get,
                 entity_id=entity_id,
-                metadata=metadata,
+                preference=preference,
             )
 
         # self.context.do_add_on(endpoints=self.endpoint)

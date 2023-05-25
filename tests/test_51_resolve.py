@@ -45,7 +45,7 @@ class TestComboCollect(object):
 
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -62,7 +62,7 @@ class TestComboCollect(object):
 
         INT = FederationEntityBuilder(
             IM_ID,
-            metadata={
+            preference={
                 "organization_name": "The organization",
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
@@ -85,7 +85,7 @@ class TestComboCollect(object):
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
 
         RP_FE = FederationEntityBuilder(
-            metadata={
+            preference={
                 "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
@@ -113,7 +113,7 @@ class TestComboCollect(object):
                         'client_secret': 'a longesh password',
                         'redirect_uris': ['https://example.com/cli/authz_cb'],
                         "keys": {"uri_path": "static/jwks.json", "key_defs": KEYDEFS},
-                        "metadata": {
+                        "preference": {
                             "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
                             "id_token_signed_response_alg": "ES256",
                             "token_endpoint_auth_method": "client_secret_basic",
@@ -132,7 +132,7 @@ class TestComboCollect(object):
         RESOLVER = FederationEntityBuilder(
             entity_id=RP_ID,
             key_conf={"key_defs": KEYDEFS},
-            metadata={
+            preference={
                 "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"

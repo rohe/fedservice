@@ -22,12 +22,15 @@ Subordinates must also be registered with their authorities.
 The first can be accomplished by using the script `set_trust_anchor.py`
 the second with the script `add_subordinate.py` .
 
-There for you should run the shell script `setup.sh` before trying to 
+Then you should run the shell script `setup.sh` before trying to 
 run the federation.
 
 # Testing and verifying the example federation
 
 ## Starting/stopping entities
+
+For the commands below to work you are supposed to
+stand in the fedservice/example directory.
 
 A simple script for starting/stopping entities:
 
@@ -84,7 +87,7 @@ To do this you use _get_chains.py_
 
     ../script/get_chains.py -k -t trust_anchors.json -o openid_provider -e federation_entity https://127.0.0.1:5000
 
-* -k : Don't try to verify the certificate use for TLS
+* -k : Don't try to verify the certificate used for TLS
 * -t : A JSON file with a list of trust anchors.
 * -o : The entity type of the entity you want to see
 * -e : Own entity type

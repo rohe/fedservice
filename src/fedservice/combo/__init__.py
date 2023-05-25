@@ -50,6 +50,9 @@ class FederationCombo(Combo):
             res.update(item.get_metadata())
         return res
 
-        _resp = self._part['federation_entity'].get_endpoint(
-            'entity_configuration').process_request()
-        return _resp['response']
+        # _resp = self._part['federation_entity'].get_endpoint(
+        #     'entity_configuration').process_request()
+        # return _resp['response']
+
+    def get_preferences(self):
+        return self.get_metadata()

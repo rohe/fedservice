@@ -69,7 +69,7 @@ class TestAutomatic(object):
 
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -93,7 +93,7 @@ class TestAutomatic(object):
 
         INT = FederationEntityBuilder(
             IM_ID,
-            metadata={
+            preference={
                 "organization_name": "The organization",
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
@@ -117,7 +117,7 @@ class TestAutomatic(object):
         oidc_service['authorization'] = {"class": "fedservice.rp.authorization.Authorization"}
 
         RP_FE = FederationEntityBuilder(
-            metadata={
+            preference={
                 "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
@@ -183,7 +183,7 @@ class TestAutomatic(object):
         ########################################
 
         OP_FE = FederationEntityBuilder(
-            metadata={
+            preference={
                 "organization_name": "The OP operator",
                 "homepage_uri": "https://op.example.com",
                 "contacts": "operations@op.example.com"
@@ -380,7 +380,7 @@ class TestAutomatic(object):
 #         _registration_service = self.service['registration']
 #         _fe = _registration_service.client_get("service_context").federation_entity
 #         statement = TrustChain()
-#         statement.metadata = self.registration_endpoint.server_get(
+#         statement.preference = self.registration_endpoint.server_get(
 #         "endpoint_context").provider_info
 #         statement.anchor = "https://feide.no"
 #         statement.verified_chain = [{'iss': "https://ntnu.no"}]
@@ -478,7 +478,7 @@ class TestAutomatic(object):
 #         # This is cheating. Getting the OP's provider info
 #         _fe = _registration_service.client_get("service_context").federation_entity
 #         statement = TrustChain()
-#         statement.metadata = self.registration_endpoint.server_get(
+#         statement.preference = self.registration_endpoint.server_get(
 #         "endpoint_context").provider_info
 #         statement.anchor = "https://feide.no"
 #         statement.verified_chain = [{'iss': "https://ntnu.no"}]

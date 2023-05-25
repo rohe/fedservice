@@ -36,7 +36,7 @@ class TestClient(object):
     def create_entities(self):
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -58,7 +58,7 @@ class TestClient(object):
 
         ENT = FederationEntityBuilder(
             LEAF_ID,
-            metadata={
+            preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"

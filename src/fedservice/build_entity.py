@@ -14,19 +14,19 @@ class FederationEntityBuilder():
 
     def __init__(self,
                  entity_id: Optional[str] = '',
-                 metadata: Optional[dict] = None,
+                 preference: Optional[dict] = None,
                  key_conf: Optional[dict] = None,
                  authority_hints: Optional[list] = None
                  ):
         self.conf = {
             "entity_id": entity_id,
             "key_conf": key_conf,
-            "metadata": metadata,
+            "preference": preference,
             "authority_hints": authority_hints
         }
 
     def add_services(self,
-                     metadata: Optional[dict] = None,
+                     preference: Optional[dict] = None,
                      args: Optional[dict] = None,
                      **services):
         # services are used to send request to endpoints
@@ -37,8 +37,8 @@ class FederationEntityBuilder():
         else:
             kwargs['services'] = FEDERATION_ENTITY_SERVICES
 
-        if metadata:
-            kwargs['metadata'] = {}
+        if preference:
+            kwargs['preference'] = {}
 
         if args:
             kwargs.update(args)
@@ -48,7 +48,7 @@ class FederationEntityBuilder():
             'kwargs': kwargs
         }
 
-    def add_endpoints(self, metadata: Optional[dict] = None, args: Optional[dict] = None,
+    def add_endpoints(self, preference: Optional[dict] = None, args: Optional[dict] = None,
                       **endpoints):
         # endpoints are accessible to services. Accepts requests and returns responses.
         kwargs = {}
@@ -57,8 +57,8 @@ class FederationEntityBuilder():
         else:
             kwargs['endpoint'] = DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 
-        if metadata:
-            kwargs['metadata'] = {}
+        if preference:
+            kwargs['preference'] = {}
 
         if args:
             kwargs.update(args)
@@ -69,7 +69,7 @@ class FederationEntityBuilder():
         }
 
     def add_functions(self,
-                      metadata: Optional[dict] = None,
+                      preference: Optional[dict] = None,
                       args: Optional[dict] = None,
                       **functions):
         # functions perform higher level service (like trust chain collection) based on the
@@ -80,8 +80,8 @@ class FederationEntityBuilder():
         else:
             kwargs['functions'] = FEDERATION_ENTITY_FUNCTIONS
 
-        if metadata:
-            kwargs['metadata'] = {}
+        if preference:
+            kwargs['preference'] = {}
 
         if args:
             kwargs.update(args)

@@ -85,7 +85,7 @@ class TestRpService(object):
     def rp_service_setup(self):
         ENT = FederationEntityBuilder(
             LEAF_ID,
-            metadata={
+            preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
@@ -114,7 +114,7 @@ class TestRpService(object):
                         'client_secret': 'a longesh password',
                         'redirect_uris': ['https://example.com/cli/authz_cb'],
                         "keys": {"uri_path": "static/jwks.json", "key_defs": KEY_DEFS},
-                        "metadata": {
+                        "preference": {
                             "grant_types_supported": ['authorization_code', 'implicit',
                                                       'refresh_token'],
                             "id_token_signing_alg_values_supported": ["ES256"],
@@ -133,12 +133,12 @@ class TestRpService(object):
 
         self.entity['federation_entity'].function.trust_chain_collector.add_trust_anchor(
             'https://feide.no', json.loads(jwks))
-        self.disco_service = self.entity['openid_relying_party'].get_service('provider_info')
-        self.disco_service.upstream_get("context").issuer = OP_ID
+        self.discovery_service = self.entity['openid_relying_party'].get_service('provider_info')
+        self.discovery_service.upstream_get("context").issuer = OP_ID
         self.registration_service = self.entity['openid_relying_party'].get_service('registration')
 
     def test_1(self):
-        _info = self.disco_service.get_request_parameters()
+        _info = self.discovery_service.get_request_parameters()
         assert set(_info.keys()) == {'method', 'url', 'iss'}
         p = urlparse(_info['url'])
         assert p.scheme == 'https'
@@ -146,16 +146,16 @@ class TestRpService(object):
         assert p.path == "/.well-known/openid-federation"
 
     def test_parse_discovery_response(self):
-        _info = self.disco_service.get_request_parameters()
+        _info = self.discovery_service.get_request_parameters()
         http_response = self.entity.httpc('GET', _info['url'])
 
-        statements = self.disco_service.parse_response(http_response.text)
+        statements = self.discovery_service.parse_response(http_response.text)
         # there are two Trust Anchors. I only trust one.
         assert len(statements) == 1
         statement = statements[0]
         assert statement.anchor == 'https://feide.no'
-        self.disco_service.update_service_context(statements)
-        assert set(self.disco_service.upstream_get("context").prefers().keys()) == {
+        self.discovery_service.update_service_context(statements)
+        assert set(self.discovery_service.upstream_get("context").prefers().keys()) == {
             'callback_uris',
             'client_id',
             'client_secret',
@@ -171,7 +171,7 @@ class TestRpService(object):
             'userinfo_encryption_alg_values_supported',
             'userinfo_encryption_enc_values_supported'}
         assert set(
-            [k for k, v in self.disco_service.upstream_get("context").prefers().items() if v]) == {
+            [k for k, v in self.discovery_service.upstream_get("context").prefers().items() if v]) == {
                    'callback_uris',
                    'client_id',
                    'client_secret',
@@ -184,13 +184,13 @@ class TestRpService(object):
 
     def test_create_reqistration_request(self):
         # get the entity statement from the OP
-        _info = self.disco_service.get_request_parameters(iss='https://op.ntnu.no')
+        _info = self.discovery_service.get_request_parameters(iss='https://op.ntnu.no')
         http_response = self.entity.httpc('GET', _info['url'])
 
         # parse the response and collect the trust chains
-        res = self.disco_service.parse_response(http_response.text)
+        res = self.discovery_service.parse_response(http_response.text)
 
-        self.disco_service.update_service_context(res)
+        self.discovery_service.update_service_context(res)
 
         # construct the client registration request
         req_args = {'entity_id': self.entity["federation_entity"].entity_id}
@@ -232,11 +232,11 @@ class TestRpService(object):
         jws = es_api.create_entity_statement("op.ntnu.no")
 
         # parse the response and collect the trust chains
-        res = self.disco_service.parse_response(jws)
+        res = self.discovery_service.parse_response(jws)
 
         _context = self.registration_service.upstream_get("context")
         _context.issuer = "https://op.ntnu.no"
-        self.disco_service.update_service_context(res)
+        self.discovery_service.update_service_context(res)
 
         self.registration_service.endpoint = _context.get('provider_info')[
             'federation_registration_endpoint']
@@ -313,7 +313,7 @@ class TestRpServiceAuto(object):
     def rp_service_setup(self):
         ENT = FederationEntityBuilder(
             LEAF_ID,
-            metadata={
+            preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com",
@@ -342,7 +342,7 @@ class TestRpServiceAuto(object):
                         'client_secret': 'a longesh password',
                         'redirect_uris': ['https://example.com/cli/authz_cb'],
                         "keys": {"uri_path": "static/jwks.json", "key_defs": KEY_DEFS},
-                        "metadata": {
+                        "preference": {
                             "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
                             "id_token_signed_response_alg": "ES256",
                             "token_endpoint_auth_method": "client_secret_basic",

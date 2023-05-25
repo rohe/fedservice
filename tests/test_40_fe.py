@@ -32,7 +32,7 @@ class TestFederationEntity(object):
     def server_setup(self):
         ENT = FederationEntityBuilder(
             ENTITY_ID,
-            metadata={
+            preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"

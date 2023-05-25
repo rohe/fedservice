@@ -44,7 +44,7 @@ class TestClient(object):
     def create_entities(self):
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -57,7 +57,7 @@ class TestClient(object):
 
         ENT = FederationEntityBuilder(
             LEAF_ID,
-            metadata={
+            preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
@@ -134,7 +134,7 @@ class TestServer():
         # Simple chain setup leaf->intermediate->trust anchor
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -147,7 +147,7 @@ class TestServer():
 
         INT = FederationEntityBuilder(
             INTERMEDIATE_ID,
-            metadata={
+            preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
@@ -163,7 +163,7 @@ class TestServer():
 
         ENT = FederationEntityBuilder(
             LEAF_ID,
-            metadata={
+            preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
@@ -297,7 +297,7 @@ class TestFunction:
         # trust anchor 1 and 2
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -307,7 +307,7 @@ class TestFunction:
         TA.add_endpoints(None, **TA_ENDPOINTS)
         TA2 = FederationEntityBuilder(
             TA_ID2,
-            metadata={
+            preference={
                 "organization_name": "The second federation operator",
                 "homepage_uri": "https://2nd.example.com",
                 "contacts": "operations@2nd.example.com"
@@ -320,7 +320,7 @@ class TestFunction:
 
         INT = FederationEntityBuilder(
             INTERMEDIATE_ID,
-            metadata={
+            preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
@@ -336,7 +336,7 @@ class TestFunction:
 
         ENT = FederationEntityBuilder(
             LEAF_ID,
-            metadata={
+            preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"

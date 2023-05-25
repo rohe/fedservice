@@ -16,7 +16,6 @@ from idpyoidc.ssl_context import create_context
 
 from fedservice.configure import DEFAULT_FED_FILE_ATTRIBUTE_NAMES
 from fedservice.configure import FedOpConfiguration
-from fedservice.op import FederationServer
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
