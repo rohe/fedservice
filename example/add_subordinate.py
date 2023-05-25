@@ -30,6 +30,6 @@ if _policy:
     entity_statement.update(_policy)
 
 _ent = ENTITY[args.authority]
-_fname = os.path.join(_ent[0], _ent[3], 'subordinates', quote_plus(subordinate_conf["entity_id"]))
+_fname = os.path.join(_ent[0], _ent[3], 'subordinate', quote_plus(subordinate_conf["entity_id"]))
 with open(_fname, "w") as fp:
     fp.write(json.dumps(entity_statement, sort_keys=True, indent=2))

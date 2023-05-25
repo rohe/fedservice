@@ -1,7 +1,9 @@
 import json
 import logging
 import os
+from urllib.parse import parse_qs
 from urllib.parse import unquote_plus
+from urllib.parse import urlparse
 
 from fedservice.fetch_entity_statement import FetchEntityStatement
 
@@ -9,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def read_info(dir, sub, typ='metadata'):
-    file_name = os.path.join(dir, sub, "{}.json".format(typ))
+    file_name = os.path.join(dir, sub, f"{typ}.json")
     if os.path.isfile(file_name):
         return json.loads(open(file_name).read())
     else:
@@ -17,6 +19,7 @@ def read_info(dir, sub, typ='metadata'):
 
 
 class FSFetchEntityStatement(FetchEntityStatement):
+
     def __init__(self, base_path, entity_id_pattern="https://{}", iss='', **kwargs):
         FetchEntityStatement.__init__(self, iss, entity_id_pattern)
         self.base_path = base_path
@@ -57,3 +60,45 @@ class FSFetchEntityStatement(FetchEntityStatement):
 
         logger.debug("Entity statement: %s", data)
         return data
+
+
+def get_netloc(url):
+    p = urlparse(url)
+    return p.netloc
+
+
+class MockResponse(object):
+
+    def __init__(self, status_code, text, headers=None):
+        self.status_code = status_code
+        self.text = text
+        self.headers = headers or {}
+
+
+class FSPublisher():
+
+    def __init__(self, directory):
+        self.dir = directory
+
+    def __call__(self, method, url, **kwargs):
+        if method == "GET":
+            return self.get(url, **kwargs)
+
+    def _create_entity_configuration(self, entity_id):
+        fetch_api = FSFetchEntityStatement(self.dir, entity_id_pattern="https://{}", iss=entity_id)
+        return fetch_api.create_entity_statement(entity_id)
+
+    def _create_entity_statement(self, entity_id, issuer_id):
+        fetch_api = FSFetchEntityStatement(self.dir, entity_id_pattern="https://{}", iss=issuer_id)
+        return fetch_api.create_entity_statement(entity_id)
+
+    def get(self, url, **kwargs):
+        p = urlparse(url)
+        if p.path == '/.well-known/openid-federation':
+            _jws = self._create_entity_configuration(p.netloc)
+        else:
+            _qs = parse_qs(p.query)
+            pt = urlparse(_qs['sub'][0])
+            _jws = self._create_entity_statement(p.netloc, pt.netloc)
+
+        return MockResponse(200, f"{_jws}", headers={'Content-Type': "application/jose"})

@@ -1,4 +1,4 @@
-import oidcop.cookie_handler
+import idpyoidc.server.cookie_handler
 
 DOMAIN = 'op.ntnu.no'
 BASE_URL = "https://{}".format(DOMAIN)
@@ -32,7 +32,7 @@ CONF = {
         },
         'code': {'kwargs': {'lifetime': 600}},
         'token': {
-            'class': 'oidcop.token.jwt_token.JWTToken',
+            'class': 'idpyoidc.server.token.jwt_token.JWTToken',
             'kwargs': {
                 'lifetime': 3600,
                 'add_claims': ['email', 'email_verified',
@@ -43,7 +43,7 @@ CONF = {
         },
         'refresh': {'kwargs': {'lifetime': 86400}},
         'id_token': {
-            'class': 'oidcop.token.id_token.IDToken',
+            'class': 'idpyoidc.server.token.id_token.IDToken',
             'kwargs': {
                 'default_claims': {'email': {'essential': True},
                                    'email_verified': {'essential': True}}}},
@@ -58,7 +58,7 @@ CONF = {
         'uri_path': 'static/jwks.json'
     },
     "cookie_handler": {
-        "class": oidcop.cookie_handler.CookieHandler,
+        "class": idpyoidc.server.cookie_handler.CookieHandler,
         "kwargs": {
             "keys": {"key_defs": COOKIE_KEYDEFS},
             "name": {
@@ -71,10 +71,10 @@ CONF = {
     'endpoint': {
         'webfinger': {
             'path': '.well-known/webfinger',
-            'class': 'oidcop.oidc.discovery.Discovery'},
+            'class': 'idpyoidc.server.oidc.discovery.Discovery'},
         'provider_info': {
             'path': '.well-known/openid-configuration',
-            'class': 'oidcop.oidc.provider_config.ProviderConfiguration',
+            'class': 'idpyoidc.server.oidc.provider_config.ProviderConfiguration',
             'kwargs': {'client_authn_method': None}},
         'federation_info': {
             'path': '.well-known/openid-federation',
@@ -86,11 +86,11 @@ CONF = {
             'kwargs': {'client_authn_method': None}},
         'registration_api': {
             'path': 'registration_api',
-            'class': 'oidcop.oidc.read_registration.RegistrationRead',
+            'class': 'idpyoidc.server.oidc.read_registration.RegistrationRead',
             'kwargs': {'client_authn_method': ['bearer_header']}},
         'introspection': {
             'path': 'introspection',
-            'class': 'oidcop.oauth2.introspection.Introspection',
+            'class': 'idpyoidc.server.oauth2.introspection.Introspection',
             'kwargs': {
                 'client_authn_method': ['client_secret_post'],
                 'release': ['username']}},
@@ -119,18 +119,18 @@ CONF = {
         },
         'token': {
             'path': 'token',
-            'class': 'oidcop.oidc.token.Token',
+            'class': 'idpyoidc.server.oidc.token.Token',
             'kwargs': {
                 'client_authn_method': ['client_secret_post', 'client_secret_basic',
                                         'client_secret_jwt', 'private_key_jwt']}},
         'userinfo': {
             'path': 'userinfo',
-            'class': 'oidcop.oidc.userinfo.UserInfo',
+            'class': 'idpyoidc.server.oidc.userinfo.UserInfo',
             'kwargs': {
                 'claim_types_supported': ['normal', 'aggregated', 'distributed']}},
         'end_session': {
             'path': 'session',
-            'class': 'oidcop.oidc.session.Session',
+            'class': 'idpyoidc.server.oidc.session.Session',
             'kwargs': {'logout_verify_url': 'verify_logout',
                        'post_logout_uri_path': 'post_logout',
                        'signing_alg': 'ES256',
@@ -142,15 +142,15 @@ CONF = {
         }
     },
     'userinfo': {
-        'class': 'oidcop.user_info.UserInfo',
+        'class': 'idpyoidc.server.user_info.UserInfo',
         'kwargs': {'db_file': 'users.json'}},
     'authentication': {
         'anon': {
-            'acr': 'oidcop.user_authn.authn_context.UNSPECIFIED',
-            'class': 'oidcop.user_authn.user.NoAuthn',
+            'acr': 'idpyoidc.server.user_authn.authn_context.UNSPECIFIED',
+            'class': 'idpyoidc.server.user_authn.user.NoAuthn',
             'kwargs': {'user': 'diana'}}},
     'cookie_dealer': {
-        'class': 'oidcop.cookie.CookieDealer',
+        'class': 'idpyoidc.server.cookie.CookieDealer',
         'sign_jwk': {
             'filename': 'private/cookie_sign_jwk.json',
             'type': 'OCT',
@@ -163,11 +163,11 @@ CONF = {
                 'path': '/',
                 'max_age': 3600}}},
     'login_hint2acrs': {
-        'class': 'oidcop.login_hint.LoginHint2Acrs',
+        'class': 'idpyoidc.server.login_hint.LoginHint2Acrs',
         'kwargs': {
             'scheme_map': {
                 'email': [
-                    'oidcop.user_authn.authn_context.INTERNETPROTOCOLPASSWORD']}}},
+                    'idpyoidc.server.user_authn.authn_context.INTERNETPROTOCOLPASSWORD']}}},
     'federation': {
         'entity_id': 'https://{}'.format(DOMAIN),
         'keys': {
@@ -192,12 +192,12 @@ CONF = {
     },
     'add_on': {
         'pkce': {
-            'function': 'oidcop.oidc.add_on.pkce.add_pkce_support',
+            'function': 'idpyoidc.server.oidc.add_on.pkce.add_pkce_support',
             'kwargs': {
                 'essential': False,
                 'code_challenge_method': ['S256', 'S384', 'S512']}},
         'claims': {
-            'function': 'oidcop.oidc.add_on.custom_scopes.add_custom_scopes',
+            'function': 'idpyoidc.server.oidc.add_on.custom_scopes.add_custom_scopes',
             'kwargs': {
                 'research_and_scholarship': ['name', 'given_name', 'family_name',
                                              'email', 'email_verified', 'sub', 'iss',

@@ -12,15 +12,15 @@ from flask import render_template
 from flask import request
 from flask.helpers import make_response
 from flask.helpers import send_from_directory
-from oidcmsg.oauth2 import ResponseMessage
-from oidcmsg.oidc import AccessTokenRequest
-from oidcmsg.oidc import AuthorizationRequest
+from idpyoidc.message.oauth2 import ResponseMessage
+from idpyoidc.message.oidc import AccessTokenRequest
+from idpyoidc.message.oidc import AuthorizationRequest
 import werkzeug
 
-from oidcop.exception import FailedAuthentication
-from oidcop.exception import InvalidClient
-from oidcop.exception import UnknownClient
-from oidcop.oidc.token import Token
+from idpyoidc.server.exception import FailedAuthentication
+from idpyoidc.server.exception import InvalidClient
+from idpyoidc.server.exception import UnknownClient
+from idpyoidc.server.oidc.token import Token
 
 # logger = logging.getLogger(__name__)
 

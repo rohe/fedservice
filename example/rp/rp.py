@@ -3,10 +3,10 @@ import os
 import sys
 
 from flask.app import Flask
-from oidcmsg.configure import Configuration
-from oidcmsg.configure import create_from_config_file
-from oidcrp.util import create_context
-from oidcrp.util import lower_or_upper
+from idpyoidc.configure import Configuration
+from idpyoidc.configure import create_from_config_file
+from idpyoidc.client.util import create_context
+from idpyoidc.client.util import lower_or_upper
 
 from fedservice.configure import FedRPConfiguration
 from fedservice.rp import init_oidc_rp_handler

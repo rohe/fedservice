@@ -123,15 +123,15 @@
       "kwargs": {}
     },
     "accesstoken": {
-      "class": "oidcrp.oidc.access_token.AccessToken",
+      "class": "idpyoidc.client.oidc.access_token.AccessToken",
       "kwargs": {}
     },
     "userinfo": {
-      "class": "oidcrp.oidc.userinfo.UserInfo",
+      "class": "idpyoidc.client.oidc.userinfo.UserInfo",
       "kwargs": {}
     },
     "end_session": {
-      "class": "oidcrp.oidc.end_session.EndSession",
+      "class": "idpyoidc.client.oidc.end_session.EndSession",
       "kwargs": {}
     }
   },
@@ -238,15 +238,15 @@
           }
         },
         "accesstoken": {
-          "class": "oidcrp.oidc.access_token.AccessToken",
+          "class": "idpyoidc.client.oidc.access_token.AccessToken",
           "kwargs": {}
         },
         "userinfo": {
-          "class": "oidcrp.oidc.userinfo.UserInfo",
+          "class": "idpyoidc.client.oidc.userinfo.UserInfo",
           "kwargs": {}
         },
         "end_session": {
-          "class": "oidcrp.oidc.end_session.EndSession",
+          "class": "idpyoidc.client.oidc.end_session.EndSession",
           "kwargs": {}
         }
       }
@@ -290,15 +290,15 @@
           "kwargs": {}
         },
         "accesstoken": {
-          "class": "oidcrp.oidc.access_token.AccessToken",
+          "class": "idpyoidc.client.oidc.access_token.AccessToken",
           "kwargs": {}
         },
         "userinfo": {
-          "class": "oidcrp.oidc.userinfo.UserInfo",
+          "class": "idpyoidc.client.oidc.userinfo.UserInfo",
           "kwargs": {}
         },
         "end_session": {
-          "class": "oidcrp.oidc.end_session.EndSession",
+          "class": "idpyoidc.client.oidc.end_session.EndSession",
           "kwargs": {}
         }
       },

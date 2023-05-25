@@ -28,6 +28,7 @@ class FetchEntityStatement:
     def create_entity_statement(self, sub, **kwargs):
         _info = self.gather_info(sub)
         _info.update(kwargs)
+        _info['jwks'] = self.keyjar.export_jwks(issuer_id=self.make_entity_id(sub))
         if sub.startswith("https"):
             return create_entity_statement(self.make_entity_id(self.iss), unquote_plus(sub),
                                            self.keyjar, **_info)

@@ -3,11 +3,11 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
-from oidcmsg.configure import Base
-from oidcmsg.configure import DEFAULT_DIR_ATTRIBUTE_NAMES
-from oidcmsg.configure import set_domain_and_port
-from oidcop.configure import OPConfiguration
-from oidcrp.configure import RPConfiguration
+from idpyoidc.client.configure import Configuration
+from idpyoidc.configure import Base
+from idpyoidc.configure import DEFAULT_DIR_ATTRIBUTE_NAMES
+from idpyoidc.configure import set_domain_and_port
+from idpyoidc.server.configure import OPConfiguration
 
 URIS = [
     "redirect_uris", 'post_logout_redirect_uris', 'frontchannel_logout_uri',
@@ -62,11 +62,11 @@ class FedEntityConfiguration(Base):
                  port: Optional[int] = 0,
                  dir_attributes: Optional[List[str]] = None,
                  ):
-        file_attributes = file_attributes or DEFAULT_FED_FILE_ATTRIBUTE_NAMES
-        dir_attributes = dir_attributes or DEFAULT_DIR_ATTRIBUTE_NAMES
+        self._file_attributes = file_attributes or DEFAULT_FED_FILE_ATTRIBUTE_NAMES
+        self._dir_attributes = dir_attributes or DEFAULT_DIR_ATTRIBUTE_NAMES
 
-        Base.__init__(self, conf=conf, base_path=base_path, file_attributes=file_attributes,
-                      dir_attributes=dir_attributes, domain=domain, port=port)
+        Base.__init__(self, conf=conf, base_path=base_path, file_attributes=self._file_attributes,
+                      dir_attributes=self._dir_attributes, domain=domain, port=port)
 
         self.entity_id = conf.get("entity_id")
         self.key_conf = conf.get("keys")
@@ -76,13 +76,13 @@ class FedEntityConfiguration(Base):
         self.registration_type = conf.get("registration_type", "")
         self.endpoint = conf.get("endpoint", DEFAULT_FED_CONFIG["endpoint"])
 
-        self._authority_hints = conf.get("authority_hints")
+        self._authority_hints = self.conf.get("authority_hints")
         if isinstance(self._authority_hints, str):
             self.authority_hints = json.loads(open(self._authority_hints).read())
         else:
             self.authority_hints = self._authority_hints
 
-        self._trusted_roots = conf.get("trusted_roots")
+        self._trusted_roots = self.conf.get("trusted_roots")
         if isinstance(self._trusted_roots, str):
             self.trusted_roots = json.loads(open(self._trusted_roots).read())
         else:
@@ -117,7 +117,7 @@ class FedOpConfiguration(OPConfiguration):
                                                  dir_attributes=self._dir_attributes)
 
 
-class FedRPConfiguration(RPConfiguration):
+class FedRPConfiguration(Configuration):
     """RP Configuration"""
 
     def __init__(self,
@@ -132,9 +132,9 @@ class FedRPConfiguration(RPConfiguration):
         if file_attributes is None:
             file_attributes = DEFAULT_FED_FILE_ATTRIBUTE_NAMES
 
-        RPConfiguration.__init__(self, conf=conf, base_path=base_path,
-                                 file_attributes=file_attributes, domain=domain, port=port,
-                                 dir_attributes=dir_attributes)
+        Configuration.__init__(self, conf=conf, base_path=base_path,
+                               file_attributes=file_attributes, domain=domain, port=port,
+                               dir_attributes=dir_attributes)
 
         self.federation = FedEntityConfiguration(conf["federation"], base_path=base_path,
                                                  domain=domain, port=port,

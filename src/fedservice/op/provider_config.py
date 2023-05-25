@@ -1,9 +1,9 @@
 import logging
 
-from cryptojwt.jwk import pems_to_x5c
-from oidcop.oidc import provider_config
-from oidcmsg import oidc
-from oidcmsg.oidc import ProviderConfigurationResponse
+from idpyoidc.message import oidc
+from idpyoidc.message.oidc import ProviderConfigurationResponse
+from idpyoidc.node import topmost_unit
+from idpyoidc.server.oidc import provider_config
 
 logger = logging.getLogger(__name__)
 
@@ -13,18 +13,19 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
     response_cls = ProviderConfigurationResponse
     request_format = 'jws'
     response_format = 'jws'
+    response_content_type = 'entity-statement+jwt'
 
-    def __init__(self, server_get, **kwargs):
-        provider_config.ProviderConfiguration.__init__(self, server_get,
+    def __init__(self, upstream_get, **kwargs):
+        provider_config.ProviderConfiguration.__init__(self, upstream_get,
                                                        **kwargs)
         self.post_construct.append(self.create_entity_statement)
 
     def process_request(self, request=None, **kwargs):
-        return {'response_args': self.server_get("endpoint_context").provider_info.copy()}
+        return {'response_args': self.upstream_get("context").provider_info.copy()}
 
-    def create_entity_statement(self, request_args, request=None, **kwargs):
+    def create_entity_statement(self, response_args, request=None, **kwargs):
         """
-        Create a self signed entity statement
+        Create a self-signed entity statement
 
         :param request_args:
         :param request:
@@ -32,14 +33,14 @@ class ProviderConfiguration(provider_config.ProviderConfiguration):
         :return:
         """
 
-        _fe = self.server_get("endpoint_context").federation_entity
-        _fe_ctx = _fe.get_context()
-        _md = {_fe_ctx.entity_type: request_args.to_dict()}
-        if _fe.collector.use_ssc:
-            with open(_fe.collector.web_cert_path,'r') as fp:
-                pem_cert = fp.read()
-            x5c = pems_to_x5c([pem_cert])
-            return _fe_ctx.create_entity_statement(_fe_ctx.entity_id, sub=_fe_ctx.entity_id, metadata=_md,
-                                               x5c=x5c)
-        else:
-            return _fe_ctx.create_entity_statement(_fe_ctx.entity_id, sub=_fe_ctx.entity_id, metadata=_md)
+        _fe = topmost_unit(self)['federation_entity']
+        _entity_type = self.upstream_get('unit').name
+        _md = {_entity_type: response_args.to_dict()}
+
+        _fe = topmost_unit(self)['federation_entity']
+
+        return _fe.get_context().create_entity_statement(
+            iss=_fe.entity_id,
+            sub=_fe.entity_id,
+            authority_hints=_fe.get_authority_hints(),
+            metadata=_md)

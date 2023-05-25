@@ -1,10 +1,13 @@
 import logging
 
-from oidcop.oidc import registration
-from oidcmsg.oidc import RegistrationRequest
+from idpyoidc.message.oidc import RegistrationRequest
+from idpyoidc.server.oidc import registration
 
-from fedservice.entity_statement.policy import diff2policy
-from fedservice.entity_statement.utils import create_authority_hints
+from fedservice.entity import get_federation_entity
+from fedservice.entity.function import apply_policies
+from fedservice.entity.function import collect_trust_chains
+from fedservice.entity.function import verify_trust_chains
+from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +17,12 @@ class Registration(registration.Registration):
     request_placement = 'body'
     response_format = 'jose'
     endpoint_name = "federation_registration_endpoint"
+    _status = {
+        "client_registration_types_supported": ["automatic", "explicit"]
+    }
 
-    def __init__(self, server_get, **kwargs):
-        registration.Registration.__init__(self, server_get, **kwargs)
+    def __init__(self, upstream_get, **kwargs):
+        registration.Registration.__init__(self, upstream_get, **kwargs)
         self.post_construct.append(self.create_entity_statement)
 
     def parse_request(self, request, auth=None, **kwargs):
@@ -29,27 +35,37 @@ class Registration(registration.Registration):
         :param kwargs:
         :return:
         """
-        _fe = self.server_get("endpoint_context").federation_entity
-        _fe_cntx = _fe.context
+        payload = verify_self_signed_signature(request)
+        opponent_entity_type = set(payload['metadata'].keys()).difference({'federation_entity',
+                                                                           'trust_mark_issuer'}).pop()
+        _federation_entity = get_federation_entity(self)
 
         # Collect trust chains
-        trust_chains = _fe.collect_trust_chains(request, 'openid_relying_party')
-
-        _fe.proposed_authority_hints = create_authority_hints(_fe_cntx.authority_hints, trust_chains)
-
-        trust_chain = _fe.pick_trust_chain(trust_chains)
-        _fe.trust_chain_anchor = trust_chain.anchor
-        req = RegistrationRequest(**trust_chain.metadata)
+        _chains, _ = collect_trust_chains(self.upstream_get('unit'),
+                                          entity_id=payload['sub'],
+                                          signed_entity_configuration=request)
+        _trust_chains = verify_trust_chains(_federation_entity, _chains, request)
+        _trust_chains = apply_policies(_federation_entity, _trust_chains)
+        trust_chain = _federation_entity.pick_trust_chain(_trust_chains)
+        _federation_entity.trust_chain_anchor = trust_chain.anchor
+        # Perform non-federation registration
+        req = RegistrationRequest(**trust_chain.metadata[opponent_entity_type])
         response_info = self.non_fed_process_request(req, **kwargs)
         if "response_args" in response_info:
-            payload = _fe.get_payload(request)
-            _policy = diff2policy(response_info['response_args'], req)
-            entity_statement = _fe_cntx.create_entity_statement(
-                _fe_cntx.entity_id,
+            _context = _federation_entity.context
+            _policy_metadata = req.to_dict()
+            _policy_metadata.update(response_info['response_args'])
+            # Should I filter out stuff I have no reason to change ?
+            _policy_metadata = {k: v for k, v in _policy_metadata.items() if k not in [
+                'application_type',
+                'jwks',
+                'redirect_uris']}
+            entity_statement = _context.create_entity_statement(
+                _federation_entity.upstream_get('attribute', 'entity_id'),
                 payload['iss'],
                 trust_anchor_id=trust_chain.anchor,
-                metadata_policy={_fe_cntx.opponent_entity_type: _policy},
-                aud=payload['iss']
+                metadata={opponent_entity_type: _policy_metadata},
+                aud=payload['iss'],
             )
             response_info["response_msg"] = entity_statement
             del response_info["response_args"]
@@ -61,19 +77,19 @@ class Registration(registration.Registration):
         return registration.Registration.process_request(self, req, authn=None, **kwargs)
 
     @staticmethod
-    def create_entity_statement(response_args, request, endpoint_context,
+    def create_entity_statement(response_args, request, context,
                                 **kwargs):
         """
         wrap the non-federation response in a federation response
 
         :param response_args:
         :param request:
-        :param endpoint_context:
+        :param context:
         :param kwargs:
         :return:
         """
-        _fe = endpoint_context.federation_entity
+        _fe = context.federation_entity
         _md = {_fe.opponent_entity_type: response_args.to_dict()}
         return _fe.create_entity_statement(_fe.entity_id, sub=_fe.entity_id,
                                            metadata=_md,
-                                           authority_hints=_fe.proposed_authority_hints)
+                                           authority_hints=_fe.get_authority_hints())

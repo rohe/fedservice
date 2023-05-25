@@ -1,8 +1,17 @@
 import logging
+from typing import List
+from typing import Optional
+from typing import Sequence
 
-from oidcmsg import oidc
-from oidcmsg.oidc import RegistrationRequest
-from oidcop.oidc import authorization
+from idpyoidc.message import oidc
+from idpyoidc.message.oidc import RegistrationRequest
+from idpyoidc.node import topmost_unit
+from idpyoidc.server.oidc import authorization
+
+from fedservice.entity.function import apply_policies
+from fedservice.entity.function import collect_trust_chains
+from fedservice.entity.function import verify_trust_chains
+from fedservice.exception import NoTrustedChains
 
 logger = logging.getLogger(__name__)
 
@@ -12,45 +21,83 @@ class Authorization(authorization.Authorization):
     response_cls = oidc.AuthorizationResponse
     error_msg = oidc.ResponseMessage
 
-    def __init__(self, server_get, **kwargs):
-        authorization.Authorization.__init__(self, server_get, **kwargs)
+    _supports = authorization.Authorization._supports.copy()
+    _supports.update({
+        "request_authentication_signing_alg_values_supported": ["RS256"],
+        "request_authentication_methods_supported": {
+            "authorization_endpoint": [
+                "request_object"
+            ],
+            "pushed_authorization_request_endpoint": [
+                "private_key_jwt",
+            ]
+        }
+    })
+
+    def __init__(self, upstream_get, conf: Optional[dict] = None, **kwargs):
+        authorization.Authorization.__init__(self, upstream_get, **kwargs)
         # self.pre_construct.append(self._pre_construct)
-        # self.post_parse_request.append(self._post_parse_request)
-        self.automatic_registration_endpoint = None
+        self.post_parse_request.append(self._reset_client_id)
+        self.new_client_id = kwargs.get('new_client_id', False)
+        self.config = conf or {}
 
-    def do_automatic_registration(self, entity_id):
-        _fe = self.server_get("endpoint_context").federation_entity
+    def _reset_client_id(self, request, client_id, context, **kwargs):
+        request['client_id'] = client_id
+        return request
 
-        # get self-signed entity statement
-        _sses = _fe.get_configuration_information(entity_id)
+    def find_client_keys(self, iss):
+        return self.do_automatic_registration(iss, [])
 
-        # Collect all the trust chains, verify them and apply policies. return the result
-        trust_chains = _fe.collect_trust_chains(_sses, "openid_relying_party")
+    def do_automatic_registration(self, entity_id:str, provided_trust_chain: List[str]):
+        if provided_trust_chain:
+            # So I get the TA's entity statement first
+            provided_trust_chain.reverse()
+            trust_chains = verify_trust_chains(self, [provided_trust_chain])
+        else:
+            chains, signed_entity_configuration = collect_trust_chains(self, entity_id)
+            trust_chains = verify_trust_chains(self, chains, signed_entity_configuration)
+
+        trust_chains = apply_policies(self, trust_chains)
+
+        if not trust_chains:
+            raise NoTrustedChains()
 
         # pick one of the possible
-        trust_chain = _fe.pick_trust_chain(trust_chains)
+        trust_chain = trust_chains[0]
+        _fe = topmost_unit(self)['federation_entity']
         _fe.trust_chain_anchor = trust_chain.anchor
 
         # handle the registration request as in the non-federation case.
-        req = RegistrationRequest(**trust_chain.metadata)
+        # If there is a jwks_uri in the metadata import keys
+        _jwks_uri = trust_chain.metadata['openid_relying_party'].get('jwks_uri')
+        if _jwks_uri:
+            _keyjar = self.upstream_get('attribute', 'keyjar')
+            _keyjar.add_url(entity_id, _jwks_uri)
+
+        req = RegistrationRequest(**trust_chain.metadata['openid_relying_party'])
         req['client_id'] = entity_id
-        new_id = self.automatic_registration_endpoint.kwargs.get("new_id", False)
-        response_info = self.automatic_registration_endpoint.non_fed_process_request(req,
-                                                                                     new_id=new_id)
+        kwargs = {}
+        kwargs['new_id'] = self.new_client_id
+
+        op = topmost_unit(self)['openid_provider']
+        _registration = op.get_endpoint("registration")
+        response_info = _registration.non_fed_process_request(req=req, **kwargs)
+
         try:
             return response_info["response_args"]["client_id"]
         except KeyError:
             return None
 
     def client_authentication(self, request, auth=None, **kwargs):
-
         _cid = request["client_id"]
-        _context = self.server_get("endpoint_context")
+        _context = self.upstream_get("context")
         # If this is a registered client then this should return some info
         client_info = _context.cdb.get(_cid)
         if client_info is None:
-            if self.automatic_registration_endpoint:  # try the federation way
-                registered_client_id = self.do_automatic_registration(_cid)
+            if 'automatic' in _context.provider_info.get('client_registration_types_supported'):
+                # try the federation way
+                _trust_chain = request.get('trust_chain', [])
+                registered_client_id = self.do_automatic_registration(_cid, _trust_chain)
                 if registered_client_id is None:
                     return {
                         'error': 'unauthorized_client',
@@ -76,6 +123,5 @@ class Authorization(authorization.Authorization):
             self, request, auth, **kwargs)
 
     def extra_response_args(self, aresp):
-        aresp['trust_anchor_id'] = self.server_get(
-            "endpoint_context").federation_entity.trust_chain_anchor
+        aresp['trust_anchor_id'] = self.upstream_get("context").federation_entity.trust_chain_anchor
         return aresp

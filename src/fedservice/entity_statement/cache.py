@@ -1,7 +1,7 @@
 import logging
 
 from cryptojwt.jwt import utc_time_sans_frac
-from oidcmsg.impexp import ImpExp
+from idpyoidc.impexp import ImpExp
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +39,6 @@ class ESCache(ImpExp):
 
     def __delitem__(self, key):
         del self._db[key]
-
-    def __contains__(self, item):
-        _val = self[item]
-        if _val:
-            return True
-        else:
-            return False
 
     def keys(self):
         return self._db.keys()
