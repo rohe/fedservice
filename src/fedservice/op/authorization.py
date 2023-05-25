@@ -89,7 +89,6 @@ class Authorization(authorization.Authorization):
             return None
 
     def client_authentication(self, request, auth=None, **kwargs):
-
         _cid = request["client_id"]
         _context = self.upstream_get("context")
         # If this is a registered client then this should return some info

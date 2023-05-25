@@ -84,7 +84,7 @@ def do_default(superior, child, policy):
 
 
 def do_essential(superior, child, policy):
-    # essential: an child can make it True if a superior has states False
+    # essential: a child can make it True if a superior has states False
     # but not the other way around
 
     if policy in superior and policy in child:
@@ -189,30 +189,32 @@ def combine(superior: dict, sub: dict) -> dict:
     :param sub: Dictionary with two keys metadata_policy and metadata
     :return:
     """
-    _overlap = set(superior['metadata'].keys()).intersection(set(sub['metadata']))
-    if _overlap:
-        for key in _overlap:
-            if superior['metadata'][key] != sub['metadata'][key]:
-                raise PolicyError(
-                    'A subordinate is not allowed to set a value different then the superiors')
+    sup_metadata = superior.get('metadata', {})
+    sub_metadata = sub.get('metadata', {})
+    sup_m_set = set(sup_metadata.keys())
+    if sub_metadata:
+        chi_m_set = set(sub_metadata.keys())
+        _overlap = chi_m_set.intersection(sup_m_set)
+        if _overlap:
+            for key in _overlap:
+                if sup_metadata[key] != sub_metadata[key]:
+                    raise PolicyError(
+                        'A subordinate is not allowed to set a value different then the superiors')
 
-    # Combine metadata first
-    sup_set = set(superior['metadata'].keys())
-    chi_set = set(sub['metadata'].keys())
-    # No overlap allowed
-    if chi_set.intersection(sup_set):
-        raise PolicyError('A subordinate is not allowed to change what a superior has set')
-
-    _metadata = superior['metadata'].copy()
-    _metadata.update(sub['metadata'])
-    superior['metadata'] = _metadata
+        _metadata = sup_metadata.copy()
+        _metadata.update(sub_metadata)
+        superior['metadata'] = _metadata
 
     # Now for metadata_policies
-    _sup_policy = superior['metadata_policy']
-    _sub_policy = sub['metadata_policy']
+    _sup_policy = superior.get('metadata_policy', {})
+    _sub_policy = sub.get('metadata_policy', {})
     if _sub_policy:
         sup_set = set(_sup_policy.keys())
         chi_set = set(sub['metadata_policy'].keys())
+
+        # A metadata_policy claim can not change a metadata claim
+        for claim in chi_set.intersection(sup_m_set):
+            combine_claim_policy({'value': sup_metadata[claim]}, _sub_policy[claim])
 
         _mp = {}
         for claim in set(sup_set).intersection(chi_set):

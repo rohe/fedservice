@@ -1,9 +1,9 @@
 import pytest
 
-from fedservice.entity.function.policy import PolicyError
-from fedservice.entity.function.policy import TrustChainPolicy
 from fedservice.entity.function.policy import combine
 from fedservice.entity.function.policy import combine_claim_policy
+from fedservice.entity.function.policy import PolicyError
+from fedservice.entity.function.policy import TrustChainPolicy
 
 SIMPLE = [
     (
@@ -414,3 +414,71 @@ def test_apply_policies():
                 assert {value} == set(RES1[claim])
             else:
                 assert value == RES1[claim]
+
+
+@pytest.mark.parametrize("policy, metadata, result",
+                         [
+                             (
+                                     [{
+                                         'metadata': {'B': 123},
+                                         'metadata_policy': {
+                                             "A": {"subset_of": ['a', 'b']}
+                                         }},
+                                         {
+                                             'metadata': {'C': 'foo'},
+                                             'metadata_policy': {
+                                                 "A": {"subset_of": ['a']}
+                                             }
+                                         }
+                                     ],
+                                     {
+                                         "A": ['a', 'b', 'e'],
+                                         "C": 'foo'
+                                     },
+                                     {
+                                         'A': ['a'],
+                                         'B': 123,
+                                         'C': 'foo'
+                                     }
+                             )
+                         ])
+def test_combine_metadata_and_metadata_policy_OK(policy, metadata, result):
+    comb_policy = policy[0]
+    for pol in policy[1:]:
+        comb_policy = combine(comb_policy, pol)
+
+    res = TrustChainPolicy(None).apply_policy(metadata, comb_policy)
+    assert res == result
+
+
+# 1 a subordinate can not change something a superior has set
+@pytest.mark.parametrize("policy",
+                         [
+                             [
+                                 {
+                                     'metadata': {'B': 123},
+                                     'metadata_policy': {
+                                         "A": {"subset_of": ['a', 'b']}
+                                     }
+                                 },
+                                 {
+                                     'metadata': {'B': 'foo'},
+                                     'metadata_policy': {
+                                         "A": {"subset_of": ['a']}
+                                     }
+                                 }
+                             ],
+[
+                                 {
+                                     'metadata': {'B': 123},
+                                 },
+                                 {
+                                     'metadata_policy': {
+                                         "B": {"subset_of": [12, 6]}
+                                     }
+                                 }
+                             ]
+                         ])
+def test_combine_metadata_and_metadata_policy_NOT_OK(policy):
+    with pytest.raises(PolicyError):
+        combine(policy[0], policy[1])
