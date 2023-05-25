@@ -48,6 +48,7 @@ class Fetch(Endpoint):
                 raise UnknownEntity(_sub)
 
             if not 'authority_hints' in _response:
+                # If nothing specified add myself
                 _response["authority_hints"] = [_issuer]
 
             _policy = _server.policy.get(_sub)

@@ -29,7 +29,7 @@ class TestComboCollect(object):
     def setup(self):
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -42,7 +42,7 @@ class TestComboCollect(object):
 
         RP = FederationEntityBuilder(
             RP_ID,
-            metadata={
+            preference={
                 "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
@@ -58,7 +58,7 @@ class TestComboCollect(object):
 
         OP = FederationEntityBuilder(
             OP_ID,
-            metadata={
+            preference={
                 "organization_name": "The OP operator",
                 "homepage_uri": "https://op.example.com",
                 "contacts": "operations@op.example.com"

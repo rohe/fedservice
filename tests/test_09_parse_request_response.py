@@ -48,7 +48,7 @@ class TestClient:
     def setup(self):
         ENT = FederationEntityBuilder(
             LEAF_ID,
-            metadata={
+            preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com",

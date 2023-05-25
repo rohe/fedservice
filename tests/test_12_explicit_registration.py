@@ -70,7 +70,7 @@ class TestAutomatic(object):
 
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -94,7 +94,7 @@ class TestAutomatic(object):
 
         INT = FederationEntityBuilder(
             IM_ID,
-            metadata={
+            preference={
                 "organization_name": "The organization",
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
@@ -119,7 +119,7 @@ class TestAutomatic(object):
         oidc_service['authorization'] = {"class": "fedservice.rp.authorization.Authorization"}
 
         RP_FE = FederationEntityBuilder(
-            metadata={
+            preference={
                 "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
@@ -148,7 +148,7 @@ class TestAutomatic(object):
                         'client_id': RP_ID,
                         'client_secret': 'a longesh password',
                         'redirect_uris': ['https://example.com/cli/authz_cb'],
-                        "metadata": {
+                        "preference": {
                             "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
                             "id_token_signed_response_alg": "ES256",
                             "token_endpoint_auth_method": "client_secret_basic",
@@ -170,7 +170,7 @@ class TestAutomatic(object):
         ########################################
 
         OP_FE = FederationEntityBuilder(
-            metadata={
+            preference={
                 "organization_name": "The OP operator",
                 "homepage_uri": "https://op.example.com",
                 "contacts": "operations@op.example.com"
@@ -369,7 +369,7 @@ class TestAutomatic(object):
         assert _payload['aud'] == self.rp.entity_id
 
         ###########################################################################
-        # [4] The RP receives the registration response and calculates the metadata
+        # [4] The RP receives the registration response and calculates the preference
 
         _msgs = create_trust_chain_messages(self.rp.entity_id, self.im, self.ta)
         # Don't need the Entity Configuration for the RP

@@ -46,7 +46,7 @@ class TestComboCollect(object):
 
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -73,7 +73,7 @@ class TestComboCollect(object):
 
         INT = FederationEntityBuilder(
             IM_ID,
-            metadata={
+            preference={
                 "organization_name": "The organization",
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
@@ -94,7 +94,7 @@ class TestComboCollect(object):
 
         RP_FE = FederationEntityBuilder(
             RP_ID,
-            metadata={
+            preference={
                 "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
@@ -117,7 +117,7 @@ class TestComboCollect(object):
         TMI = FederationEntityBuilder(
             entity_id=TRUST_MARK_ISSUER_ID,
             key_conf={'key_defs': KEYDEFS},
-            metadata={
+            preference={
                 "organization_name": "The Trust Mark Issuer",
                 "homepage_uri": "https://tmi.example.com",
                 "contacts": "operations@tmi.example.com"

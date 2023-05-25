@@ -62,7 +62,7 @@ class TestComboCollect(object):
 
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -85,7 +85,7 @@ class TestComboCollect(object):
 
         INT = FederationEntityBuilder(
             IM_ID,
-            metadata={
+            preference={
                 "organization_name": "The organization",
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
@@ -109,7 +109,7 @@ class TestComboCollect(object):
 
         RP_FE = FederationEntityBuilder(
             RP_ID,
-            metadata={
+            preference={
                 "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
@@ -137,7 +137,7 @@ class TestComboCollect(object):
                         'client_secret': 'a longesh password',
                         'redirect_uris': ['https://example.com/cli/authz_cb'],
                         "keys": {"uri_path": "static/jwks.json", "key_defs": KEYDEFS},
-                        "metadata": {
+                        "preference": {
                             "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
                             "id_token_signed_response_alg": "ES256",
                             "token_endpoint_auth_method": "client_secret_basic",
@@ -157,7 +157,7 @@ class TestComboCollect(object):
 
         OP_FE = FederationEntityBuilder(
             OP_ID,
-            metadata={
+            preference={
                 "organization_name": "The OP operator",
                 "homepage_uri": "https://op.example.com",
                 "contacts": "operations@op.example.com"
@@ -342,7 +342,7 @@ class TestComboCollect(object):
         # Just to verify that the request URL is the right one
         req = provider_info.get_request_parameters()
         assert req[
-                   'url'] == 'https://op.example.org/.well-known/openid-federation?iss=https%3A%2F%2Fop.example.org'
+            'url'] == 'https://op.example.org/.well-known/openid-federation?iss=https%3A%2F%2Fop.example.org'
 
         where_and_what = create_trust_chain_messages(self.op, self.ta)
 

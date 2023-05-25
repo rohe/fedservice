@@ -25,7 +25,7 @@ class TestClaimsEntity():
         # The Trust Anchor
         ENT = FederationEntityBuilder(
             ENTITY_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -74,7 +74,7 @@ class TestClaimsFRP():
         # The Trust Anchor
         ENT = FederationEntityBuilder(
             ENTITY_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -119,7 +119,7 @@ class TestClaimsFRP():
         self.combo = FederationCombo(LEAF_CONFIG)
 
     def test(self):
-        assert self.combo.get_metadata() == {
+        assert self.combo.get_preferences() == {
             'federation_entity': {'contacts': 'operations@ta.example.com',
                                   'federation_fetch_endpoint': 'https://anchor.example.com/fetch',
                                   'federation_list_endpoint': 'https://anchor.example.com/list',

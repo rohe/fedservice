@@ -45,7 +45,7 @@ class TestConstraints(object):
 
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -62,7 +62,7 @@ class TestConstraints(object):
 
         INT = FederationEntityBuilder(
             IM_ID,
-            metadata={
+            preference={
                 "organization_name": "The organization",
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
@@ -83,7 +83,7 @@ class TestConstraints(object):
 
         LEAF = FederationEntityBuilder(
             LEAF_ID,
-            metadata={
+            preference={
                 "organization_name": "A leaf",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
@@ -108,7 +108,7 @@ class TestConstraints(object):
 
         RP_FE = FederationEntityBuilder(
             RP_ID,
-            metadata={
+            preference={
                 "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"

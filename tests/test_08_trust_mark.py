@@ -34,7 +34,7 @@ class TestSignedTrustMark():
         # The Trust Anchor
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -54,7 +54,7 @@ class TestSignedTrustMark():
         # Federation entity with only status endpoint
         TM = FederationEntityBuilder(
             TRUST_MARK_ISSUER_ID,
-            metadata={
+            preference={
                 "organization_name": "Trust Mark Issuer 'R US"
             },
             key_conf={"key_defs": KEYSPEC},

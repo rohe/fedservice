@@ -39,7 +39,7 @@ class FederationContext(ImpExp):
                  trusted_roots: Optional[dict] = None,
                  authority_hints: Optional[list] = None,
                  keyjar: Optional[KeyJar] = None,
-                 metadata: Optional[dict] = None,
+                 preference: Optional[dict] = None,
                  **kwargs
                  ):
 
@@ -54,7 +54,7 @@ class FederationContext(ImpExp):
         self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
         self.trust_marks = trust_marks or config.get('trust_marks')
 
-        self.claims = FederationEntityClaims(prefer=metadata)
+        self.claims = FederationEntityClaims(prefer=preference)
 
         if trusted_roots:
             _trusted_roots = trusted_roots
@@ -94,8 +94,8 @@ class FederationContext(ImpExp):
                 except AttributeError:
                     setattr(self, param, default)
 
-        if metadata:
-            config['preference'] = metadata
+        if preference:
+            config['preference'] = preference
         _keyjar = self.claims.load_conf(config, supports=self.supports(), keyjar=keyjar)
 
         self.setup_client_authn_methods()
@@ -146,7 +146,7 @@ class FederationServerContext(FederationContext):
                  config: Optional[Union[dict, Configuration]] = None,
                  entity_id: str = "",
                  upstream_get: Callable = None,
-                 metadata: Optional[dict] = None,
+                 preference: Optional[dict] = None,
                  trust_marks: Optional[List[str]] = None,
                  authority_hints: Optional[list] = None,
                  ):
@@ -154,7 +154,7 @@ class FederationServerContext(FederationContext):
                                    config=config,
                                    entity_id=entity_id,
                                    upstream_get=upstream_get,
-                                   metadata=metadata,
+                                   preference=preference,
                                    authority_hints=authority_hints,
                                    )
 

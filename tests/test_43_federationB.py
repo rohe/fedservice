@@ -38,7 +38,7 @@ class TestComboCollect(object):
 
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -51,7 +51,7 @@ class TestComboCollect(object):
 
         INT = FederationEntityBuilder(
             IM_ID,
-            metadata={
+            preference={
                 "organization_name": "The organization",
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
@@ -61,13 +61,13 @@ class TestComboCollect(object):
         )
         INT.add_services()
         INT.add_functions()
-        INT.add_endpoints(metadata={"authority_hints": [TA_ID]})
+        INT.add_endpoints(preference={"authority_hints": [TA_ID]})
 
         # Leaf RP
 
         RP = FederationEntityBuilder(
             RP_ID,
-            metadata={
+            preference={
                 "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
@@ -83,7 +83,7 @@ class TestComboCollect(object):
 
         OP = FederationEntityBuilder(
             OP_ID,
-            metadata={
+            preference={
                 "organization_name": "The OP operator",
                 "homepage_uri": "https://op.example.com",
                 "contacts": "operations@op.example.com"

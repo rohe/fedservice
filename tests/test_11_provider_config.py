@@ -42,7 +42,7 @@ class TestEndpoint(object):
 
         TA = FederationEntityBuilder(
             TA_ID,
-            metadata={
+            preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
@@ -57,7 +57,7 @@ class TestEndpoint(object):
 
         OP_FE = FederationEntityBuilder(
             OP_ID,
-            metadata={
+            preference={
                 "organization_name": "The OP operator",
                 "homepage_uri": "https://op.example.com",
                 "contacts": "operations@op.example.com"

@@ -10,7 +10,7 @@
 # RP: Get and evaluate OPs entity statement starting with the issuer_id
 # Chose a set of trust paths that ends in trusted trust roots.
 
-# RP: based on the OPs metadata and the client preferences construct a
+# RP: based on the OPs metadata and the client preference construct a
 # metadata statement that fulfills most of the demands.
 
 # RP: Construct entity statement and send it as a client request to the OP.

@@ -36,7 +36,7 @@ class ServerUnit(Unit):
                  httpc: Optional[object] = None,
                  httpc_params: Optional[dict] = None,
                  entity_id: Optional[str] = "",
-                 metadata: Optional[dict] = None,
+                 preference: Optional[dict] = None,
                  key_conf: Optional[dict] = None
                  ):
         self.entity_id = entity_id or config.get('entity_id')
