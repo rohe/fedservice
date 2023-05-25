@@ -185,6 +185,7 @@ class TestEndpoint(object):
             'authorization_endpoint',
             'claims_parameter_supported',
             'client_registration_types_supported',
+            'code_challenge_methods_supported',
             'grant_types_supported',
             'id_token_signing_alg_values_supported',
             'issuer',
