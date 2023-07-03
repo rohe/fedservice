@@ -86,7 +86,9 @@ class FederationEntityClaims(ClaimsBase):
         'contacts': None,
         'policy_uri': None,
         'logo_uri': None,
-        'homepage_uri': None
+        'homepage_uri': None,
+        'trust_mark_owners': None,
+        'trust_mark_issuers': None
     }
 
     def metadata(self, supports):

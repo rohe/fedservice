@@ -220,6 +220,21 @@ COMPLEX = [
         {"subset_of": ['X', 'Y', 'Z'], "superset_of": ['Y', 'Z']}
     ),
     (
+        {"superset_of": ['Y', 'Z']},
+        {"subset_of": ['X', 'Y']},
+        PolicyError
+    ),
+    (
+        {"subset_of": ['X', 'Y']},
+        {"superset_of": ['X', 'Y']},
+        {"subset_of": ['X', 'Y'], "superset_of": ['X', 'Y']}
+    ),
+    (
+        {"superset_of": ['X', 'Y']},
+        {"subset_of": ['X', 'Y']},
+        {"subset_of": ['X', 'Y'], "superset_of": ['X', 'Y']}
+    ),
+    (
         {"subset_of": ['X', 'Y', 'Z']},
         {"superset_of": ['Y', 'A']},
         PolicyError
@@ -482,3 +497,33 @@ def test_combine_metadata_and_metadata_policy_OK(policy, metadata, result):
 def test_combine_metadata_and_metadata_policy_NOT_OK(policy):
     with pytest.raises(PolicyError):
         combine(policy[0], policy[1])
+
+POLICY_1 = {
+    "scopes": {
+        "superset_of": ["openid", "eduperson"],
+        "subset_of": ["openid", "eduperson"]
+    }
+}
+
+POLICY_2 = {
+    "response_types": {
+        "subset_of": ["code", "code id_token"],
+        "superset_of": ["code", "code id_token"]
+    }
+}
+
+ENT = {
+    "contacts": ["rp_admins@cs.example.com"],
+    "redirect_uris": ["https://cs.example.com/rp1"],
+    "response_types": ["code", "code id_token", "id_token"],
+    "scopes": ["openid", "eduperson", "email", "address"]
+}
+
+def test_set_equality():
+    comb_policy = combine({'metadata_policy': POLICY_1, 'metadata': {}},
+                          {'metadata_policy': POLICY_2, 'metadata': {}})
+
+    res = TrustChainPolicy(None).apply_policy(ENT, comb_policy)
+
+    assert set(res['scopes']) == {"openid", "eduperson"}
+    assert set(res['response_types']) == {"code", "code id_token"}

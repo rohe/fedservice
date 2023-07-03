@@ -76,6 +76,8 @@ class TestSignedTrustMark():
         )
         TM.add_functions()
         TM.add_services()
+        TM.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
+            'trust_anchors'] = {TA_ID: self.ta.keyjar.export_jwks()}
 
         self.entity = FederationEntity(**TM.conf)
 
@@ -176,7 +178,8 @@ class TestSignedTrustMark():
                 rsps.add("GET", _url, body=_jwks,
                          adding_headers={"Content-Type": "application/json"}, status=200)
 
-            verified_trust_mark = self.entity.function.trust_mark_verifier(_trust_mark)
+            verified_trust_mark = self.entity.function.trust_mark_verifier(
+                trust_mark=_trust_mark, trust_anchor=self.ta.entity_id)
 
         assert verified_trust_mark
         assert set(verified_trust_mark.keys()) == {'iat', 'iss', 'id', 'sub', 'ref'}

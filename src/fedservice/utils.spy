@@ -36,3 +36,5 @@ def compact(qsdict):
         else:
             res[key] = val
     return res
+
+

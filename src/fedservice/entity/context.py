@@ -25,6 +25,7 @@ class FederationContext(ImpExp):
         "authority_hints": [],
         "tr_priority": [],
         "trust_mark_issuer": None,
+        "trust_mark_owners": None,
         "signed_trust_marks": [],
         "trust_marks": [],
     })

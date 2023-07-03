@@ -37,6 +37,9 @@ class FederationEntity(Unit):
         if upstream_get is None and httpc is None:
             httpc = request
 
+        if not keyjar and not key_conf:
+            keyjar = False
+
         self.entity_id = entity_id
         Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                       httpc_params=httpc_params, key_conf=key_conf, issuer_id=entity_id)

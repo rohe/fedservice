@@ -55,9 +55,9 @@ class FederationServiceContext(FederationContext):
         _item_typ = CLI_REG_MAP.get(typ)
         _alg = ''
         if _item_typ:
-            _alg = self.metadata.get_usage(_item_typ[attr])
+            _alg = self.claims.get_usage(_item_typ[attr])
             if not _alg:
-                _alg = self.metadata.get_preference(_item_typ[attr])
+                _alg = self.claims.get_preference(_item_typ[attr])
 
         _provider_info = {}
         if not _alg and _provider_info:
@@ -96,7 +96,7 @@ class FederationServiceContext(FederationContext):
             return val
 
     def get_client_id(self):
-        return self.metadata.get_usage("client_id")
+        return self.claims.get_usage("client_id")
 
 
 class FederationClientEntity(ClientUnit):

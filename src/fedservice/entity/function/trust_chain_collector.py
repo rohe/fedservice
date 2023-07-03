@@ -4,19 +4,20 @@ from typing import Any
 from typing import Callable
 from typing import List
 from typing import Optional
-from typing import Tuple
 
 from cryptojwt import JWT
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import utc_time_sans_frac
 from idpyoidc.exception import MissingPage
+from requests.exceptions import ConnectionError
 
+from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import Function
+from fedservice.entity.function import verify_trust_chains
 from fedservice.entity_statement.cache import ESCache
 from fedservice.exception import FailedConfigurationRetrieval
-
-from requests.exceptions import ConnectionError
+from fedservice.utils import statement_is_expired
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +151,23 @@ class TrustChainCollector(Function):
 
         return self_signed_config
 
-    def get_federation_fetch_endpoint(self, intermediate):
+    def get_metadata(self, entity_id):
+        _ec = None
+        if entity_id in self.config_cache:
+            _ec = self.config_cache[entity_id]
+            if statement_is_expired(_ec):
+                _ec = None
+
+        if _ec is None:
+            _collection = self.upstream_get('unit')
+            _federation_entity = _collection.upstream_get('unit')
+            _chains, _ = collect_trust_chains(_federation_entity, entity_id)
+            _trust_chains = verify_trust_chains(_federation_entity, _chains)
+            _ec = self.config_cache[entity_id]
+
+        return _ec['metadata']
+
+    def get_federation_fetch_endpoint(self, intermediate: str) -> str:
         logger.debug(f'--get_federation_fetch_endpoint({intermediate})')
         # In cache ??
         _entity_config = self.config_cache[intermediate]
@@ -164,7 +181,7 @@ class TrustChainCollector(Function):
         if not fed_fetch_endpoint:
             signed_entity_config = self.get_entity_configuration(intermediate)
             if signed_entity_config is None:
-                return None
+                return ''
 
             entity_config = verify_self_signed_signature(signed_entity_config)
             logger.debug(f'Verified self signed statement: {entity_config}')
@@ -320,8 +337,8 @@ class TrustChainCollector(Function):
             return None
         entity_config = verify_self_signed_signature(signed_entity_config)
         logger.debug(f'Verified self signed statement: {entity_config}')
-        # update cache
         entity_config['_jws'] = signed_entity_config
+        # update cache
         self.config_cache[entity_id] = entity_config
 
         return self.collect_tree(entity_id, entity_config, seen=seen, max_superiors=max_superiors,

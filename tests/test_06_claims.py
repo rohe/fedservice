@@ -41,7 +41,8 @@ class TestClaimsEntity():
     def test_supported(self):
         base_supported = self.entity.get_context().supports()
         assert set(base_supported.keys()) == {'organization_name', 'homepage_uri', 'contacts',
-                                              'policy_uri', 'logo_uri'}
+                                              'policy_uri', 'logo_uri', 'trust_mark_owners',
+                                              'trust_mark_issuers'}
 
         assert self.entity.context.claims.prefer == {
             'organization_name': 'The example federation operator',

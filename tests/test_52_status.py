@@ -173,6 +173,7 @@ class TestComboCollect(object):
                 rsps.add("GET", _url, body=_jwks,
                          adding_headers={"Content-Type": "application/json"}, status=200)
 
-            verified_trust_mark = self.rp.function.trust_mark_verifier(_trust_mark)
+            verified_trust_mark = self.rp.function.trust_mark_verifier(
+                trust_mark=_trust_mark, trust_anchor=self.ta.entity_id)
 
         assert verified_trust_mark

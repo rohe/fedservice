@@ -97,7 +97,7 @@ class TestComboCollect(object):
         assert set(self.ta.server.subordinate.keys()) == {OP_ID, RP_ID}
 
     def test_collect_trust_chain(self):
-        # Need 2 entity configurations (leaf and TA) and 1 entity statement (TA about leaf
+        # Need 2 entity configurations (leaf and TA) and 1 entity statement (TA about the leaf)
         # leaf = OP
 
         _msgs = create_trust_chain_messages(self.op, self.ta)

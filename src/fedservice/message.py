@@ -103,8 +103,11 @@ class FederationEntity(Message):
         "contacts": OPTIONAL_LIST_OF_STRINGS,
         "policy_url": SINGLE_OPTIONAL_STRING,
         "homepage_uri": SINGLE_OPTIONAL_STRING,
-        "trust_marks": SINGLE_OPTIONAL_JSON,
-        "organization_name": SINGLE_OPTIONAL_STRING
+        # "trust_marks": SINGLE_OPTIONAL_JSON,
+        "organization_name": SINGLE_OPTIONAL_STRING,
+        # If it's a Trust Anchor
+        "trust_mark_owners":SINGLE_OPTIONAL_DICT,
+        "trust_mark_issuers": SINGLE_OPTIONAL_DICT
     }
 
 
