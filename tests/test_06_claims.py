@@ -91,7 +91,7 @@ class TestClaimsFRP():
 
         LEAF_CONFIG = {
             'entity_id': ENTITY_ID,
-            # 'key_conf': {"key_defs": KEYSPEC},
+            # 'key_conf': False,
             "federation_entity": {
                 'class': FederationEntity,
                 'kwargs': ENT.conf
@@ -133,8 +133,8 @@ class TestClaimsFRP():
                                      'response_types': ['code']}}
 
         # IN this case the Combo has no keys, The federation entity and the openid relying party has
-        # separate keyjars. Same initial key owner IDs in both keyjars.
-        assert self.combo.keyjar == None
+        # separate key jars. Same initial key owner IDs in both keyjars.
+        assert self.combo.keyjar is None
         for _name, _item in self.combo._part.items():
             assert set(_item.keyjar.owners()) == {'', 'https://anchor.example.com'}
 

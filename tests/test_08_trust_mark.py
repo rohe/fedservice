@@ -51,6 +51,7 @@ class TestSignedTrustMark():
 
         # The trust mark issuer
         self.tmi = TrustMarkIssuer(trust_mark_specification={})
+
         # Federation entity with only status endpoint
         TM = FederationEntityBuilder(
             TRUST_MARK_ISSUER_ID,

@@ -1,6 +1,7 @@
 from typing import Optional
 from typing import Union
 
+from cryptojwt import KeyJar
 from requests import request
 from idpyoidc.configure import Configuration
 from idpyoidc.server.util import execute
@@ -14,13 +15,14 @@ class Combo(Unit):
     def __init__(self,
                  config: Union[dict, Configuration],
                  httpc: Optional[object] = None,
-                 entity_id: Optional[str] = ''
+                 entity_id: Optional[str] = '',
+                 keyjar: Optional[Union[KeyJar, bool]] = None,
                  ):
         self.entity_id = entity_id or config.get('entity_id')
-        Unit.__init__(self, config=config, httpc=httpc, issuer_id=self.entity_id)
+        Unit.__init__(self, config=config, httpc=httpc, issuer_id=self.entity_id, keyjar=keyjar)
         self._part = {}
         for key, spec in config.items():
-            if 'class' in spec:
+            if isinstance(spec, dict) and 'class' in spec:
                 self._part[key] = execute(spec, upstream_get=self.unit_get,
                                           entity_id=self.entity_id, httpc=httpc)
 
@@ -42,7 +44,10 @@ class FederationCombo(Combo):
         if httpc is None:
             httpc = request
 
-        Combo.__init__(self, config=config, httpc=httpc)
+        if 'keyjar' not in config and 'key_conf' not in config:
+            Combo.__init__(self, config=config, httpc=httpc, keyjar=False)
+        else:
+            Combo.__init__(self, config=config, httpc=httpc)
 
     def get_metadata(self):
         res = {}
