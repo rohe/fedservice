@@ -118,3 +118,5 @@ TRUST_MARK_ISSUER_ENDPOINTS = {
         "kwargs": {}
     }
 }
+
+WELL_KNOWN_FEDERATION_ENDPOINT = "{}/.well-known/openid-federation"

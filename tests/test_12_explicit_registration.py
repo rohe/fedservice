@@ -1,24 +1,25 @@
 import os
 
-import pytest
-import responses
 from cryptojwt.jws.jws import factory
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.oidc.token import Token
 from idpyoidc.server.oidc.userinfo import UserInfo
+import pytest
+import responses
 
 from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.defaults import LEAF_ENDPOINT
+from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
 from fedservice.entity import FederationEntity
 from fedservice.op import ServerEntity
 from fedservice.op.authorization import Authorization
 from fedservice.op.registration import Registration
 from fedservice.rp import ClientEntity
-from . import create_trust_chain_messages
 from . import CRYPT_CONFIG
+from . import create_trust_chain_messages
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
@@ -175,7 +176,8 @@ class TestAutomatic(object):
                 "homepage_uri": "https://op.example.com",
                 "contacts": "operations@op.example.com"
             },
-            authority_hints=[TA_ID]
+            authority_hints=[TA_ID],
+            key_conf={"key_defs": KEYDEFS},
         )
         OP_FE.add_services()
         OP_FE.add_functions()
@@ -185,7 +187,6 @@ class TestAutomatic(object):
 
         OP_CONFIG = {
             'entity_id': OP_ID,
-            'key_conf': {"key_defs": KEYDEFS},
             "federation_entity": {
                 'class': FederationEntity,
                 'kwargs': OP_FE.conf
@@ -196,7 +197,7 @@ class TestAutomatic(object):
                     'config': {
                         "issuer": "https://example.com/",
                         "httpc_params": {"verify": False, "timeout": 1},
-                        "capabilities": {
+                        "preferences": {
                             "subject_types_supported": ["public", "pairwise", "ephemeral"],
                             "grant_types_supported": [
                                 "authorization_code",
@@ -284,7 +285,6 @@ class TestAutomatic(object):
                         "template_dir": "template",
                         "session_params": SESSION_PARAMS,
                     }},
-                'key_conf': {"key_defs": KEYDEFS},
                 "services": oidc_service
             }
         }
@@ -300,12 +300,12 @@ class TestAutomatic(object):
         }
 
         self.ta.server.subordinate[OP_ID] = {
-            "jwks": self.op.keyjar.export_jwks(),
+            "jwks": self.op['federation_entity'].keyjar.export_jwks(),
             'entity_types': ['federation_entity', 'openid_provider']
         }
 
         self.im.server.subordinate[RP_ID] = {
-            "jwks": self.rp.keyjar.export_jwks(),
+            "jwks": self.rp['federation_entity'].keyjar.export_jwks(),
             'entity_types': ['federation_entity', 'openid_relying_party']
         }
 
@@ -314,8 +314,7 @@ class TestAutomatic(object):
         assert len(self.op['openid_provider'].get_context().cdb.keys()) == 0
 
         ####################################################
-        # [1] Let the RP gather some provider info discovery
-
+        # [1] Let the RP do some provider info discovery
         # Point the RP to the OP
         self.rp['openid_relying_party'].get_context().issuer = self.op.entity_id
 
@@ -347,8 +346,8 @@ class TestAutomatic(object):
         # [3] The OP receives a registration request and responds to it
         _msgs = create_trust_chain_messages(self.rp.entity_id, self.im, self.ta)
         # add the jwks_uri
-        _jwks_uri = self.rp['openid_relying_party'].get_context().get_preference('jwks_uri')
-        _msgs[_jwks_uri] = self.rp['openid_relying_party'].keyjar.export_jwks_as_json()
+        # _jwks_uri = self.op['openid_provider'].get_preference('jwks_uri')
+        # _msgs[_jwks_uri] = self.op['openid_provider'].keyjar.export_jwks_as_json()
 
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():
@@ -373,7 +372,7 @@ class TestAutomatic(object):
 
         _msgs = create_trust_chain_messages(self.rp.entity_id, self.im, self.ta)
         # Don't need the Entity Configuration for the RP
-        del _msgs[f"{self.ta.entity_id}/.well-known/openid-federation"]
+        del _msgs[WELL_KNOWN_FEDERATION_ENDPOINT.format(self.ta.entity_id)]
 
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():

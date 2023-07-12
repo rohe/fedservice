@@ -1,6 +1,8 @@
 import json
 import logging
 
+from cryptojwt import JWT
+from cryptojwt import KeyJar
 from idpyoidc.message import oidc
 from idpyoidc.server.endpoint import Endpoint
 
@@ -14,9 +16,62 @@ class List(Endpoint):
     name = "list"
     endpoint_name = 'federation_list_endpoint'
 
-    def __init__(self, upstream_get, **kwargs):
+    def __init__(self, upstream_get, extended=False, **kwargs):
         Endpoint.__init__(self, upstream_get, **kwargs)
+        self.extended = extended
+
+    def filter(self,
+               subordinates: dict,
+               entity_type: str = '',
+               trust_mark_id: str = '',
+               trust_marked = None,
+               **kwargs):
+        match = []
+        for entity_id, conf in subordinates.items():
+            matched = False
+            if entity_type:
+                if entity_type in conf['metadata']:
+                    matched = True
+            if trust_marked:
+                if 'trust_marks' in conf:
+                    matched = True
+                else:
+                    matched = False
+            if trust_mark_id:
+                trust_marks = conf.get('trust_marks')
+                matched = False
+                for trust_mark in trust_marks:
+                    if trust_mark['id'] == trust_mark_id:
+                        matched = True
+
+            if matched:
+                match.append(entity_id)
+        return match
 
     def process_request(self, request=None, **kwargs):
         _db = self.upstream_get("unit").subordinate
-        return {'response_msg': json.dumps(list(_db.keys()))}
+        if not request:
+            return {'response_msg': json.dumps(list(_db.keys()))}
+        else:
+            subordinate = self.collect_subordinates()
+            matched_entity_ids =self.filter(subordinates=subordinate, **request)
+            if self.extended:
+                return {id:subordinate[id] for id in matched_entity_ids}
+            else:
+                return matched_entity_ids
+
+    def collect_subordinates(self) -> dict:
+        _server_entity = self.upstream_get("unit")
+        _federation_entity = _server_entity.upstream_get("unit")
+        keyjar = KeyJar()
+        _collector = _federation_entity.function.trust_chain_collector
+        sub = {}
+        for entity_id, conf in _federation_entity.server.subordinate.items():
+            #  get entity configuration for subordinate
+            _entity_configuration = _collector.get_entity_configuration(entity_id)
+            # Verify signature with the keys I have
+            keyjar.import_jwks(conf['jwks'], entity_id)
+            _jwt = JWT(key_jar=keyjar)
+            _ec = _jwt.unpack(_entity_configuration)
+            sub[entity_id] = _ec
+        return sub
