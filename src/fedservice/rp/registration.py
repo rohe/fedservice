@@ -1,6 +1,7 @@
 import logging
 
 from cryptojwt.jws.jws import factory
+from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
 from idpyoidc.client.exception import ResponseError
 from idpyoidc.client.oidc import registration
 from idpyoidc.message.oidc import ProviderConfigurationResponse
@@ -89,43 +90,26 @@ class Registration(registration.Registration):
         :param resp: An entity statement as a signed JWT
         :return: A set of metadata claims
         """
+
         _federation_entity = get_federation_entity(self)
-        # Need the federation keys
-        keyjar = _federation_entity.upstream_get('attribute', 'keyjar')
 
-        # should have the necessary keys
-        _jwt = factory(resp)
-        entity_statement = _jwt.verify_compact(resp, keys=keyjar.get_jwt_verify_keys(_jwt.jwt))
-
-        _trust_anchor_id = entity_statement['trust_anchor_id']
-        logger.debug(f"trust_anchor_id: {_trust_anchor_id}")
-
-        if _trust_anchor_id not in _federation_entity.function.trust_chain_collector.trust_anchors:
+        payload = verify_self_signed_signature(resp)
+        # Do I trust the TA the OP chose ?
+        logger.debug(f"trust_anchor_id: {payload['trust_anchor_id']}")
+        if payload['trust_anchor_id'] not in _federation_entity.function.trust_chain_collector.trust_anchors:
             raise ValueError("Trust anchor I don't trust")
 
-        try:
-            chosen = _federation_entity.context.trust_chains[_trust_anchor_id]
-        except KeyError:
-            raise KeyError(f"No valid Trust Chain Anchor: {_trust_anchor_id}")
-
-        # based on the Federation ID, conclude which OP config to use and store the
-        # provider configuration in its proper place.
-        op_claims = chosen.metadata['openid_provider']
-        logger.debug(f"OP claims: {op_claims}")
-        # _sc.trust_path = (chosen.anchor, _fe.op_paths[statement.anchor][0])
-        _context = self.upstream_get('context')
-        _context.provider_info = ProviderConfigurationResponse(**op_claims)
-
         _chains, _ = collect_trust_chains(self.upstream_get('unit'),
-                                          entity_id=entity_statement['sub'],
-                                          signed_entity_configuration=resp,
-                                          stop_at=_trust_anchor_id,
-                                          authority_hints=_federation_entity.get_authority_hints())
-
-        _trust_chains = verify_trust_chains(_federation_entity, _chains, resp,
-                                            _federation_entity.entity_configuration)
+                                          entity_id=self.upstream_get('attribute', 'entity_id'),
+                                          stop_at=payload['trust_anchor_id'])
+        _trust_chains = verify_trust_chains(_federation_entity, _chains, resp)
+        # should only be one chain
+        if len(_trust_chains) != 1:
+            raise SystemError(f"More then one chain ending in {payload['trust_anchor_id']}")
+        _trust_chains[0].verified_chain[-1]['metadata'] = payload['metadata']
         _trust_chains = apply_policies(_federation_entity, _trust_chains)
         _resp = _trust_chains[0].metadata['openid_relying_party']
+        _context = self.upstream_get('context')
         _context.registration_response = _resp
         return _resp
 

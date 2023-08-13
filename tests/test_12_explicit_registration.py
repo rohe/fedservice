@@ -1,38 +1,30 @@
 import os
 
+import pytest
+import responses
 from cryptojwt.jws.jws import factory
+from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
+
+from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.oidc.token import Token
 from idpyoidc.server.oidc.userinfo import UserInfo
-import pytest
-import responses
 
 from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.defaults import LEAF_ENDPOINT
-from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
 from fedservice.entity import FederationEntity
 from fedservice.op import ServerEntity
 from fedservice.op.authorization import Authorization
 from fedservice.op.registration import Registration
 from fedservice.rp import ClientEntity
-from . import CRYPT_CONFIG
 from . import create_trust_chain_messages
+from . import CRYPT_CONFIG
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
-
-KEYDEFS = [
-    {"type": "RSA", "use": ["sig"]},
-    {"type": "EC", "crv": "P-256", "use": ["sig"]},
-]
-
-COOKIE_KEYDEFS = [
-    {"type": "oct", "kid": "sig", "use": ["sig"]},
-    {"type": "oct", "kid": "enc", "use": ["enc"]}
-]
 
 TA_ID = "https://ta.example.org"
 RP_ID = "https://rp.example.org"
@@ -56,7 +48,7 @@ RESPONSE_TYPES_SUPPORTED = [
 SESSION_PARAMS = {"encrypter": CRYPT_CONFIG}
 
 
-class TestAutomatic(object):
+class TestExplicit(object):
 
     @pytest.fixture(autouse=True)
     def create_endpoint(self):
@@ -76,16 +68,9 @@ class TestAutomatic(object):
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_conf={"key_defs": DEFAULT_KEY_DEFS}
         )
         TA.add_endpoints(None, **TA_ENDPOINTS)
-        # TA.conf['server']['kwargs']['endpoint']['status']['kwargs'][
-        #     'trust_mark_issuer'] = {
-        #     'class': TrustMarkIssuer,
-        #     'kwargs': {
-        #         'key_conf': {"key_defs": KEYDEFS}
-        #     }
-        # }
 
         self.ta = FederationEntity(**TA.conf)
 
@@ -125,7 +110,8 @@ class TestAutomatic(object):
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
             },
-            authority_hints=[IM_ID]
+            authority_hints=[IM_ID],
+            key_conf={"key_defs": KEYDEFS}
         )
         RP_FE.add_services()
         RP_FE.add_functions()
@@ -135,7 +121,6 @@ class TestAutomatic(object):
 
         RP_CONFIG = {
             'entity_id': RP_ID,
-            'key_conf': {"key_defs": KEYDEFS},  # One federation key set
             "federation_entity": {
                 'class': FederationEntity,
                 'kwargs': RP_FE.conf
@@ -156,7 +141,6 @@ class TestAutomatic(object):
                             "token_endpoint_auth_signing_alg": "ES256",
                             "client_registration_types": ["explicit"],
                         },
-                        "authorization_request_endpoints": ['authorization_endpoint']
                     },
                     "services": oidc_service,
                     'client_type': 'oidc'
@@ -206,82 +190,7 @@ class TestAutomatic(object):
                                 "refresh_token",
                             ],
                         },
-                        "token_handler_args": {
-                            "jwks_def": {
-                                "private_path": "private/token_jwks.json",
-                                "read_only": False,
-                                "key_defs": [
-                                    {"type": "oct", "bytes": "24", "use": ["enc"], "kid": "code"}],
-                            },
-                            "code": {"lifetime": 600, "kwargs": {"crypt_conf": CRYPT_CONFIG}},
-                            "token": {
-                                "class": "idpyoidc.server.token.jwt_token.JWTToken",
-                                "kwargs": {
-                                    "lifetime": 3600,
-                                    "add_claims_by_scope": True,
-                                    "aud": ["https://example.org/appl"],
-                                },
-                            },
-                            "refresh": {
-                                "class": "idpyoidc.server.token.jwt_token.JWTToken",
-                                "kwargs": {
-                                    "lifetime": 3600,
-                                    "aud": ["https://example.org/appl"],
-                                },
-                            },
-                            "id_token": {
-                                "class": "idpyoidc.server.token.id_token.IDToken",
-                                "kwargs": {
-                                    "base_claims": {
-                                        "email": {"essential": True},
-                                        "email_verified": {"essential": True},
-                                    }
-                                },
-                            },
-                        },
                         "key_conf": {"key_defs": KEYDEFS, "uri_path": "static/jwks.json"},
-                        "endpoint": {
-                            "registration": {
-                                "path": "registration",
-                                "class": Registration,
-                                "kwargs": {"client_auth_method": None},
-                            },
-                            "authorization": {
-                                "path": "authorization",
-                                "class": Authorization,
-                                "kwargs": {
-                                    "response_types_supported": [" ".join(x) for x in
-                                                                 RESPONSE_TYPES_SUPPORTED],
-                                    "response_modes_supported": ["query", "fragment", "form_post"],
-                                    "claim_types_supported": [
-                                        "normal",
-                                        "aggregated",
-                                        "distributed",
-                                    ],
-                                    "claims_parameter_supported": True,
-                                    "request_parameter_supported": True,
-                                    "request_uri_parameter_supported": True,
-                                    "client_registration_types_supported": ['explicit']
-                                },
-                            },
-                            "token": {
-                                "path": "token",
-                                "class": Token,
-                                "kwargs": {
-                                    "client_authn_method": [
-                                        "client_secret_post",
-                                        "client_secret_basic",
-                                        "client_secret_jwt",
-                                        "private_key_jwt",
-                                    ]
-                                },
-                            },
-                            "userinfo": {
-                                "path": "userinfo",
-                                "class": UserInfo,
-                                "kwargs": {}
-                            },
-                        },
                         "template_dir": "template",
                         "session_params": SESSION_PARAMS,
                     }},
@@ -291,7 +200,7 @@ class TestAutomatic(object):
 
         self.op = FederationCombo(OP_CONFIG)
 
-        # Setup subordinates
+        # Setup TA subordinates
 
         self.ta.server.subordinate[IM_ID] = {
             "jwks": self.im.keyjar.export_jwks(),
@@ -304,12 +213,14 @@ class TestAutomatic(object):
             'entity_types': ['federation_entity', 'openid_provider']
         }
 
+        # Intermediate's subordinate
+
         self.im.server.subordinate[RP_ID] = {
             "jwks": self.rp['federation_entity'].keyjar.export_jwks(),
             'entity_types': ['federation_entity', 'openid_relying_party']
         }
 
-    def test_explicit_registration(self):
+    def test_registration_verification(self):
         # No clients registered with the OP at the beginning
         assert len(self.op['openid_provider'].get_context().cdb.keys()) == 0
 
@@ -370,9 +281,9 @@ class TestAutomatic(object):
         ###########################################################################
         # [4] The RP receives the registration response and calculates the preference
 
-        _msgs = create_trust_chain_messages(self.rp.entity_id, self.im, self.ta)
-        # Don't need the Entity Configuration for the RP
+        _msgs = create_trust_chain_messages(self.rp, self.im, self.ta)
         del _msgs[WELL_KNOWN_FEDERATION_ENDPOINT.format(self.ta.entity_id)]
+        # _msgs = {}
 
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():

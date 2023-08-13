@@ -110,7 +110,6 @@ def apply_policies(unit, trust_chains):
 
     :param unit: A Unit instance
     :param trust_chains: List of TrustChain instances
-    :param signed_entity_configuration: An Entity Configuration
     :return: List of processed TrustChain instances
     """
     _policy_applier = get_federation_entity(unit).function.policy
@@ -120,7 +119,6 @@ def apply_policies(unit, trust_chains):
         _policy_applier(trust_chain)
         res.append(trust_chain)
     return res
-
 
 def get_payload(self_signed_statement):
     _jws = as_unicode(self_signed_statement)

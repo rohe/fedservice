@@ -30,6 +30,7 @@ class TrustChainVerifier(Function):
 
     def verify_trust_chain(self, entity_statement_list):
         """
+        Verifies the trust chain. Works its way down from the Trust Anchor to the leaf.
 
         :param entity_statement_list: List of entity statements. The entity's self-signed statement last.
         :return: A sequence of verified entity statements
