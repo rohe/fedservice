@@ -1,64 +1,84 @@
-from urllib.parse import urlparse
+import os
 
+from cryptojwt.jws.jws import factory
+from idpyoidc.server.configure import DEFAULT_OIDC_ENDPOINTS
+
+from fedservice.defaults import FEDERATION_ENTITY_SERVICES
+from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
+from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 import pytest
 import responses
-from cryptojwt import JWT
-from cryptojwt import KeyJar
-from cryptojwt.jws.jws import factory
-from cryptojwt.key_jar import build_keyjar
-from fedservice.message import TrustMarkRequest
-
-from fedservice.defaults import LEAF_ENDPOINT
-from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 
 from fedservice.build_entity import FederationEntityBuilder
-from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
+from fedservice.combo import FederationCombo
+from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
+from fedservice.defaults import LEAF_ENDPOINT
+from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
 from fedservice.entity import FederationEntity
-from fedservice.entity.server.status import TrustMarkStatus
-from fedservice.trust_mark_issuer import TrustMarkIssuer
-from fedservice.utils import statement_is_expired
-from tests import create_trust_chain_messages
+from fedservice.op import ServerEntity
+from fedservice.rp import ClientEntity
+from . import CRYPT_CONFIG
+from . import create_trust_chain_messages
 
-TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
+BASE_PATH = os.path.abspath(os.path.dirname(__file__))
+ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
 
 TA_ID = "https://ta.example.org"
-TMI_ID = "https://tmi.example.org"
-FE_ID = "https://tmi.example.org"
+RP_ID = "https://rp.example.org"
+OP_ID = "https://op.example.org"
+IM_ID = "https://im.example.org"
 
-TRUST_MARK_OWNERS_KEYS = build_keyjar(DEFAULT_KEY_DEFS)
-TM_OWNERS_ID = "https://tm_owner.example.org"
+TA_ENDPOINTS = {
+    "entity_configuration": {
+        "path": ".well-known/openid-federation",
+        "class": "fedservice.entity.server.entity_configuration.EntityConfiguration",
+        "kwargs": {}
+    },
+    "fetch": {
+        "path": "fetch",
+        "class": "fedservice.entity.server.fetch.Fetch",
+        "kwargs": {}
+    },
+    "metadata_verifier": {
+        "path": "verifier",
+        "class": "fedservice.entity.server.metadata_verification.MetadataVerification",
+        "kwargs": {}
+    }
+}
 
-SIRTIFI_TRUST_MARK_ID = "https://refeds.org/sirtfi"
+RESPONSE_TYPES_SUPPORTED = [
+    ["code"],
+    ["token"],
+    ["id_token"],
+    ["code", "token"],
+    ["code", "id_token"],
+    ["id_token", "token"],
+    ["code", "token", "id_token"],
+    ["none"],
+]
+
+SESSION_PARAMS = {"encrypter": CRYPT_CONFIG}
 
 
-@pytest.fixture()
-def tm_receiver():
-    return "https://op.ntnu.no"
-
-
-@pytest.fixture()
-def trust_mark_delegation(tm_receiver):
-    _jwt = JWT(TRUST_MARK_OWNERS_KEYS, iss=TM_OWNERS_ID, sign_alg='RS256')
-    return _jwt.pack({'sub': TMI_ID})
-
-
-class TestTrustMarkDelegation():
+class TestExplicit(object):
 
     @pytest.fixture(autouse=True)
-    def setup(self):
+    def create_endpoint(self):
+        #              TA
+        #          +---|---+
+        #          |       |
+        #          IM      OP
+        #          |
+        #          RP
+
+        # TRUST ANCHOR
+
         TA = FederationEntityBuilder(
             TA_ID,
             preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
-                "contacts": "operations@ta.example.com",
-                "trust_mark_owners": {
-                    SIRTIFI_TRUST_MARK_ID: {'jwks': TRUST_MARK_OWNERS_KEYS.export_jwks(),
-                                            'sub': TM_OWNERS_ID}
-                },
-                "trust_mark_issuers": {
-                    SIRTIFI_TRUST_MARK_ID: TMI_ID
-                }
+                "contacts": "operations@ta.example.com"
             },
             key_conf={"key_defs": DEFAULT_KEY_DEFS}
         )
@@ -66,110 +86,239 @@ class TestTrustMarkDelegation():
 
         self.ta = FederationEntity(**TA.conf)
 
-        # The trust mark issuer
-        self.tmi = TrustMarkIssuer(trust_mark_specification={})
-        # Federation entity with only status endpoint
-        TM = FederationEntityBuilder(
-            TMI_ID,
+        ANCHOR = {TA_ID: self.ta.keyjar.export_jwks()}
+
+        # intermediate
+
+        INT = FederationEntityBuilder(
+            IM_ID,
             preference={
-                "organization_name": "Trust Mark Issuer 'R US"
+                "organization_name": "The organization",
+                "homepage_uri": "https://example.com",
+                "contacts": "operations@example.com"
             },
             key_conf={"key_defs": DEFAULT_KEY_DEFS},
             authority_hints=[TA_ID]
         )
-        TM.add_endpoints(
-            status={
-                "path": "status",
-                "class": TrustMarkStatus,
-                "kwargs": {
-                    'trust_mark_issuer': self.tmi
-                }
-            },
-            entity_configuration={
-                "path": ".well-known/openid-federation",
-                "class": 'fedservice.entity.server.entity_configuration.EntityConfiguration',
-                "kwargs": {}
-            }
-        )
-        TM.add_functions()
-        TM.add_services()
+        INT.add_services()
+        INT.add_functions()
+        INT.add_endpoints()
 
-        self.trust_mark_issuer = FederationEntity(**TM.conf)
+        # Intermediate
+        self.im = FederationEntity(**INT.conf)
 
-        self.ta.server.subordinate[TMI_ID] = {
-            "jwks": self.trust_mark_issuer.keyjar.export_jwks(),
-            'authority_hints': [TA_ID]
-        }
+        ########################################
+        # Leaf RP
+        ########################################
 
-        FE = FederationEntityBuilder(
-            FE_ID,
+        oidc_service = DEFAULT_OIDC_SERVICES.copy()
+        oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
+        # del oidc_service['web_finger']
+        oidc_service['authorization'] = {
+            "class": "fedservice.rp.authorization.Authorization"}
+
+        RP_FE = FederationEntityBuilder(
             preference={
+                "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
             },
-            key_conf={"key_defs": DEFAULT_KEY_DEFS},
-            authority_hints=[TA_ID]
+            authority_hints=[IM_ID],
+            key_conf={"key_defs": DEFAULT_KEY_DEFS}
         )
-        FE.add_services()
-        FE.add_functions()
-        FE.add_endpoints(**LEAF_ENDPOINT)
-        FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
-            'trust_anchors'] = {TA_ID: self.ta.keyjar.export_jwks()}
+        _services = FEDERATION_ENTITY_SERVICES.copy()
+        _services["metadata_verification"] = {
+            "class": 'fedservice.entity.client.metadata_verification.MetadataVerification',
+            "kwargs": {}
+        }
+        RP_FE.add_services(**_services)
+        RP_FE.add_functions()
+        RP_FE.add_endpoints(**LEAF_ENDPOINT)
+        RP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
+            'trust_anchors'] = ANCHOR
 
-        self.federation_entity = FederationEntity(**FE.conf)
-
-    @pytest.fixture()
-    def create_trust_mark(self, trust_mark_delegation, tm_receiver):
-        self.tmi.trust_mark_specification[SIRTIFI_TRUST_MARK_ID] = {
-            "delegation": trust_mark_delegation}
-        return self.tmi.create_trust_mark(SIRTIFI_TRUST_MARK_ID, tm_receiver)
-
-    def test_delegated_trust_mark(self, create_trust_mark):
-        _trust_mark = create_trust_mark
-        _jwt = factory(_trust_mark)
-        assert 'delegation' in _jwt.jwt.payload()
-        _delegation = factory(_jwt.jwt.payload()['delegation'])
-        assert _delegation.jwt.payload()['iss'] == TM_OWNERS_ID
-        assert _jwt.jwt.payload()['iss'] == TMI_ID
-        assert _delegation.jwt.payload()['sub'] == TMI_ID
-
-    def test_verify_trust_mark(self, create_trust_mark):
-        _trust_mark = create_trust_mark
-
-        # (1) verify signature and that it is still active
-        # a) trust chain for trust mark issuer
-
-        where_and_what = create_trust_chain_messages(self.trust_mark_issuer, self.ta)
-        with responses.RequestsMock() as rsps:
-            for _url, _jwks in where_and_what.items():
-                rsps.add("GET", _url, body=_jwks,
-                         adding_headers={"Content-Type": "application/json"}, status=200)
-
-            verified_trust_mark = self.federation_entity.function.trust_mark_verifier(
-                trust_mark=_trust_mark, trust_anchor=self.ta.entity_id)
-
-        assert verified_trust_mark
-
-        # The collector hold all the entity statements/configurations that has been seen so far.
-        _collector = self.federation_entity.function.trust_chain_collector
-
-        # Ask the trust mark issuer if the trust mark is still valid
-        # get the metadata for the issuer. Should be cached
-        tm_issuer_metadata = _collector.get_metadata(TMI_ID)
-
-        service = self.federation_entity.get_service('trust_mark_status')
-        req = service.get_request_parameters(
-            request_args={
-                'sub': verified_trust_mark['sub'],
-                'id': verified_trust_mark['id']
+        RP_CONFIG = {
+            'entity_id': RP_ID,
+            "federation_entity": {
+                'class': FederationEntity,
+                'kwargs': RP_FE.conf
             },
-            fetch_endpoint=tm_issuer_metadata['federation_entity'][
-                'federation_trust_mark_status_endpoint']
+            "openid_relying_party": {
+                'class': ClientEntity,
+                'kwargs': {
+                    # OIDC core keys
+                    "key_conf": {"uri_path": "static/jwks.json", "key_defs": DEFAULT_KEY_DEFS},
+                    'config': {
+                        'client_id': RP_ID,
+                        'client_secret': 'a longesh password',
+                        'redirect_uris': ['https://example.com/cli/authz_cb'],
+                        "preference": {
+                            "grant_types": ['authorization_code', 'implicit',
+                                            'refresh_token'],
+                            "id_token_signed_response_alg": "ES256",
+                            "token_endpoint_auth_method": "client_secret_basic",
+                            "token_endpoint_auth_signing_alg": "ES256",
+                            "client_registration_types": ["explicit"],
+                        },
+                    },
+                    "services": oidc_service,
+                    'client_type': 'oidc'
+                }
+            }
+        }
+
+        self.rp = FederationCombo(RP_CONFIG)
+
+        ########################################
+        # Leaf OP
+        ########################################
+
+        OP_FE = FederationEntityBuilder(
+            preference={
+                "organization_name": "The OP operator",
+                "homepage_uri": "https://op.example.com",
+                "contacts": "operations@op.example.com"
+            },
+            authority_hints=[TA_ID],
+            key_conf={"key_defs": DEFAULT_KEY_DEFS},
         )
-        p = urlparse(req['url'])
-        tmr = TrustMarkRequest().from_urlencoded(p.query)
+        OP_FE.add_services()
+        OP_FE.add_functions()
+        OP_FE.add_endpoints(**LEAF_ENDPOINT)
+        OP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
+            'trust_anchors'] = ANCHOR
 
-        # The response from the Trust Mark issuer
-        resp = self.trust_mark_issuer.server.endpoint['status'].process_request(tmr.to_dict())
-        assert resp == {'response': '{"active": true}'}
+        _endpoints = DEFAULT_OIDC_ENDPOINTS.copy()
+        _endpoints["register"] = {
+                "path": "registration",
+                "class": "fedservice.op.registration.Registration",
+                "kwargs": {}
+        }
+        OP_CONFIG = {
+            'entity_id': OP_ID,
+            "federation_entity": {
+                'class': FederationEntity,
+                'kwargs': OP_FE.conf
+            },
+            "openid_provider": {
+                'class': ServerEntity,
+                'kwargs': {
+                    'config': {
+                        "issuer": "https://example.com/",
+                        "httpc_params": {"verify": False, "timeout": 1},
+                        "preferences": {
+                            "subject_types_supported": ["public", "pairwise", "ephemeral"],
+                            "grant_types_supported": [
+                                "authorization_code",
+                                "implicit",
+                                "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                                "refresh_token",
+                            ],
+                        },
+                        "key_conf": {
+                            "key_defs": DEFAULT_KEY_DEFS,
+                            "uri_path": "static/jwks.json"},
+                        "template_dir": "template",
+                        "session_params": SESSION_PARAMS,
+                        "endpoint": _endpoints
+                    }
+                }
+            }
+        }
 
+        self.op = FederationCombo(OP_CONFIG)
+
+        # Setup TA subordinates
+
+        self.ta.server.subordinate[IM_ID] = {
+            "jwks": self.im.keyjar.export_jwks(),
+            'entity_types': ['federation_entity']
+
+        }
+
+        self.ta.server.subordinate[OP_ID] = {
+            "jwks": self.op['federation_entity'].keyjar.export_jwks(),
+            'entity_types': ['federation_entity', 'openid_provider']
+        }
+
+        # Intermediate's subordinate
+
+        self.im.server.subordinate[RP_ID] = {
+            "jwks": self.rp['federation_entity'].keyjar.export_jwks(),
+            'entity_types': ['federation_entity', 'openid_relying_party']
+        }
+
+    def test_registration_verification(self):
+        # No clients registered with the OP at the beginning
+        assert len(self.op['openid_provider'].get_context().cdb.keys()) == 0
+
+        ####################################################
+        # [1] Let the RP do some provider info discovery
+        # Point the RP to the OP
+        self.rp['openid_relying_party'].get_context().issuer = self.op.entity_id
+
+        # Create the URLs and messages that will be involved in this process
+        _msgs = create_trust_chain_messages(self.op, self.ta)
+
+        # add the jwks_uri
+        _jwks_uri = self.op['openid_provider'].get_context().get_preference('jwks_uri')
+        _msgs[_jwks_uri] = self.op['openid_provider'].keyjar.export_jwks_as_json()
+
+        with responses.RequestsMock() as rsps:
+            for _url, _jwks in _msgs.items():
+                rsps.add("GET", _url, body=_jwks,
+                         headers={"Content-Type": "application/json"}, status=200)
+
+            self.rp['openid_relying_party'].do_request('provider_info')
+
+        # the provider info should have been updated
+
+        assert self.rp['openid_relying_party'].get_context().provider_info
+
+        ####################################################
+        # [2] Let the RP construct the registration request
+
+        _reg_service = self.rp['openid_relying_party'].get_service('registration')
+        reg_request = _reg_service.construct()
+
+        ###############################################################
+        # [3] The OP receives a registration request and responds to it
+        _msgs = create_trust_chain_messages(self.rp.entity_id, self.im, self.ta)
+        # add the jwks_uri
+        # _jwks_uri = self.op['openid_provider'].get_preference('jwks_uri')
+        # _msgs[_jwks_uri] = self.op['openid_provider'].keyjar.export_jwks_as_json()
+
+        with responses.RequestsMock() as rsps:
+            for _url, _jwks in _msgs.items():
+                rsps.add("GET", _url, body=_jwks,
+                         headers={"Content-Type": "application/json"}, status=200)
+
+            # The OP handles the registration request
+            resp = self.op['openid_provider'].get_endpoint('registration').process_request(
+                reg_request)
+
+        assert resp["response_code"] == 201
+
+        _jws = factory(resp['response_msg'])
+        _payload = _jws.jwt.payload()
+        assert _payload['iss'] == self.op.entity_id
+        assert _payload['sub'] == self.rp.entity_id
+        assert _payload['trust_anchor_id'] == self.ta.entity_id
+        assert _payload['aud'] == self.rp.entity_id
+
+        ###########################################################################
+        # [4] The RP receives the registration response and calculates the preference
+
+        _msgs = create_trust_chain_messages(self.rp, self.im, self.ta)
+        del _msgs[WELL_KNOWN_FEDERATION_ENDPOINT.format(self.ta.entity_id)]
+        # _msgs = {}
+
+        with responses.RequestsMock() as rsps:
+            for _url, _jwks in _msgs.items():
+                rsps.add("GET", _url, body=_jwks,
+                         headers={"Content-Type": "application/json"}, status=200)
+
+            reg_resp = _reg_service.parse_response(resp['response_msg'])
+
+        assert reg_resp
+        assert 'client_id' in reg_resp

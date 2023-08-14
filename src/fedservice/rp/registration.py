@@ -91,6 +91,7 @@ class Registration(registration.Registration):
         :return: A set of metadata claims
         """
 
+        # Find the part of me that deals with the federation
         _federation_entity = get_federation_entity(self)
 
         payload = verify_self_signed_signature(resp)
@@ -99,19 +100,31 @@ class Registration(registration.Registration):
         if payload['trust_anchor_id'] not in _federation_entity.function.trust_chain_collector.trust_anchors:
             raise ValueError("Trust anchor I don't trust")
 
-        _chains, _ = collect_trust_chains(self.upstream_get('unit'),
-                                          entity_id=self.upstream_get('attribute', 'entity_id'),
-                                          stop_at=payload['trust_anchor_id'])
-        _trust_chains = verify_trust_chains(_federation_entity, _chains, resp)
-        # should only be one chain
-        if len(_trust_chains) != 1:
-            raise SystemError(f"More then one chain ending in {payload['trust_anchor_id']}")
-        _trust_chains[0].verified_chain[-1]['metadata'] = payload['metadata']
-        _trust_chains = apply_policies(_federation_entity, _trust_chains)
-        _resp = _trust_chains[0].metadata['openid_relying_party']
-        _context = self.upstream_get('context')
-        _context.registration_response = _resp
-        return _resp
+        # This is where I should decide to use the metadata verification service or do it
+        # all myself
+        # Do I have the necessary Service installed
+        _verifier = _federation_entity.client.get_service("metadata_verification")
+        if _verifier:
+            _entity = self.upstream_get('unit')
+            #  construct the query
+            req_args = {"registration_response": resp}
+            _resp = _entity.do_request("metadata_verification", request_args=req_args)
+            if _resp:
+                pass
+        else:
+            _chains, _ = collect_trust_chains(self.upstream_get('unit'),
+                                              entity_id=self.upstream_get('attribute', 'entity_id'),
+                                              stop_at=payload['trust_anchor_id'])
+            _trust_chains = verify_trust_chains(_federation_entity, _chains, resp)
+            # should only be one chain
+            if len(_trust_chains) != 1:
+                raise SystemError(f"More then one chain ending in {payload['trust_anchor_id']}")
+            _trust_chains[0].verified_chain[-1]['metadata'] = payload['metadata']
+            _trust_chains = apply_policies(_federation_entity, _trust_chains)
+            _resp = _trust_chains[0].metadata['openid_relying_party']
+            _context = self.upstream_get('context')
+            _context.registration_response = _resp
+            return _resp
 
     def update_service_context(self, resp, **kwargs):
         registration.Registration.update_service_context(self, resp, **kwargs)

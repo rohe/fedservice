@@ -1,27 +1,22 @@
 import os
 
-import pytest
-import responses
 from cryptojwt.jws.jws import factory
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
-
-from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
-from idpyoidc.server.oidc.token import Token
-from idpyoidc.server.oidc.userinfo import UserInfo
+import pytest
+import responses
 
 from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.defaults import LEAF_ENDPOINT
+from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
 from fedservice.entity import FederationEntity
 from fedservice.op import ServerEntity
-from fedservice.op.authorization import Authorization
-from fedservice.op.registration import Registration
 from fedservice.rp import ClientEntity
-from . import create_trust_chain_messages
 from . import CRYPT_CONFIG
+from . import create_trust_chain_messages
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
@@ -85,7 +80,7 @@ class TestExplicit(object):
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
             },
-            key_conf={"key_defs": KEYDEFS},
+            key_conf={"key_defs": DEFAULT_KEY_DEFS},
             authority_hints=[TA_ID]
         )
         INT.add_services()
@@ -111,7 +106,7 @@ class TestExplicit(object):
                 "contacts": "operations@rp.example.com"
             },
             authority_hints=[IM_ID],
-            key_conf={"key_defs": KEYDEFS}
+            key_conf={"key_defs": DEFAULT_KEY_DEFS}
         )
         RP_FE.add_services()
         RP_FE.add_functions()
@@ -161,7 +156,7 @@ class TestExplicit(object):
                 "contacts": "operations@op.example.com"
             },
             authority_hints=[TA_ID],
-            key_conf={"key_defs": KEYDEFS},
+            key_conf={"key_defs": DEFAULT_KEY_DEFS},
         )
         OP_FE.add_services()
         OP_FE.add_functions()
@@ -190,7 +185,9 @@ class TestExplicit(object):
                                 "refresh_token",
                             ],
                         },
-                        "key_conf": {"key_defs": KEYDEFS, "uri_path": "static/jwks.json"},
+                        "key_conf": {
+                            "key_defs": DEFAULT_KEY_DEFS,
+                            "uri_path": "static/jwks.json"},
                         "template_dir": "template",
                         "session_params": SESSION_PARAMS,
                     }},

@@ -1,4 +1,4 @@
-from idpyoidc import claims
+from idpyoidc import metadata
 from idpyoidc.claims import Claims as ClaimsBase
 from idpyoidc.client.claims import oauth2 as OAuth2ClientClaims
 from idpyoidc.client.claims import oidc as OIDCClientClaims
@@ -22,7 +22,7 @@ class OPClaims(OIDCServerClaims.Claims):
                 "private_key_jwt"
             ]
         },
-        'request_authentication_signing_alg_values_supported': claims.get_signing_algs,
+        'request_authentication_signing_alg_values_supported': metadata.get_signing_algs,
         'federation_registration_endpoint': None
     })
 
@@ -48,7 +48,7 @@ class ASClaims(OAUTH2ServerClaims.Claims):
                 "private_key_jwt"
             ]
         },
-        'request_authentication_signing_alg_values_supported': claims.get_signing_algs,
+        'request_authentication_signing_alg_values_supported': metadata.get_signing_algs,
         'federation_registration_endpoint': None
     })
 
