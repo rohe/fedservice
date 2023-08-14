@@ -1,10 +1,11 @@
 import os
 
+import pytest
+import responses
 from cryptojwt.jws.jws import factory
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
-import pytest
-import responses
+from idpyoidc.server.configure import DEFAULT_OIDC_ENDPOINTS
 
 from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
@@ -15,8 +16,8 @@ from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
 from fedservice.entity import FederationEntity
 from fedservice.op import ServerEntity
 from fedservice.rp import ClientEntity
-from . import CRYPT_CONFIG
 from . import create_trust_chain_messages
+from . import CRYPT_CONFIG
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
@@ -124,7 +125,7 @@ class TestExplicit(object):
                 'class': ClientEntity,
                 'kwargs': {
                     # OIDC core keys
-                    "key_conf": {"uri_path": "static/jwks.json", "key_defs": KEYDEFS},
+                    "key_conf": {"uri_path": "static/jwks.json", "key_defs": DEFAULT_KEY_DEFS},
                     'config': {
                         'client_id': RP_ID,
                         'client_secret': 'a longesh password',
@@ -164,6 +165,13 @@ class TestExplicit(object):
         OP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
             'trust_anchors'] = ANCHOR
 
+        _endpoints = DEFAULT_OIDC_ENDPOINTS.copy()
+        _endpoints["register"] = {
+            "path": "registration",
+            "class": "fedservice.op.registration.Registration",
+            "kwargs": {}
+        }
+
         OP_CONFIG = {
             'entity_id': OP_ID,
             "federation_entity": {
@@ -190,8 +198,9 @@ class TestExplicit(object):
                             "uri_path": "static/jwks.json"},
                         "template_dir": "template",
                         "session_params": SESSION_PARAMS,
-                    }},
-                "services": oidc_service
+                        "endpoint": _endpoints
+                    }
+                },
             }
         }
 
@@ -279,9 +288,9 @@ class TestExplicit(object):
         # [4] The RP receives the registration response and calculates the preference
 
         _msgs = create_trust_chain_messages(self.rp, self.im, self.ta)
+        # Cached
         del _msgs[WELL_KNOWN_FEDERATION_ENDPOINT.format(self.ta.entity_id)]
         # _msgs = {}
-
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():
                 rsps.add("GET", _url, body=_jwks,

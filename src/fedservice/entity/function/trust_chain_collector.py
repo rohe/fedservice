@@ -1,4 +1,5 @@
 import logging
+import time
 from ssl import SSLError
 from typing import Any
 from typing import Callable
@@ -64,7 +65,7 @@ class TrustChainCollector(Function):
     def __init__(self,
                  upstream_get: Callable,
                  trust_anchors: dict,
-                 allowed_delta=300,
+                 allowed_delta: int = 300,
                  keyjar: Optional[KeyJar] = None,
                  **kwargs
                  ):
@@ -326,20 +327,31 @@ class TrustChainCollector(Function):
         else:
             return None
 
+    def too_old(self, statement):
+        now = time.time()
+        if now >= statement["exp"] + self.allowed_delta:
+            return True
+        else:
+            return False
+
     def __call__(self,
                  entity_id: str,
                  max_superiors: Optional[int] = 10,
                  seen: Optional[List[str]] = None,
                  stop_at: Optional[str] = '') -> tuple[dict | None, Any | None] | None:
-        # get leaf Entity Configuration
-        signed_entity_config = self.get_entity_configuration(entity_id)
-        if not signed_entity_config:
-            return None
-        entity_config = verify_self_signed_signature(signed_entity_config)
-        logger.debug(f'Verified self signed statement: {entity_config}')
-        entity_config['_jws'] = signed_entity_config
-        # update cache
-        self.config_cache[entity_id] = entity_config
+        if entity_id in self.config_cache and not self.too_old(self.config_cache[entity_id]):
+            entity_config = self.config_cache[entity_id]
+            signed_entity_config = None
+        else:
+            # get leaf Entity Configuration
+            signed_entity_config = self.get_entity_configuration(entity_id)
+            if not signed_entity_config:
+                return None
+            entity_config = verify_self_signed_signature(signed_entity_config)
+            logger.debug(f'Verified self signed statement: {entity_config}')
+            entity_config['_jws'] = signed_entity_config
+            # update cache
+            self.config_cache[entity_id] = entity_config
 
         return self.collect_tree(entity_id, entity_config, seen=seen, max_superiors=max_superiors,
                                  stop_at=stop_at), signed_entity_config

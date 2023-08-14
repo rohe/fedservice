@@ -4,10 +4,10 @@ from typing import Union
 
 from idpyoidc.client.configure import Configuration
 from idpyoidc.client.service import Service
+from idpyoidc.message import Message
 from idpyoidc.message.oauth2 import ResponseMessage
 
 from fedservice import message
-from fedservice.message import ResolveRequest
 
 
 class MetadataVerification(Service):
@@ -17,11 +17,12 @@ class MetadataVerification(Service):
     error_msg = ResponseMessage
     synchronous = True
     service_name = "metadata_verification"
-    http_method = "GET"
+    http_method = "POST"
+    endpoint_name = "federation_metadata_verification_endpoint"
 
     def __init__(self,
                  upstream_get: Callable,
-                 conf:Optional[Union[dict, Configuration]] = None):
+                 conf: Optional[Union[dict, Configuration]] = None):
         Service.__init__(self, upstream_get, conf=conf)
 
     def get_request_parameters(
@@ -44,7 +45,10 @@ class MetadataVerification(Service):
             self.upstream_get('unit')
             raise AttributeError("Missing endpoint")
 
-        _req = ResolveRequest(**request_args)
+        _req = Message(**request_args)
         _req.verify()
 
-        return {"url": _req.request(endpoint), 'method': self.http_method}
+        if self.http_method == "GET":
+            return {"url": _req.request(endpoint), 'method': self.http_method}
+        elif self.http_method == "POST":
+            return {"url": endpoint, 'method': self.http_method, "data": _req.to_json()}

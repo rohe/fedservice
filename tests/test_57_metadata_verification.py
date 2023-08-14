@@ -1,24 +1,25 @@
 import os
 
-from cryptojwt.jws.jws import factory
-from idpyoidc.server.configure import DEFAULT_OIDC_ENDPOINTS
-
-from fedservice.defaults import FEDERATION_ENTITY_SERVICES
-from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
-from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 import pytest
 import responses
+from cryptojwt.jws.jws import factory
+from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
+from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
+from idpyoidc.server.configure import DEFAULT_OIDC_ENDPOINTS
 
 from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
+from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
+from fedservice.defaults import FEDERATION_ENTITY_FUNCTIONS
+from fedservice.defaults import FEDERATION_ENTITY_SERVICES
 from fedservice.defaults import LEAF_ENDPOINT
 from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
 from fedservice.entity import FederationEntity
 from fedservice.op import ServerEntity
 from fedservice.rp import ClientEntity
-from . import CRYPT_CONFIG
 from . import create_trust_chain_messages
+from . import CRYPT_CONFIG
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
@@ -39,7 +40,7 @@ TA_ENDPOINTS = {
         "class": "fedservice.entity.server.fetch.Fetch",
         "kwargs": {}
     },
-    "metadata_verifier": {
+    "metadata_verification": {
         "path": "verifier",
         "class": "fedservice.entity.server.metadata_verification.MetadataVerification",
         "kwargs": {}
@@ -132,7 +133,13 @@ class TestExplicit(object):
             "kwargs": {}
         }
         RP_FE.add_services(**_services)
-        RP_FE.add_functions()
+        _functions = FEDERATION_ENTITY_FUNCTIONS.copy()
+        _functions["metadata_verification"] = {
+            'class': 'fedservice.entity.function.metadata_verifier.MetadataVerifier',
+            'kwargs': {"metadata_verifier_id": TA_ID}
+        }
+
+        RP_FE.add_functions(**_functions)
         RP_FE.add_endpoints(**LEAF_ENDPOINT)
         RP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
             'trust_anchors'] = ANCHOR
@@ -182,17 +189,23 @@ class TestExplicit(object):
             authority_hints=[TA_ID],
             key_conf={"key_defs": DEFAULT_KEY_DEFS},
         )
+        _endpoints = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
+        _endpoints["metadata_verification"] = {
+            "path": "metadata_verification",
+            "class": 'fedservice.entity.server.metadata_verification.MetadataVerification',
+            "kwargs": {}
+        }
         OP_FE.add_services()
         OP_FE.add_functions()
-        OP_FE.add_endpoints(**LEAF_ENDPOINT)
+        OP_FE.add_endpoints(**_endpoints)
         OP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
             'trust_anchors'] = ANCHOR
 
         _endpoints = DEFAULT_OIDC_ENDPOINTS.copy()
         _endpoints["register"] = {
-                "path": "registration",
-                "class": "fedservice.op.registration.Registration",
-                "kwargs": {}
+            "path": "registration",
+            "class": "fedservice.op.registration.Registration",
+            "kwargs": {}
         }
         OP_CONFIG = {
             'entity_id': OP_ID,

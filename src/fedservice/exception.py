@@ -40,3 +40,11 @@ class UnknownCriticalExtension(FedServiceError):
 
 class FailedConfigurationRetrieval(Exception):
     pass
+
+
+class SignatureFailure(FedServiceError):
+    pass
+
+
+class FailedInformationRetrieval(Exception):
+    pass

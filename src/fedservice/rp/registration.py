@@ -1,10 +1,7 @@
 import logging
 
-from cryptojwt.jws.jws import factory
-from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
 from idpyoidc.client.exception import ResponseError
 from idpyoidc.client.oidc import registration
-from idpyoidc.message.oidc import ProviderConfigurationResponse
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.message.oidc import RegistrationResponse
 
@@ -12,6 +9,8 @@ from fedservice.entity import get_federation_entity
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
+from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
+from fedservice.exception import SignatureFailure
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +82,16 @@ class Registration(registration.Registration):
     def _get_trust_anchor_id(self, entity_statement):
         return entity_statement.get('trust_anchor_id')
 
+    def _signature_verifies(self, entity_id, trust_anchor, federation_entity):
+        _chains, _ = collect_trust_chains(self.upstream_get('unit'),
+                                          entity_id=entity_id,
+                                          stop_at=trust_anchor)
+        if not _chains:
+            return False
+
+        _trust_chains = verify_trust_chains(federation_entity, _chains)
+        return True
+
     def parse_federation_registration_response(self, resp, **kwargs):
         """
         Receives a dynamic client registration response,
@@ -97,21 +106,26 @@ class Registration(registration.Registration):
         payload = verify_self_signed_signature(resp)
         # Do I trust the TA the OP chose ?
         logger.debug(f"trust_anchor_id: {payload['trust_anchor_id']}")
-        if payload['trust_anchor_id'] not in _federation_entity.function.trust_chain_collector.trust_anchors:
+        if payload[
+            'trust_anchor_id'] not in _federation_entity.function.trust_chain_collector.trust_anchors:
             raise ValueError("Trust anchor I don't trust")
 
         # This is where I should decide to use the metadata verification service or do it
         # all myself
-        # Do I have the necessary Service installed
-        _verifier = _federation_entity.client.get_service("metadata_verification")
+        # Do I have the necessary Function/Service installed
+        _verifier = _federation_entity.get_function("metadata_verification")
         if _verifier:
-            _entity = self.upstream_get('unit')
-            #  construct the query
-            req_args = {"registration_response": resp}
-            _resp = _entity.do_request("metadata_verification", request_args=req_args)
-            if _resp:
+            #  construct the query, send it and parse the response
+            _verifier_response = _verifier(resp)
+            if _verifier_response:
                 pass
         else:
+            # verify the signature on the response from the OP
+            if not self._signature_verifies(payload["iss"], payload['trust_anchor_id'],
+                                            _federation_entity):
+                raise SignatureFailure("Could not verify signature")
+
+            # This is the trust chain from the RP to the TA
             _chains, _ = collect_trust_chains(self.upstream_get('unit'),
                                               entity_id=self.upstream_get('attribute', 'entity_id'),
                                               stop_at=payload['trust_anchor_id'])
@@ -130,4 +144,3 @@ class Registration(registration.Registration):
         registration.Registration.update_service_context(self, resp, **kwargs)
         _fe = self.upstream_get("context").federation_entity
         _fe.iss = resp['client_id']
-
