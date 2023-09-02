@@ -52,7 +52,7 @@ class ASClaims(OAUTH2ServerClaims.Claims):
         'federation_registration_endpoint': None
     })
 
-    def verify_rules(self):
+    def verify_rules(self, **kwargs):
         pass
 
     def provider_info(self, supports):
