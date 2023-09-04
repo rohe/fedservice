@@ -3,6 +3,7 @@ from typing import Optional
 from typing import Union
 from urllib.parse import urlencode
 
+from fedservice.entity import federation_entity
 from idpyoidc.client.configure import Configuration
 from idpyoidc.client.service import Service
 from idpyoidc.message import Message
@@ -33,6 +34,7 @@ class EntityStatement(Service):
     synchronous = True
     service_name = "entity_statement"
     http_method = "GET"
+    endpoint_name = "federation_fetch_endpoint"
 
     def __init__(self,
                  upstream_get: Callable,
@@ -67,7 +69,12 @@ class EntityStatement(Service):
             method = self.http_method
 
         if not fetch_endpoint:
-            raise AttributeError("Missing endpoint")
+            root = federation_entity(self)
+            _collector = root.function.trust_chain_collector
+            _ec = _collector.config_cache[issuer]
+            fetch_endpoint = _ec["metadata"]["federation_entity"][self.endpoint_name]
+            if not fetch_endpoint:
+                raise AttributeError("Missing endpoint")
 
         msg = Message()
         if issuer:

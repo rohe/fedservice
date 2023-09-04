@@ -15,6 +15,17 @@ from idpyoidc.node import Unit
 
 logger = logging.getLogger(__name__)
 
+def federation_entity(unit):
+    if hasattr(unit, "upstream_get"):
+        if unit.upstream_get:
+            next_unit = unit.upstream_get("unit")
+            if next_unit:
+                if isinstance(next_unit, FederationEntity):
+                    return next_unit
+                unit = federation_entity(next_unit)
+
+    return unit
+
 
 class FederationEntity(Unit):
     name = "federation_entity"

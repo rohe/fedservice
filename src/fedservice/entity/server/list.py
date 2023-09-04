@@ -24,7 +24,7 @@ class List(Endpoint):
                subordinates: dict,
                entity_type: str = '',
                trust_mark_id: str = '',
-               trust_marked = None,
+               trust_marked=None,
                **kwargs):
         match = []
         for entity_id, conf in subordinates.items():
@@ -54,9 +54,9 @@ class List(Endpoint):
             return {'response_msg': json.dumps(list(_db.keys()))}
         else:
             subordinate = self.collect_subordinates()
-            matched_entity_ids =self.filter(subordinates=subordinate, **request)
+            matched_entity_ids = self.filter(subordinates=subordinate, **request)
             if self.extended:
-                return {id:subordinate[id] for id in matched_entity_ids}
+                return {id: subordinate[id] for id in matched_entity_ids}
             else:
                 return matched_entity_ids
 

@@ -46,7 +46,6 @@ class FederationServiceContext(FederationContext):
 
         self.trust_mark_issuer = None
         self.signed_trust_marks = []
-
         _key_jar = self.upstream_get("attribute", "keyjar")
         for iss, jwks in self.trusted_roots.items():
             _key_jar.import_jwks(jwks, iss)

@@ -2,10 +2,13 @@ from typing import Callable
 from typing import Optional
 from typing import Union
 
+from fedservice.entity import FederationEntity
 from idpyoidc.client.configure import Configuration
 from idpyoidc.client.service import Service
 from idpyoidc.message.oauth2 import ResponseMessage
+from idpyoidc.node import topmost_unit
 
+from fedservice.entity import federation_entity
 from fedservice.message import ListResponse
 
 
@@ -17,6 +20,7 @@ class List(Service):
     synchronous = True
     service_name = "list"
     http_method = "GET"
+    endpoint_name = "federation_list_endpoint"
 
     def __init__(self,
                  upstream_get: Callable,
@@ -28,6 +32,7 @@ class List(Service):
             request_args: Optional[dict] = None,
             authn_method: Optional[str] = "",
             endpoint: Optional[str] = "",
+            entity_id: Optional[str] = "",
             **kwargs
     ) -> dict:
         """
@@ -40,6 +45,11 @@ class List(Service):
         :return: List of entity IDs
         """
         if not endpoint:
-            raise AttributeError("Missing endpoint")
+            root = federation_entity(self)
+            _collector = root.function.trust_chain_collector
+            _ec = _collector.config_cache[entity_id]
+            endpoint = _ec["metadata"]["federation_entity"][self.endpoint_name]
+            if not endpoint:
+                raise AttributeError("Missing endpoint")
 
         return {"url": f"{endpoint}", 'method': self.http_method}

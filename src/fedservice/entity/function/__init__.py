@@ -131,3 +131,17 @@ class Function(ImpExp):
     def __init__(self, upstream_get: Callable):
         ImpExp.__init__(self)
         self.upstream_get = upstream_get
+
+def get_endpoint(unit, id_param, metadata_type, metadata_parameter):
+    # get endpoint from the Entity Configuration
+    chains, leaf_ec = collect_trust_chains(unit, unit.get(id_param))
+    if len(chains) == 0:
+        return None
+
+    trust_chains = verify_trust_chains(unit, chains, leaf_ec)
+    trust_chains = apply_policies(unit, trust_chains)
+    if len(chains) == 0:
+        return None
+
+    # pick one
+    return trust_chains[0].metadata[metadata_type][metadata_parameter]

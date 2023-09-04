@@ -4,12 +4,15 @@ from typing import Optional
 from typing import Union
 from urllib.parse import urlparse
 
+from fedservice.entity import FederationEntity
 from idpyoidc.client.configure import Configuration
 from idpyoidc.client.service import Service
 from idpyoidc.message import oauth2
 from idpyoidc.message.oauth2 import ResponseMessage
+from idpyoidc.node import topmost_unit
 import requests
 
+from fedservice.entity import federation_entity
 from fedservice.message import EntityStatement
 
 logger = logging.getLogger(__name__)
@@ -86,3 +89,10 @@ class EntityConfiguration(Service):
         }
 
         return _info
+
+    def post_parse_response(self, response, **kwargs):
+        root = federation_entity(self)
+        _collector = root.function.trust_chain_collector
+        _collector.config_cache[response["iss"]] = response
+
+        return response
