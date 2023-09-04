@@ -53,12 +53,29 @@ class List(Endpoint):
         if not request:
             return {'response_msg': json.dumps(list(_db.keys()))}
         else:
-            subordinate = self.collect_subordinates()
-            matched_entity_ids = self.filter(subordinates=subordinate, **request)
-            if self.extended:
-                return {id: subordinate[id] for id in matched_entity_ids}
+            matched_entity_ids = set()
+            subordinate_conf = None
+            # I know about entity_types and intermediate or not from the registration
+            for entity_id, item in _db.items():
+                _reg_info = item["registration_info"]
+                if "intermediate" in request and request["intermediate"]:
+                    if "intermediate" in _reg_info and _reg_info["intermediate"]:
+                        matched_entity_ids.add(entity_id)
+                        continue
+                if "entity_type" in request:
+                    if request["entity_type"] in _reg_info["entity_types"]:
+                        matched_entity_ids.add(entity_id)
+
+            # I don't know about trust marks
+            if "trust_marked" in request or "trust_mark_id" in request:
+                subordinate_conf = self.collect_subordinates()
+                matched_entity_ids.update(self.filter(subordinates=subordinate_conf, **request))
+
+            if self.extended and subordinate_conf:
+                return {"response_msg": json.dumps({id: subordinate_conf[id] for id in
+                                                    matched_entity_ids})}
             else:
-                return matched_entity_ids
+                return {"response_msg": json.dumps(list(matched_entity_ids))}
 
     def collect_subordinates(self) -> dict:
         _server_entity = self.upstream_get("unit")

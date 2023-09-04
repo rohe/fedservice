@@ -1,6 +1,7 @@
 from typing import Callable
 from typing import Optional
 from typing import Union
+from urllib.parse import urlencode
 
 from fedservice.entity import FederationEntity
 from idpyoidc.client.configure import Configuration
@@ -52,4 +53,13 @@ class List(Service):
             if not endpoint:
                 raise AttributeError("Missing endpoint")
 
-        return {"url": f"{endpoint}", 'method': self.http_method}
+        qpart = {}
+        for arg in ["entity_type", "trust_marked", "trust_mark_id", "intermediate"]:
+            val = kwargs.get(arg)
+            if val:
+                qpart[arg] = val
+
+        if qpart:
+            return {"url": f"{endpoint}?{urlencode(qpart)}", 'method': self.http_method}
+        else:
+            return {"url": f"{endpoint}", 'method': self.http_method}
