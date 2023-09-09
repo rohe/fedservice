@@ -2,8 +2,8 @@ import logging
 from typing import Callable
 from typing import Optional
 
-from cryptojwt import KeyJar
 from cryptojwt import as_unicode
+from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 from idpyoidc.util import instantiate
 from requests import request
@@ -15,6 +15,7 @@ from idpyoidc.node import Unit
 
 logger = logging.getLogger(__name__)
 
+
 def federation_entity(unit):
     if hasattr(unit, "upstream_get"):
         if unit.upstream_get:
@@ -23,7 +24,10 @@ def federation_entity(unit):
                 if isinstance(next_unit, FederationEntity):
                     return next_unit
                 unit = federation_entity(next_unit)
-
+    else:
+        # Unit might be a FederationCombo instance or something equivalent
+        if "federation_entity" in unit:
+            return unit["federation_entity"]
     return unit
 
 
@@ -72,6 +76,7 @@ class FederationEntity(Unit):
                                          authority_hints=authority_hints, keyjar=self.keyjar,
                                          preference=preference)
 
+        self.trust_chain = {}
 
     def get_context(self, *arg):
         return self.context
@@ -179,6 +184,13 @@ class FederationEntity(Unit):
             if endp.endpoint_name:
                 _info[endp.endpoint_name] = endp.full_path
         return _info
+
+    def get_trust_chain(self, entity_id):
+        return self.trust_chain.get(entity_id).chain
+
+    def get_verified_metadata(self, entity_id):
+        return self.trust_chain.get(entity_id).metadata
+
 
 def get_federation_entity(unit):
     # Look both upstream and downstream if necessary

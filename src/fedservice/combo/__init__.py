@@ -61,3 +61,4 @@ class FederationCombo(Combo):
 
     def get_preferences(self):
         return self.get_metadata()
+

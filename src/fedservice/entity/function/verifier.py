@@ -117,5 +117,6 @@ class TrustChainVerifier(Function):
         trust_chain.anchor = iss_path[0]
         iss_path.reverse()
         trust_chain.iss_path = iss_path
+        trust_chain.chain = chain
 
         return trust_chain
