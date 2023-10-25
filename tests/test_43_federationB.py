@@ -1,14 +1,11 @@
 import pytest
-import requests
 import responses
 
-from fedservice.build_entity import FederationEntityBuilder
-from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
-from fedservice.defaults import LEAF_ENDPOINT
-from fedservice.entity import FederationEntity
+from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
+from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
 
 KEYDEFS = [
@@ -21,8 +18,7 @@ RP_ID = "https://rp.example.org"
 OP_ID = "https://op.example.org"
 IM_ID = "https://im.example.org"
 
-TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
-del TA_ENDPOINTS["resolve"]
+TA_ENDPOINTS = ["list", "fetch", "entity_configuration"]
 
 
 class TestComboCollect(object):
@@ -36,100 +32,72 @@ class TestComboCollect(object):
         #          |
         #          RP
 
-        TA = FederationEntityBuilder(
+        self.ta = make_federation_entity(
             TA_ID,
             preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_config={"key_defs": KEYDEFS},
+            endpoints=TA_ENDPOINTS
         )
-        TA.add_endpoints(None, **TA_ENDPOINTS)
 
         # intermediate
 
-        INT = FederationEntityBuilder(
+        self.im = make_federation_entity(
             IM_ID,
             preference={
                 "organization_name": "The organization",
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
             },
-            key_conf={"key_defs": KEYDEFS},
-            authority_hints=[TA_ID]
+            key_config={"key_defs": KEYDEFS},
+            authority_hints=[TA_ID],
+            trust_anchors={self.ta.entity_id: self.ta.keyjar.export_jwks()},
+            endpoints=["entity_configuration", "fetch", "list"]
         )
-        INT.add_services()
-        INT.add_functions()
-        INT.add_endpoints(preference={"authority_hints": [TA_ID]})
+        self.ta.server.subordinate[IM_ID] = {
+            "jwks": self.im.keyjar.export_jwks(),
+            'authority_hints': [TA_ID]
+        }
 
         # Leaf RP
 
-        RP = FederationEntityBuilder(
+        self.rp = make_federation_entity(
             RP_ID,
             preference={
                 "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
             },
-            key_conf={"key_defs": KEYDEFS},
-            authority_hints=[IM_ID]
+            key_config={"key_defs": KEYDEFS},
+            authority_hints=[IM_ID],
+            trust_anchors={self.ta.entity_id: self.ta.keyjar.export_jwks()},
+            endpoints=LEAF_ENDPOINTS
         )
-        RP.add_services()
-        RP.add_functions()
-        RP.add_endpoints({}, **LEAF_ENDPOINT)
+        self.im.server.subordinate[RP_ID] = {
+            "jwks": self.rp.keyjar.export_jwks(),
+            'authority_hints': [IM_ID]
+        }
 
         # Leaf OP
 
-        OP = FederationEntityBuilder(
+        self.op = make_federation_entity(
             OP_ID,
             preference={
                 "organization_name": "The OP operator",
                 "homepage_uri": "https://op.example.com",
                 "contacts": "operations@op.example.com"
             },
-            key_conf={"key_defs": KEYDEFS},
-            authority_hints=[TA_ID]
+            key_config={"key_defs": KEYDEFS},
+            authority_hints=[TA_ID],
+            trust_anchors={self.ta.entity_id: self.ta.keyjar.export_jwks()},
+            endpoints=LEAF_ENDPOINTS
         )
-        OP.add_services()
-        OP.add_functions()
-        OP.add_endpoints({}, **LEAF_ENDPOINT)
-
-        # TRUST ANCHOR
-        self.ta = FederationEntity(**TA.conf, httpc=requests)
-
-        ANCHOR = {TA_ID: self.ta.keyjar.export_jwks()}
-
-        # Intermediate
-        INT.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
-            'trust_anchors'] = ANCHOR
-        self.im = FederationEntity(**INT.conf, httpc=requests)
-
-        # Leaf RP
-
-        RP.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
-            'trust_anchors'] = ANCHOR
-        self.rp = FederationEntity(**RP.conf)
-
-        # Leaf OP
-        OP.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
-            'trust_anchors'] = ANCHOR
-        self.op = FederationEntity(**OP.conf)
-
-        # TA subordinates == Intermediate and OP
-        self.ta.server.subordinate[IM_ID] = {
-            "jwks": self.im.keyjar.export_jwks(),
-            'authority_hints': [TA_ID]
-        }
         self.ta.server.subordinate[OP_ID] = {
             "jwks": self.op.keyjar.export_jwks(),
             'authority_hints': [TA_ID]
-        }
-
-        # intermediate subordinate = RP
-        self.im.server.subordinate[RP_ID] = {
-            "jwks": self.rp.keyjar.export_jwks(),
-            'authority_hints': [IM_ID]
         }
 
     def test_setup(self):
@@ -167,5 +135,5 @@ class TestComboCollect(object):
         assert trust_chain.metadata
         assert set(trust_chain.metadata.keys()) == {'federation_entity'}
         assert set(trust_chain.metadata['federation_entity'].keys()) == {
-            'organization_name', 'homepage_uri', 'contacts'}
+            'organization_name', 'homepage_uri', 'contacts', "jwks"}
         assert trust_chain.metadata['federation_entity']["contacts"] == 'operations@rp.example.com'

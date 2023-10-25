@@ -1,32 +1,25 @@
 import pytest
 import responses
 from cryptojwt.jws.jws import factory
+from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 
-from fedservice.build_entity import FederationEntityBuilder
-from fedservice.combo import FederationCombo
-from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
-from fedservice.defaults import LEAF_ENDPOINT
-from fedservice.entity import FederationEntity
+from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from fedservice.rp import ClientEntity
+from fedservice.utils import make_federation_combo
+from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
-
-KEYDEFS = [
-    {"type": "RSA", "key": "", "use": ["sig"]},
-    {"type": "EC", "crv": "P-256", "use": ["sig"]},
-]
 
 TA_ID = "https://ta.example.org"
 LEAF_ID = "https://leaf.example.org"
 IM_ID = "https://im.example.org"
 RP_ID = "https://rp.example.org"
 
-TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
-del TA_ENDPOINTS["resolve"]
+TA_ENDPOINTS = ["list", "fetch", "entity_configuration"]
 
 
 class TestConstraints(object):
@@ -43,61 +36,58 @@ class TestConstraints(object):
 
         # TRUST ANCHOR
 
-        TA = FederationEntityBuilder(
+        self.ta = make_federation_entity(
             TA_ID,
             preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_config={"key_defs": DEFAULT_KEY_DEFS},
+            endpoints=TA_ENDPOINTS
         )
-        TA.add_endpoints(None, **TA_ENDPOINTS)
-
-        self.ta = FederationEntity(**TA.conf)
 
         ANCHOR = {TA_ID: self.ta.keyjar.export_jwks()}
 
+        ########################################
         # intermediate
+        ########################################
 
-        INT = FederationEntityBuilder(
+        self.im = make_federation_entity(
             IM_ID,
             preference={
                 "organization_name": "The organization",
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
             },
-            key_conf={"key_defs": KEYDEFS},
-            authority_hints=[TA_ID]
+            key_config={"key_defs": DEFAULT_KEY_DEFS},
+            authority_hints=[TA_ID],
+            trust_anchors=ANCHOR
         )
-        INT.add_services()
-        INT.add_functions()
-        INT.add_endpoints()
-
-        # Intermediate
-        self.im = FederationEntity(**INT.conf)
+        self.ta.server.subordinate[IM_ID] = {
+            "jwks": self.im.keyjar.export_jwks()
+        }
 
         ########################################
         # Leaf
         ########################################
 
-        LEAF = FederationEntityBuilder(
+        self.leaf = make_federation_entity(
             LEAF_ID,
             preference={
                 "organization_name": "A leaf",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"key_defs": KEYDEFS},
-            authority_hints=[IM_ID]
+            key_config={"key_defs": DEFAULT_KEY_DEFS},
+            authority_hints=[IM_ID],
+            endpoints=LEAF_ENDPOINTS,
+            trust_anchors=ANCHOR
         )
-        LEAF.add_services()
-        LEAF.add_functions()
-        LEAF.add_endpoints(**LEAF_ENDPOINT)
-        LEAF.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
-            'trust_anchors'] = ANCHOR
-
-        self.leaf = FederationEntity(**LEAF.conf)
+        self.im.server.subordinate[LEAF_ID] = {
+            "jwks": self.leaf.keyjar.export_jwks(),
+            'entity_types': ['federation_entity']
+        }
 
         ########################################
         # Leaf RP
@@ -106,61 +96,41 @@ class TestConstraints(object):
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
 
-        RP_FE = FederationEntityBuilder(
+        self.rp = make_federation_combo(
             RP_ID,
             preference={
                 "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
             },
-            authority_hints=[IM_ID]
-        )
-        RP_FE.add_services()
-        RP_FE.add_functions()
-        RP_FE.add_endpoints({}, **LEAF_ENDPOINT)
-        RP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
-            'trust_anchors'] = ANCHOR
-
-        RP_CONFIG = {
-            'entity_id': RP_ID,
-            'key_conf': {"key_defs": KEYDEFS},
-            "federation_entity": {
-                'class': FederationEntity,
-                'kwargs': RP_FE.conf
-            },
-            "openid_relying_party": {
-                'class': ClientEntity,
-                'kwargs': {
-                    'config': {
-                        'client_id': RP_ID,
-                        'client_secret': 'a longesh password',
-                        'redirect_uris': ['https://example.com/cli/authz_cb'],
-                        "keys": {"uri_path": "static/jwks.json", "key_defs": KEYDEFS},
-                        "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
-                        "id_token_signed_response_alg": "ES256",
-                        "token_endpoint_auth_method": "client_secret_basic",
-                        "token_endpoint_auth_signing_alg": "ES256"
-                    },
-                    "services": oidc_service
+            authority_hints=[IM_ID],
+            endpoints=LEAF_ENDPOINTS,
+            trust_anchors=ANCHOR,
+            additional_conf={
+                "openid_relying_party": {
+                    'class': ClientEntity,
+                    'kwargs': {
+                        'config': {
+                            'client_id': RP_ID,
+                            'client_secret': 'a longesh password',
+                            'redirect_uris': ['https://example.com/cli/authz_cb'],
+                            "keys": {"uri_path": "static/jwks.json", "key_defs": DEFAULT_KEY_DEFS},
+                            "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
+                            "id_token_signed_response_alg": "ES256",
+                            "token_endpoint_auth_method": "client_secret_basic",
+                            "token_endpoint_auth_signing_alg": "ES256"
+                        },
+                        "services": oidc_service
+                    }
                 }
             }
-        }
-
-        self.rp = FederationCombo(RP_CONFIG)
-
-        # downward chain
-        self.ta.server.subordinate[IM_ID] = {
-            "jwks": self.im.keyjar.export_jwks()
-        }
-        self.im.server.subordinate[LEAF_ID] = {
-            "jwks": self.leaf.keyjar.export_jwks(),
-            'entity_types': ['federation_entity']
-        }
+        )
         self.im.server.subordinate[RP_ID] = {
-            "jwks": self.rp.keyjar.export_jwks(),
+            "jwks": self.rp["federation_entity"].keyjar.export_jwks(),
             'entity_types': ['openid_relying_party', 'federation_entity']
         }
 
+        #########################
         # Policies
         # entity specific
         self.ta.server.policy[IM_ID] = {

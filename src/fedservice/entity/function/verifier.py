@@ -37,8 +37,10 @@ class TrustChainVerifier(Function):
         """
         ves = []
 
+        logger.debug("verify_trust_chain")
         if not self.trusted_anchor(entity_statement_list[0]):
             # Trust chain ending in a trust anchor I don't know.
+            logger.debug("Unknown trust anchor")
             return ves
 
         n = len(entity_statement_list) - 1
@@ -46,7 +48,8 @@ class TrustChainVerifier(Function):
         for entity_statement in entity_statement_list:
             _jwt = factory(entity_statement)
             if _jwt:
-                logger.debug("JWS header: %s", _jwt.headers())
+                logger.debug(f"JWS header: {_jwt.headers()}", )
+                logger.debug(f"JWS payload: {_jwt.jwt.payload()}")
                 keys = _keyjar.get_jwt_verify_keys(_jwt.jwt)
                 if keys == []:
                     logger.error(f'No keys matching: {_jwt.jwt.headers}')

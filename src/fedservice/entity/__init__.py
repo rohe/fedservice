@@ -100,7 +100,10 @@ class FederationEntity(Unit):
 
     def get_function(self, function_name, *args):
         if self.function:
-            return getattr(self.function, function_name)
+            try:
+                return getattr(self.function, function_name)
+            except AttributeError:
+                return None
 
     def get_metadata(self):
         metadata = self.get_context().claims.prefer

@@ -46,6 +46,9 @@ class MetadataVerification(Endpoint):
         _trust_chains = verify_trust_chains(_federation_entity, _chains,
                                             request['registration_response'])
         # should only be one chain
+        if _trust_chains == []:
+            raise SystemError(
+                f"Could not verify any trust chain ending in {payload['trust_anchor_id']}")
         if len(_trust_chains) != 1:
             raise SystemError(f"More then one chain ending in {payload['trust_anchor_id']}")
 
@@ -56,7 +59,7 @@ class MetadataVerification(Endpoint):
         if _trust_chains[0].metadata == payload['metadata']:
             # Two variants, either 200 with signed metadata
             # or 204 with no message
-            if self.response_type == "jws":
+            if self.response_type == "200":
                 _keyjar = self.upstream_get("attibute", "keyjar")
                 _jws = JWS(json.dumps(_trust_chains[0].metadata))
                 _key_type = alg2keytype(self.signing_algorithm)

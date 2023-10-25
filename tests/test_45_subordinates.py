@@ -2,12 +2,11 @@
 import json
 
 import pytest
+from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.util import QPKey
 
-from fedservice.build_entity import FederationEntityBuilder
-from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
-from fedservice.defaults import LEAF_ENDPOINT
-from fedservice.entity import FederationEntity
+from fedservice.defaults import LEAF_ENDPOINTS
+from fedservice.utils import make_federation_entity
 
 TA_ID = "https://trust_anchor.example.com"
 TA_ID2 = "https://2nd.trust_anchor.example.com"
@@ -20,63 +19,49 @@ TENNANT_ID = "https://example.org/tennant1"
 # It must have the openid-federation and fetch endpoints. It may have the
 # list and status endpoint. That's the case here.
 
-TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
-del TA_ENDPOINTS["resolve"]
-
-
-KEYDEFS = [
-    {"type": "RSA", "key": "", "use": ["sig"]},
-    {"type": "EC", "crv": "P-256", "use": ["sig"]},
-]
+TA_ENDPOINTS = ["entity_configuration", "fetch", "list"]
 
 
 class TestClient(object):
 
     @pytest.fixture(autouse=True)
     def create_entities(self):
-        TA = FederationEntityBuilder(
+        self.ta = make_federation_entity(
             TA_ID,
             preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_config={"key_defs": DEFAULT_KEY_DEFS},
+            endpoints=TA_ENDPOINTS,
+            item_args={
+                "endpoint": {
+                    'subordinate': {
+                        'class': 'idpyoidc.storage.abfile.AbstractFileSystem',
+                        'kwargs': {
+                            'fdir': 'subordinate'
+                        }
+                    }
+                }
+            }
         )
-        TA.add_endpoints(None,
-                         args={
-                             'subordinate': {
-                                 'class': 'idpyoidc.storage.abfile.AbstractFileSystem',
-                                 'kwargs': {
-                                     'fdir': 'subordinate'
-                                 }
-                             }
-                         },
-                         **TA_ENDPOINTS)
 
         # Leaf
 
-        ENT = FederationEntityBuilder(
+        self.entity = make_federation_entity(
             LEAF_ID,
             preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"key_defs": KEYDEFS},
-            authority_hints=[TA_ID]
+            key_config={"key_defs": DEFAULT_KEY_DEFS},
+            authority_hints=[TA_ID],
+            endpoints=LEAF_ENDPOINTS,
+            trust_anchors={self.ta.entity_id: self.ta.keyjar.export_jwks()}
         )
-        ENT.add_services()
-        ENT.add_functions()
-        ENT.add_endpoints(None, **LEAF_ENDPOINT)
 
-        self.ta = FederationEntity(**TA.conf)
-
-        self.entity = FederationEntity(**ENT.conf)
-        self.entity.function.trust_chain_collector.trust_anchors = {
-            self.ta.entity_id: self.ta.keyjar.export_jwks()
-        }
-        # Create subordinate information and write it to the 'subordinate' directory
         _info = {
             "jwks": self.entity.keyjar.export_jwks(),
             'authority_hints': [TA_ID]

@@ -50,7 +50,7 @@ class List(Endpoint):
 
     def process_request(self, request=None, **kwargs):
         _db = self.upstream_get("unit").subordinate
-        if not request:
+        if not request or set(request.keys()).issubset({"client_id", "authenticated"}):
             return {'response_msg': json.dumps(list(_db.keys()))}
         else:
             matched_entity_ids = set()
@@ -66,7 +66,7 @@ class List(Endpoint):
                     if request["entity_type"] in _reg_info["entity_types"]:
                         matched_entity_ids.add(entity_id)
 
-            # I don't know about trust marks
+            # I don't expect to know about trust marks from the registration
             if "trust_marked" in request or "trust_mark_id" in request:
                 subordinate_conf = self.collect_subordinates()
                 matched_entity_ids.update(self.filter(subordinates=subordinate_conf, **request))

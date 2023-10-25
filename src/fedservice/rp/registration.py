@@ -113,12 +113,12 @@ class Registration(registration.Registration):
         # This is where I should decide to use the metadata verification service or do it
         # all myself
         # Do I have the necessary Function/Service installed
-        _verifier = _federation_entity.get_function("metadata_verification")
+        _verifier = _federation_entity.get_function("metadata_verifier")
         if _verifier:
             #  construct the query, send it and parse the response
             _verifier_response = _verifier(resp)
             if _verifier_response:
-                pass
+                return _verifier_response
         else:
             # verify the signature on the response from the OP
             if not self._signature_verifies(payload["iss"], payload['trust_anchor_id'],
@@ -133,7 +133,10 @@ class Registration(registration.Registration):
             # should only be one chain
             if len(_trust_chains) != 1:
                 raise SystemError(f"More then one chain ending in {payload['trust_anchor_id']}")
-            _trust_chains[0].verified_chain[-1]['metadata'] = payload['metadata']
+            _metadata = payload.get("metadata")
+            if _metadata:
+                _trust_chains[0].verified_chain[-1]['metadata'] = _metadata
+            # If it's metadata_policy what to do ?
             _trust_chains = apply_policies(_federation_entity, _trust_chains)
             _resp = _trust_chains[0].metadata['openid_relying_party']
             _context = self.upstream_get('context')

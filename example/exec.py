@@ -12,10 +12,10 @@ def start(ents):
     cwd = os.getcwd()
 
     for ent in ents:
-        _dir, _command, _conf, _sub = ENTITY[ent]
-        os.chdir(_dir)
+        ent_info = ENTITY[ent]
+        os.chdir(ent_info["dir"])
         print(os.getcwd())
-        _args = [_command, ent, _conf]
+        _args = [ent_info["command"], ent, ent_info["config"]]
         print(_args)
         _res = subprocess.Popen(_args, env=dict(os.environ))
         print(_res)

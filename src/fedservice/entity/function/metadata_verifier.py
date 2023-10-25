@@ -1,5 +1,6 @@
 import logging
 from typing import Callable
+from typing import Optional
 
 from idpyoidc.exception import MissingPage
 
@@ -11,11 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 class MetadataVerifier(Function):
-    content_type = 'application/jose'
+    # content_type = 'application/jose'
 
-    def __init__(self, upstream_get: Callable, metadata_verifier_id: str):
+    def __init__(self, upstream_get: Callable, metadata_verifier_id: Optional[str] = ""):
         Function.__init__(self, upstream_get)
-        self.metadata_verifier_id = metadata_verifier_id
+        self.metadata_verifier_id = metadata_verifier_id or self.upstream_get("attribute",
+                                                                              "entity_id")
 
     def __call__(self, registration_response: str):
         """
@@ -46,7 +48,14 @@ class MetadataVerifier(Function):
             raise
 
         if response.status_code == 200:
-            if self.content_type not in response.headers['Content-Type']:
+            # Might be two different responses: text or jose
+            _content_type = response.headers['Content-Type'].split(',')
+            _content_type = [c.strip() for c in _content_type]
+            if "text/plain" in _content_type or "text/html" in _content_type:
+                pass
+            elif "application/jose" in _content_type:
+                pass
+            else:
                 logger.warning(f"Wrong Content-Type: {response.headers['Content-Type']}")
             return response.text
         elif response.status_code == 404:

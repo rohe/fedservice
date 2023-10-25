@@ -27,7 +27,6 @@ OP_ID = 'https://op.example.com'
 TA_ID = 'https://ta.example.com'
 
 TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
-del TA_ENDPOINTS["resolve"]
 
 
 class TestEndpoint(object):

@@ -94,6 +94,7 @@ def verify_trust_chains(unit, chains: List[List[str]], *entity_statements):
     #
     _verifier = get_federation_entity(unit).function.verifier
 
+    logger.debug("verify_trust_chains")
     res = []
     for c in chains:
         if entity_statements:

@@ -5,7 +5,7 @@ import responses
 from cryptojwt.jws.jws import factory
 
 from fedservice.build_entity import FederationEntityBuilder
-from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
+from fedservice.defaults import INTERMEDIATE_ENDPOINTS
 from fedservice.entity import FederationEntity
 from fedservice.entity.server.status import TrustMarkStatus
 from fedservice.message import TrustMark
@@ -21,8 +21,7 @@ KEYSPEC = [
 TM_ID = "https://refeds.org/wp-content/uploads/2016/01/Sirtfi-1.0.pdf"
 TA_ID = "https://anchor.example.com"
 
-TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
-del TA_ENDPOINTS["resolve"]
+TA_ENDPOINTS = INTERMEDIATE_ENDPOINTS.copy()
 
 TRUST_MARK_ISSUER_ID = "https://entity.example.com"
 

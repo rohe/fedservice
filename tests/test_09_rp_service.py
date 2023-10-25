@@ -14,7 +14,7 @@ import pytest
 from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
-from fedservice.defaults import LEAF_ENDPOINT
+from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.entity import FederationEntity
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
@@ -94,7 +94,7 @@ class TestRpService(object):
         )
         ENT.add_services()
         ENT.add_functions(**MOD_FUNCTIONS)
-        ENT.add_endpoints(**LEAF_ENDPOINT)
+        ENT.add_endpoints(**LEAF_ENDPOINTS)
 
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
@@ -272,16 +272,17 @@ class TestRpService(object):
         trust_chains = verify_trust_chains(_fe, chains, _info['body'])
         trust_chains = apply_policies(_fe, trust_chains)
 
-        metadata_policy = {
+        _metadata = trust_chains[0].metadata["openid_relying_party"]
+        _metadata.update({
             "client_id": {"value": "aaaaaaaaa"},
             "client_secret": {"value": "bbbbbbbbbb"}
-        }
+        })
 
         # This is the registration response from the OP
         _jwt = _fe.context.create_entity_statement(
             'https://op.ntnu.no',
             'https://foodle.uninett.no',
-            metadata_policy={'openid_relying_party': metadata_policy},
+            metadata={'openid_relying_party': _metadata},
             key_jar=OP_KEYJAR,
             trust_anchor_id=trust_chains[0].anchor)
 
@@ -322,7 +323,7 @@ class TestRpServiceAuto(object):
         )
         ENT.add_services()
         ENT.add_functions(**MOD_FUNCTIONS)
-        ENT.add_endpoints(**LEAF_ENDPOINT)
+        ENT.add_endpoints(**LEAF_ENDPOINTS)
 
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
