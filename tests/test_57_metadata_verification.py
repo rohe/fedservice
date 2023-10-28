@@ -117,7 +117,7 @@ class TestExplicit(object):
             functions=_functions,
             endpoints=["entity_configuration", "metadata_verification"],
             trust_anchors=ANCHOR,
-            additional_conf={
+            entity_conf={
                 "openid_relying_party": {
                     'class': ClientEntity,
                     'kwargs': {
@@ -169,7 +169,7 @@ class TestExplicit(object):
             key_config={"key_defs": DEFAULT_KEY_DEFS},
             endpoints=["entity_configuration", "metadata_verification"],
             trust_anchors=ANCHOR,
-            additional_conf={
+            entity_conf={
                 "openid_provider": {
                     'class': ServerEntity,
                     'kwargs': {

@@ -1,121 +1,41 @@
 {
-  "client": {
-    "logging": {
-      "version": 1,
-      "disable_existing_loggers": false,
-      "root": {
-        "handlers": [
-          "default",
-          "console"
-        ],
+  "logging": {
+    "version": 1,
+    "disable_existing_loggers": false,
+    "root": {
+      "handlers": [
+        "default",
+        "console"
+      ],
+      "level": "DEBUG"
+    },
+    "loggers": {
+      "idp": {
         "level": "DEBUG"
-      },
-      "loggers": {
-        "idp": {
-          "level": "DEBUG"
-        }
-      },
-      "handlers": {
-        "default": {
-          "class": "logging.FileHandler",
-          "filename": "auto/debug.log",
-          "formatter": "default"
-        },
-        "console": {
-          "class": "logging.StreamHandler",
-          "stream": "ext://sys.stdout",
-          "formatter": "default"
-        }
-      },
-      "formatters": {
-        "default": {
-          "format": "%(asctime)s %(name)s %(levelname)s %(message)s"
-        }
       }
     },
-    "domain": "127.0.0.1",
-    "port": 4001,
-    "base_url": "https://{domain}:{port}",
-    "httpc_params": {
-      "verify": false
+    "handlers": {
+      "default": {
+        "class": "logging.FileHandler",
+        "filename": "log/rpa_debug.log",
+        "formatter": "default"
+      },
+      "console": {
+        "class": "logging.StreamHandler",
+        "stream": "ext://sys.stdout",
+        "formatter": "default"
+      }
     },
-    "rp_keys": {
-      "private_path": "auto/private/jwks.json",
-      "key_defs": [
-        {
-          "type": "RSA",
-          "key": "",
-          "use": [
-            "sig"
-          ]
-        },
-        {
-          "type": "EC",
-          "crv": "P-256",
-          "use": [
-            "sig"
-          ]
-        }
-      ],
-      "public_path": "static/auto_jwks.json",
-      "read_only": false,
-      "uri_path": "static/auto_jwks.json"
-    },
-    "preference": {
-      "application_name": "rphandler",
-      "application_type": "web",
-      "contacts": [
-        "ops@example.com"
-      ],
-      "response_types": [
-        "code"
-      ],
-      "scope": [
-        "openid",
-        "profile",
-        "email",
-        "address",
-        "phone"
-      ],
-      "token_endpoint_auth_method": [
-        "private_key_jwt"
-      ]
-    },
-    "services": {
-      "discovery": {
-        "class": "fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery",
-        "kwargs": {}
-      },
-      "registration": {
-        "class": "fedservice.rp.registration.Registration",
-        "kwargs": {}
-      },
-      "authorization": {
-        "class": "idpyoidc.client.oidc.authorization.Authorization",
-        "kwargs": {}
-      },
-      "accesstoken": {
-        "class": "idpyoidc.client.oidc.access_token.AccessToken",
-        "kwargs": {}
-      },
-      "refresh_accesstoken": {
-        "class": "idpyoidc.client.oidc.refresh_access_token.RefreshAccessToken",
-        "kwargs": {}
-      },
-      "userinfo": {
-        "class": "idpyoidc.client.oidc.userinfo.UserInfo",
-        "kwargs": {}
-      },
-      "end_session": {
-        "class": "idpyoidc.client.oidc.end_session.EndSession",
-        "kwargs": {}
+    "formatters": {
+      "default": {
+        "format": "%(asctime)s %(name)s %(levelname)s %(message)s"
       }
     }
   },
-  "federation": {
-    "entity_id": "https://{domain}:{port}",
-    "keys": {
-      "private_path": "auto/private/fed_keys.json",
+  "entity": {
+    "entity_id": "https://127.0.0.1:4001",
+    "key_config": {
+      "private_path": "private/auto_fed_keys.json",
       "key_defs": [
         {
           "type": "RSA",
@@ -135,36 +55,103 @@
       "public_path": "static/auto_fed_keys.json",
       "read_only": false
     },
-    "authority_hints": "auto/authority_hints.json",
-    "trusted_roots": "auto/trusted_roots.json",
-    "priority": [
-      "https://127.0.0.1:7001",
-      "https://127.0.0.1:7002"
+    "httpc_params": {
+      "verify": false
+    },
+    "authority_hints": "file:rp/rpa_authority_hints.json",
+    "trust_anchors": "file:rp/rpa_trust_anchors.json",
+    "endpoints": [
+      "fetch",
+      "entity_configuration"
     ],
-    "entity_type": "openid_relying_party",
-    "opponent_entity_type": "openid_provider",
-    "registration_type": "automatic",
-    "endpoint": {
-      "fetch": {
-        "path": "fetch",
-        "class": "fedservice.entity.fetch.Fetch",
-        "kwargs": {
-          "client_authn_method": null
+    "entity_type": {
+      "openid_relying_party": {
+        "key_conf": {
+          "private_path": "private/auto_jwks.json",
+          "key_defs": [
+            {
+              "type": "RSA",
+              "key": "",
+              "use": [
+                "sig"
+              ]
+            },
+            {
+              "type": "EC",
+              "crv": "P-256",
+              "use": [
+                "sig"
+              ]
+            }
+          ],
+          "public_path": "static/auto_jwks.json",
+          "read_only": false,
+          "uri_path": "static/auto_jwks.json"
+        },
+        "preference": {
+          "application_name": "rphandler",
+          "application_type": "web",
+          "contacts": [
+            "ops@example.com"
+          ],
+          "response_types": [
+            "code"
+          ],
+          "scope": [
+            "openid",
+            "profile",
+            "email",
+            "address",
+            "phone"
+          ],
+          "token_endpoint_auth_method": [
+            "private_key_jwt"
+          ]
+        },
+        "services": {
+          "discovery": {
+            "class": "fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery",
+            "kwargs": {}
+          },
+          "registration": {
+            "class": "fedservice.rp.registration.Registration",
+            "kwargs": {}
+          },
+          "authorization": {
+            "class": "idpyoidc.client.oidc.authorization.Authorization",
+            "kwargs": {}
+          },
+          "accesstoken": {
+            "class": "idpyoidc.client.oidc.access_token.AccessToken",
+            "kwargs": {}
+          },
+          "refresh_accesstoken": {
+            "class": "idpyoidc.client.oidc.refresh_access_token.RefreshAccessToken",
+            "kwargs": {}
+          },
+          "userinfo": {
+            "class": "idpyoidc.client.oidc.userinfo.UserInfo",
+            "kwargs": {}
+          },
+          "end_session": {
+            "class": "idpyoidc.client.oidc.end_session.EndSession",
+            "kwargs": {}
+          }
+        },
+        "clients": {
+          "": {
+            "redirect_uris": [
+              "https://127.0.0.1:4001/authz_cb"
+            ]
+          },
+          "local": {
+            "issuer": "https://127.0.0.1:5000",
+            "redirect_uris": [
+              "https://127.0.0.1:4001/authz_cb"
+            ]
+          }
         }
       }
-    }
-  },
-  "clients": {
-    "": {
-      "redirect_uris": [
-        "https://{domain}:{port}/authz_cb"
-      ]
-    },
-    "local": {
-      "issuer": "https://{domain}:5000",
-      "redirect_uris": [
-        "https://{domain}:{port}/authz_cb"
-      ]
     }
   },
   "webserver": {

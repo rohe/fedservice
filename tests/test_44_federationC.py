@@ -107,7 +107,7 @@ class TestComboCollect(object):
             authority_hints=[IM_ID],
             endpoints=LEAF_ENDPOINTS,
             trust_anchors=ANCHOR,
-            additional_conf={
+            entity_type={
                 "openid_relying_party": {
                     'class': ClientEntity,
                     'kwargs': {
@@ -147,7 +147,7 @@ class TestComboCollect(object):
             authority_hints=[TA_ID],
             endpoints=LEAF_ENDPOINTS,
             trust_anchors=ANCHOR,
-            additional_conf={
+            entity_conf={
                 "openid_provider": {
                     'class': ServerEntity,
                     'kwargs': {

@@ -105,7 +105,7 @@ class TestComboCollect(object):
             authority_hints=[TA_ID],
             endpoints=["entity_configuration", "status"],
             trust_anchors=ANCHOR,
-            init_kwargs={
+            item_args={
                 "endpoint": {
                     "status": {
                         "trust_mark_issuer": {

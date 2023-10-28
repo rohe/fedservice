@@ -17,8 +17,10 @@
     "handlers": {
       "default": {
         "class": "logging.FileHandler",
-        "filename": "lu/debug.log",
-        "formatter": "default"
+        "filename": "log/lu_debug.log",
+        "encoding": "utf8",
+        "formatter": "default",
+        "level": "DEBUG"
       },
       "console": {
         "class": "logging.StreamHandler",
@@ -28,14 +30,19 @@
     },
     "formatters": {
       "default": {
-        "format": "%(asctime)s %(name)s %(levelname)s %(message)s"
+        "format": "[%(asctime)s] [%(levelname)s] [%(name)s.%(funcName)s] %(message)s"
       }
     }
   },
-  "federation": {
-    "entity_id": "https://127.0.0.1:6001",
-    "keys": {
-      "private_path": "lu/fed_keys.json",
+  "entity": {
+    "entity_id": "https://127.0.0.1:6003",
+    "preference": {
+      "organization_name": "The organization",
+      "homepage_uri": "https://example.com",
+      "contacts": "operations@example.com"
+    },
+    "key_config": {
+      "private_path": "private/lu_fed_keys.json",
       "key_defs": [
         {
           "type": "RSA",
@@ -54,44 +61,16 @@
       "public_path": "static/lu_fed_keys.json",
       "read_only": false
     },
-    "authority_hints": "lu/authority_hints.json",
-    "trusted_roots": "lu/trusted_roots.json",
-    "priority": [
-      "https://127.0.0.1:7001",
-      "https://127.0.0.1:7002"
-    ],
-    "entity_type": "federation_entity",
-    "opponent_entity_type": "federation_entity",
-    "endpoint": {
-      "fetch": {
-        "path": "fetch",
-        "class": "fedservice.entity.fetch.Fetch",
-        "kwargs": {
-          "client_authn_method": null
-        }
-      },
-      "list": {
-        "path": "list",
-        "class": "fedservice.entity.list.List",
-        "kwargs": {
-          "client_authn_method": null,
-          "subordinate": {
-            "class": "idpyoidc.storage.abfile.AbstractFileSystem",
-            "kwargs": {
-              "fdir": "lu/subordinate",
-              "value_conv": "idpyoidc.util.JSON",
-              "key_conv": "idpyoidc.util.QPKey"
-            }
-          }
-        }
-      }
-    }
+    "authority_hints": "file:intermediate/lu_authority_hints.json",
+    "trust_anchors": "file:intermediate/lu_trust_anchors.json",
+    "subordinate": "file:intermediate/lu_subordinates.json",
+    "endpoints": ["entity_configuration", "fetch", "list"]
   },
   "webserver": {
     "server_cert": "certs/example.crt",
     "server_key": "certs/example.key",
     "cert_chain": null,
-    "port": 6001,
+    "port": 6003,
     "domain": "127.0.0.1",
     "debug": true
   }

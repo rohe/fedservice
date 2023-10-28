@@ -87,7 +87,7 @@ class TestComboCollect(object):
             authority_hints=[IM_ID],
             endpoints=LEAF_ENDPOINTS,
             trust_anchors=ANCHOR,
-            additional_conf={
+            entity_conf={
                 "openid_relying_party": {
                     'class': ClientEntity,
                     'kwargs': {

@@ -43,7 +43,7 @@ class TestFederationEntity(object):
             key_config={"uri_path": "static/fed_jwks.json", "key_defs": KEYDEFS},
             authority_hints=['https://ntnu.no'],
             endpoints=["entity_configuration", "fetch", "list", "resolve", "status"],
-            init_kwargs={
+            item_args={
                 "endpoint": {
                     "status": {
                         "trust_mark_issuer": {

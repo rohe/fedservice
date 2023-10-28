@@ -1,49 +1,42 @@
 {
-    "RPA": {
+    "rpa": {
         "dir":"rp",
-        "command":"./rp.py",
         "config":"conf_auto.json",
         "authority_hints": ["lu"],
         "trust_anchors": ["seid", "swamid"]
     },
-    "RPE": {
+    "rpe": {
         "dir":"rp",
-        "command":"./rp.py",
         "config":"conf_expl.json",
         "authority_hints": ["lu"],
         "trust_anchors": ["seid", "swamid"]
     },
-    "OP": {
+    "op": {
         "dir":"op",
-        "command":"./op.py",
-        "config":"conf_op.json",
-        "auth": ["umu"],
+        "config":"conf.json",
+        "authority_hints": ["umu"],
         "trust_anchors": ["seid", "swamid"]
     },
-    "LU": {
+    "lu": {
         "dir":"intermediate",
-        "command":"./entity.py",
         "config":"conf_lu.json",
-        "authority_hints": ["swamid", "seid"],
+        "authority_hints": ["seid", "swamid"],
         "trust_anchors": ["seid", "swamid"]
     },
-    "UMU": {
+    "umu": {
         "dir":"intermediate",
-        "command":"./entity.py",
         "config":"conf_umu.json",
         "authority_hints": ["swamid", "seid"],
         "trust_anchors": ["seid", "swamid"]
     },
-    "SEID": {
-        "dir":"trust_anchora",
-        "command":"./entity.py",
+    "seid": {
+        "dir":"ta",
         "config":"conf_seid.json",
         "authority_hints": [],
         "trust_anchors": []
     },
-    "SWAMID": {
-        "dir":"trust_anchora",
-        "command":"./entity.py",
+    "swamid": {
+        "dir":"ta",
         "config":"conf_swamid.json",
         "authority_hints": [],
         "trust_anchors": []

@@ -27,10 +27,16 @@ class Combo(Unit):
                                           entity_id=self.entity_id, httpc=httpc)
 
     def __getitem__(self, item):
-        return self._part[item]
+        if item in self._part:
+            return self._part[item]
+        else:
+            return None
 
     def __setitem__(self, key, value):
         self._part[key] = value
+
+    def get_entity_types(self):
+        return list(self._part.keys())
 
     def keys(self):
         return self._part.keys()
@@ -62,3 +68,5 @@ class FederationCombo(Combo):
     def get_preferences(self):
         return self.get_metadata()
 
+    def get_federation_entity(self):
+        return self._part["federation_entity"]

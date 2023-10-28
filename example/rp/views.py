@@ -13,27 +13,27 @@ import werkzeug
 
 logger = logging.getLogger(__name__)
 
-oidc_rp_views = Blueprint('oidc_rp', __name__, url_prefix='')
+entity = Blueprint('oidc_rp', __name__, url_prefix='')
 
 
-@oidc_rp_views.route('/static/<path:filename>')
+@entity.route('/static/<path:filename>')
 def send_js(filename):
     return send_from_directory('static', filename)
 
 
-@oidc_rp_views.route('/')
+@entity.route('/')
 def index():
     _providers = current_app.srv_config.rp.clients.keys()
     return render_template('opbyuid.html', providers=_providers)
 
 
-@oidc_rp_views.route('/irp')
+@entity.route('/irp')
 def irp():
     return send_from_directory('entity_statements', 'irp.jws')
 
 
-# @oidc_rp_views.route('/<string:op_hash>/.well-known/openid-federation')
-@oidc_rp_views.route('/.well-known/openid-federation')
+# @entity.route('/<string:op_hash>/.well-known/openid-federation')
+@entity.route('/.well-known/openid-federation')
 def wkof():
     _rph = current_app.rph
     if _rph.issuer2rp == {}:
@@ -50,7 +50,7 @@ def wkof():
     return response
 
 
-@oidc_rp_views.route('/rp')
+@entity.route('/rp')
 def rp():
     try:
         iss = request.args['iss']
@@ -105,7 +105,7 @@ def guess_rp(state):
     return None, None
 
 
-@oidc_rp_views.route('/authz_cb')
+@entity.route('/authz_cb')
 def authz_cb():
     # This depends on https://datatracker.ietf.org/doc/draft-ietf-oauth-iss-auth-resp
     # being used
@@ -153,17 +153,17 @@ def authz_cb():
         return make_response(res['error'], 400)
 
 
-@oidc_rp_views.errorhandler(werkzeug.exceptions.BadRequest)
+@entity.errorhandler(werkzeug.exceptions.BadRequest)
 def handle_bad_request(e):
     return 'bad request!', 400
 
 
-@oidc_rp_views.route('/repost_fragment')
+@entity.route('/repost_fragment')
 def repost_fragment():
     return 'repost_fragment'
 
 
-@oidc_rp_views.route('/ihf_cb')
+@entity.route('/ihf_cb')
 def ihf_cb(self, op_hash='', **kwargs):
     logger.debug('implicit_hybrid_flow kwargs: {}'.format(kwargs))
     return render_template('repost_fragment.html')

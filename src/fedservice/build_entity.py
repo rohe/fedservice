@@ -2,7 +2,6 @@ from typing import Optional
 
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_FUNCTIONS
 from fedservice.defaults import federation_endpoints
-from fedservice.defaults import FEDERATION_ENTITY_FUNCTIONS
 from fedservice.defaults import FEDERATION_ENTITY_SERVICES
 
 KEYDEFS = [
@@ -47,8 +46,10 @@ class FederationEntityBuilder():
         if preference:
             kwargs['preference'] = {}
 
-        if args:
-            kwargs.update(args)
+        if kwargs_spec:
+            for key, val in kwargs_spec.items():
+                if key in kwargs["services"]:
+                    kwargs["services"][key]["kwargs"].update(val)
 
         self.conf['client'] = {
             'class': 'fedservice.entity.client.FederationClientEntity',
@@ -76,7 +77,9 @@ class FederationEntityBuilder():
             kwargs['preference'] = {}
 
         if args:
-            kwargs.update(args)
+            for item_type, _kwargs in args.items():
+                if item_type in kwargs["endpoint"]:
+                    kwargs["endpoint"][item_type]["kwargs"].update(_kwargs)
 
         self.conf['server'] = {
             'class': 'fedservice.entity.server.FederationServerEntity',
@@ -104,8 +107,10 @@ class FederationEntityBuilder():
         if preference:
             kwargs['preference'] = {}
 
-        if args:
-            kwargs.update(args)
+        if kwargs_spec:
+            for key, val in kwargs_spec.items():
+                if key in kwargs["functions"]:
+                    kwargs["functions"][key]["kwargs"].update(val)
 
         self.conf['function'] = {
             'class': 'idpyoidc.node.Collection',

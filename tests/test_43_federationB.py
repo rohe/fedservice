@@ -43,24 +43,7 @@ class TestComboCollect(object):
             endpoints=TA_ENDPOINTS
         )
 
-        # intermediate
-
-        self.im = make_federation_entity(
-            IM_ID,
-            preference={
-                "organization_name": "The organization",
-                "homepage_uri": "https://example.com",
-                "contacts": "operations@example.com"
-            },
-            key_config={"key_defs": KEYDEFS},
-            authority_hints=[TA_ID],
-            trust_anchors={self.ta.entity_id: self.ta.keyjar.export_jwks()},
-            endpoints=["entity_configuration", "fetch", "list"]
-        )
-        self.ta.server.subordinate[IM_ID] = {
-            "jwks": self.im.keyjar.export_jwks(),
-            'authority_hints': [TA_ID]
-        }
+        ANCHOR = {self.ta.entity_id: self.ta.keyjar.export_jwks()}
 
         # Leaf RP
 
@@ -73,12 +56,41 @@ class TestComboCollect(object):
             },
             key_config={"key_defs": KEYDEFS},
             authority_hints=[IM_ID],
-            trust_anchors={self.ta.entity_id: self.ta.keyjar.export_jwks()},
+            trust_anchors=ANCHOR,
             endpoints=LEAF_ENDPOINTS
         )
-        self.im.server.subordinate[RP_ID] = {
-            "jwks": self.rp.keyjar.export_jwks(),
-            'authority_hints': [IM_ID]
+
+        # intermediate
+
+        self.im = make_federation_entity(
+            IM_ID,
+            preference={
+                "organization_name": "The organization",
+                "homepage_uri": "https://example.com",
+                "contacts": "operations@example.com"
+            },
+            key_config={"key_defs": KEYDEFS},
+            authority_hints=[TA_ID],
+            trust_anchors=ANCHOR,
+            endpoints=["entity_configuration", "fetch", "list"],
+            subordinate={
+                RP_ID: {
+                    "jwks": self.rp.keyjar.export_jwks(),
+                    'authority_hints': [IM_ID]
+                }
+            },
+            metadata_policy={
+                RP_ID: {
+                    "federation_entity": {
+                        "organization_name": {"value": "Example Inc."}
+                    }
+                }
+            }
+        )
+
+        self.ta.server.subordinate[IM_ID] = {
+            "jwks": self.im.keyjar.export_jwks(),
+            'authority_hints': [TA_ID]
         }
 
         # Leaf OP

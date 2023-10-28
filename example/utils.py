@@ -1,8 +1,13 @@
 import json
+import os
 
 
 def _import(val):
-    with open(val[len("file:"):], "r") as fp:
+    path = val[len("file:"):]
+    if os.path.isfile(path) is False:
+        return None
+
+    with open(path, "r") as fp:
         _dat = fp.read()
         if val.endswith('.json'):
             return json.loads(_dat)

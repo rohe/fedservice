@@ -81,6 +81,15 @@ class FederationEntity(Unit):
     def get_context(self, *arg):
         return self.context
 
+    def get_federation_entity(self):
+        return self
+
+    def get_entity_type(self, entity_type):
+        if entity_type == "federation_entity":
+            return self
+        else:
+            return None
+
     def get_attribute(self, attr, *args):
         try:
             val = getattr(self, attr)

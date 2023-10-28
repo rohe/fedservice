@@ -33,7 +33,10 @@ def build_entity_config(entity_id: str,
                         services: Optional[List[str]] = None,
                         functions: Optional[List[str]] = None,
                         init_kwargs: Optional[dict] = None,
-                        item_args: Optional[dict] = None) -> dict:
+                        item_args: Optional[dict] = None,
+                        subordinate: Optional[dict] = None,
+                        httpc_params: Optional[dict] = None
+                        ) -> dict:
     _key_conf = key_config or {"key_defs": DEFAULT_KEY_DEFS}
 
     entity = FederationEntityBuilder(
@@ -67,6 +70,9 @@ def build_entity_config(entity_id: str,
         else:  # There is a difference between None == default and [] which means none
             func(args=_args, kwargs_spec=kwargs_spec)
 
+    if httpc_params:
+        entity.conf["https_params"] = httpc_params
+
     return entity.conf
 
 
@@ -80,7 +86,9 @@ def make_federation_entity(entity_id: str,
                            functions: Optional[List[str]] = None,
                            trust_marks: Optional[dict] = None,
                            init_kwargs: Optional[dict] = None,
-                           item_args: Optional[dict] = None
+                           item_args: Optional[dict] = None,
+                           subordinate: Optional[dict] = None,
+                           metadata_policy: Optional[dict] = None
                            ):
     _config = build_entity_config(
         entity_id=entity_id,
@@ -101,6 +109,14 @@ def make_federation_entity(entity_id: str,
 
         fe.function.trust_chain_collector.trust_anchors = trust_anchors
 
+    if subordinate:
+        for id, info in subordinate.items():
+            fe.server.subordinate[id] = info
+
+    if metadata_policy:
+        for id, info in metadata_policy.items():
+            fe.server.policy[id] = info
+
     return fe
 
 
@@ -109,10 +125,15 @@ def make_federation_combo(entity_id: str,
                           authority_hints: Optional[List[str]] = None,
                           trust_anchors: Optional[dict] = None,
                           preference: Optional[dict] = None,
-                          additional_conf: Optional[dict] = None,
+                          entity_type: Optional[dict] = None,
                           endpoints: Optional[List[str]] = None,
                           services: Optional[List[str]] = None,
-                          functions: Optional[List[str]] = None
+                          functions: Optional[List[str]] = None,
+                          subordinate: Optional[dict] = None,
+                          metadata_policy: Optional[dict] = None,
+                          httpc_params: Optional[dict] = None,
+                          init_kwargs: Optional[dict] = None,
+                          item_args: Optional[dict] = None,
                           ):
     _config = build_entity_config(
         entity_id=entity_id,
@@ -121,23 +142,39 @@ def make_federation_combo(entity_id: str,
         preference=preference,
         endpoints=endpoints,
         services=services,
-        functions=functions
+        functions=functions,
+        httpc_params=httpc_params,
+        init_kwargs=init_kwargs,
+        item_args=item_args
     )
 
-    entity_config = {
-        'entity_id': entity_id,
-        "federation_entity": {
-            'class': FederationEntity,
-            'kwargs': _config
+    if entity_type:
+        entity_config = {
+            'entity_id': entity_id,
+            "federation_entity": {
+                'class': FederationEntity,
+                'kwargs': _config
+            }
         }
-    }
-    entity_config.update(additional_conf)
-    combo = FederationCombo(entity_config)
+        entity_config.update(entity_type)
+        entity = FederationCombo(entity_config)
+        federation_entity = entity["federation_entity"]
+    else:
+        entity = FederationEntity(**_config)
+        federation_entity = entity
 
     if trust_anchors:
         for id, jwk in trust_anchors.items():
-            combo["federation_entity"].keyjar.import_jwks(jwk, id)
+            federation_entity.keyjar.import_jwks(jwk, id)
 
-        combo["federation_entity"].function.trust_chain_collector.trust_anchors = trust_anchors
+        federation_entity.function.trust_chain_collector.trust_anchors = trust_anchors
 
-    return combo
+    if subordinate:
+        for id, info in subordinate.items():
+            federation_entity.server.subordinate[id] = info
+
+    if metadata_policy:
+        for id, info in metadata_policy.items():
+            federation_entity.server.policy[id] = info
+
+    return entity

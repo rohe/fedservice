@@ -72,7 +72,7 @@ class TestTrustMarkDelegation():
             authority_hints=[TA_ID],
             endpoints=["status", "entity_configuration"],
             trust_anchors=ANCHOR,
-            init_kwargs={
+            item_args={
                 "endpoint": {
                     "status": {
                         "trust_mark_issuer": self.tmi
