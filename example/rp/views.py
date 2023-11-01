@@ -23,7 +23,7 @@ def send_js(filename):
 
 @entity.route('/')
 def index():
-    _providers = current_app.srv_config.rp.clients.keys()
+    _providers = current_app.cnf.rp.clients.keys()
     return render_template('opbyuid.html', providers=_providers)
 
 
@@ -32,10 +32,13 @@ def irp():
     return send_from_directory('entity_statements', 'irp.jws')
 
 
+def get_rph():
+    return current_app.server["openid_relying_party"].rph
+
 # @entity.route('/<string:op_hash>/.well-known/openid-federation')
 @entity.route('/.well-known/openid-federation')
 def wkof():
-    _rph = current_app.rph
+    _rph = get_rph()
     if _rph.issuer2rp == {}:
         cli = _rph.init_client('dummy')
     else:
@@ -71,26 +74,26 @@ def rp():
             args = {}
 
         try:
-            result = current_app.rph.begin(link, **args)
+            result = get_rph().begin(link, **args)
         except Exception as err:
             return make_response('Something went wrong:{}'.format(err), 400)
         else:
             return redirect(result['url'], 303)
     else:
-        _providers = current_app.srv_config.rp.clients.keys()
+        _providers = list(get_rph().client_configs.keys())
         return render_template('opbyuid.html', providers=_providers)
 
 
 def get_rp(op_hash):
     try:
-        _iss = current_app.rph.hash2issuer[op_hash]
+        _iss = get_rph().hash2issuer[op_hash]
     except KeyError:
         logger.error('Unkown issuer: {} not among {}'.format(
-            op_hash, list(current_app.rph.hash2issuer.keys())))
+            op_hash, list(get_rph().hash2issuer.keys())))
         return make_response("Unknown hash: {}".format(op_hash), 400)
     else:
         try:
-            rp = current_app.rph.issuer2rp[_iss]
+            rp = get_rph().issuer2rp[_iss]
         except KeyError:
             return make_response("Couldn't find client for {}".format(_iss), 400)
 
@@ -98,7 +101,7 @@ def get_rp(op_hash):
 
 
 def guess_rp(state):
-    for _iss, _rp in current_app.rph.issuer2rp.items():
+    for _iss, _rp in get_rph().issuer2rp.items():
         _context = _rp.client_get("service_context")
         if _context.state.get_iss(request.args['state']):
             return _iss, _rp
@@ -111,7 +114,7 @@ def authz_cb():
     # being used
     _iss = request.args.get("iss")
     if _iss:
-        rp = current_app.rph.issuer2rp[_iss]
+        rp = get_rph().issuer2rp[_iss]
         _context = rp.client_get("service_context")
         try:
             iss = _context.state.get_iss(request.args['state'])
@@ -129,7 +132,7 @@ def authz_cb():
 
     logger.debug('Issuer: {}'.format(iss))
     try:
-        res = current_app.rph.finalize(iss, request.args)
+        res = get_rph().finalize(iss, request.args)
     except Exception as err:
         return make_response(f"{err}", 400)
 

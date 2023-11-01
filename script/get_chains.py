@@ -2,12 +2,14 @@
 import argparse
 import json
 
+from fedservice.entity.function import apply_policies
+
+from fedservice.entity.function import verify_trust_chains
+
+from fedservice.entity.function import collect_trust_chains
 from idpyoidc.logging import configure_logging
 
-from fedservice import branch2lists
-from fedservice import eval_chain
-from fedservice.entity import FederationEntity
-from fedservice.entity_statement.collect import verify_self_signed_signature
+from fedservice.utils import make_federation_entity
 
 LOGGING = {
     'version': 1,
@@ -37,8 +39,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', dest='insecure', action='store_true')
     parser.add_argument('-t', dest='trusted_roots_file')
-    parser.add_argument('-e', dest='entity_type')
-    parser.add_argument('-o', dest='opponent_entity_type')
     parser.add_argument('-l', dest='logging', action='store_true')
     parser.add_argument(dest="url")
     args = parser.parse_args()
@@ -46,33 +46,24 @@ if __name__ == '__main__':
     if args.logging:
         logger = configure_logging(config=LOGGING).getChild(__name__)
 
-    trusted_roots = json.loads(open(args.trusted_roots_file).read())
+    trust_anchors = json.loads(open(args.trusted_roots_file).read())
 
     # Creates an entity that can do the collecting of information
-    conf = {
-        "trusted_roots": trusted_roots,
-        "entity_type": args.entity_type
-    }
-    federation_entity = FederationEntity('Collector', config=conf)
+    federation_entity = make_federation_entity(entity_id="https://localhost",
+                                               trust_anchors=trust_anchors)
 
     if args.insecure:
-        federation_entity.collector.httpc_params = {"verify": False}
+        federation_entity.keyjar.httpc_params = {"verify": False}
 
-    jws = federation_entity.get_configuration_information(args.url)
-    _entity_statement = verify_self_signed_signature(jws)
+    chains, leaf_ec = collect_trust_chains(federation_entity, entity_id=args.url)
+    if len(chains) == 0:
+        print("No chains")
 
-    _tree = federation_entity.collect_statement_chains(_entity_statement['iss'], _entity_statement)
-    chains = branch2lists(_tree)
-    for c in chains:
-        c.append(jws)
+    trust_chains = verify_trust_chains(federation_entity, chains, leaf_ec)
+    trust_chains = apply_policies(federation_entity, trust_chains)
 
-    statements = [eval_chain(c, federation_entity.context.keyjar, args.opponent_entity_type) for c
-                  in chains]
-
-    for statement in statements:
-        if statement is None:
-            continue
-        print(20 * "=", statement.anchor, 20 * "=")
-        for node in statement.verified_chain:
+    for trust_chain in trust_chains:
+        print(20 * "=", trust_chain.anchor, 20 * "=")
+        for node in trust_chain.verified_chain:
             # pretty print JSON
             print(json.dumps(node, sort_keys=True, indent=4))

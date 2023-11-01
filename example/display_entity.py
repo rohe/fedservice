@@ -5,6 +5,7 @@ import sys
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 import requests
+from idpyoidc.server.exception import ServiceError
 
 from fedservice.message import EntityStatement
 
@@ -12,6 +13,8 @@ from fedservice.message import EntityStatement
 def get_self_signed_entity_statement(entity_id):
     _url = entity_id + "/.well-known/openid-federation"
     _response = requests.request("GET", _url, verify=False)
+    if _response.status_code != 200:
+        raise ServiceError(_response.reason)
     _jws = factory(_response.text)
     _payload = _jws.jwt.payload()
     entity_statement = EntityStatement(**_payload)

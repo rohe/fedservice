@@ -7,7 +7,7 @@ The trust anchors controls two federations (SEID and SWAMID).
 
 The two organizations (UMU&LU) both belong to both federations.
 
-UMU has one subordinate an OP.
+UMU has one subordinate, an OP.
 LU has two subordinates; one RP that does automatic registration and another
 that does explicit registration.
 
@@ -19,11 +19,7 @@ correspond to the keys owned by the trusted anchors.
 
 Subordinates must also be registered with their authorities.
 
-The first can be accomplished by using the script `set_trust_anchor.py`
-the second with the script `add_subordinate.py` .
-
-Then you should run the shell script `setup.sh` before trying to 
-run the federation.
+All of this can be accomplished by using the script `setup.py`
 
 # Testing and verifying the example federation
 
@@ -34,7 +30,7 @@ stand in the fedservice/example directory.
 
 A simple script for starting/stopping entities:
 
-    ./exec.py start RPA RPE OP LU UMU SEID SWAMID
+    ./exec.py start rpa rpa op lu umu seid swamid
 
 This will start all entities in the example federations.
 If you want to look at the layout of the federation look at the 
@@ -67,11 +63,11 @@ The above command will kill only the RPA entity.
 
 ## Displaying an entity's entity statement
 
-For this you can use the _display_entity.py_ script:
+For this you can use the `display_entity.py` script:
 
     ./display_entity.py https://127.0.0.1:5000
 
-Will display the payload of the entity that has the provided entity_id.
+Will display the Entity Configuration of the entity that has the provided entity_id.
 If the entity is an intermediate or trust anchor, that is has subordinates,
 it will also list the subordinates. 
 As UMU is the superior of the OP if you do:

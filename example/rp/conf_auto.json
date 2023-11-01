@@ -156,8 +156,8 @@
   },
   "webserver": {
     "port": 4001,
-    "server_cert": "auto/certs/cert.pem",
-    "server_key": "auto/certs/key.pem",
+    "server_cert": "certs/cert.pem",
+    "server_key": "certs/key.pem",
     "domain": "127.0.0.1"
   }
 }

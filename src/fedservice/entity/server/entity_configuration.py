@@ -1,3 +1,8 @@
+from typing import Optional
+from typing import Union
+
+from idpyoidc.message import Message
+
 from fedservice.entity_statement.create import create_entity_statement
 from idpyoidc.message import oauth2
 from idpyoidc.server import Endpoint
@@ -9,7 +14,9 @@ class EntityConfiguration(Endpoint):
     request_cls = oauth2.Message
     response_cls = EntityStatement
     request_format = ""
-    response_format = "jwt"
+    response_format = "jws"
+    response_placement = "body"
+    response_content_type = "application/jose; charset=utf-8"
     name = "entity_configuration"
     endpoint_name = ""
     default_capabilities = None
@@ -33,3 +40,13 @@ class EntityConfiguration(Endpoint):
                                       metadata=_metadata,
                                       authority_hints=_server.upstream_get('authority_hints'))
         return {"response": _ec}
+
+    def response_info(
+        self,
+        response_args: Optional[dict] = None,
+        request: Optional[Union[Message, dict]] = None,
+        error: Optional[str] = "",
+        **kwargs
+    ) -> dict:
+        if "response" in kwargs:
+            return kwargs["response"]

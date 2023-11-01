@@ -1,10 +1,13 @@
 import json
+import logging
 import os
 
+logger = logging.getLogger(__name__)
 
 def _import(val):
     path = val[len("file:"):]
     if os.path.isfile(path) is False:
+        logger.info(f"No such file: {path}")
         return None
 
     with open(path, "r") as fp:

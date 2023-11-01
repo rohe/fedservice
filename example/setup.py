@@ -53,6 +53,15 @@ for ent, info in ENTITY.items():
             _ent_id = _fed_entity.entity_id
             trust_anchor[ent][_ent_id] = _fed_entity.keyjar.export_jwks()
 
+trust_anchors = {}
+for ent, info in trust_anchor.items():
+    for k,v in info.items():
+        trust_anchors[k] = v
+
+print(f"Trust Anchors: {trust_anchors}")
+with open("trust_anchors.json", "w") as fp:
+    fp.write(json.dumps(trust_anchors))
+
 for auth, val in subordinates.items():
     file_name = f"{ENTITY[auth]['dir']}/{auth}_subordinates.json"
     with open(file_name, "w") as fp:

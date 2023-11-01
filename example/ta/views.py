@@ -3,6 +3,7 @@ import logging
 import sys
 import traceback
 
+import werkzeug
 from flask import Blueprint
 from flask import current_app
 from flask import redirect
@@ -12,9 +13,6 @@ from flask.helpers import send_from_directory
 from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.server.exception import InvalidClient
 from idpyoidc.server.exception import UnknownClient
-import werkzeug
-
-from fedservice.rp.registration import Registration
 
 logger = logging.getLogger(__name__)
 
@@ -142,13 +140,13 @@ def send_js(path):
 
 @entity.route('/fetch')
 def fetch():
-    _endpoint = current_app.server.server_get("endpoint", 'fetch')
+    _endpoint = current_app.federation_entity.get_endpoint('fetch')
     return service_endpoint(_endpoint)
 
 
 @entity.route('/list')
 def list():
-    _endpoint = current_app.server.server_get("endpoint", 'list')
+    _endpoint = current_app.federation_entity.get_endpoint('list')
     return service_endpoint(_endpoint)
 
 
@@ -156,9 +154,10 @@ def list():
 def handle_bad_request(e):
     return 'bad request!', 400
 
+
 @entity.route('/.well-known/openid-federation')
 def wkof():
-    _fe = current_app.server
+    _fe = current_app.federation_entity
     metadata = _fe.get_metadata()
     _ctx = _fe.context
     iss = sub = _ctx.entity_id

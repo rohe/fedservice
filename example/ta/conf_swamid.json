@@ -59,7 +59,7 @@
       "list",
       "entity_configuration"
     ],
-    "subordinate": "file:swamid_subordinates.json"
+    "subordinate": "file:ta/swamid_subordinates.json"
   },
   "webserver": {
     "server_cert": "certs/example.crt",

@@ -45,6 +45,8 @@ class Fetch(Endpoint):
             # Contains jwks and possibly entity type and authority_hints
             _response = _server.subordinate.get(_sub)
             if not _response:
+                logger.debug(f"Unknown subordinate: {_sub}")
+                logger.debug(f"Known subordinates: {list(_server.subordinate.keys())}")
                 raise UnknownEntity(_sub)
 
             if not 'authority_hints' in _response:
