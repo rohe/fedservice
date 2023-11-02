@@ -79,23 +79,44 @@ and https://127.0.0.1:5000 (OP).
 
 ## Parsing trust chains.
 
-To do this you use _get_chains.py_
+To do this you use `get_chains.py`
 
-    ../script/get_chains.py -k -t trust_anchors.json -o openid_provider -e federation_entity https://127.0.0.1:5000
+    ../script/get_chains.py -k -t trust_anchors.json https://127.0.0.1:5000
 
 * -k : Don't try to verify the certificate used for TLS
 * -t : A JSON file with a list of trust anchors.
-* -o : The entity type of the entity you want to see
-* -e : Own entity type
 * The entity ID of the target
 
 This will list the entity statements of the entities in the collected trust 
 chains. Each list will start with the trust anchor and then list the
-intermediates and finally the leaf in order.
+intermediates and finally the leaf in that order.
 
 If you do:
 
     ./exec.py start OP UMU LU SWAMID SEID
-    ../script/get_chains.py -k -t trust_anchors.json -o openid_provider -e federation_entity https://127.0.0.1:5000
+    ../script/get_chains.py -k -t trust_anchors.json https://127.0.0.1:5000
 
-You will see 2 list each with 3 entities in it.
+You will see 2 lists. Each with 3 entities in it.
+
+One can also play around with `get_entity_statement.py`
+
+usage: get_entity_statement.py [-h] [-k] [-t TRUST_ANCHORS_FILE] [-c] [-s SUPERIOR] entity_id
+
+positional arguments:
+    entity_id
+
+    options:
+
+    -h, --help            show this help message and exit
+    -k, --insecure 
+    -t TRUST_ANCHORS_FILE, --trust_anchors_file TRUST_ANCHORS_FILE
+    -c
+    -s SUPERIOR, --superior SUPERIOR
+
+and an example:
+
+../script/get_entity_statement.py -k -c -t trust_anchors.json -s https://127.0.0.1:6002 https://127.0.0.1:5000
+
+This will first display the Entity Configuration for https://127.0.0.1:5000
+and then the Entity Statement for https://127.0.0.1:5000 as produced by
+https://127.0.0.1:6002
