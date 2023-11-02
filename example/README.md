@@ -19,7 +19,9 @@ correspond to the keys owned by the trusted anchors.
 
 Subordinates must also be registered with their authorities.
 
-All of this can be accomplished by using the script `setup.py`
+All of this can be accomplished by using the script `setup.py`. 
+
+`setup.py` **MUST** be run before you attempt to start the entities. 
 
 # Testing and verifying the example federation
 
