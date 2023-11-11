@@ -8,27 +8,17 @@ from cryptojwt.jws.jws import factory
 from idpyoidc.util import instantiate
 from requests import request
 
+from fedservice.entity.function import apply_policies
+from fedservice.entity.function import collect_trust_chains
+from fedservice.entity.function import get_verified_trust_chains
+from fedservice.entity.function import verify_trust_chains
+
 __author__ = 'Roland Hedberg'
 
 from fedservice.entity.context import FederationContext
 from idpyoidc.node import Unit
 
 logger = logging.getLogger(__name__)
-
-
-def federation_entity(unit):
-    if hasattr(unit, "upstream_get"):
-        if unit.upstream_get:
-            next_unit = unit.upstream_get("unit")
-            if next_unit:
-                if isinstance(next_unit, FederationEntity):
-                    return next_unit
-                unit = federation_entity(next_unit)
-    else:
-        # Unit might be a FederationCombo instance or something equivalent
-        if "federation_entity" in unit:
-            return unit["federation_entity"]
-    return unit
 
 
 class FederationEntity(Unit):
@@ -63,6 +53,7 @@ class FederationEntity(Unit):
             "upstream_get": self.unit_get,
             "httpc": self.httpc,
             "httpc_params": self.httpc_params,
+            "entity_id": entity_id
         }
 
         self.client = self.server = self.function = None
@@ -198,17 +189,76 @@ class FederationEntity(Unit):
         return _info
 
     def get_trust_chain(self, entity_id):
-        return self.trust_chain.get(entity_id).chain
+        _trust_chain = self.trust_chain.get(entity_id)
+        if _trust_chain is None:
+            _trust_chains = get_verified_trust_chains(self, entity_id)
+            if _trust_chains:
+                self.trust_chain[entity_id] = _trust_chains
+                _trust_chain = _trust_chains[0]
+
+        if _trust_chain:
+            return _trust_chain.chain
+        else:
+            return None
 
     def get_verified_metadata(self, entity_id):
-        return self.trust_chain.get(entity_id).metadata
+        _trust_chain = self.trust_chain.get(entity_id)
+        if _trust_chain is None:
+            _trust_chains = get_verified_trust_chains(self, entity_id)
+            if _trust_chains:
+                self.trust_chain[entity_id] = _trust_chains
+                _trust_chain = _trust_chains[0]
 
+        if _trust_chain:
+            return _trust_chain.metadata
+        else:
+            return None
 
-def get_federation_entity(unit):
-    # Look both upstream and downstream if necessary
-    if isinstance(unit, FederationEntity):
-        return unit
-    elif unit.upstream_get:
-        return get_federation_entity(unit.upstream_get('unit'))
-    else:
-        return unit['federation_entity']
+    def do_request(
+            self,
+            request_type: str,
+            response_body_type: Optional[str] = "",
+            request_args: Optional[dict] = None,
+            behaviour_args: Optional[dict] = None,
+            **kwargs):
+        return self.client.do_request(request_type=request_type,
+                                      response_body_type=response_body_type,
+                                      request_args=request_args, behaviour_args=behaviour_args,
+                                      **kwargs)
+
+    def trawl(self, superior, subordinate, entity_type):
+        if subordinate in self.function.trust_chain_collector.config_cache:
+            _ec = self.function.trust_chain_collector.config_cache[subordinate]
+        else:
+            _es = self.client.do_request("entity_statement", issuer=superior, subject=subordinate)
+
+            # add subjects key/-s to keyjar
+            self.get_federation_entity().keyjar.import_jwks(_es["jwks"], _es["sub"])
+
+            # Fetch Entity Configuration
+            _ec = self.client.do_request("entity_configuration", entity_id=subordinate)
+
+        if "federation_list_endpoint" not in _ec["metadata"]["federation_entity"]:
+            return []
+
+        # One step down the tree
+        # All subordinates that are of a specific entity_type
+        _issuers = self.client.do_request("list",
+                                          entity_id=subordinate,
+                                          entity_type=entity_type)
+        if _issuers is None:
+            _issuers = []
+
+        # All subordinates that are intermediates
+        _intermediates = self.client.do_request("list",
+                                                entity_id=subordinate,
+                                                intermediate=True)
+
+        # For all intermediates go further down the tree
+        if _intermediates:
+            for entity_id in _intermediates:
+                _ids = self.trawl(subordinate, entity_id, entity_type)
+                if _ids:
+                    _issuers.extend(_ids)
+
+        return _issuers

@@ -35,14 +35,10 @@ class TestClient(object):
             },
             key_config={"key_defs": DEFAULT_KEY_DEFS},
             endpoints=TA_ENDPOINTS,
-            item_args={
-                "endpoint": {
-                    'subordinate': {
-                        'class': 'idpyoidc.storage.abfile.AbstractFileSystem',
-                        'kwargs': {
-                            'fdir': 'subordinate'
-                        }
-                    }
+            subordinate={
+                'class': 'idpyoidc.storage.abfile.AbstractFileSystem',
+                'kwargs': {
+                    'fdir': 'subordinate'
                 }
             }
         )

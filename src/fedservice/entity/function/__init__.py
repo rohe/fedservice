@@ -9,7 +9,7 @@ from cryptojwt.jwt import JWT
 from cryptojwt.key_jar import KeyJar
 from idpyoidc.impexp import ImpExp
 
-from fedservice.entity import get_federation_entity
+from fedservice.entity.utils import get_federation_entity
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +121,7 @@ def apply_policies(unit, trust_chains):
         res.append(trust_chain)
     return res
 
+
 def get_payload(self_signed_statement):
     _jws = as_unicode(self_signed_statement)
     _jwt = factory(_jws)
@@ -133,16 +134,23 @@ class Function(ImpExp):
         ImpExp.__init__(self)
         self.upstream_get = upstream_get
 
-def get_endpoint(unit, id_param, metadata_type, metadata_parameter):
-    # get endpoint from the Entity Configuration
-    chains, leaf_ec = collect_trust_chains(unit, unit.get(id_param))
+
+def get_verified_trust_chains(unit, entity_id):
+    chains, leaf_ec = collect_trust_chains(unit, entity_id)
     if len(chains) == 0:
-        return None
+        return []
 
     trust_chains = verify_trust_chains(unit, chains, leaf_ec)
     trust_chains = apply_policies(unit, trust_chains)
-    if len(chains) == 0:
-        return None
+    return trust_chains
 
+
+def get_entity_endpoint(unit, entity_id, metadata_type, metadata_parameter):
+    # get endpoint from the Entity Configuration
+
+    trust_chains = get_verified_trust_chains(unit, entity_id)
     # pick one
-    return trust_chains[0].metadata[metadata_type][metadata_parameter]
+    if trust_chains:
+        return trust_chains[0].metadata[metadata_type][metadata_parameter]
+    else:
+        return ""

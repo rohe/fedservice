@@ -52,7 +52,7 @@ class FederationEntityBuilder():
                     kwargs["services"][key]["kwargs"].update(val)
 
         self.conf['client'] = {
-            'class': 'fedservice.entity.client.FederationClientEntity',
+            'class': 'fedservice.entity.client.FederationClient',
             'kwargs': kwargs
         }
 

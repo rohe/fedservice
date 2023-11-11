@@ -423,10 +423,11 @@ class TrustMark(JsonWebToken):
         "sub": SINGLE_REQUIRED_STRING,
         'iss': SINGLE_REQUIRED_STRING,
         'iat': SINGLE_REQUIRED_INT,
-        "trust_mark_id": SINGLE_REQUIRED_STRING,
+        "id": SINGLE_REQUIRED_STRING,
         "logo_uri": SINGLE_OPTIONAL_STRING,
         "exp": SINGLE_OPTIONAL_INT,
-        "ref": SINGLE_OPTIONAL_STRING
+        "ref": SINGLE_OPTIONAL_STRING,
+        "delegation": SINGLE_OPTIONAL_STRING
     })
 
     def verify(self, **kwargs):

@@ -57,13 +57,12 @@ class List(Endpoint):
             subordinate_conf = None
             # I know about entity_types and intermediate or not from the registration
             for entity_id, item in _db.items():
-                _reg_info = item["registration_info"]
                 if "intermediate" in request and request["intermediate"]:
-                    if "intermediate" in _reg_info and _reg_info["intermediate"]:
+                    if "intermediate" in item and item["intermediate"]:
                         matched_entity_ids.add(entity_id)
                         continue
                 if "entity_type" in request:
-                    if request["entity_type"] in _reg_info["entity_types"]:
+                    if request["entity_type"] in item["entity_type"]:
                         matched_entity_ids.add(entity_id)
 
             # I don't expect to know about trust marks from the registration

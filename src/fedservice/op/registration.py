@@ -3,7 +3,7 @@ import logging
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.server.oidc import registration
 
-from fedservice.entity import get_federation_entity
+from fedservice.entity.utils import get_federation_entity
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains

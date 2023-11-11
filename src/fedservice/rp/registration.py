@@ -1,15 +1,16 @@
 import logging
+from typing import Optional
 
 from idpyoidc.client.exception import ResponseError
 from idpyoidc.client.oidc import registration
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.message.oidc import RegistrationResponse
 
-from fedservice.entity import get_federation_entity
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
+from fedservice.entity.utils import get_federation_entity
 from fedservice.exception import SignatureFailure
 
 logger = logging.getLogger(__name__)
@@ -41,9 +42,9 @@ class Registration(registration.Registration):
         else:
             return request, {}
 
-    def create_entity_statement(self, request_args, service=None, **kwargs):
+    def create_entity_statement(self, request_args: Optional[dict]= None, **kwargs):
         """
-        Create a self signed entity statement
+        Create a self-signed entity statement
 
         :param request_args:
         :param service:

@@ -4,15 +4,13 @@ from typing import Optional
 from typing import Union
 from urllib.parse import urlparse
 
-from fedservice.entity import FederationEntity
+import requests
 from idpyoidc.client.configure import Configuration
-from idpyoidc.client.service import Service
 from idpyoidc.message import oauth2
 from idpyoidc.message.oauth2 import ResponseMessage
-from idpyoidc.node import topmost_unit
-import requests
 
-from fedservice.entity import federation_entity
+from fedservice.entity.service import FederationService
+from fedservice.entity.utils import get_federation_entity
 from fedservice.message import EntityStatement
 
 logger = logging.getLogger(__name__)
@@ -30,7 +28,7 @@ def construct_tenant_well_known_url(entity_id, typ):
     return f'{p.scheme}://{p.netloc}{p.path}/.well-known/{typ}'
 
 
-class EntityConfiguration(Service):
+class EntityConfiguration(FederationService):
     msg_type = oauth2.Message
     response_cls = EntityStatement
     error_msg = ResponseMessage
@@ -41,9 +39,9 @@ class EntityConfiguration(Service):
 
     def __init__(self,
                  upstream_get: Callable,
-                 conf:Optional[Union[dict, Configuration]] = None):
+                 conf: Optional[Union[dict, Configuration]] = None):
         """The service that talks to the OIDC federation well-known endpoint."""
-        Service.__init__(self, upstream_get, conf=conf)
+        FederationService.__init__(self, upstream_get, conf=conf)
         self.httpc = requests.request
         self.httpc_params = {}
 
@@ -74,7 +72,11 @@ class EntityConfiguration(Service):
         if not method:
             method = self.http_method
 
-        entity_id = request_args.get('entity_id')
+        if request_args:
+            entity_id = request_args.get('entity_id', kwargs.get("entity_id"))
+        else:
+            entity_id = kwargs.get("entity_id")
+
         if not entity_id:
             raise AttributeError("Missing entity_id")
 
@@ -91,7 +93,7 @@ class EntityConfiguration(Service):
         return _info
 
     def post_parse_response(self, response, **kwargs):
-        root = federation_entity(self)
+        root = get_federation_entity(self)
         _collector = root.function.trust_chain_collector
         _collector.config_cache[response["iss"]] = response
 

@@ -9,11 +9,11 @@ from idpyoidc.message import Message
 from idpyoidc.message import oidc
 from idpyoidc.server.endpoint import Endpoint
 
-from fedservice.entity import get_federation_entity
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
+from fedservice.entity.utils import get_federation_entity
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class MetadataVerification(Endpoint):
                 _jws = JWS(json.dumps(_trust_chains[0].metadata))
                 _key_type = alg2keytype(self.signing_algorithm)
                 _signed_jwt = _jws.sign_compact(_keyjar.get_signing_keys(key_type=_key_type))
-                return {"response_msg":_signed_jwt}
+                return {"response_msg": _signed_jwt}
             else:
                 return {"response_msg": "OK"}
         else:

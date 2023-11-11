@@ -106,7 +106,7 @@ class TestConstraints(object):
             authority_hints=[IM_ID],
             endpoints=LEAF_ENDPOINTS,
             trust_anchors=ANCHOR,
-            entity_conf={
+            entity_type={
                 "openid_relying_party": {
                     'class': ClientEntity,
                     'kwargs': {

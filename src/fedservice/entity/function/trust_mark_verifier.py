@@ -6,11 +6,11 @@ from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 
 from fedservice import message
-from fedservice.entity import get_federation_entity
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import Function
 from fedservice.entity.function import get_payload
 from fedservice.entity.function import verify_trust_chains
+from fedservice.entity.utils import get_federation_entity
 from fedservice.utils import statement_is_expired
 
 logger = logging.getLogger(__name__)

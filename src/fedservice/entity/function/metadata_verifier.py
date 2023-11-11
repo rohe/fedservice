@@ -4,14 +4,15 @@ from typing import Optional
 
 from idpyoidc.exception import MissingPage
 
-from fedservice.entity import get_federation_entity
 from fedservice.entity.function import Function
+from fedservice.entity.utils import get_federation_entity
 from fedservice.exception import FailedInformationRetrieval
 
 logger = logging.getLogger(__name__)
 
 
 class MetadataVerifier(Function):
+
     # content_type = 'application/jose'
 
     def __init__(self, upstream_get: Callable, metadata_verifier_id: Optional[str] = ""):

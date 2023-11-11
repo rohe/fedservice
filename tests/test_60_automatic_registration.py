@@ -111,7 +111,7 @@ class TestAutomatic(object):
             key_config={"key_defs": DEFAULT_KEY_DEFS},
             endpoints=LEAF_ENDPOINTS,
             trust_anchors=ANCHOR,
-            entity_conf={
+            entity_type={
                 "openid_relying_party": {
                     'class': ClientEntity,
                     'kwargs': {
@@ -173,7 +173,7 @@ class TestAutomatic(object):
             endpoints=LEAF_ENDPOINTS,
             trust_anchors=ANCHOR,
             key_config={"key_defs": DEFAULT_KEY_DEFS},
-            entity_conf={
+            entity_type={
                 "openid_provider": {
                     'class': ServerEntity,
                     'kwargs': {

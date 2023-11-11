@@ -14,9 +14,9 @@ class EntityConfiguration(Endpoint):
     request_cls = oauth2.Message
     response_cls = EntityStatement
     request_format = ""
-    response_format = "jws"
+    response_format = "jose"
     response_placement = "body"
-    response_content_type = "application/jose; charset=utf-8"
+    response_content_type = "application/entity-statement+jwt; charset=utf-8"
     name = "entity_configuration"
     endpoint_name = ""
     default_capabilities = None
