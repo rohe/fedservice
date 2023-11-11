@@ -144,6 +144,9 @@ class FederationContext(ImpExp):
         if not lifetime:
             lifetime = self.default_lifetime
 
+        if self.trust_marks:
+            kwargs["trust_marks"] = self.trust_marks
+
         return create_entity_statement(iss, sub, key_jar=key_jar, metadata=metadata,
                                        metadata_policy=metadata_policy,
                                        authority_hints=authority_hints, lifetime=lifetime, **kwargs)

@@ -107,3 +107,40 @@ class TestComboCollect(object):
             "organization_name", "homepage_uri", "contacts", "jwks"}
 
         assert trust_chain.is_expired() is False
+
+    def test_collect_trust_chain_2(self):
+        # Trust chain OP->TA
+        _msgs = create_trust_chain_messages(self.op, self.ta)
+
+        assert len(_msgs) == 3
+
+        with responses.RequestsMock() as rsps:
+            for _url, _jwks in _msgs.items():
+                rsps.add("GET", _url, body=_jwks,
+                         adding_headers={"Content-Type": "application/json"}, status=200)
+
+            chains, leaf_ec = collect_trust_chains(self.rp, OP_ID)
+
+        assert len(chains) == 1
+
+        # Trust chain RP->TA
+        _msgs = create_trust_chain_messages(self.rp, self.ta)
+
+        del _msgs['https://ta.example.org/.well-known/openid-federation']
+        assert len(_msgs) == 2
+
+        with responses.RequestsMock() as rsps:
+            for _url, _jwks in _msgs.items():
+                rsps.add("GET", _url, body=_jwks,
+                         adding_headers={"Content-Type": "application/json"}, status=200)
+
+            chains_1, leaf_ec_1 = collect_trust_chains(self.rp, RP_ID)
+
+        assert len(chains_1) == 1
+
+        # Trust chain RP->TA Second time
+        chains_2, leaf_ec_2 = collect_trust_chains(self.rp, RP_ID)
+
+        assert leaf_ec_2
+        assert leaf_ec_1 == leaf_ec_2
+        assert chains_1 == chains_2

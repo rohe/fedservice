@@ -34,11 +34,17 @@ class EntityConfiguration(Endpoint):
             _metadata = _entity.upstream_get("metadata")
         else:
             _metadata = _entity.get_metadata()
+        if _entity.context.trust_marks:
+            args = {"trust_marks": _entity.context.trust_marks}
+        else:
+            args = {}
         _ec = create_entity_statement(iss=_entity_id,
                                       sub=_entity_id,
                                       key_jar=_entity.get_attribute('keyjar'),
                                       metadata=_metadata,
-                                      authority_hints=_server.upstream_get('authority_hints'))
+                                      authority_hints=_server.upstream_get('authority_hints'),
+                                      **args
+                                      )
         return {"response": _ec}
 
     def response_info(

@@ -189,15 +189,13 @@ class FederationEntity(Unit):
         return _info
 
     def get_trust_chain(self, entity_id):
-        _trust_chain = self.trust_chain.get(entity_id)
-        if _trust_chain is None:
+        _trust_chains = self.trust_chain.get(entity_id)
+        if _trust_chains is None:
             _trust_chains = get_verified_trust_chains(self, entity_id)
-            if _trust_chains:
-                self.trust_chain[entity_id] = _trust_chains
-                _trust_chain = _trust_chains[0]
 
-        if _trust_chain:
-            return _trust_chain.chain
+        if _trust_chains:
+            self.trust_chain[entity_id] = _trust_chains
+            return _trust_chains[0]
         else:
             return None
 

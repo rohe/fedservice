@@ -164,7 +164,8 @@ def wkof():
     _statement = _ctx.create_entity_statement(
         metadata=metadata,
         iss=iss, sub=sub, authority_hints=_ctx.authority_hints,
-        lifetime=_ctx.default_lifetime)
+        lifetime=_ctx.default_lifetime
+    )
 
     response = make_response(_statement)
     response.headers['Content-Type'] = 'application/jose; charset=UTF-8'

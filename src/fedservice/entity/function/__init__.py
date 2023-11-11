@@ -19,21 +19,22 @@ def unverified_entity_statement(signed_jwt):
     return _jws.jwt.payload()
 
 
-def verify_self_signed_signature(config):
+def verify_self_signed_signature(token):
     """
     Verify signature using only keys in the entity statement.
     Will raise exception if signature verification fails.
 
-    :param config: Signed JWT
+    :param token: Signed JWT
     :return: Payload of the signed JWT
     """
 
-    payload = unverified_entity_statement(config)
+    payload = unverified_entity_statement(token)
     keyjar = KeyJar()
     keyjar.import_jwks(payload['jwks'], payload['iss'])
 
     _jwt = JWT(key_jar=keyjar)
-    _val = _jwt.unpack(config)
+    _val = _jwt.unpack(token)
+    _val["_jws"] = token
     return _val
 
 

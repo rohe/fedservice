@@ -92,4 +92,5 @@ class Registration(registration.Registration):
         _md = {_fe.opponent_entity_type: response_args.to_dict()}
         return _fe.create_entity_statement(_fe.entity_id, sub=_fe.entity_id,
                                            metadata=_md,
-                                           authority_hints=_fe.get_authority_hints())
+                                           authority_hints=_fe.get_authority_hints(),
+                                           trust_marks=_fe.context.trust_marks)

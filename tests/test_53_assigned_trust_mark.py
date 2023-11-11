@@ -42,6 +42,13 @@ def test_federation_entity_metadata():
     assert set(metadata.keys()) == {"federation_entity"}
     assert entity.context.trust_marks
 
+    _endp = entity.get_endpoint("entity_configuration")
+    res = _endp.process_request({})
+    assert set(res.keys()) == {"response"}
+    _jws = factory(res["response"])
+    _payload = _jws.jwt.payload()
+    assert "trust_marks" in _payload
+
 
 def test_federation_combo_metadata():
     oidc_service = DEFAULT_OIDC_SERVICES.copy()
