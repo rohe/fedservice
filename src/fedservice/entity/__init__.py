@@ -2,14 +2,15 @@ import logging
 from typing import Callable
 from typing import Optional
 
-from cryptojwt import as_unicode
 from cryptojwt import KeyJar
+from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
 from idpyoidc.util import instantiate
 from requests import request
 
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
+from fedservice.entity.function import get_payload
 from fedservice.entity.function import get_verified_trust_chains
 from fedservice.entity.function import verify_trust_chains
 
@@ -260,3 +261,27 @@ class FederationEntity(Unit):
                     _issuers.extend(_ids)
 
         return _issuers
+
+    def verify_trust_mark(self, trust_mark: str, check_with_issuer: Optional[bool] = True):
+        _trust_mark_payload = get_payload(trust_mark)
+        _tmi_trust_chain = self.get_trust_chain(_trust_mark_payload['iss'])
+
+        # Verifies the signature of the Trust Mark
+        verified_trust_mark = self.function.trust_mark_verifier(
+            trust_mark=trust_mark, trust_anchor=_tmi_trust_chain[0].anchor)
+
+        if check_with_issuer:
+            # This to check that the Trust Mark is still valid according to the Trust Mark Issuer
+            service = self.get_service('trust_mark_status')
+            resp = service.do_request(
+                request_args={
+                    'sub': verified_trust_mark['sub'],
+                    'id': verified_trust_mark['id']
+                },
+                endpoint=_tmi_trust_chain[0]["metadata"]['federation_entity'][
+                    'federation_trust_mark_status_endpoint']
+            )
+            if resp != "OK":
+                return None
+
+        return verified_trust_mark
