@@ -2,8 +2,8 @@ import logging
 from typing import Callable
 from typing import Optional
 
-from cryptojwt import KeyJar
 from cryptojwt import as_unicode
+from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 from idpyoidc.util import instantiate
 from requests import request
@@ -201,15 +201,14 @@ class FederationEntity(Unit):
             return None
 
     def get_verified_metadata(self, entity_id):
-        _trust_chain = self.trust_chain.get(entity_id)
-        if _trust_chain is None:
+        _trust_chains = self.trust_chain.get(entity_id)
+        if _trust_chains is None:
             _trust_chains = get_verified_trust_chains(self, entity_id)
             if _trust_chains:
                 self.trust_chain[entity_id] = _trust_chains
-                _trust_chain = _trust_chains[0]
 
-        if _trust_chain:
-            return _trust_chain.metadata
+        if _trust_chains:
+            return _trust_chains[0].metadata
         else:
             return None
 
@@ -268,20 +267,32 @@ class FederationEntity(Unit):
 
         # Verifies the signature of the Trust Mark
         verified_trust_mark = self.function.trust_mark_verifier(
-            trust_mark=trust_mark, trust_anchor=_tmi_trust_chain[0].anchor)
+            trust_mark=trust_mark, trust_anchor=_tmi_trust_chain.anchor)
 
         if check_with_issuer:
             # This to check that the Trust Mark is still valid according to the Trust Mark Issuer
-            service = self.get_service('trust_mark_status')
-            resp = service.do_request(
-                request_args={
-                    'sub': verified_trust_mark['sub'],
-                    'id': verified_trust_mark['id']
-                },
-                endpoint=_tmi_trust_chain[0]["metadata"]['federation_entity'][
-                    'federation_trust_mark_status_endpoint']
-            )
-            if resp != "OK":
+            resp = self.do_request("trust_mark_status",
+                                   request_args={
+                                       'sub': verified_trust_mark['sub'],
+                                       'id': verified_trust_mark['id']
+                                   },
+                                   fetch_endpoint=_tmi_trust_chain.metadata["federation_entity"][
+                                       "federation_trust_mark_status_endpoint"]
+                                   )
+            if "active" in resp and resp["active"] == True:
+                pass
+            else:
                 return None
 
         return verified_trust_mark
+
+    def trust_anchors(self):
+        return
+
+    @property
+    def trust_anchors(self):
+        return self.get_function("trust_chain_collector").trust_anchors
+
+    @trust_anchors.setter
+    def trust_anchors(self, value):
+        self.get_function("trust_chain_collector").trust_anchors = value

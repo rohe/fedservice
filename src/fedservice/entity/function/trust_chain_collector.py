@@ -341,8 +341,13 @@ class TrustChainCollector(Function):
                  stop_at: Optional[str] = '') -> tuple[dict | None, Any | None] | None:
         if entity_id in self.config_cache and not self.too_old(self.config_cache[entity_id]):
             entity_config = self.config_cache[entity_id]
-            signed_entity_config = entity_config["_jws"]
+            signed_entity_config = entity_config.get("_jws")
+            if not signed_entity_config:
+                signed_entity_config = getattr(entity_config, "_jws")
         else:
+            signed_entity_config = None
+
+        if not signed_entity_config:
             # get leaf Entity Configuration
             signed_entity_config = self.get_entity_configuration(entity_id)
             if not signed_entity_config:

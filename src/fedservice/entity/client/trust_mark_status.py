@@ -17,7 +17,7 @@ class TrustMarkStatus(FederationService):
     """The service that talks to the OIDC federation Status endpoint."""
 
     msg_type = oauth2.Message
-    response_cls = message.EntityStatement
+    response_cls = message.Message
     error_msg = ResponseMessage
     synchronous = True
     service_name = "trust_mark_status"
@@ -59,7 +59,9 @@ class TrustMarkStatus(FederationService):
         else:
             _q_args = {k: v for k, v in request_args.items() if k in ['sub', 'id', 'iat']}
             if not fetch_endpoint:
-                raise MissingAttribute('fetch_endpoint')
+                fetch_endpoint = kwargs.get("endpoint")
+                if not fetch_endpoint:
+                    raise MissingAttribute('fetch_endpoint')
 
         _url = f"{fetch_endpoint}?{urlencode(_q_args)}"
 
