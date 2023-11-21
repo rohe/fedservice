@@ -1,6 +1,6 @@
+from cryptojwt.jws.jws import factory
 import pytest
 import responses
-from cryptojwt.jws.jws import factory
 
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
@@ -410,3 +410,7 @@ class TestFunction:
         assert self.leaf.function.upstream_get('attribute', 'keyjar') == self.leaf.keyjar
         assert self.leaf.function.policy.upstream_get('attribute', 'keyjar') == self.leaf.keyjar
         assert self.leaf.server.upstream_get('attribute', 'keyjar') == self.leaf.keyjar
+
+    def test_trust_anchors_attribute(self):
+        assert set(self.leaf.trust_anchors.keys()) == {'https://trust_anchor.example.com',
+                                                       'https://2nd.trust_anchor.example.com'}

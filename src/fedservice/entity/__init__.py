@@ -286,9 +286,6 @@ class FederationEntity(Unit):
 
         return verified_trust_mark
 
-    def trust_anchors(self):
-        return
-
     @property
     def trust_anchors(self):
         return self.get_function("trust_chain_collector").trust_anchors
