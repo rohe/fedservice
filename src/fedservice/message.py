@@ -106,7 +106,7 @@ class FederationEntity(Message):
         # "trust_marks": SINGLE_OPTIONAL_JSON,
         "organization_name": SINGLE_OPTIONAL_STRING,
         # If it's a Trust Anchor
-        "trust_mark_owners":SINGLE_OPTIONAL_DICT,
+        "trust_mark_owners": SINGLE_OPTIONAL_DICT,
         "trust_mark_issuers": SINGLE_OPTIONAL_DICT
     }
 
@@ -485,6 +485,15 @@ class ResolveResponse(JsonWebToken):
         'trust_chain': OPTIONAL_LIST_OF_STRINGS,
         'trust_marks': OPTIONAL_LIST_OF_TRUST_MARKS
     })
+
+
+class ListRequest(Message):
+    c_param = {
+        "entity_type": SINGLE_OPTIONAL_STRING,
+        "trust_marked": SINGLE_OPTIONAL_BOOLEAN,
+        "trust_mark_id": SINGLE_OPTIONAL_STRING,
+        "intermediate": SINGLE_OPTIONAL_BOOLEAN
+    }
 
 
 class ListResponse(Message):

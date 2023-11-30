@@ -5,6 +5,8 @@ from typing import Optional
 from cryptojwt import as_unicode
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
+from cryptojwt.utils import importer
+from idpyoidc.server.util import execute
 from idpyoidc.util import instantiate
 from requests import request
 
@@ -37,6 +39,7 @@ class FederationEntity(Unit):
                  httpc_params: Optional[dict] = None,
                  preference: Optional[dict] = None,
                  authority_hints: Optional[list] = None,
+                 persistence: Optional[dict] = None,
                  **kwargs
                  ):
 
@@ -69,6 +72,15 @@ class FederationEntity(Unit):
                                          preference=preference)
 
         self.trust_chain = {}
+
+        if persistence:
+            _storage = execute(persistence["kwargs"]["storage"])
+            _class = persistence["class"]
+            kwargs = {"storage": _storage, "upstream_get": self.unit_get}
+            if isinstance(_class, str):
+                self.persistence = importer(_class)(**kwargs)
+            else:
+                self.persistence = _class(**kwargs)
 
     def get_context(self, *arg):
         return self.context

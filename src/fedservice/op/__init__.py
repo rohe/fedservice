@@ -4,18 +4,20 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
+from cryptojwt.utils import importer
 from idpyoidc.configure import Base
-from idpyoidc.server import allow_refresh_token
 from idpyoidc.server import ASConfiguration
-from idpyoidc.server import authz
-from idpyoidc.server import build_endpoints
 from idpyoidc.server import Endpoint
 from idpyoidc.server import EndpointContext
 from idpyoidc.server import OPConfiguration
+from idpyoidc.server import allow_refresh_token
+from idpyoidc.server import authz
+from idpyoidc.server import build_endpoints
 from idpyoidc.server.client_authn import client_auth_setup
 from idpyoidc.server.endpoint_context import init_service
 from idpyoidc.server.endpoint_context import init_user_info
 from idpyoidc.server.user_authn.authn_context import populate_authn_broker
+from idpyoidc.server.util import execute
 
 from fedservice.entity.claims import OPClaims
 from fedservice.server import ServerUnit
@@ -77,6 +79,16 @@ class ServerEntity(ServerUnit):
         self.context.claims_interface = init_service(
             config["claims_interface"], self.upstream_get
         )
+
+        _per_conf = config.get("persistence", None)
+        if _per_conf:
+            _storage = execute(_per_conf["kwargs"]["storage"])
+            _class = _per_conf["class"]
+            kwargs = {"storage": _storage, "upstream_get": self.unit_get}
+            if isinstance(_class, str):
+                self.persistence = importer(_class)(**kwargs)
+            else:
+                self.persistence = _per_conf["class"](**kwargs)
 
     def get_endpoints(self, *arg):
         return self.endpoint

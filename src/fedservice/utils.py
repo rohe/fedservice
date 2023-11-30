@@ -36,7 +36,8 @@ def build_entity_config(entity_id: str,
                         init_kwargs: Optional[dict] = None,
                         item_args: Optional[dict] = None,
                         subordinate: Optional[dict] = None,
-                        httpc_params: Optional[dict] = None
+                        httpc_params: Optional[dict] = None,
+                        persistence: Optional[dict] = None
                         ) -> dict:
     _key_conf = key_config or {"key_defs": DEFAULT_KEY_DEFS}
 
@@ -73,6 +74,8 @@ def build_entity_config(entity_id: str,
 
     if httpc_params:
         entity.conf["httpc_params"] = httpc_params
+    if persistence:
+        entity.conf["persistence"] = persistence
 
     return entity.conf
 
@@ -90,7 +93,8 @@ def make_federation_entity(entity_id: str,
                            item_args: Optional[dict] = None,
                            subordinate: Optional[dict] = None,
                            metadata_policy: Optional[dict] = None,
-                           httpc_params: Optional[dict] = None
+                           httpc_params: Optional[dict] = None,
+                           persistence: Optional[dict] = None
                            ):
     _config = build_entity_config(
         entity_id=entity_id,
@@ -102,7 +106,8 @@ def make_federation_entity(entity_id: str,
         functions=functions,
         init_kwargs=init_kwargs,
         item_args=item_args,
-        httpc_params=httpc_params
+        httpc_params=httpc_params,
+        persistence=persistence
     )
 
     fe = FederationEntity(**_config)
@@ -143,7 +148,8 @@ def make_federation_combo(entity_id: str,
                           httpc_params: Optional[dict] = None,
                           init_kwargs: Optional[dict] = None,
                           item_args: Optional[dict] = None,
-                          trust_marks: Optional[dict] = None
+                          trust_marks: Optional[dict] = None,
+                          persistence: Optional[dict] = None
                           ):
     _config = build_entity_config(
         entity_id=entity_id,
@@ -155,7 +161,8 @@ def make_federation_combo(entity_id: str,
         functions=functions,
         httpc_params=httpc_params,
         init_kwargs=init_kwargs,
-        item_args=item_args
+        item_args=item_args,
+        persistence=persistence
     )
 
     if entity_type:
