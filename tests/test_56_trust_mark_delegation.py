@@ -1,11 +1,12 @@
+import os
 from urllib.parse import urlparse
 
-import pytest
-import responses
 from cryptojwt import JWT
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import build_keyjar
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
+import pytest
+import responses
 
 from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.message import TrustMarkRequest
@@ -23,6 +24,8 @@ TRUST_MARK_OWNERS_KEYS = build_keyjar(DEFAULT_KEY_DEFS)
 TM_OWNERS_ID = "https://tm_owner.example.org"
 
 SIRTIFI_TRUST_MARK_ID = "https://refeds.org/sirtfi"
+
+BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 
 @pytest.fixture()
@@ -60,8 +63,37 @@ class TestTrustMarkDelegation():
 
         ANCHOR = {self.ta.entity_id: self.ta.keyjar.export_jwks()}
 
+        TRUST_MARK_ISSUER_CONF = {
+            "entity_id": TA_ID,
+            "key_conf": {
+                "private_path": "private/tmi_keys.json",
+                "key_defs": [
+                    {
+                        "type": "EC",
+                        "crv": "P-256",
+                        "use": [
+                            "sig"
+                        ]
+                    }
+                ],
+                "public_path": "static/tmi_keys.json",
+                "read_only": False
+            },
+            "trust_mark_specification": {
+                SIRTIFI_TRUST_MARK_ID: {
+                    "lifetime": 2592000
+                },
+            },
+            "trust_mark_db": {
+                "class": "fedservice.trust_mark_issuer.FileDB",
+                "kwargs": {
+                    SIRTIFI_TRUST_MARK_ID: os.path.join(BASE_PATH, "tmi/sirtifi_se")
+                }
+            }
+        }
+
         # The trust mark issuer
-        self.tmi = TrustMarkIssuer(trust_mark_specification={})
+        self.tmi = TrustMarkIssuer(**TRUST_MARK_ISSUER_CONF)
         # Federation entity with only status endpoint
         self.trust_mark_issuer = make_federation_entity(
             TMI_ID,
