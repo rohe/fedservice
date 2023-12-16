@@ -387,7 +387,7 @@ class EntityStatement(JsonWebToken):
         'constraints': SINGLE_OPTIONAL_CONSTRAINS,
         "crit": OPTIONAL_LIST_OF_STRINGS,
         "policy_language_crit": OPTIONAL_LIST_OF_STRINGS,
-        'trust_marks': SINGLE_OPTIONAL_DICT,
+        'trust_marks': OPTIONAL_LIST_OF_STRINGS,
         'trust_anchor_id': SINGLE_OPTIONAL_STRING
     })
 

@@ -168,3 +168,7 @@ class TestSignedTrustMark():
 
         assert verified_trust_mark
         assert set(verified_trust_mark.keys()) == {'iat', 'iss', 'id', 'sub', 'ref'}
+
+    def test_metadata(self):
+        _metadata = self.entity.get_metadata()
+        assert len(_metadata["federation_entity"]["jwks"]["keys"]) == 4

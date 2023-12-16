@@ -97,10 +97,11 @@ class TrustChainCollector(Function):
         """
         _keyjar = self.upstream_get('attribute', 'keyjar')
         _httpc_params = _keyjar.httpc_params
+        logger.debug(f"Using HTTPC Params: {_keyjar.httpc_params}")
         try:
             response = self.upstream_get('attribute', 'httpc')("GET", url, **_httpc_params)
-        except ConnectionError:
-            logger.error(f'Could not connect to {url}')
+        except ConnectionError as err:
+            logger.error(f'Could not connect to {url}:{err}')
             raise
 
         if response.status_code == 200:

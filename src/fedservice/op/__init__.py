@@ -6,13 +6,13 @@ from typing import Union
 from cryptojwt import KeyJar
 from cryptojwt.utils import importer
 from idpyoidc.configure import Base
+from idpyoidc.server import allow_refresh_token
 from idpyoidc.server import ASConfiguration
+from idpyoidc.server import authz
+from idpyoidc.server import build_endpoints
 from idpyoidc.server import Endpoint
 from idpyoidc.server import EndpointContext
 from idpyoidc.server import OPConfiguration
-from idpyoidc.server import allow_refresh_token
-from idpyoidc.server import authz
-from idpyoidc.server import build_endpoints
 from idpyoidc.server.client_authn import client_auth_setup
 from idpyoidc.server.endpoint_context import init_service
 from idpyoidc.server.endpoint_context import init_user_info
@@ -45,7 +45,8 @@ class ServerEntity(ServerUnit):
             httpc: Optional[Any] = None,
             httpc_params: Optional[dict] = None,
             entity_id: Optional[str] = "",
-            key_conf: Optional[dict] = None
+            key_conf: Optional[dict] = None,
+            server_type: Optional[str] = "oidc"
     ):
         if config is None:
             config = {}
@@ -57,7 +58,10 @@ class ServerEntity(ServerUnit):
         if not isinstance(config, Base):
             config['issuer'] = entity_id
             config['base_url'] = entity_id
-            config = OPConfiguration(config)
+            if server_type == "oauth2":
+                config = ASConfiguration(config)
+            else:
+                config = OPConfiguration(config)
 
         self.config = config
 

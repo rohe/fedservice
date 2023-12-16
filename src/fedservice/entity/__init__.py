@@ -122,6 +122,10 @@ class FederationEntity(Unit):
         metadata = self.get_context().claims.prefer
         # collect endpoints
         metadata.update(self.get_endpoint_claims())
+        if "federation_trust_mark_status_endpoint" in metadata:
+            endp = self.server.get_endpoint("status")
+            _jwks = endp.trust_mark_issuer.keyjar.export_jwks()
+            metadata["jwks"]["keys"].extend(_jwks["keys"])
         return {"federation_entity": metadata}
 
     def get_preferences(self):
