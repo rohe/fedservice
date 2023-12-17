@@ -106,7 +106,7 @@ class FederationEntity(Message):
         # "trust_marks": SINGLE_OPTIONAL_JSON,
         "organization_name": SINGLE_OPTIONAL_STRING,
         # If it's a Trust Anchor
-        "trust_mark_owners":SINGLE_OPTIONAL_DICT,
+        "trust_mark_owners": SINGLE_OPTIONAL_DICT,
         "trust_mark_issuers": SINGLE_OPTIONAL_DICT
     }
 
@@ -387,7 +387,7 @@ class EntityStatement(JsonWebToken):
         'constraints': SINGLE_OPTIONAL_CONSTRAINS,
         "crit": OPTIONAL_LIST_OF_STRINGS,
         "policy_language_crit": OPTIONAL_LIST_OF_STRINGS,
-        'trust_marks': SINGLE_OPTIONAL_DICT,
+        'trust_marks': OPTIONAL_LIST_OF_STRINGS,
         'trust_anchor_id': SINGLE_OPTIONAL_STRING
     })
 
@@ -426,7 +426,8 @@ class TrustMark(JsonWebToken):
         "id": SINGLE_REQUIRED_STRING,
         "logo_uri": SINGLE_OPTIONAL_STRING,
         "exp": SINGLE_OPTIONAL_INT,
-        "ref": SINGLE_OPTIONAL_STRING
+        "ref": SINGLE_OPTIONAL_STRING,
+        "delegation": SINGLE_OPTIONAL_STRING
     })
 
     def verify(self, **kwargs):
@@ -484,6 +485,15 @@ class ResolveResponse(JsonWebToken):
         'trust_chain': OPTIONAL_LIST_OF_STRINGS,
         'trust_marks': OPTIONAL_LIST_OF_TRUST_MARKS
     })
+
+
+class ListRequest(Message):
+    c_param = {
+        "entity_type": SINGLE_OPTIONAL_STRING,
+        "trust_marked": SINGLE_OPTIONAL_BOOLEAN,
+        "trust_mark_id": SINGLE_OPTIONAL_STRING,
+        "intermediate": SINGLE_OPTIONAL_BOOLEAN
+    }
 
 
 class ListResponse(Message):

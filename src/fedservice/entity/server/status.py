@@ -46,13 +46,13 @@ class TrustMarkStatus(Endpoint):
         if 'trust_mark' in request:
             _mark = self.trust_mark_issuer.unpack_trust_mark(request['trust_mark'])
             if self.trust_mark_issuer.find(_mark['id'], _mark['sub']):
-                return {'response': json.dumps({'active': True})}
+                return {'response_args': {'active': True}}
         else:
             if 'sub' in request and 'id' in request:
                 if self.trust_mark_issuer.find(request['id'], request['sub']):
-                    return {'response': json.dumps({'active': True})}
+                    return {'response_args': {'active': True}}
 
-        return {'response_args': json.dumps({'active': False})}
+        return {'response_args': {'active': False}}
 
     def response_info(
             self,

@@ -16,7 +16,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 template_dir = os.path.join(dir_path, 'templates')
 
 
-def oidc_provider_init_app(config_file, name=None, **kwargs) -> Flask:
+def init_app(config_file, name=None, **kwargs) -> Flask:
     name = name or __name__
     app = Flask(name, static_url_path='', **kwargs)
 
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     name = sys.argv[1]
     conf = sys.argv[2]
     template_dir = os.path.join(dir_path, 'templates')
-    app = oidc_provider_init_app(conf, name, template_folder=template_dir)
+    app = init_app(conf, name, template_folder=template_dir)
     _web_conf = app.srv_config.web_conf
     context = create_context(dir_path, _web_conf)
     _cert = "{}/{}".format(dir_path, lower_or_upper(_web_conf, "server_cert"))

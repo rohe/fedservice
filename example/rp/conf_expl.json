@@ -17,7 +17,7 @@
     "handlers": {
       "default": {
         "class": "logging.FileHandler",
-        "filename": "expl/debug.log",
+        "filename": "log/rpe_debug.log",
         "formatter": "default"
       },
       "console": {
@@ -32,88 +32,13 @@
       }
     }
   },
-  "domain": "127.0.0.1",
-  "port": 4002,
-  "base_url": "https://{domain}:{port}",
-  "httpc_params": {
-    "verify": false
-  },
-  "rp_keys": {
-    "private_path": "expl/private/jwks.json",
-    "key_defs": [
-      {
-        "type": "RSA",
-        "key": "",
-        "use": [
-          "sig"
-        ]
-      },
-      {
-        "type": "EC",
-        "crv": "P-256",
-        "use": [
-          "sig"
-        ]
-      }
-    ],
-    "public_path": "static/expl_jwks.json",
-    "read_only": false,
-    "uri_path": "static/expl_jwks.json"
-  },
-  "client_preferences": {
-    "application_name": "rphandler",
-    "application_type": "web",
-    "contacts": [
-      "ops@example.com"
-    ],
-    "response_types": [
-      "code"
-    ],
-    "scope": [
-      "openid",
-      "profile",
-      "email",
-      "address",
-      "phone"
-    ],
-    "token_endpoint_auth_method": [
-      "private_key_jwt"
-    ]
-  },
-  "services": {
-    "discovery": {
-      "class": "fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery",
-      "kwargs": {}
+  "entity": {
+    "entity_id": "https://127.0.0.1:4002",
+    "httpc_params": {
+      "verify": false
     },
-    "registration": {
-      "class": "fedservice.rp.registration.Registration",
-      "kwargs": {}
-    },
-    "authorization": {
-      "class": "idpyoidc.client.oidc.authorization.Authorization",
-      "kwargs": {}
-    },
-    "accesstoken": {
-      "class": "idpyoidc.client.oidc.access_token.AccessToken",
-      "kwargs": {}
-    },
-    "refresh_accesstoken": {
-      "class": "idpyoidc.client.oidc.refresh_access_token.RefreshAccessToken",
-      "kwargs": {}
-    },
-    "userinfo": {
-      "class": "idpyoidc.client.oidc.userinfo.UserInfo",
-      "kwargs": {}
-    },
-    "end_session": {
-      "class": "idpyoidc.client.oidc.end_session.EndSession",
-      "kwargs": {}
-    }
-  },
-  "federation": {
-    "entity_id": "https://{domain}:{port}/{{}}",
-    "keys": {
-      "private_path": "expl/private/fed_keys.json",
+    "key_config": {
+      "private_path": "private/expl.fed.jwks.json",
       "key_defs": [
         {
           "type": "RSA",
@@ -130,42 +55,102 @@
           ]
         }
       ],
-      "public_path": "static/expl_fed_keys.json",
-      "read_only": false
+      "public_path": "static/expl_fed_jwks.json",
+      "read_only": false,
+      "uri_path": "static/expl_fed_jwks.json"
     },
-    "authority_hints": "expl/authority_hints.json",
-    "trusted_roots": "expl/trusted_roots.json",
-    "priority": [
-      "https://127.0.0.1:6000/eid/feide.no",
-      "https://127.0.0.1:6000/eid/swamid.se"
+    "authority_hints": "file:rp/rpe_authority_hints.json",
+    "trust_anchors": "file:rp/rpe_trust_anchors.json",
+    "endpoints": [
+      "fetch",
+      "entity_configuration"
     ],
-    "entity_type": "openid_relying_party",
-    "opponent_entity_type": "openid_provider",
-    "registration_type": "explmatic",
-    "endpoint": {
-      "fetch": {
-        "path": "fetch",
-        "class": "fedservice.entity.fetch.Fetch",
-        "kwargs": {
-          "client_authn_method": null
+    "entity_type": {
+      "openid_relying_party": {
+        "base_url": "https://127.0.0.1:4002",
+        "client_type": "oidc",
+        "key_conf": {
+          "private_path": "private/expl.rp.jwks.json",
+          "key_defs": [
+            {
+              "type": "RSA",
+              "key": "",
+              "use": [
+                "sig"
+              ]
+            },
+            {
+              "type": "EC",
+              "crv": "P-256",
+              "use": [
+                "sig"
+              ]
+            }
+          ],
+          "public_path": "static/expl_rp_jwks.json",
+          "read_only": false,
+          "uri_path": "static/expl_rp_jwks.json"
+        },
+        "preference": {
+          "application_name": "rphandler",
+          "application_type": "web",
+          "contacts": [
+            "ops@example.com"
+          ],
+          "response_types": [
+            "code"
+          ],
+          "scope": [
+            "openid",
+            "profile",
+            "email",
+            "address",
+            "phone"
+          ],
+          "token_endpoint_auth_method": [
+            "private_key_jwt"
+          ]
+        },
+        "services": {
+          "discovery": {
+            "class": "fedservice.rp.provider_info_discovery.FedProviderInfoDiscovery",
+            "kwargs": {}
+          },
+          "registration": {
+            "class": "fedservice.rp.registration.Registration",
+            "kwargs": {}
+          },
+          "authorization": {
+            "class": "idpyoidc.client.oidc.authorization.Authorization",
+            "kwargs": {}
+          },
+          "accesstoken": {
+            "class": "idpyoidc.client.oidc.access_token.AccessToken",
+            "kwargs": {}
+          },
+          "userinfo": {
+            "class": "idpyoidc.client.oidc.userinfo.UserInfo",
+            "kwargs": {}
+          }
+        },
+        "clients": {
+          "": {
+            "redirect_uris": null,
+            "local": {
+              "issuer": "https://127.0.0.1:5000",
+              "redirect_uris": [
+                "https://{domain}:{port}/authz_cb/local"
+              ]
+            }
+          }
         }
       }
     }
   },
-  "clients": {
-    "": {
-      "redirect_uris": null,
-    "local": {
-      "issuer": "https://{domain}:5000",
-      "redirect_uris": [
-        "https://{domain}:{port}/authz_cb/local"
-      ]
-    }
-  },
   "webserver": {
     "port": 4002,
-    "server_cert": "expl/certs/cert.pem",
-    "server_key": "expl/certs/key.pem",
+    "server_cert": "certs/cert.pem",
+    "server_key": "certs/key.pem",
     "domain": "127.0.0.1"
   }
 }

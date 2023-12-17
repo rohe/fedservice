@@ -51,9 +51,11 @@ class FederationContext(ImpExp):
 
         self.config = config
         self.upstream_get = upstream_get
-        self.entity_id = entity_id or config.get("entity_id")
+        self.entity_id = entity_id or config.get("entity_id",
+                                                 self.upstream_get("attribute", "entity_id"))
         self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
         self.trust_marks = trust_marks or config.get('trust_marks')
+        # self.issuer = self.entity_id
 
         self.claims = FederationEntityClaims(prefer=preference)
 
@@ -99,6 +101,12 @@ class FederationContext(ImpExp):
             config['preference'] = preference
         _keyjar = self.claims.load_conf(config, supports=self.supports(), keyjar=keyjar)
 
+        if self.upstream_get:
+            _unit = self.upstream_get('unit')
+            _unit.keyjar = _keyjar
+        else:
+            self.kejar = _keyjar
+
         self.setup_client_authn_methods()
 
     def supports(self):
@@ -135,6 +143,9 @@ class FederationContext(ImpExp):
             authority_hints = self.authority_hints
         if not lifetime:
             lifetime = self.default_lifetime
+
+        if self.trust_marks:
+            kwargs["trust_marks"] = self.trust_marks
 
         return create_entity_statement(iss, sub, key_jar=key_jar, metadata=metadata,
                                        metadata_policy=metadata_policy,

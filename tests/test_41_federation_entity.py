@@ -1,12 +1,7 @@
+from cryptojwt.jws.jws import factory
 import pytest
 import responses
-from cryptojwt.jws.jws import factory
 
-from fedservice.build_entity import FederationEntityBuilder
-from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
-from fedservice.defaults import LEAF_ENDPOINT
-from fedservice.entity import FederationEntity
-# Trust Anchor
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity.function.policy import TrustChainPolicy
@@ -16,10 +11,11 @@ from fedservice.entity.function.trust_mark_verifier import TrustMarkVerifier
 from fedservice.entity.function.verifier import TrustChainVerifier
 from fedservice.message import EntityStatement
 from fedservice.message import ResolveResponse
+from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
 
-TA_ID = "https://trust_anchor.example.com"
-TA_ID2 = "https://2nd.trust_anchor.example.com"
+TA1_ID = "https://trust_anchor.example.com"
+TA2_ID = "https://2nd.trust_anchor.example.com"
 LEAF_ID = "https://leaf.example.com"
 INTERMEDIATE_ID = "https://intermediate.example.com"
 TENNANT_ID = "https://example.org/tennant1"
@@ -29,8 +25,7 @@ TENNANT_ID = "https://example.org/tennant1"
 # It must have the openid-federation and fetch endpoints. It may have the
 # list and status endpoint. That's the case here.
 
-TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
-del TA_ENDPOINTS["resolve"]
+TA_ENDPOINTS = ["list", "fetch", "entity_configuration"]
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -42,36 +37,30 @@ class TestClient(object):
 
     @pytest.fixture(autouse=True)
     def create_entities(self):
-        TA = FederationEntityBuilder(
-            TA_ID,
+        self.ta = make_federation_entity(
+            entity_id=TA1_ID,
             preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            endpoints=TA_ENDPOINTS
         )
-        TA.add_endpoints(None, **TA_ENDPOINTS)
 
         # Leaf
 
-        ENT = FederationEntityBuilder(
-            LEAF_ID,
+        self.entity = make_federation_entity(
+            entity_id=LEAF_ID,
             preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"key_defs": KEYDEFS},
-            authority_hints=[TA_ID]
+            key_config={"key_defs": KEYDEFS},
+            authority_hints=[TA1_ID],
+            endpoints=["entity_configuration"]
         )
-        ENT.add_services()
-        ENT.add_functions()
-        ENT.add_endpoints(None, **LEAF_ENDPOINT)
 
-        self.ta = FederationEntity(**TA.conf)
-
-        self.entity = FederationEntity(**ENT.conf)
         self.entity.function.trust_chain_collector.trust_anchors = {
             self.ta.entity_id: self.ta.keyjar.export_jwks()
         }
@@ -132,72 +121,64 @@ class TestServer():
     @pytest.fixture(autouse=True)
     def create_entities(self):
         # Simple chain setup leaf->intermediate->trust anchor
-        TA = FederationEntityBuilder(
-            TA_ID,
+        self.ta = make_federation_entity(
+            TA1_ID,
             preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_config={"key_defs": KEYDEFS},
+            endpoints=TA_ENDPOINTS,
+            functions=[],
+            services=[]
         )
-        TA.add_endpoints(None, **TA_ENDPOINTS)
 
         # Intermediate
 
-        INT = FederationEntityBuilder(
+        self.intermediate = make_federation_entity(
             INTERMEDIATE_ID,
             preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"key_defs": KEYDEFS},
-            authority_hints=[TA_ID]
+            key_config={"key_defs": KEYDEFS},
+            authority_hints=[TA1_ID],
+            endpoints=["entity_configuration", "fetch", "list", "resolve"],
+            trust_anchors={TA1_ID: self.ta.keyjar.export_jwks()}
         )
-        INT.add_services()
-        INT.add_functions()
-        INT.add_endpoints()
 
         # Leaf
 
-        ENT = FederationEntityBuilder(
+        self.leaf = make_federation_entity(
             LEAF_ID,
             preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"key_defs": KEYDEFS},
-            authority_hints=[INTERMEDIATE_ID]
-        )
-        ENT.add_services()
-        ENT.add_functions()
-        ENT.add_endpoints(None, **LEAF_ENDPOINT)
-
-        self.ta = FederationEntity(**TA.conf)
-
-        self.intermediate = FederationEntity(**INT.conf)
-        self.intermediate.function.trust_chain_collector.add_trust_anchor(
-            self.ta.entity_id, self.ta.keyjar.export_jwks()
-        )
-
-        self.leaf = FederationEntity(**ENT.conf)
-        self.leaf.function.trust_chain_collector.add_trust_anchor(
-            self.ta.entity_id, self.ta.keyjar.export_jwks()
+            key_config={"key_defs": KEYDEFS},
+            authority_hints=[INTERMEDIATE_ID],
+            endpoints=["entity_configuration"],
+            trust_anchors={TA1_ID: self.ta.keyjar.export_jwks()}
         )
 
         self.intermediate.server.subordinate = {
             self.leaf.entity_id: {
                 "jwks": self.leaf.keyjar.export_jwks(),
-                'authority_hints': [TA_ID]
+                'authority_hints': [INTERMEDIATE_ID]
             }
         }
 
         self.ta.server.subordinate = {
             self.intermediate.entity_id: {
                 "jwks": self.intermediate.keyjar.export_jwks(),
-                'authority_hints': [TA_ID]
+                'authority_hints': [TA1_ID],
+                "registration_info": {
+                    "intermediate": True,
+                    "entity_types": ["federation_entity"]
+                }
             }
         }
 
@@ -211,13 +192,11 @@ class TestServer():
         _client = self.leaf.client
         assert _client.get_service_names() == {'entity_configuration',
                                                'entity_statement',
-                                               'trust_mark_status',
                                                'list',
                                                'resolve'}
 
         assert _client.get_service('entity_configuration').service_name == 'entity_configuration'
         assert _client.get_service('entity_statement').service_name == 'entity_statement'
-        assert _client.get_service('trust_mark_status').service_name == 'trust_mark_status'
 
         assert set(self.leaf.server.endpoint.keys()) == {'entity_configuration'}
 
@@ -236,9 +215,7 @@ class TestServer():
         assert entity_configuration['iss'] == self.leaf.entity_id
         assert entity_configuration['sub'] == self.leaf.entity_id
         assert set(entity_configuration['metadata']['federation_entity'].keys()) == {
-            'organization_name',
-            'homepage_uri',
-            'contacts'}
+            'organization_name', 'homepage_uri', 'contacts', 'jwks'}
 
     def test_fetch(self):
         _endpoint = self.ta.get_endpoint('fetch')
@@ -288,104 +265,89 @@ class TestFunction:
     @pytest.fixture(autouse=True)
     def create_entities(self):
         # Two chains leaf->intermediate->trust_anchor_1 and leaf->trust_anchor_2
-        #       TA     TA2
+        #       TA1     TA2_ID
         #       |      |
         #      IM      |
         #       \      |
         #        +--- LEAF
 
         # trust anchor 1 and 2
-        TA = FederationEntityBuilder(
-            TA_ID,
+        self.ta1 = make_federation_entity(
+            TA1_ID,
             preference={
-                "organization_name": "The example federation operator",
-                "homepage_uri": "https://ta.example.com",
-                "contacts": "operations@ta.example.com"
+                "organization_name": "The first federation operator",
+                "homepage_uri": "https://ta1.example.com",
+                "contacts": "operations@ta1.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_config={"key_defs": KEYDEFS},
+            endpoints=TA_ENDPOINTS
         )
-        TA.add_endpoints(None, **TA_ENDPOINTS)
-        TA2 = FederationEntityBuilder(
-            TA_ID2,
+
+        self.ta2 = make_federation_entity(
+            TA2_ID,
             preference={
                 "organization_name": "The second federation operator",
-                "homepage_uri": "https://2nd.example.com",
-                "contacts": "operations@2nd.example.com"
+                "homepage_uri": "https://ta2.example.com",
+                "contacts": "operations@ta2.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_config={"key_defs": KEYDEFS},
+            endpoints=TA_ENDPOINTS
         )
-        TA2.add_endpoints(None, **TA_ENDPOINTS)
 
         # Intermediate
 
-        INT = FederationEntityBuilder(
+        self.intermediate = make_federation_entity(
             INTERMEDIATE_ID,
             preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"key_defs": KEYDEFS},
-            authority_hints=[TA_ID]
+            key_config={"key_defs": KEYDEFS},
+            authority_hints=[TA1_ID],
+            endpoints=["entity_configuration", "fetch", "list"],
+            trust_anchors={self.ta1.entity_id: self.ta1.keyjar.export_jwks()}
         )
-        INT.add_services()
-        INT.add_functions()
-        INT.add_endpoints()
 
         # Leaf
 
-        ENT = FederationEntityBuilder(
+        self.leaf = make_federation_entity(
             LEAF_ID,
             preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"key_defs": KEYDEFS},
-            authority_hints=[INTERMEDIATE_ID, TA_ID2]
-        )
-        ENT.add_services()
-        ENT.add_functions()
-        ENT.add_endpoints(None, **LEAF_ENDPOINT)
-
-        self.ta1 = FederationEntity(**TA.conf)
-
-        self.intermediate = FederationEntity(**INT.conf)
-        self.intermediate.function.trust_chain_collector.add_trust_anchor(
-            self.ta1.entity_id, self.ta1.keyjar.export_jwks()
-        )
-
-        self.leaf = FederationEntity(**ENT.conf)
-        self.leaf.function.trust_chain_collector.add_trust_anchor(
-            self.ta1.entity_id, self.ta1.keyjar.export_jwks()
-        )
-
-        self.intermediate.server.subordinate = {
-            self.leaf.entity_id: {
-                "jwks": self.leaf.keyjar.export_jwks(),
-                'authority_hints': [TA_ID]
+            key_config={"key_defs": KEYDEFS},
+            authority_hints=[INTERMEDIATE_ID, TA2_ID],
+            endpoints=["entity_configuration"],
+            trust_anchors={
+                self.ta2.entity_id: self.ta2.keyjar.export_jwks(),
+                self.ta1.entity_id: self.ta1.keyjar.export_jwks()
             }
-        }
+        )
+
+        # The first chain
 
         self.ta1.server.subordinate = {
             self.intermediate.entity_id: {
                 "jwks": self.intermediate.keyjar.export_jwks(),
-                'authority_hints': [TA_ID]
+                'authority_hints': [TA1_ID]
+            }
+        }
+        self.intermediate.server.subordinate = {
+            self.leaf.entity_id: {
+                "jwks": self.leaf.keyjar.export_jwks(),
+                'authority_hints': [INTERMEDIATE_ID]
             }
         }
 
         # the second chain
 
-        self.ta2 = FederationEntity(**TA2.conf)
-
-        self.leaf.function.trust_chain_collector.add_trust_anchor(
-            self.ta2.entity_id, self.ta2.keyjar.export_jwks()
-        )
-
         self.ta2.server.subordinate = {
             self.leaf.entity_id: {
                 "jwks": self.leaf.keyjar.export_jwks(),
-                'authority_hints': [TA_ID2]
+                'authority_hints': [TA2_ID]
             }
         }
 
@@ -409,7 +371,7 @@ class TestFunction:
 
         assert len(_chains) == 2
 
-        # Intermediate doesn't have TA2 as trust anchor
+        # Intermediate doesn't have TA2_ID as trust anchor
         _trust_chains = verify_trust_chains(_federation_entity, _chains, _entity_conf)
         assert len(_trust_chains) == 1
 
@@ -448,3 +410,7 @@ class TestFunction:
         assert self.leaf.function.upstream_get('attribute', 'keyjar') == self.leaf.keyjar
         assert self.leaf.function.policy.upstream_get('attribute', 'keyjar') == self.leaf.keyjar
         assert self.leaf.server.upstream_get('attribute', 'keyjar') == self.leaf.keyjar
+
+    def test_trust_anchors_attribute(self):
+        assert set(self.leaf.trust_anchors.keys()) == {'https://trust_anchor.example.com',
+                                                       'https://2nd.trust_anchor.example.com'}

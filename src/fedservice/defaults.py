@@ -1,9 +1,9 @@
 from fedservice.message import AuthorizationServerMetadata
 from fedservice.message import FederationEntity
+from fedservice.message import OauthClientMetadata
 from fedservice.message import OAuthProtectedResourceMetadata
 from fedservice.message import OIDCRPMetadata
 from fedservice.message import OPMetadataMessage
-from fedservice.message import OauthClientMetadata
 from fedservice.message import TrustMarkIssuerMetadata
 
 ENTITY_TYPE2METADATA_CLASS = {
@@ -23,7 +23,15 @@ DEFAULT_OIDC_FED_SERVICES = {
         'class': 'fedservice.rp.registration.Registration'},
 }
 
-FEDERATION_ENTITY_SERVICES = {
+SERVICES = {
+    'discovery': {
+        'class': 'fedservice.rp.provider_info_discovery.ProviderInfoDiscovery',
+        "kwargs": {}
+    },
+    'registration': {
+        'class': 'fedservice.rp.registration.Registration',
+        "kwargs": {}
+    },
     "entity_configuration": {
         "class": 'fedservice.entity.client.entity_configuration.EntityConfiguration',
         "kwargs": {}
@@ -43,12 +51,24 @@ FEDERATION_ENTITY_SERVICES = {
     "list": {
         "class": 'fedservice.entity.client.list.List',
         "kwargs": {}
+    },
+    "metadata_verification": {
+        "class": "fedservice.entity.client.metadata_verification.MetadataVerification",
+        "kwargs": {}
     }
 }
 
+
+def federation_services(*api):
+    return {a: SERVICES[a] for a in api}
+
+
+FEDERATION_ENTITY_SERVICES = federation_services("entity_configuration", "entity_statement",
+                                                 "resolve", "list")
+
 DEFAULT_FEDERATION_ENTITY_SERVICES = FEDERATION_ENTITY_SERVICES
 
-DEFAULT_FEDERATION_ENTITY_ENDPOINTS = {
+FEDERATION_ENDPOINTS = {
     "entity_configuration": {
         "path": ".well-known/openid-federation",
         "class": 'fedservice.entity.server.entity_configuration.EntityConfiguration',
@@ -69,12 +89,31 @@ DEFAULT_FEDERATION_ENTITY_ENDPOINTS = {
         "class": 'fedservice.entity.server.resolve.Resolve',
         "kwargs": {}
     },
-    # "status": {
-    #     "path": "status",
-    #     "class": 'fedservice.entity.server.status.TrustMarkStatus',
-    #     "kwargs": {}
-    # }
+    "status": {
+        "path": "status",
+        "class": 'fedservice.entity.server.status.TrustMarkStatus',
+        "kwargs": {}
+    },
+    "metadata_verification": {
+        "path": "verifier",
+        "class": "fedservice.entity.server.metadata_verification.MetadataVerification",
+        "kwargs": {}
+    }
 }
+
+
+def federation_endpoints(*apis) -> dict:
+    return {a: FEDERATION_ENDPOINTS[a] for a in apis}
+
+
+INTERMEDIATE_ENDPOINTS = federation_endpoints("entity_configuration", "fetch", "list")
+DEFAULT_FEDERATION_ENTITY_ENDPOINTS = INTERMEDIATE_ENDPOINTS
+
+LEAF_ENDPOINTS = federation_endpoints("entity_configuration")
+
+TRUST_MARK_ISSUER_ENDPOINTS = federation_endpoints("entity_configuration", "status")
+
+WELL_KNOWN_FEDERATION_ENDPOINT = "{}/.well-known/openid-federation"
 
 FEDERATION_ENTITY_FUNCTIONS = {
     "trust_chain_collector": {
@@ -95,26 +134,17 @@ FEDERATION_ENTITY_FUNCTIONS = {
     'trust_mark_verifier': {
         'class': 'fedservice.entity.function.trust_mark_verifier.TrustMarkVerifier',
         'kwargs': {}
-    }
-}
-
-LEAF_ENDPOINT = {
-    "entity_configuration": {
-        "path": ".well-known/openid-federation",
-        "class": 'fedservice.entity.server.entity_configuration.EntityConfiguration',
-        "kwargs": {}
-    }
-}
-
-TRUST_MARK_ISSUER_ENDPOINTS = {
-    "entity_configuration": {
-        "path": ".well-known/openid-federation",
-        "class": 'fedservice.entity.server.entity_configuration.EntityConfiguration',
-        "kwargs": {}
     },
-    "status": {
-        "path": "status",
-        "class": 'fedservice.entity.server.status.TrustMarkStatus',
-        "kwargs": {}
+    'metadata_verifier': {
+        'class': 'fedservice.entity.function.metadata_verifier.MetadataVerifier',
+        'kwargs': {}
     }
 }
+
+
+def federation_functions(*apis):
+    return {a: FEDERATION_ENTITY_FUNCTIONS[a] for a in apis}
+
+
+DEFAULT_FEDERATION_ENTITY_FUNCTIONS = federation_functions("trust_chain_collector", "verifier",
+                                                           "policy", "trust_mark_verifier")

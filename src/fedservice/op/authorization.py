@@ -1,7 +1,6 @@
 import logging
 from typing import List
 from typing import Optional
-from typing import Sequence
 
 from idpyoidc.message import oidc
 from idpyoidc.message.oidc import RegistrationRequest
@@ -48,7 +47,7 @@ class Authorization(authorization.Authorization):
     def find_client_keys(self, iss):
         return self.do_automatic_registration(iss, [])
 
-    def do_automatic_registration(self, entity_id:str, provided_trust_chain: List[str]):
+    def do_automatic_registration(self, entity_id: str, provided_trust_chain: List[str]):
         if provided_trust_chain:
             # So I get the TA's entity statement first
             provided_trust_chain.reverse()

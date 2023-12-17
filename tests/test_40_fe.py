@@ -4,9 +4,9 @@ import os
 import pytest
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import init_key_jar
+from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 
-from fedservice.build_entity import FederationEntityBuilder
-from fedservice.entity import FederationEntity
+from fedservice.utils import make_federation_entity
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -25,47 +25,49 @@ ENTITY_ID = "https://entity.example.org"
 CHILD_ID = "https://op.example.com"
 ISSUER = "https://example.org/adm1"
 
+TMI_ID = "https://tmi.example.org"
+SIRTIFI_TRUST_MARK_ID = "https://refeds.org/sirtfi"
+
 
 class TestFederationEntity(object):
 
     @pytest.fixture(autouse=True)
     def server_setup(self):
-        ENT = FederationEntityBuilder(
+        self.entity = make_federation_entity(
             ENTITY_ID,
             preference={
                 "organization_name": "The leaf operator",
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf={"uri_path": "static/fed_jwks.json", "key_defs": KEYDEFS},
-            authority_hints=['https://ntnu.no']
-        )
-        ENT.add_services()
-        ENT.add_functions()
-        ENT.add_endpoints()
-        ENT.set_attr(
-            'server',
-            {
-                "subordinate": {
-                    'https://op.example.com': {
-                        "jwks": {"keys": SUB_KEYJAR.export_jwks()},
-                        "metadata_policy": {
-                            "openid_provider": {
-                                "organization_name": {"value": "NTNU"}
+            key_config={"uri_path": "static/fed_jwks.json", "key_defs": KEYDEFS},
+            authority_hints=['https://ntnu.no'],
+            endpoints=["entity_configuration", "fetch", "list", "resolve", "status"],
+            item_args={
+                "endpoint": {
+                    "status": {
+                        "trust_mark_issuer": {
+                            "class": "fedservice.trust_mark_issuer.TrustMarkIssuer",
+                            "kwargs": {
+                                "key_conf": {"key_defs": DEFAULT_KEY_DEFS},
+                                "trust_mark_specification": {"https://refeds.org/sirtfi": {}}
                             }
                         }
                     }
                 }
             }
         )
-        # ENT.conf['server']['kwargs']['endpoint']['status']['kwargs'][
-        #     'trust_mark_issuer'] = {
-        #     'class': TrustMarkIssuer,
-        #     'kwargs': {
-        #         'key_conf': {"key_defs": KEYDEFS}
-        #     }
-        # }
-        self.entity = FederationEntity(**ENT.conf)
+
+        self.entity.server.subordinate = {
+            'https://op.example.com': {
+                "jwks": {"keys": SUB_KEYJAR.export_jwks()},
+                "metadata_policy": {
+                    "openid_provider": {
+                        "organization_name": {"value": "NTNU"}
+                    }
+                }
+            }
+        }
 
     def test_client(self):
         assert self.entity
@@ -98,7 +100,8 @@ class TestFederationEntity(object):
                          'federation_fetch_endpoint',
                          'federation_list_endpoint',
                          'federation_resolve_endpoint',
-                         'federation_status_endpoint')
+                         'federation_trust_mark_status_endpoint',
+                         'jwks')
 
     def test_fetch(self):
         _endpoint = self.entity.server.get_endpoint('fetch')

@@ -2,14 +2,14 @@ import logging
 from typing import Optional
 from typing import Union
 
-from idpyoidc.message import oidc
 from idpyoidc.message import Message
+from idpyoidc.message import oidc
 from idpyoidc.server.endpoint import Endpoint
 
-from fedservice.entity import get_federation_entity
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
+from fedservice.entity.utils import get_federation_entity
 from fedservice.entity_statement.create import create_entity_statement
 
 logger = logging.getLogger(__name__)

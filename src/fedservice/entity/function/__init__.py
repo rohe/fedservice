@@ -9,7 +9,7 @@ from cryptojwt.jwt import JWT
 from cryptojwt.key_jar import KeyJar
 from idpyoidc.impexp import ImpExp
 
-from fedservice.entity import get_federation_entity
+from fedservice.entity.utils import get_federation_entity
 
 logger = logging.getLogger(__name__)
 
@@ -19,21 +19,22 @@ def unverified_entity_statement(signed_jwt):
     return _jws.jwt.payload()
 
 
-def verify_self_signed_signature(config):
+def verify_self_signed_signature(token):
     """
     Verify signature using only keys in the entity statement.
     Will raise exception if signature verification fails.
 
-    :param config: Signed JWT
+    :param token: Signed JWT
     :return: Payload of the signed JWT
     """
 
-    payload = unverified_entity_statement(config)
+    payload = unverified_entity_statement(token)
     keyjar = KeyJar()
     keyjar.import_jwks(payload['jwks'], payload['iss'])
 
     _jwt = JWT(key_jar=keyjar)
-    _val = _jwt.unpack(config)
+    _val = _jwt.unpack(token)
+    _val["_jws"] = token
     return _val
 
 
@@ -94,6 +95,7 @@ def verify_trust_chains(unit, chains: List[List[str]], *entity_statements):
     #
     _verifier = get_federation_entity(unit).function.verifier
 
+    logger.debug("verify_trust_chains")
     res = []
     for c in chains:
         if entity_statements:
@@ -110,7 +112,6 @@ def apply_policies(unit, trust_chains):
 
     :param unit: A Unit instance
     :param trust_chains: List of TrustChain instances
-    :param signed_entity_configuration: An Entity Configuration
     :return: List of processed TrustChain instances
     """
     _policy_applier = get_federation_entity(unit).function.policy
@@ -133,3 +134,24 @@ class Function(ImpExp):
     def __init__(self, upstream_get: Callable):
         ImpExp.__init__(self)
         self.upstream_get = upstream_get
+
+
+def get_verified_trust_chains(unit, entity_id):
+    chains, leaf_ec = collect_trust_chains(unit, entity_id)
+    if len(chains) == 0:
+        return []
+
+    trust_chains = verify_trust_chains(unit, chains, leaf_ec)
+    trust_chains = apply_policies(unit, trust_chains)
+    return trust_chains
+
+
+def get_entity_endpoint(unit, entity_id, metadata_type, metadata_parameter):
+    # get endpoint from the Entity Configuration
+
+    trust_chains = get_verified_trust_chains(unit, entity_id)
+    # pick one
+    if trust_chains:
+        return trust_chains[0].metadata[metadata_type][metadata_parameter]
+    else:
+        return ""

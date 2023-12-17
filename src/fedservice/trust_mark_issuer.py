@@ -9,6 +9,7 @@ from cryptojwt.jwt import utc_time_sans_frac
 from idpyoidc.node import create_keyjar
 from idpyoidc.server.endpoint_context import init_service
 
+from fedservice.entity.utils import get_federation_entity
 from fedservice.message import TrustMark
 
 
@@ -16,16 +17,16 @@ class FileDB(object):
 
     def __init__(self, **kwargs):
         self.config = kwargs
-        for entity_id, file_name in self.config.items():
+        for trust_mark_id, file_name in self.config.items():
             if not os.path.exists(file_name):
                 # Only need to touch it
                 fp = open(file_name, "w")
                 fp.close()
 
     def add(self, tm_info: dict):
-        entity_id = tm_info['id']
+        trust_mark_id = tm_info['id']
         # adds a line with info about a trust mark info to the end of a file
-        with open(self.config[entity_id], "a") as fp:
+        with open(self.config[trust_mark_id], "a") as fp:
             fp.write(json.dumps(tm_info) + '\n')
 
     def _match(self, sub, iat, tmi):
@@ -37,8 +38,9 @@ class FileDB(object):
                 return True
         return False
 
-    def find(self, entity_id: str, sub: str, iat: Optional[int] = 0):
-        with open(self.config[entity_id], "r") as fp:
+    def find(self, trust_mark_id: str, sub: str, iat: Optional[int] = 0):
+        with open(self.config[trust_mark_id], "r") as fp:
+            # Get the last issued
             for line in reversed(list(fp)):
                 _tmi = json.loads(line.rstrip())
                 if self._match(sub, iat, _tmi):
@@ -84,8 +86,8 @@ class SimpleDB(object):
         else:
             self._db[tm_info['id']] = {tm_info["sub"]: tm_info}
 
-    def find(self, entity_id, sub: str, iat: Optional[int] = 0) -> bool:
-        _tmi = self._db[entity_id].get(sub)
+    def find(self, trust_mark_id, sub: str, iat: Optional[int] = 0) -> bool:
+        _tmi = self._db[trust_mark_id].get(sub)
         if _tmi:
             if iat:
                 if iat == _tmi["iat"]:
@@ -176,8 +178,8 @@ class TrustMarkIssuer(object):
             content.update(kwargs)
         self.issued.add(content)
 
-        packer = JWT(key_jar=self.upstream_get('attribute', 'keyjar'),
-                     iss=self.upstream_get('attribute', 'entity_id'))
+        _federation_entity = get_federation_entity(self)
+        packer = JWT(key_jar=_federation_entity.keyjar, iss=_federation_entity.entity_id)
         return packer.pack(payload=content)
 
     def dump_trust_marks(self):
@@ -207,5 +209,5 @@ class TrustMarkIssuer(object):
             kwargs['sub'] = _entity_id
         return packer.pack(payload=kwargs)
 
-    def find(self, entity_id, sub: str, iat: Optional[int] = 0) -> bool:
-        return self.issued.find(entity_id=entity_id, sub=sub, iat=iat)
+    def find(self, trust_mark_id, sub: str, iat: Optional[int] = 0) -> bool:
+        return self.issued.find(trust_mark_id=trust_mark_id, sub=sub, iat=iat)

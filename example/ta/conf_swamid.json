@@ -17,7 +17,7 @@
     "handlers": {
       "default": {
         "class": "logging.FileHandler",
-        "filename": "swamid/debug.log",
+        "filename": "log/swamid_debug.log",
         "formatter": "default"
       },
       "console": {
@@ -32,10 +32,10 @@
       }
     }
   },
-  "federation": {
+  "entity": {
     "entity_id": "https://127.0.0.1:7002",
-    "keys": {
-      "private_path": "swamid/fed_keys.json",
+    "key_config": {
+      "private_path": "private/swamid_fed_keys.json",
       "key_defs": [
         {
           "type": "RSA",
@@ -54,32 +54,12 @@
       "public_path": "static/swamid_fed_keys.json",
       "read_only": false
     },
-    "entity_type": "federation_entity",
-    "opponent_entity_type": "federation_entity",
-    "endpoint": {
-      "fetch": {
-        "path": "fetch",
-        "class": "fedservice.entity.fetch.Fetch",
-        "kwargs": {
-          "client_authn_method": null
-        }
-      },
-      "list": {
-        "path": "list",
-        "class": "fedservice.entity.list.List",
-        "kwargs": {
-          "client_authn_method": null,
-          "subordinates": {
-            "class": "idpyoidc.storage.abfile.AbstractFileSystem",
-            "kwargs": {
-              "fdir": "swamid/subordinates",
-              "value_conv": "idpyoidc.util.JSON",
-              "key_conv": "idpyoidc.util.QPKey"
-            }
-          }
-        }
-      }
-    }
+    "endpoints": [
+      "fetch",
+      "list",
+      "entity_configuration"
+    ],
+    "subordinate": "file:ta/swamid_subordinates.json"
   },
   "webserver": {
     "server_cert": "certs/example.crt",

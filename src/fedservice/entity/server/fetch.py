@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 class Fetch(Endpoint):
     request_cls = oidc.Message
     response_cls = EntityStatement
-    response_format = 'jws'
+    response_format = "jose"
+    response_content_type="application/entity-statement+jwt"
     name = "fetch"
     endpoint_name = "federation_fetch_endpoint"
 
@@ -45,6 +46,8 @@ class Fetch(Endpoint):
             # Contains jwks and possibly entity type and authority_hints
             _response = _server.subordinate.get(_sub)
             if not _response:
+                logger.debug(f"Unknown subordinate: {_sub}")
+                logger.debug(f"Known subordinates: {list(_server.subordinate.keys())}")
                 raise UnknownEntity(_sub)
 
             if not 'authority_hints' in _response:

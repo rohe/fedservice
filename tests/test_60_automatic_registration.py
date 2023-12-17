@@ -2,30 +2,24 @@ import os
 
 import pytest
 import responses
+from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.oidc.token import Token
 from idpyoidc.server.oidc.userinfo import UserInfo
 
-from fedservice.build_entity import FederationEntityBuilder
-from fedservice.combo import FederationCombo
-from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
-from fedservice.defaults import LEAF_ENDPOINT
-from fedservice.entity import FederationEntity
+from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.op import ServerEntity
 from fedservice.op.authorization import Authorization
 from fedservice.op.registration import Registration
 from fedservice.rp import ClientEntity
+from fedservice.utils import make_federation_combo
+from fedservice.utils import make_federation_entity
 from . import create_trust_chain_messages
 from . import CRYPT_CONFIG
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
-
-KEYDEFS = [
-    {"type": "RSA", "use": ["sig"]},
-    {"type": "EC", "crv": "P-256", "use": ["sig"]},
-]
 
 COOKIE_KEYDEFS = [
     {"type": "oct", "kid": "sig", "use": ["sig"]},
@@ -37,8 +31,7 @@ RP_ID = "https://rp.example.org"
 OP_ID = "https://op.example.org"
 IM_ID = "https://im.example.org"
 
-TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
-del TA_ENDPOINTS["resolve"]
+TA_ENDPOINTS = ["entity_configuration", "fetch", "metadata_verification"]
 
 RESPONSE_TYPES_SUPPORTED = [
     ["code"],
@@ -67,46 +60,37 @@ class TestAutomatic(object):
 
         # TRUST ANCHOR
 
-        TA = FederationEntityBuilder(
+        self.ta = make_federation_entity(
             TA_ID,
             preference={
                 "organization_name": "The example federation operator",
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
             },
-            key_conf={"key_defs": KEYDEFS}
+            key_config={"key_defs": DEFAULT_KEY_DEFS},
+            endpoints=TA_ENDPOINTS
         )
-        TA.add_endpoints(None, **TA_ENDPOINTS)
-        # TA.conf['server']['kwargs']['endpoint']['status']['kwargs'][
-        #     'trust_mark_issuer'] = {
-        #     'class': TrustMarkIssuer,
-        #     'kwargs': {
-        #         'key_conf': {"key_defs": KEYDEFS}
-        #     }
-        # }
-
-        self.ta = FederationEntity(**TA.conf)
 
         ANCHOR = {TA_ID: self.ta.keyjar.export_jwks()}
 
         # intermediate
 
-        INT = FederationEntityBuilder(
+        self.im = make_federation_entity(
             IM_ID,
             preference={
                 "organization_name": "The organization",
                 "homepage_uri": "https://example.com",
                 "contacts": "operations@example.com"
             },
-            key_conf={"key_defs": KEYDEFS},
-            authority_hints=[TA_ID]
+            key_config={"key_defs": DEFAULT_KEY_DEFS},
+            authority_hints=[TA_ID],
+            trust_anchors=ANCHOR
         )
-        INT.add_services()
-        INT.add_functions()
-        INT.add_endpoints()
+        self.ta.server.subordinate[IM_ID] = {
+            "jwks": self.im.keyjar.export_jwks(),
+            'authority_hints': [TA_ID]
 
-        # Intermediate
-        self.im = FederationEntity(**INT.conf)
+        }
 
         ########################################
         # Leaf RP
@@ -116,210 +100,187 @@ class TestAutomatic(object):
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
         oidc_service['authorization'] = {"class": "fedservice.rp.authorization.Authorization"}
 
-        RP_FE = FederationEntityBuilder(
+        self.rp = make_federation_combo(
+            entity_id=RP_ID,
             preference={
                 "organization_name": "The RP",
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
             },
-            authority_hints=[IM_ID]
-        )
-        RP_FE.add_services()
-        RP_FE.add_functions()
-        RP_FE.add_endpoints(**LEAF_ENDPOINT)
-        RP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
-            'trust_anchors'] = ANCHOR
-
-        RP_CONFIG = {
-            'entity_id': RP_ID,
-            'key_conf': {"key_defs": KEYDEFS},  # One federation key set
-            "federation_entity": {
-                'class': FederationEntity,
-                'kwargs': RP_FE.conf
-            },
-            "openid_relying_party": {
-                'class': ClientEntity,
-                'kwargs': {
-                    # OIDC core keys
-                    "key_conf": {"uri_path": "static/jwks.json", "key_defs": KEYDEFS},
-                    'config': {
-                        'base_url': RP_ID,
-                        'client_id': RP_ID,
-                        'client_secret': 'a longesh password',
-                        'client_type': 'oidc',
-                        'redirect_uris': ['https://example.com/cli/authz_cb'],
-                        "preference": {
-                            "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
-                            "id_token_signed_response_alg": "ES256",
-                            "token_endpoint_auth_method": "client_secret_basic",
-                            "token_endpoint_auth_signing_alg": "ES256",
-                            "client_registration_types": ["automatic"],
-                            "request_parameter_supported": True
+            authority_hints=[IM_ID],
+            key_config={"key_defs": DEFAULT_KEY_DEFS},
+            endpoints=LEAF_ENDPOINTS,
+            trust_anchors=ANCHOR,
+            entity_type={
+                "openid_relying_party": {
+                    'class': ClientEntity,
+                    'kwargs': {
+                        # OIDC core keys
+                        "key_conf": {"uri_path": "static/jwks.json", "key_defs": DEFAULT_KEY_DEFS},
+                        'config': {
+                            'base_url': RP_ID,
+                            'client_id': RP_ID,
+                            'client_secret': 'a longesh password',
+                            'client_type': 'oidc',
+                            'redirect_uris': ['https://example.com/cli/authz_cb'],
+                            "preference": {
+                                "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
+                                "id_token_signed_response_alg": "ES256",
+                                "token_endpoint_auth_method": "client_secret_basic",
+                                "token_endpoint_auth_signing_alg": "ES256",
+                                "client_registration_types": ["automatic"],
+                                "request_parameter_supported": True
+                            },
+                            "authorization_request_endpoints": [
+                                'authorization_endpoint', 'pushed_authorization_request_endpoint'
+                            ],
+                            "add_ons": {
+                                "pushed_authorization": {
+                                    "function": "idpyoidc.client.oauth2.add_on.par.add_support",
+                                    "kwargs": {
+                                        "body_format": "jws",
+                                        "signing_algorithm": "RS256",
+                                        "http_client": None,
+                                        "merge_rule": "lax",
+                                    },
+                                }
+                            },
                         },
-                        "authorization_request_endpoints": [
-                            'authorization_endpoint', 'pushed_authorization_request_endpoint'
-                        ],
-                        "add_ons": {
-                            "pushed_authorization": {
-                                "function": "idpyoidc.client.oauth2.add_on.pushed_authorization.add_support",
-                                "kwargs": {
-                                    "body_format": "jws",
-                                    "signing_algorithm": "RS256",
-                                    "http_client": None,
-                                    "merge_rule": "lax",
-                                },
-                            }
-                        },
-                    },
-                    "services": oidc_service
+                        "services": oidc_service
+                    }
                 }
             }
-        }
 
-        self.rp = FederationCombo(RP_CONFIG)
+        )
+
+        self.im.server.subordinate[RP_ID] = {
+            "jwks": self.rp["federation_entity"].keyjar.export_jwks(),
+            'authority_hints': [IM_ID]
+        }
 
         ########################################
         # Leaf OP
         ########################################
 
-        OP_FE = FederationEntityBuilder(
+        self.op = make_federation_combo(
+            entity_id=OP_ID,
             preference={
                 "organization_name": "The OP operator",
                 "homepage_uri": "https://op.example.com",
                 "contacts": "operations@op.example.com"
             },
-            authority_hints=[TA_ID]
-        )
-        OP_FE.add_services()
-        OP_FE.add_functions()
-        OP_FE.add_endpoints(**LEAF_ENDPOINT)
-        OP_FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
-            'trust_anchors'] = ANCHOR
-
-        OP_CONFIG = {
-            'entity_id': OP_ID,
-            'key_conf': {"key_defs": KEYDEFS},
-            "federation_entity": {
-                'class': FederationEntity,
-                'kwargs': OP_FE.conf
-            },
-            "openid_provider": {
-                'class': ServerEntity,
-                'kwargs': {
-                    'config': {
-                        "issuer": "https://example.com/",
-                        "httpc_params": {"verify": False, "timeout": 1},
-                        "subject_types_supported": ["public", "pairwise", "ephemeral"],
-                        "grant_types_supported": [
-                            "authorization_code",
-                            "implicit",
-                            "urn:ietf:params:oauth:grant-type:jwt-bearer",
-                            "refresh_token",
-                        ],
-                        "token_handler_args": {
-                            "jwks_def": {
-                                "private_path": "private/token_jwks.json",
-                                "read_only": False,
-                                "key_defs": [
-                                    {"type": "oct", "bytes": "24", "use": ["enc"], "kid": "code"}],
-                            },
-                            "code": {"lifetime": 600, "kwargs": {"crypt_conf": CRYPT_CONFIG}},
-                            "token": {
-                                "class": "idpyoidc.server.token.jwt_token.JWTToken",
-                                "kwargs": {
-                                    "lifetime": 3600,
-                                    "add_claims_by_scope": True,
-                                    "aud": ["https://example.org/appl"],
+            authority_hints=[TA_ID],
+            endpoints=LEAF_ENDPOINTS,
+            trust_anchors=ANCHOR,
+            key_config={"key_defs": DEFAULT_KEY_DEFS},
+            entity_type={
+                "openid_provider": {
+                    'class': ServerEntity,
+                    'kwargs': {
+                        'config': {
+                            "issuer": "https://example.com/",
+                            "httpc_params": {"verify": False, "timeout": 1},
+                            "subject_types_supported": ["public", "pairwise", "ephemeral"],
+                            "grant_types_supported": [
+                                "authorization_code",
+                                "implicit",
+                                "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                                "refresh_token",
+                            ],
+                            "token_handler_args": {
+                                "jwks_def": {
+                                    "private_path": "private/token_jwks.json",
+                                    "read_only": False,
+                                    "key_defs": [
+                                        {"type": "oct", "bytes": "24", "use": ["enc"],
+                                         "kid": "code"}],
+                                },
+                                "code": {"lifetime": 600, "kwargs": {"crypt_conf": CRYPT_CONFIG}},
+                                "token": {
+                                    "class": "idpyoidc.server.token.jwt_token.JWTToken",
+                                    "kwargs": {
+                                        "lifetime": 3600,
+                                        "add_claims_by_scope": True,
+                                        "aud": ["https://example.org/appl"],
+                                    },
+                                },
+                                "refresh": {
+                                    "class": "idpyoidc.server.token.jwt_token.JWTToken",
+                                    "kwargs": {
+                                        "lifetime": 3600,
+                                        "aud": ["https://example.org/appl"],
+                                    },
+                                },
+                                "id_token": {
+                                    "class": "idpyoidc.server.token.id_token.IDToken",
+                                    "kwargs": {
+                                        "base_claims": {
+                                            "email": {"essential": True},
+                                            "email_verified": {"essential": True},
+                                        }
+                                    },
                                 },
                             },
-                            "refresh": {
-                                "class": "idpyoidc.server.token.jwt_token.JWTToken",
-                                "kwargs": {
-                                    "lifetime": 3600,
-                                    "aud": ["https://example.org/appl"],
+                            "key_conf": {"key_defs": DEFAULT_KEY_DEFS,
+                                         "uri_path": "static/jwks.json"},
+                            "endpoint": {
+                                "registration": {
+                                    "path": "registration",
+                                    "class": Registration,
+                                    "kwargs": {"client_auth_method": None},
+                                },
+                                "authorization": {
+                                    "path": "authorization",
+                                    "class": Authorization,
+                                    "kwargs": {
+                                        "response_types_supported": [" ".join(x) for x in
+                                                                     RESPONSE_TYPES_SUPPORTED],
+                                        "response_modes_supported": ["query", "fragment",
+                                                                     "form_post"],
+                                        "claim_types_supported": [
+                                            "normal",
+                                            "aggregated",
+                                            "distributed",
+                                        ],
+                                        "claims_parameter_supported": True,
+                                        "request_parameter_supported": True,
+                                        "request_uri_parameter_supported": True,
+                                        "client_registration_types_supported": ['automatic',
+                                                                                'explicit']
+                                    },
+                                },
+                                "token": {
+                                    "path": "token",
+                                    "class": Token,
+                                    "kwargs": {
+                                        "client_authn_method": [
+                                            "client_secret_post",
+                                            "client_secret_basic",
+                                            "client_secret_jwt",
+                                            "private_key_jwt",
+                                        ]
+                                    },
+                                },
+                                "userinfo": {
+                                    "path": "userinfo",
+                                    "class": UserInfo,
+                                    "kwargs": {}
                                 },
                             },
-                            "id_token": {
-                                "class": "idpyoidc.server.token.id_token.IDToken",
-                                "kwargs": {
-                                    "base_claims": {
-                                        "email": {"essential": True},
-                                        "email_verified": {"essential": True},
-                                    }
-                                },
-                            },
-                        },
-                        "key_conf": {"key_defs": KEYDEFS, "uri_path": "static/jwks.json"},
-                        "endpoint": {
-                            "registration": {
-                                "path": "registration",
-                                "class": Registration,
-                                "kwargs": {"client_auth_method": None},
-                            },
-                            "authorization": {
-                                "path": "authorization",
-                                "class": Authorization,
-                                "kwargs": {
-                                    "response_types_supported": [" ".join(x) for x in
-                                                                 RESPONSE_TYPES_SUPPORTED],
-                                    "response_modes_supported": ["query", "fragment", "form_post"],
-                                    "claim_types_supported": [
-                                        "normal",
-                                        "aggregated",
-                                        "distributed",
-                                    ],
-                                    "claims_parameter_supported": True,
-                                    "request_parameter_supported": True,
-                                    "request_uri_parameter_supported": True,
-                                    "client_registration_types_supported": ['automatic', 'explicit']
-                                },
-                            },
-                            "token": {
-                                "path": "token",
-                                "class": Token,
-                                "kwargs": {
-                                    "client_authn_method": [
-                                        "client_secret_post",
-                                        "client_secret_basic",
-                                        "client_secret_jwt",
-                                        "private_key_jwt",
-                                    ]
-                                },
-                            },
-                            "userinfo": {
-                                "path": "userinfo",
-                                "class": UserInfo,
-                                "kwargs": {}
-                            },
-                        },
-                        "template_dir": "template",
-                        "session_params": SESSION_PARAMS,
-                    }
-                },
-                'key_conf': {"key_defs": KEYDEFS},
-                "services": oidc_service
+                            "template_dir": "template",
+                            "session_params": SESSION_PARAMS,
+                        }
+                    },
+                    'key_conf': {"key_defs": DEFAULT_KEY_DEFS},
+                    "services": oidc_service
+                }
             }
-        }
-
-        self.op = FederationCombo(OP_CONFIG)
-
-        # Setup subordinates
-
-        self.ta.server.subordinate[IM_ID] = {
-            "jwks": self.im.keyjar.export_jwks(),
-            'authority_hints': [TA_ID]
-
-        }
+        )
 
         self.ta.server.subordinate[OP_ID] = {
-            "jwks": self.op.keyjar.export_jwks(),
+            "jwks": self.op["federation_entity"].keyjar.export_jwks(),
             'authority_hints': [TA_ID]
 
-        }
-
-        self.im.server.subordinate[RP_ID] = {
-            "jwks": self.rp.keyjar.export_jwks(),
-            'authority_hints': [IM_ID]
         }
 
     def test_automatic_registration_new_client_id(self):
@@ -354,7 +315,7 @@ class TestAutomatic(object):
         _context.map_preferred_to_registered(registration_response=_context.provider_info)
 
         _auth_service = self.rp['openid_relying_party'].get_service('authorization')
-        authn_request = _auth_service.construct(request={'response_type': 'code'})
+        authn_request = _auth_service.construct(request_args={'response_type': 'code'})
 
         _msgs = create_trust_chain_messages(self.rp, self.im, self.ta)
         # add the jwks_uri

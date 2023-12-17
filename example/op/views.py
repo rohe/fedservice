@@ -24,7 +24,7 @@ from idpyoidc.server.oidc.token import Token
 
 # logger = logging.getLogger(__name__)
 
-oidc_op_views = Blueprint('oidc_op', __name__, url_prefix='')
+entity = Blueprint('oidc_op', __name__, url_prefix='')
 
 
 def _add_cookie(resp, cookie_spec):
@@ -43,18 +43,18 @@ def add_cookie(resp, cookie_spec):
     elif isinstance(cookie_spec, dict):
         _add_cookie(resp, cookie_spec)
 
-@oidc_op_views.route('/static/<path:path>')
+@entity.route('/static/<path:path>')
 def send_js(path):
     return send_from_directory('static', path)
 
 
-@oidc_op_views.route('/keys/<jwks>')
+@entity.route('/keys/<jwks>')
 def keys(jwks):
     fname = os.path.join('static', jwks)
     return open(fname).read()
 
 
-@oidc_op_views.route('/')
+@entity.route('/')
 def index():
     return render_template('index.html')
 
@@ -96,6 +96,7 @@ def do_response(endpoint, req_args, error='', **args):
     if 'cookie' in info:
         add_cookie(resp, info['cookie'])
 
+    _log.info(f"Ultimate response: {resp}")
     return resp
 
 
@@ -116,7 +117,7 @@ def verify(authn_method):
     auth_args = authn_method.unpack_token(kwargs['token'])
     authz_request = AuthorizationRequest().from_urlencoded(auth_args['query'])
 
-    endpoint = current_app.server.server_get("endpoint", 'authorization')
+    endpoint = current_app.federation_entity.get_endpoint('authorization')
     _session_id = endpoint.create_session(authz_request, username, auth_args['authn_class_ref'],
                                           auth_args['iat'], authn_method)
 
@@ -128,74 +129,72 @@ def verify(authn_method):
     return do_response(endpoint, request, **args)
 
 
-@oidc_op_views.route('/verify/user', methods=['GET', 'POST'])
+@entity.route('/verify/user', methods=['GET', 'POST'])
 def verify_user():
-    authn_method = current_app.server.server_get(
-        "endpoint_context").authn_broker.get_method_by_id('user')
+    authn_method = current_app.federation_entity.context.authn_broker.get_method_by_id('user')
     try:
         return verify(authn_method)
     except FailedAuthentication as exc:
         return render_template("error.html", title=str(exc))
 
 
-@oidc_op_views.route('/verify/user_pass_jinja', methods=['GET', 'POST'])
+@entity.route('/verify/user_pass_jinja', methods=['GET', 'POST'])
 def verify_user_pass_jinja():
-    authn_method = current_app.server.server_get(
-        "endpoint_context").authn_broker.get_method_by_id('user')
+    authn_method = current_app.federation_entity.context.authn_broker.get_method_by_id('user')
     try:
         return verify(authn_method)
     except FailedAuthentication as exc:
         return render_template("error.html", title=str(exc))
 
 
-@oidc_op_views.route('/.well-known/<service>')
+@entity.route('/.well-known/<service>')
 def well_known(service):
     # if service == 'openid-configuration':
-    #     _endpoint = current_app.server.server_get("endpoint", 'provider_config')
+    #     _endpoint = current_app.federation_entity.get_endpoint('provider_config')
     if service == 'openid-federation':
-        _endpoint = current_app.server.server_get("endpoint", 'provider_config')
+        _endpoint = current_app.federation_entity.get_endpoint('entity_configuration')
     elif service == 'webfinger':
-        _endpoint = current_app.server.server_get("endpoint", 'discovery')
+        _endpoint = current_app.federation_entity.get_endpoint('discovery')
     else:
         return make_response('Not supported', 400)
 
     return service_endpoint(_endpoint)
 
 
-@oidc_op_views.route('/registration', methods=['GET', 'POST'])
+@entity.route('/registration', methods=['GET', 'POST'])
 def registration():
     return service_endpoint(
-        current_app.server.server_get("endpoint", 'registration'))
+        current_app.federation_entity.get_endpoint('registration'))
 
 
-@oidc_op_views.route('/registration_api', methods=['GET'])
+@entity.route('/registration_api', methods=['GET'])
 def registration_api():
     return service_endpoint(
-        current_app.server.server_get("endpoint", 'registration_read'))
+        current_app.federation_entity.get_endpoint('registration_read'))
 
 
-@oidc_op_views.route('/authorization')
+@entity.route('/authorization')
 def authorization():
     return service_endpoint(
-        current_app.server.server_get("endpoint", 'authorization'))
+        current_app.federation_entity.get_endpoint('authorization'))
 
 
-@oidc_op_views.route('/token', methods=['GET', 'POST'])
+@entity.route('/token', methods=['GET', 'POST'])
 def token():
     return service_endpoint(
-        current_app.server.server_get("endpoint", 'token'))
+        current_app.federation_entity.get_endpoint('token'))
 
 
-@oidc_op_views.route('/userinfo', methods=['GET', 'POST'])
+@entity.route('/userinfo', methods=['GET', 'POST'])
 def userinfo():
     return service_endpoint(
-        current_app.server.server_get("endpoint", 'userinfo'))
+        current_app.federation_entity.get_endpoint('userinfo'))
 
 
-@oidc_op_views.route('/session', methods=['GET'])
+@entity.route('/session', methods=['GET'])
 def session_endpoint():
     return service_endpoint(
-        current_app.server.server_get("endpoint", 'session'))
+        current_app.federation_entity.get_endpoint('session'))
 
 
 IGNORE = ["cookie", "user-agent"]
@@ -269,12 +268,12 @@ def service_endpoint(endpoint):
     return response
 
 
-@oidc_op_views.errorhandler(werkzeug.exceptions.BadRequest)
+@entity.errorhandler(werkzeug.exceptions.BadRequest)
 def handle_bad_request(e):
     return 'bad request!', 400
 
 
-@oidc_op_views.route('/check_session_iframe', methods=['GET', 'POST'])
+@entity.route('/check_session_iframe', methods=['GET', 'POST'])
 def check_session_iframe():
     if request.method == 'GET':
         req_args = request.args.to_dict()
@@ -285,7 +284,7 @@ def check_session_iframe():
             req_args = dict([(k, v) for k, v in request.form.items()])
 
     if req_args:
-        _context = current_app.server.server_get("endpoint_context")
+        _context = current_app.federation_entity.context
         # will contain client_id and origin
         if req_args['origin'] != _context.issuer:
             return 'error'
@@ -299,17 +298,17 @@ def check_session_iframe():
     return doc
 
 
-@oidc_op_views.route('/verify_logout', methods=['GET', 'POST'])
+@entity.route('/verify_logout', methods=['GET', 'POST'])
 def verify_logout():
-    part = urlparse(current_app.server.server_get("endpoint_context").issuer)
+    part = urlparse(current_app.federation_entity.context.issuer)
     page = render_template('logout.html', op=part.hostname,
                            do_logout='rp_logout', sjwt=request.args['sjwt'])
     return page
 
 
-@oidc_op_views.route('/rp_logout', methods=['GET', 'POST'])
+@entity.route('/rp_logout', methods=['GET', 'POST'])
 def rp_logout():
-    _endp = current_app.server.server_get("endpoint", 'session')
+    _endp = current_app.federation_entity.get_endpoint('session')
     _info = _endp.unpack_signed_jwt(request.form['sjwt'])
     try:
         request.form['logout']
@@ -336,7 +335,7 @@ def rp_logout():
     return res
 
 
-@oidc_op_views.route('/post_logout', methods=['GET'])
+@entity.route('/post_logout', methods=['GET'])
 def post_logout():
     page = render_template('post_logout.html')
     return page

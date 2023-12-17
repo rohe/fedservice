@@ -3,7 +3,7 @@ import logging
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.server.oidc import registration
 
-from fedservice.entity import get_federation_entity
+from fedservice.entity.utils import get_federation_entity
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
@@ -92,4 +92,5 @@ class Registration(registration.Registration):
         _md = {_fe.opponent_entity_type: response_args.to_dict()}
         return _fe.create_entity_statement(_fe.entity_id, sub=_fe.entity_id,
                                            metadata=_md,
-                                           authority_hints=_fe.get_authority_hints())
+                                           authority_hints=_fe.get_authority_hints(),
+                                           trust_marks=_fe.context.trust_marks)

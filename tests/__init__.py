@@ -1,5 +1,5 @@
 from fedservice.entity import FederationEntity
-from fedservice.entity.function import get_federation_entity
+from fedservice.entity.utils import get_federation_entity
 
 CRYPT_CONFIG = {
     "kwargs": {

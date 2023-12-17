@@ -4,6 +4,7 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
+from cryptojwt.utils import importer
 from idpyoidc.configure import Base
 from idpyoidc.server import allow_refresh_token
 from idpyoidc.server import ASConfiguration
@@ -16,6 +17,7 @@ from idpyoidc.server.client_authn import client_auth_setup
 from idpyoidc.server.endpoint_context import init_service
 from idpyoidc.server.endpoint_context import init_user_info
 from idpyoidc.server.user_authn.authn_context import populate_authn_broker
+from idpyoidc.server.util import execute
 
 from fedservice.entity.claims import OPClaims
 from fedservice.server import ServerUnit
@@ -43,7 +45,8 @@ class ServerEntity(ServerUnit):
             httpc: Optional[Any] = None,
             httpc_params: Optional[dict] = None,
             entity_id: Optional[str] = "",
-            key_conf: Optional[dict] = None
+            key_conf: Optional[dict] = None,
+            server_type: Optional[str] = "oidc"
     ):
         if config is None:
             config = {}
@@ -55,7 +58,10 @@ class ServerEntity(ServerUnit):
         if not isinstance(config, Base):
             config['issuer'] = entity_id
             config['base_url'] = entity_id
-            config = OPConfiguration(config)
+            if server_type == "oauth2":
+                config = ASConfiguration(config)
+            else:
+                config = OPConfiguration(config)
 
         self.config = config
 
@@ -77,6 +83,16 @@ class ServerEntity(ServerUnit):
         self.context.claims_interface = init_service(
             config["claims_interface"], self.upstream_get
         )
+
+        _per_conf = config.get("persistence", None)
+        if _per_conf:
+            _storage = execute(_per_conf["kwargs"]["storage"])
+            _class = _per_conf["class"]
+            kwargs = {"storage": _storage, "upstream_get": self.unit_get}
+            if isinstance(_class, str):
+                self.persistence = importer(_class)(**kwargs)
+            else:
+                self.persistence = _per_conf["class"](**kwargs)
 
     def get_endpoints(self, *arg):
         return self.endpoint

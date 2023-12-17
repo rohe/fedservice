@@ -1,1 +1,8 @@
-oidcop>=2.3.4
+bandit
+black
+cryptography
+flake8
+isort
+pytest
+pytest-cov
+pytest-localserver

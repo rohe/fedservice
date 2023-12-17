@@ -1,9 +1,44 @@
 {
-    "RPA": ["rp", "./rp.py", "conf_auto.json", "auto"],
-    "RPE": ["rp", "./rp.py", "conf_expl.json", "expl"],
-    "OP": ["op", "./op.py", "conf.json", ""],
-    "LU": ["intermediate", "./entity.py", "conf_lu.json", "lu"],
-    "UMU": ["intermediate", "./entity.py", "conf_umu.json", "umu"],
-    "SEID": ["ta", "./entity.py", "conf_seid.json", "seid"],
-    "SWAMID": ["ta", "./entity.py", "conf_swamid.json", "swamid"]
+    "rpa": {
+        "dir":"rp",
+        "config":"conf_auto.json",
+        "authority_hints": ["lu"],
+        "trust_anchors": ["seid", "swamid"]
+    },
+    "rpe": {
+        "dir":"rp",
+        "config":"conf_expl.json",
+        "authority_hints": ["lu"],
+        "trust_anchors": ["seid", "swamid"]
+    },
+    "op": {
+        "dir":"op",
+        "config":"conf.json",
+        "authority_hints": ["umu"],
+        "trust_anchors": ["seid", "swamid"]
+    },
+    "lu": {
+        "dir":"intermediate",
+        "config":"conf_lu.json",
+        "authority_hints": ["seid", "swamid"],
+        "trust_anchors": ["seid", "swamid"]
+    },
+    "umu": {
+        "dir":"intermediate",
+        "config":"conf_umu.json",
+        "authority_hints": ["swamid", "seid"],
+        "trust_anchors": ["seid", "swamid"]
+    },
+    "seid": {
+        "dir":"ta",
+        "config":"conf_seid.json",
+        "authority_hints": [],
+        "trust_anchors": []
+    },
+    "swamid": {
+        "dir":"ta",
+        "config":"conf_swamid.json",
+        "authority_hints": [],
+        "trust_anchors": []
+    }
 }

@@ -17,7 +17,7 @@
     "handlers": {
       "default": {
         "class": "logging.FileHandler",
-        "filename": "seid/debug.log",
+        "filename": "log/seid_debug.log",
         "formatter": "default"
       },
       "console": {
@@ -32,10 +32,10 @@
       }
     }
   },
-  "federation": {
+  "entity": {
     "entity_id": "https://127.0.0.1:7001",
-    "keys": {
-      "private_path": "seid/fed_keys.json",
+    "key_config": {
+      "private_path": "private/fed_seid_keys.json",
       "key_defs": [
         {
           "type": "RSA",
@@ -54,32 +54,12 @@
       "public_path": "static/seid_fed_keys.json",
       "read_only": false
     },
-    "entity_type": "federation_entity",
-    "opponent_entity_type": "federation_entity",
-    "endpoint": {
-      "fetch": {
-        "path": "fetch",
-        "class": "fedservice.entity.fetch.Fetch",
-        "kwargs": {
-          "client_authn_method": null
-        }
-      },
-      "list": {
-        "path": "list",
-        "class": "fedservice.entity.list.List",
-        "kwargs": {
-          "client_authn_method": null,
-          "subordinates": {
-            "class": "idpyoidc.storage.abfile.AbstractFileSystem",
-            "kwargs": {
-              "fdir": "seid/subordinates",
-              "value_conv": "idpyoidc.util.JSON",
-              "key_conv": "idpyoidc.util.QPKey"
-            }
-          }
-        }
-      }
-    }
+    "subordinate": "file:ta/seid_subordinates.json",
+    "endpoints": [
+      "entity_configuration",
+      "fetch",
+      "list"
+    ]
   },
   "webserver": {
     "server_cert": "certs/example.crt",

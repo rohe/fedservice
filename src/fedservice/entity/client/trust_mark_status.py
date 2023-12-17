@@ -5,19 +5,19 @@ from urllib.parse import urlencode
 
 from cryptojwt.jws.jws import factory
 from idpyoidc.client.configure import Configuration
-from idpyoidc.client.service import Service
 from idpyoidc.exception import MissingAttribute
 from idpyoidc.message import oauth2
 from idpyoidc.message.oauth2 import ResponseMessage
 
 from fedservice import message
+from fedservice.entity.service import FederationService
 
 
-class TrustMarkStatus(Service):
+class TrustMarkStatus(FederationService):
     """The service that talks to the OIDC federation Status endpoint."""
 
     msg_type = oauth2.Message
-    response_cls = message.EntityStatement
+    response_cls = message.Message
     error_msg = ResponseMessage
     synchronous = True
     service_name = "trust_mark_status"
@@ -26,7 +26,7 @@ class TrustMarkStatus(Service):
     def __init__(self,
                  upstream_get: Callable,
                  conf: Optional[Union[dict, Configuration]] = None):
-        Service.__init__(self, upstream_get, conf=conf)
+        FederationService.__init__(self, upstream_get, conf=conf)
 
     def get_request_parameters(
             self,
@@ -59,7 +59,9 @@ class TrustMarkStatus(Service):
         else:
             _q_args = {k: v for k, v in request_args.items() if k in ['sub', 'id', 'iat']}
             if not fetch_endpoint:
-                raise MissingAttribute('fetch_endpoint')
+                fetch_endpoint = kwargs.get("endpoint")
+                if not fetch_endpoint:
+                    raise MissingAttribute('fetch_endpoint')
 
         _url = f"{fetch_endpoint}?{urlencode(_q_args)}"
 

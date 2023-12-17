@@ -5,7 +5,7 @@ from idpyoidc.message.oauth2 import ResponseMessage
 from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
-from fedservice.defaults import LEAF_ENDPOINT
+from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.entity import FederationEntity
 from fedservice.rp import ClientEntity
 
@@ -58,7 +58,7 @@ class TestClient:
         )
         ENT.add_services()
         ENT.add_functions(**MOD_FUNCTIONS)
-        ENT.add_endpoints(**LEAF_ENDPOINT)
+        ENT.add_endpoints(**LEAF_ENDPOINTS)
 
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)

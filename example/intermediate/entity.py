@@ -1,37 +1,57 @@
 #!/usr/bin/env python3
+import json
 import os
 import sys
 
 from flask.app import Flask
-from idpyoidc.configure import Configuration
-from idpyoidc.configure import create_from_config_file
-from idpyoidc.client.util import create_context
 from idpyoidc.client.util import lower_or_upper
+from idpyoidc.logging import configure_logging
+from idpyoidc.ssl_context import create_context
+from idpyoidc.util import load_config_file
 
-from fedservice.configure import FedEntityConfiguration
-from fedservice.entity import FederationEntity
+from fedservice.utils import make_federation_combo
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 template_dir = os.path.join(dir_path, 'templates')
 
-def init_entity(config, cwd):
-    return FederationEntity(config=config, cwd=cwd)
+def _import(val):
+    with open(val[len("file:"):], "r") as fp:
+        _dat = fp.read()
+        if val.endswith('.json'):
+            return json.loads(_dat)
+        elif val.endswith(".py"):
+            return _dat
 
+    raise ValueError("Unknown file type")
+
+
+def load_values_from_file(config):
+    res = {}
+    for key, val in config.items():
+        if isinstance(val, str) and val.startswith("file:"):
+            res[key] = _import(val)
+        elif isinstance(val, dict):
+            res[key] = load_values_from_file(val)
+        elif isinstance(val, list):
+            _list = []
+            for v in val:
+                if isinstance(v, dict):
+                    _list.append(load_values_from_file(v))
+                elif isinstance(val, str) and val.startswith("file:"):
+                    res[key] = _import(val)
+                else:
+                    _list.append(v)
+            res[key] = _list
+
+    for k, v in res.items():
+        config[k] = v
+
+    return config
 
 def init_app(config_file, name=None, **kwargs) -> Flask:
     name = name or __name__
     app = Flask(name, static_url_path='', **kwargs)
-
-    app.srv_config = create_from_config_file(Configuration,
-                                             entity_conf=[
-                                                 {"class": FedEntityConfiguration,
-                                                  "attr": "federation",
-                                                  "path": ["federation"]
-                                                  }],
-                                             filename=config_file, base_path=dir_path)
-
-    # app.users = {'test_user': {'name': 'Testing Name'}}
 
     try:
         from .views import intermediate
@@ -39,9 +59,11 @@ def init_app(config_file, name=None, **kwargs) -> Flask:
         from views import intermediate
 
     app.register_blueprint(intermediate)
-
     # Initialize the oidc_provider after views to be able to set correct urls
-    app.server = init_entity(app.srv_config.federation, dir_path)
+    app.cnf = load_config_file(config_file)
+    app.cnf = load_values_from_file(app.cnf)
+    app.cnf["cwd"] = dir_path
+    app.server = make_federation_combo(**app.cnf["entity"])
 
     return app
 
@@ -52,7 +74,9 @@ if __name__ == "__main__":
     conf = sys.argv[2]
     template_dir = os.path.join(dir_path, 'templates')
     app = init_app(conf, name, template_folder=template_dir)
-    _web_conf = app.srv_config.web_conf
+    if "logging" in app.cnf:
+        configure_logging(config=app.cnf["logging"])
+    _web_conf = app.cnf["webserver"]
     context = create_context(dir_path, _web_conf)
     _cert = "{}/{}".format(dir_path, lower_or_upper(_web_conf, "server_cert"))
 

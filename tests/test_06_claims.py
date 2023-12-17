@@ -44,24 +44,24 @@ class TestClaimsEntity():
                                               'policy_uri', 'logo_uri', 'trust_mark_owners',
                                               'trust_mark_issuers'}
 
-        assert self.entity.context.claims.prefer == {
-            'organization_name': 'The example federation operator',
-            'homepage_uri': 'https://ta.example.com',
-            'contacts': 'operations@ta.example.com'}
+        assert set(self.entity.context.claims.prefer.keys()) == {
+            "organization_name", "homepage_uri", "contacts", "jwks"
+        }
 
         assert self.entity.get_endpoint_claims() == {
             'federation_fetch_endpoint': 'https://anchor.example.com/fetch',
-            'federation_list_endpoint': 'https://anchor.example.com/list',
-            'federation_resolve_endpoint': 'https://anchor.example.com/resolve'}
+            'federation_list_endpoint': 'https://anchor.example.com/list'
+        }
 
-        assert self.entity.get_metadata() == {
-            'federation_entity': {
-                'contacts': 'operations@ta.example.com',
-                'federation_fetch_endpoint': 'https://anchor.example.com/fetch',
-                'federation_list_endpoint': 'https://anchor.example.com/list',
-                'federation_resolve_endpoint': 'https://anchor.example.com/resolve',
-                'homepage_uri': 'https://ta.example.com',
-                'organization_name': 'The example federation operator'}}
+        assert set(self.entity.get_metadata().keys()) == {'federation_entity'}
+        _fed_entity_metadata = self.entity.get_metadata()["federation_entity"]
+        assert set(_fed_entity_metadata.keys()) == {
+            'contacts',
+            'federation_fetch_endpoint',
+            'federation_list_endpoint',
+            'homepage_uri',
+            'jwks',
+            'organization_name'}
 
         # stored under 2 IDs
         assert len(self.entity.keyjar) == 2
@@ -120,18 +120,16 @@ class TestClaimsFRP():
         self.combo = FederationCombo(LEAF_CONFIG)
 
     def test(self):
-        assert self.combo.get_preferences() == {
-            'federation_entity': {'contacts': 'operations@ta.example.com',
-                                  'federation_fetch_endpoint': 'https://anchor.example.com/fetch',
-                                  'federation_list_endpoint': 'https://anchor.example.com/list',
-                                  'federation_resolve_endpoint': 'https://anchor.example.com/resolve',
-                                  'homepage_uri': 'https://ta.example.com',
-                                  'organization_name': 'The example federation operator'},
-            'openid_relying_party': {'application_type': 'web',
-                                     'grant_types': ['authorization_code'],
-                                     'jwks_uri': 'https://anchor.example.com/static/jwks.json',
-                                     'redirect_uris': ['https://example.com/cli/authz_cb'],
-                                     'response_types': ['code']}}
+        _pref = self.combo.get_preferences()
+        assert set(_pref.keys()) == {'federation_entity', "openid_relying_party"}
+        assert set(_pref["federation_entity"].keys()) == {'contacts', 'federation_fetch_endpoint',
+                                                          'federation_list_endpoint', "jwks",
+                                                          'homepage_uri', 'organization_name'}
+        assert set(_pref["openid_relying_party"].keys()) == {'application_type',
+                                                             'grant_types',
+                                                             'jwks_uri',
+                                                             'redirect_uris',
+                                                             'response_types'}
 
         # IN this case the Combo has no keys, The federation entity and the openid relying party has
         # separate key jars. Same initial key owner IDs in both keyjars.

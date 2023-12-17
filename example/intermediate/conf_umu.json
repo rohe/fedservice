@@ -17,7 +17,7 @@
     "handlers": {
       "default": {
         "class": "logging.FileHandler",
-        "filename": "umu/debug.log",
+        "filename": "log/umu_debug.log",
         "formatter": "default"
       },
       "console": {
@@ -32,10 +32,10 @@
       }
     }
   },
-  "federation": {
+  "entity": {
     "entity_id": "https://127.0.0.1:6002",
-    "keys": {
-      "private_path": "umu/fed_keys.json",
+    "key_config": {
+      "private_path": "private/umu_fed_keys.json",
       "key_defs": [
         {
           "type": "RSA",
@@ -54,38 +54,14 @@
       "public_path": "static/umu_fed_keys.json",
       "read_only": false
     },
-    "authority_hints": "umu/authority_hints.json",
-    "trusted_roots": "umu/trusted_roots.json",
-    "priority": [
-      "https://127.0.0.1:7001",
-      "https://127.0.0.1:7002"
-    ],
-    "entity_type": "federation_entity",
-    "opponent_entity_type": "federation_entity",
-    "endpoint": {
-      "fetch": {
-        "path": "fetch",
-        "class": "fedservice.entity.fetch.Fetch",
-        "kwargs": {
-          "client_authn_method": null
-        }
-      },
-      "list": {
-        "path": "list",
-        "class": "fedservice.entity.list.List",
-        "kwargs": {
-          "client_authn_method": null,
-          "subordinate": {
-            "class": "idpyoidc.storage.abfile.AbstractFileSystem",
-            "kwargs": {
-              "fdir": "umu/subordinate",
-              "value_conv": "idpyoidc.util.JSON",
-              "key_conv": "idpyoidc.util.QPKey"
-            }
-          }
-        }
-      }
-    }
+    "authority_hints": "file:intermediate/umu_authority_hints.json",
+    "trust_anchors": "file:intermediate/umu_trust_anchors.json",
+    "subordinate": "file:intermediate/umu_subordinates.json",
+    "endpoints": [
+      "fetch",
+      "list",
+      "entity_configuration"
+    ]
   },
   "webserver": {
     "server_cert": "certs/example.crt",

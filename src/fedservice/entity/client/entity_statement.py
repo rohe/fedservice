@@ -4,12 +4,13 @@ from typing import Union
 from urllib.parse import urlencode
 
 from idpyoidc.client.configure import Configuration
-from idpyoidc.client.service import Service
 from idpyoidc.message import Message
 from idpyoidc.message import oauth2
 from idpyoidc.message.oauth2 import ResponseMessage
 
 from fedservice import message
+from fedservice.entity.service import FederationService
+from fedservice.entity.utils import get_federation_entity
 
 
 def construct_entity_configuration_query(api_endpoint, issuer="", subject=""):
@@ -24,7 +25,7 @@ def construct_entity_configuration_query(api_endpoint, issuer="", subject=""):
         return f"{api_endpoint}"
 
 
-class EntityStatement(Service):
+class EntityStatement(FederationService):
     """The service that talks to the OIDC federation Fetch endpoint."""
 
     msg_type = oauth2.Message
@@ -33,11 +34,13 @@ class EntityStatement(Service):
     synchronous = True
     service_name = "entity_statement"
     http_method = "GET"
+    endpoint_name = "federation_fetch_endpoint"
+    response_body_type = "jose"
 
     def __init__(self,
                  upstream_get: Callable,
-                 conf:Optional[Union[dict, Configuration]] = None):
-        Service.__init__(self, upstream_get, conf=conf)
+                 conf: Optional[Union[dict, Configuration]] = None):
+        FederationService.__init__(self, upstream_get, conf=conf)
 
     def get_request_parameters(
             self,
@@ -67,7 +70,12 @@ class EntityStatement(Service):
             method = self.http_method
 
         if not fetch_endpoint:
-            raise AttributeError("Missing endpoint")
+            root = get_federation_entity(self)
+            _collector = root.function.trust_chain_collector
+            _ec = _collector.config_cache[issuer]
+            fetch_endpoint = _ec["metadata"]["federation_entity"][self.endpoint_name]
+            if not fetch_endpoint:
+                raise AttributeError("Missing endpoint")
 
         msg = Message()
         if issuer:

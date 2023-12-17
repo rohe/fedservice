@@ -1,25 +1,20 @@
+import os
 from urllib.parse import urlparse
 
-import pytest
-import responses
 from cryptojwt import JWT
-from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import build_keyjar
-from fedservice.message import TrustMarkRequest
-
-from fedservice.defaults import LEAF_ENDPOINT
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
+import pytest
+import responses
 
-from fedservice.build_entity import FederationEntityBuilder
-from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
-from fedservice.entity import FederationEntity
-from fedservice.entity.server.status import TrustMarkStatus
+from fedservice.defaults import LEAF_ENDPOINTS
+from fedservice.message import TrustMarkRequest
 from fedservice.trust_mark_issuer import TrustMarkIssuer
-from fedservice.utils import statement_is_expired
+from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
 
-TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
+TA_ENDPOINTS = ["list", "fetch", "entity_configuration"]
 
 TA_ID = "https://ta.example.org"
 TMI_ID = "https://tmi.example.org"
@@ -29,6 +24,8 @@ TRUST_MARK_OWNERS_KEYS = build_keyjar(DEFAULT_KEY_DEFS)
 TM_OWNERS_ID = "https://tm_owner.example.org"
 
 SIRTIFI_TRUST_MARK_ID = "https://refeds.org/sirtfi"
+
+BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 
 @pytest.fixture()
@@ -46,7 +43,7 @@ class TestTrustMarkDelegation():
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        TA = FederationEntityBuilder(
+        self.ta = make_federation_entity(
             TA_ID,
             preference={
                 "organization_name": "The example federation operator",
@@ -60,63 +57,79 @@ class TestTrustMarkDelegation():
                     SIRTIFI_TRUST_MARK_ID: TMI_ID
                 }
             },
-            key_conf={"key_defs": DEFAULT_KEY_DEFS}
+            key_config={"key_defs": DEFAULT_KEY_DEFS},
+            endpoints=TA_ENDPOINTS
         )
-        TA.add_endpoints(None, **TA_ENDPOINTS)
 
-        self.ta = FederationEntity(**TA.conf)
+        ANCHOR = {self.ta.entity_id: self.ta.keyjar.export_jwks()}
+
+        TRUST_MARK_ISSUER_CONF = {
+            "entity_id": TA_ID,
+            "key_conf": {
+                "private_path": "private/tmi_keys.json",
+                "key_defs": [
+                    {
+                        "type": "EC",
+                        "crv": "P-256",
+                        "use": [
+                            "sig"
+                        ]
+                    }
+                ],
+                "public_path": "static/tmi_keys.json",
+                "read_only": False
+            },
+            "trust_mark_specification": {
+                SIRTIFI_TRUST_MARK_ID: {
+                    "lifetime": 2592000
+                },
+            },
+            "trust_mark_db": {
+                "class": "fedservice.trust_mark_issuer.FileDB",
+                "kwargs": {
+                    SIRTIFI_TRUST_MARK_ID: os.path.join(BASE_PATH, "tmi/sirtifi_se")
+                }
+            }
+        }
 
         # The trust mark issuer
-        self.tmi = TrustMarkIssuer(trust_mark_specification={})
+        self.tmi = TrustMarkIssuer(**TRUST_MARK_ISSUER_CONF)
         # Federation entity with only status endpoint
-        TM = FederationEntityBuilder(
+        self.trust_mark_issuer = make_federation_entity(
             TMI_ID,
             preference={
                 "organization_name": "Trust Mark Issuer 'R US"
             },
-            key_conf={"key_defs": DEFAULT_KEY_DEFS},
-            authority_hints=[TA_ID]
-        )
-        TM.add_endpoints(
-            status={
-                "path": "status",
-                "class": TrustMarkStatus,
-                "kwargs": {
-                    'trust_mark_issuer': self.tmi
+            key_config={"key_defs": DEFAULT_KEY_DEFS},
+            authority_hints=[TA_ID],
+            endpoints=["status", "entity_configuration"],
+            trust_anchors=ANCHOR,
+            item_args={
+                "endpoint": {
+                    "status": {
+                        "trust_mark_issuer": self.tmi
+                    }
                 }
-            },
-            entity_configuration={
-                "path": ".well-known/openid-federation",
-                "class": 'fedservice.entity.server.entity_configuration.EntityConfiguration',
-                "kwargs": {}
             }
         )
-        TM.add_functions()
-        TM.add_services()
-
-        self.trust_mark_issuer = FederationEntity(**TM.conf)
 
         self.ta.server.subordinate[TMI_ID] = {
             "jwks": self.trust_mark_issuer.keyjar.export_jwks(),
             'authority_hints': [TA_ID]
         }
 
-        FE = FederationEntityBuilder(
+        self.federation_entity = make_federation_entity(
             FE_ID,
             preference={
                 "homepage_uri": "https://rp.example.com",
                 "contacts": "operations@rp.example.com"
             },
-            key_conf={"key_defs": DEFAULT_KEY_DEFS},
-            authority_hints=[TA_ID]
+            key_config={"key_defs": DEFAULT_KEY_DEFS},
+            authority_hints=[TA_ID],
+            endpoints=LEAF_ENDPOINTS,
+            trust_anchors=ANCHOR,
+            services=["trust_mark_status", "entity_configuration", "entity_statement"]
         )
-        FE.add_services()
-        FE.add_functions()
-        FE.add_endpoints(**LEAF_ENDPOINT)
-        FE.conf['function']['kwargs']['functions']['trust_chain_collector']['kwargs'][
-            'trust_anchors'] = {TA_ID: self.ta.keyjar.export_jwks()}
-
-        self.federation_entity = FederationEntity(**FE.conf)
 
     @pytest.fixture()
     def create_trust_mark(self, trust_mark_delegation, tm_receiver):
@@ -171,5 +184,4 @@ class TestTrustMarkDelegation():
 
         # The response from the Trust Mark issuer
         resp = self.trust_mark_issuer.server.endpoint['status'].process_request(tmr.to_dict())
-        assert resp == {'response': '{"active": true}'}
-
+        assert resp == {'response_args': {'active': True}}
