@@ -5,12 +5,14 @@ from typing import Any
 from typing import Callable
 from typing import List
 from typing import Optional
+from typing import Union
 
 from cryptojwt import JWT
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import utc_time_sans_frac
 from idpyoidc.exception import MissingPage
+from idpyoidc.message import Message
 from requests.exceptions import ConnectionError
 
 from fedservice.entity.function import collect_trust_chains
@@ -214,7 +216,7 @@ class TrustChainCollector(Function):
 
     def collect_tree(self,
                      entity_id: str,
-                     entity_configuration: dict,
+                     entity_configuration: Union[dict, Message],
                      seen: Optional[list] = None,
                      max_superiors: Optional[int] = 1,
                      stop_at: Optional[str] = "") -> Optional[dict]:
@@ -339,7 +341,7 @@ class TrustChainCollector(Function):
                  entity_id: str,
                  max_superiors: Optional[int] = 10,
                  seen: Optional[List[str]] = None,
-                 stop_at: Optional[str] = '') -> tuple[dict | None, Any | None] | None:
+                 stop_at: Optional[str] = ''):
         if entity_id in self.config_cache and not self.too_old(self.config_cache[entity_id]):
             entity_config = self.config_cache[entity_id]
             signed_entity_config = entity_config.get("_jws")
