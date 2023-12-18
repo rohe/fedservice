@@ -1,5 +1,5 @@
 from idpyoidc.client.exception import OtherError
-from idpyoidc.client.oidc import authorization
+from idpyoidc.client.oauth2 import authorization
 from idpyoidc.exception import UnSupported
 
 

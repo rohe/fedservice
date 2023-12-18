@@ -47,7 +47,8 @@ class ClientEntity(ClientUnit):
         if config is None:
             config = {}
 
-        client_type = config.get('client_type', client_type)
+        self.client_type = config.get('client_type', client_type)
+        self.entity_id = entity_id or config.get("entity_id", config.get("client_id", ""))
 
         ClientUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, context=context, config=config,
@@ -71,7 +72,8 @@ class ClientEntity(ClientUnit):
                 config['key_conf'] = key_conf
             self.context = ServiceContext(
                 config=config, jwks_uri=jwks_uri, key_conf=key_conf, upstream_get=self.unit_get,
-                keyjar=self.keyjar, metadata_class=RPClaims(), client_type=client_type
+                keyjar=self.keyjar, metadata_class=RPClaims(), client_type=self.client_type,
+                entity_id=self.entity_id
             )
 
         if "add_ons" in config:

@@ -23,6 +23,11 @@ DEFAULT_OIDC_FED_SERVICES = {
         'class': 'fedservice.appclient.oidc.registration.Registration'},
 }
 
+DEFAULT_OAUTH2_FED_SERVICES = {
+    'discovery': {
+        'class': 'fedservice.appclient.oauth2.server_metadata.ServerMetadata'}
+}
+
 SERVICES = {
     'discovery': {
         'class': 'fedservice.appclient.oidc.provider_info_discovery.ProviderInfoDiscovery',
