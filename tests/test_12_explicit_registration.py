@@ -13,7 +13,7 @@ from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
 from fedservice.op import ServerEntity
-from fedservice.rp import ClientEntity
+from fedservice.appclient import ClientEntity
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 from . import create_trust_chain_messages
@@ -99,7 +99,7 @@ class TestExplicit(object):
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
         # del oidc_service['web_finger']
-        oidc_service['authorization'] = {"class": "fedservice.rp.authorization.Authorization"}
+        oidc_service['authorization'] = {"class": "fedservice.appclient.oidc.authorization.Authorization"}
 
         self.rp = make_federation_combo(
             entity_id=RP_ID,

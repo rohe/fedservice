@@ -63,6 +63,11 @@ class ServerEntity(ServerUnit):
             else:
                 config = OPConfiguration(config)
 
+        if server_type == "oidc" and not isinstance(config, OPConfiguration):
+            raise ValueError("Server type and configuration type does not match")
+        elif server_type == "oauth2" and not isinstance(config, ASConfiguration):
+            raise ValueError("Server type and configuration type does not match")
+
         self.config = config
 
         self.endpoint = do_endpoints(config, self.unit_get)

@@ -12,7 +12,7 @@ from fedservice.entity.function import verify_trust_chains
 from fedservice.op import ServerEntity
 from fedservice.op.authorization import Authorization
 from fedservice.op.registration import Registration
-from fedservice.rp import ClientEntity
+from fedservice.appclient import ClientEntity
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages

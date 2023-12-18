@@ -12,7 +12,7 @@ from fedservice.defaults import FEDERATION_ENTITY_FUNCTIONS
 from fedservice.defaults import FEDERATION_ENTITY_SERVICES
 from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
 from fedservice.op import ServerEntity
-from fedservice.rp import ClientEntity
+from fedservice.appclient import ClientEntity
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 from . import create_trust_chain_messages
@@ -96,7 +96,7 @@ class TestExplicit(object):
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
         # del oidc_service['web_finger']
         oidc_service['authorization'] = {
-            "class": "fedservice.rp.authorization.Authorization"}
+            "class": "fedservice.appclient.oidc.authorization.Authorization"}
 
         _functions = list(FEDERATION_ENTITY_FUNCTIONS.keys())
         _functions.append("metadata_verifier")

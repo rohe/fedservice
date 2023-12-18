@@ -9,7 +9,7 @@ from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
-from fedservice.rp import ClientEntity
+from fedservice.appclient import ClientEntity
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
