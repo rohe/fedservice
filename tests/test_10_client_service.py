@@ -6,10 +6,12 @@ from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.client.defaults import DEFAULT_OAUTH2_SERVICES
 
 from fedservice.appclient import ClientEntity
+from fedservice.appserver import ServerEntity
 from fedservice.defaults import DEFAULT_OAUTH2_FED_SERVICES
 from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
+from tests import CRYPT_CONFIG
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
@@ -21,6 +23,17 @@ KEYSPEC = [
 
 LEAF_ID = 'https://foodle.uninett.no'
 TA_ID = "https://ta.example.org"
+OP_ID = "https://op.example.org"
+
+RESPONSE_TYPES_SUPPORTED = [
+    ["code"],
+    ["id_token"],
+    ["code", "token"],
+    ["code", "id_token"],
+    ["code", "token", "id_token"],
+]
+
+SESSION_PARAMS = {"encrypter": CRYPT_CONFIG}
 
 
 class TestRpService(object):
@@ -79,6 +92,121 @@ class TestRpService(object):
                 }
             }
         )
+        self.ta.server.subordinate[OP_ID] = {
+            "jwks": self.client["federation_entity"].keyjar.export_jwks(),
+            'authority_hints': [TA_ID]
+        }
+
+        self.server = make_federation_combo(
+            OP_ID,
+            preference={
+                "organization_name": "The OP operator",
+                "homepage_uri": "https://op.example.com",
+                "contacts": "operations@op.example.com"
+            },
+            authority_hints=[TA_ID],
+            endpoints=LEAF_ENDPOINTS,
+            trust_anchors=ANCHOR,
+            entity_type={
+                "openid_provider": {
+                    'class': ServerEntity,
+                    'kwargs': {
+                        'config': {
+                            "issuer": "https://example.com/",
+                            "httpc_params": {"verify": False, "timeout": 1},
+                            "capabilities": {
+                                "subject_types_supported": ["public", "pairwise", "ephemeral"],
+                                "grant_types_supported": [
+                                    "authorization_code",
+                                    "implicit",
+                                    "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                                    "refresh_token",
+                                ],
+                            },
+                            "token_handler_args": {
+                                "jwks_def": {
+                                    "private_path": "private/token_jwks.json",
+                                    "read_only": False,
+                                    "key_defs": [
+                                        {"type": "oct", "bytes": "24", "use": ["enc"],
+                                         "kid": "code"}],
+                                },
+                                "code": {"lifetime": 600, "kwargs": {"crypt_conf": CRYPT_CONFIG}},
+                                "token": {
+                                    "class": "idpyoidc.server.token.jwt_token.JWTToken",
+                                    "kwargs": {
+                                        "lifetime": 3600,
+                                        "add_claims_by_scope": True,
+                                        "aud": ["https://example.org/appl"],
+                                    },
+                                },
+                                "refresh": {
+                                    "class": "idpyoidc.server.token.jwt_token.JWTToken",
+                                    "kwargs": {
+                                        "lifetime": 3600,
+                                        "aud": ["https://example.org/appl"],
+                                    },
+                                },
+                                "id_token": {
+                                    "class": "idpyoidc.server.token.id_token.IDToken",
+                                    "kwargs": {
+                                        "base_claims": {
+                                            "email": {"essential": True},
+                                            "email_verified": {"essential": True},
+                                        }
+                                    },
+                                },
+                            },
+                            "keys": {"key_defs": DEFAULT_KEY_DEFS, "uri_path": "static/jwks.json"},
+                            "endpoint": {
+                                "registration": {
+                                    "path": "registration",
+                                    "class": "fedservice.appserver.oauth2.registration.Registration",
+                                    "kwargs": {"client_auth_method": None},
+                                },
+                                "authorization": {
+                                    "path": "authorization",
+                                    "class": "fedservice.appserver.oauth2.authorization.Authorization",
+                                    "kwargs": {
+                                        "response_types_supported": [" ".join(x) for x in
+                                                                     RESPONSE_TYPES_SUPPORTED],
+                                        "response_modes_supported": ["query", "fragment",
+                                                                     "form_post"],
+                                        "claim_types_supported": [
+                                            "normal",
+                                            "aggregated",
+                                            "distributed",
+                                        ],
+                                        "claims_parameter_supported": True,
+                                        "request_parameter_supported": True,
+                                        "request_uri_parameter_supported": True,
+                                    },
+                                },
+                                "token": {
+                                    "path": "token",
+                                    "class": "idpyoidc.server.oauth2.token.Token",
+                                    "kwargs": {
+                                        "client_authn_method": [
+                                            "client_secret_post",
+                                            "client_secret_basic",
+                                            "client_secret_jwt",
+                                            "private_key_jwt",
+                                        ]
+                                    }
+                                }
+                            },
+                            "template_dir": "template",
+                            "session_params": SESSION_PARAMS,
+                        },
+                        "server_type": "oauth2"
+                    }
+                }
+            }
+        )
+        self.ta.server.subordinate[OP_ID] = {
+            "jwks": self.server["federation_entity"].keyjar.export_jwks(),
+            'authority_hints': [TA_ID]
+        }
 
     def test_1(self):
         assert set(self.client.keys()) == {'federation_entity', 'oauth_client'}
@@ -101,49 +229,59 @@ class TestRpService(object):
     def test_discover(self):
         _srv = self.client["federation_entity"].get_service("entity_configuration")
         _info = _srv.get_request_parameters()
-        assert set(_info.keys()) == {'method', 'url', 'iss'}
+        assert set(_info.keys()) == {'method', 'url'}
         p = urlparse(_info['url'])
         assert p.scheme == 'https'
-        assert p.netloc == 'op.ntnu.no'
+        assert p.netloc == 'as.example.com'
         assert p.path == "/.well-known/openid-federation"
-#
-#     def test_parse_discovery_response(self):
-#         _info = self.discovery_service.get_request_parameters()
-#         http_response = self.entity.httpc('GET', _info['url'])
-#
-#         statements = self.discovery_service.parse_response(http_response.text)
-#         # there are two Trust Anchors. I only trust one.
-#         assert len(statements) == 1
-#         statement = statements[0]
-#         assert statement.anchor == 'https://feide.no'
-#         self.discovery_service.update_service_context(statements)
-#         assert set(self.discovery_service.upstream_get("context").prefers().keys()) == {
-#             'callback_uris',
-#             'client_id',
-#             'client_secret',
-#             'grant_types_supported',
-#             'id_token_encryption_alg_values_supported',
-#             'id_token_encryption_enc_values_supported',
-#             'id_token_signing_alg_values_supported',
-#             'jwks_uri',
-#             'redirect_uris',
-#             'request_object_encryption_alg_values_supported',
-#             'request_object_encryption_enc_values_supported',
-#             'token_endpoint_auth_methods_supported',
-#             'userinfo_encryption_alg_values_supported',
-#             'userinfo_encryption_enc_values_supported'}
-#         assert set(
-#             [k for k, v in self.discovery_service.upstream_get("context").prefers().items() if v]) == {
-#                    'callback_uris',
-#                    'client_id',
-#                    'client_secret',
-#                    'grant_types_supported',
-#                    'id_token_signing_alg_values_supported',
-#                    'jwks_uri',
-#                    'redirect_uris',
-#                    'token_endpoint_auth_methods_supported'
-#                }
-#
+
+    # def test_parse_discovery_response(self):
+    #     _srv = self.client["federation_entity"].get_service("registration")
+    #     _info = _srv.get_request_parameters()
+    #
+    #     _msgs = create_trust_chain_messages(self.client, self.ta)
+    #
+    #     with responses.RequestsMock() as rsps:
+    #         for _url, _jwks in _msgs.items():
+    #             rsps.add("GET", _url, body=_jwks,
+    #                      adding_headers={"Content-Type": "application/json"}, status=200)
+    #
+    #
+    #
+    #
+    #     statements = self.discovery_service.parse_response(http_response.text)
+    #     # there are two Trust Anchors. I only trust one.
+    #     assert len(statements) == 1
+    #     statement = statements[0]
+    #     assert statement.anchor == 'https://feide.no'
+    #     self.discovery_service.update_service_context(statements)
+    #     assert set(self.discovery_service.upstream_get("context").prefers().keys()) == {
+    #         'callback_uris',
+    #         'client_id',
+    #         'client_secret',
+    #         'grant_types_supported',
+    #         'id_token_encryption_alg_values_supported',
+    #         'id_token_encryption_enc_values_supported',
+    #         'id_token_signing_alg_values_supported',
+    #         'jwks_uri',
+    #         'redirect_uris',
+    #         'request_object_encryption_alg_values_supported',
+    #         'request_object_encryption_enc_values_supported',
+    #         'token_endpoint_auth_methods_supported',
+    #         'userinfo_encryption_alg_values_supported',
+    #         'userinfo_encryption_enc_values_supported'}
+    #     assert set(
+    #         [k for k, v in self.discovery_service.upstream_get("context").prefers().items() if v]) == {
+    #                'callback_uris',
+    #                'client_id',
+    #                'client_secret',
+    #                'grant_types_supported',
+    #                'id_token_signing_alg_values_supported',
+    #                'jwks_uri',
+    #                'redirect_uris',
+    #                'token_endpoint_auth_methods_supported'
+    #            }
+
 #     def test_create_reqistration_request(self):
 #         # get the entity statement from the OP
 #         _info = self.discovery_service.get_request_parameters(iss='https://op.ntnu.no')

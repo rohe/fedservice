@@ -8,6 +8,7 @@ import requests
 from idpyoidc.client.configure import Configuration
 from idpyoidc.message import oauth2
 from idpyoidc.message.oauth2 import ResponseMessage
+from idpyoidc.node import topmost_unit
 
 from fedservice.entity.service import FederationService
 from fedservice.entity.utils import get_federation_entity
@@ -73,17 +74,27 @@ class EntityConfiguration(FederationService):
             method = self.http_method
 
         if request_args:
-            entity_id = request_args.get('entity_id', kwargs.get("entity_id"))
+            _issuer = request_args.get('entity_id', request_args.get("iss", ""))
         else:
-            entity_id = kwargs.get("entity_id")
+            _issuer = kwargs.get("entity_id", kwargs.get("iss", ""))
 
-        if not entity_id:
-            raise AttributeError("Missing entity_id")
+        if not _issuer:
+            _root = topmost_unit(self)
+            for key, _unit in _root.items():
+                if key == "federation_entity":
+                    pass
+                else:
+                    _issuer = _unit.context.get("issuer")
+                    if _issuer:
+                        break
+
+            if not _issuer:
+                raise AttributeError("Missing issuer id")
 
         if tenant:
-            _url = construct_tenant_well_known_url(entity_id, "openid-federation")
+            _url = construct_tenant_well_known_url(_issuer, "openid-federation")
         else:
-            _url = construct_well_known_url(entity_id, "openid-federation")
+            _url = construct_well_known_url(_issuer, "openid-federation")
 
         _info = {
             "method": method,

@@ -1,3 +1,4 @@
+from typing import Any
 from typing import Optional
 from typing import Union
 
@@ -61,6 +62,11 @@ class Combo(Unit):
     def items(self):
         return self._part.items()
 
+    def get(self, item: Optional[str], default:Optional[Any] = None):
+        if item in self._part:
+            return self._part[item]
+        else:
+            return default
 
 class FederationCombo(Combo):
 

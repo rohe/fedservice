@@ -203,7 +203,7 @@ class FederationEntity(Unit):
 
     def get_endpoint_claims(self):
         _info = {}
-        for endp in self.all_endpoints().values():
+        for endp in self.server.endpoint.values():
             if endp.endpoint_name:
                 _info[endp.endpoint_name] = endp.full_path
         return _info

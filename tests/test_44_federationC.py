@@ -4,15 +4,15 @@ from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.oidc.token import Token
 from idpyoidc.server.oidc.userinfo import UserInfo
 
+from fedservice.appclient import ClientEntity
+from fedservice.appserver import ServerEntity
+from fedservice.appserver.oidc.authorization import Authorization
+from fedservice.appserver.oidc.registration import Registration
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
-from fedservice.op import ServerEntity
-from fedservice.op.authorization import Authorization
-from fedservice.op.registration import Registration
-from fedservice.appclient import ClientEntity
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
@@ -32,13 +32,10 @@ TA_ENDPOINTS = ["list", "fetch", "entity_configuration"]
 
 RESPONSE_TYPES_SUPPORTED = [
     ["code"],
-    ["token"],
     ["id_token"],
     ["code", "token"],
     ["code", "id_token"],
-    ["id_token", "token"],
     ["code", "token", "id_token"],
-    ["none"],
 ]
 
 SESSION_PARAMS = {"encrypter": CRYPT_CONFIG}
@@ -252,7 +249,6 @@ class TestComboCollect(object):
         self.ta.server.subordinate[OP_ID] = {
             "jwks": self.op["federation_entity"].keyjar.export_jwks(),
             'authority_hints': [TA_ID]
-
         }
 
     def test_setup(self):
