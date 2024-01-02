@@ -23,7 +23,8 @@ class Combo(Unit):
         if not httpc_params:
             httpc_params = self._get_httpc_params(config)
 
-        Unit.__init__(self, config=config, httpc=httpc, issuer_id=self.entity_id, keyjar=keyjar)
+        Unit.__init__(self, config=config, httpc=httpc, issuer_id=self.entity_id, keyjar=keyjar,
+                      httpc_params=httpc_params)
         self._part = {}
         for key, spec in config.items():
             if isinstance(spec, dict) and 'class' in spec:
