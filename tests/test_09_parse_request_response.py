@@ -7,7 +7,7 @@ from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.entity import FederationEntity
-from fedservice.rp import ClientEntity
+from fedservice.appclient import ClientEntity
 
 LEAF_ID = 'https://foodle.uninett.no'
 

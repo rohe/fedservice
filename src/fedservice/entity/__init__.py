@@ -134,9 +134,9 @@ class FederationEntity(Unit):
         preference.update(self.get_endpoint_claims())
         return {"federation_entity": preference}
 
-    def get_endpoints(self, *arg):
+    def get_all_endpoints(self, *arg):
         if self.server:
-            return self.server.endpoint
+            return list(self.server.endpoint.keys())
         else:
             return None
 
@@ -154,6 +154,9 @@ class FederationEntity(Unit):
             return self.client.get_service(service_name)
         except KeyError:
             return None
+
+    def get_all_services(self, *args):
+        return list(self.client.service.db.keys())
 
     def get_authority_hints(self, *args):
         return self.context.authority_hints
@@ -200,7 +203,7 @@ class FederationEntity(Unit):
 
     def get_endpoint_claims(self):
         _info = {}
-        for endp in self.get_endpoints().values():
+        for endp in self.server.endpoint.values():
             if endp.endpoint_name:
                 _info[endp.endpoint_name] = endp.full_path
         return _info

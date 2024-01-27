@@ -1,3 +1,4 @@
+from typing import Any
 from typing import Optional
 from typing import Union
 
@@ -22,7 +23,8 @@ class Combo(Unit):
         if not httpc_params:
             httpc_params = self._get_httpc_params(config)
 
-        Unit.__init__(self, config=config, httpc=httpc, issuer_id=self.entity_id, keyjar=keyjar)
+        Unit.__init__(self, config=config, httpc=httpc, issuer_id=self.entity_id, keyjar=keyjar,
+                      httpc_params=httpc_params)
         self._part = {}
         for key, spec in config.items():
             if isinstance(spec, dict) and 'class' in spec:
@@ -61,6 +63,11 @@ class Combo(Unit):
     def items(self):
         return self._part.items()
 
+    def get(self, item: Optional[str], default:Optional[Any] = None):
+        if item in self._part:
+            return self._part[item]
+        else:
+            return default
 
 class FederationCombo(Combo):
 

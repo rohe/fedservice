@@ -15,10 +15,14 @@ class FederationService(Service):
 
         _context = self.upstream_get("context")
         _federation_entity = get_federation_entity(self)
+        if _federation_entity:
+            _keyjar = _federation_entity.keyjar
+        else:
+            _keyjar = _context.keyjar
 
         kwargs = {
             "iss": _context.issuer,
-            "keyjar": _federation_entity.keyjar,
+            "keyjar": _keyjar,
             "verify": True
         }
 

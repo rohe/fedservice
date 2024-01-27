@@ -22,4 +22,8 @@ def get_federation_entity(unit):
     elif unit.upstream_get:
         return get_federation_entity(unit.upstream_get('unit'))
     else:
-        return unit['federation_entity']
+        _get = getattr(unit, "get", None)
+        if _get:
+            return _get('federation_entity', None)
+        else:
+            return None

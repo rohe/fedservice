@@ -7,12 +7,12 @@ from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.configure import DEFAULT_OIDC_ENDPOINTS
 
-from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
-from fedservice.defaults import FEDERATION_ENTITY_FUNCTIONS
-from fedservice.defaults import FEDERATION_ENTITY_SERVICES
-from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
-from fedservice.op import ServerEntity
 from fedservice.appclient import ClientEntity
+from fedservice.appserver import ServerEntity
+from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
+from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
+from fedservice.defaults import LEAF_ENDPOINTS
+from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 from . import create_trust_chain_messages
@@ -26,7 +26,7 @@ RP_ID = "https://rp.example.org"
 OP_ID = "https://op.example.org"
 IM_ID = "https://im.example.org"
 
-TA_ENDPOINTS = ["entity_configuration", "fetch", "metadata_verification"]
+TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
 
 RESPONSE_TYPES_SUPPORTED = [
     ["code"],
@@ -53,7 +53,9 @@ class TestExplicit(object):
         #          |
         #          RP
 
+        ########################################
         # TRUST ANCHOR
+        ########################################
 
         self.ta = make_federation_entity(
             TA_ID,
@@ -62,13 +64,14 @@ class TestExplicit(object):
                 "homepage_uri": "https://ta.example.com",
                 "contacts": "operations@ta.example.com"
             },
-            key_config={"key_defs": DEFAULT_KEY_DEFS},
-            endpoints=TA_ENDPOINTS
+            key_config={"key_defs": DEFAULT_KEY_DEFS}
         )
 
         ANCHOR = {TA_ID: self.ta.keyjar.export_jwks()}
 
+        ########################################
         # intermediate
+        ########################################
 
         self.im = make_federation_entity(
             IM_ID,
@@ -79,9 +82,9 @@ class TestExplicit(object):
             },
             key_config={"key_defs": DEFAULT_KEY_DEFS},
             authority_hints=[TA_ID],
-            endpoints=["entity_configuration", "fetch", "list"],
             trust_anchors=ANCHOR
         )
+
         self.ta.server.subordinate[IM_ID] = {
             "jwks": self.im.keyjar.export_jwks(),
             'entity_types': ['federation_entity']
@@ -95,14 +98,7 @@ class TestExplicit(object):
         oidc_service = DEFAULT_OIDC_SERVICES.copy()
         oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
         # del oidc_service['web_finger']
-        oidc_service['authorization'] = {
-            "class": "fedservice.appclient.oidc.authorization.Authorization"}
-
-        _functions = list(FEDERATION_ENTITY_FUNCTIONS.keys())
-        _functions.append("metadata_verifier")
-
-        _services = list(FEDERATION_ENTITY_SERVICES.keys())
-        _services.append("metadata_verification")
+        oidc_service['authorization'] = {"class": "fedservice.appclient.oidc.authorization.Authorization"}
 
         self.rp = make_federation_combo(
             entity_id=RP_ID,
@@ -113,9 +109,7 @@ class TestExplicit(object):
             },
             authority_hints=[IM_ID],
             key_config={"key_defs": DEFAULT_KEY_DEFS},
-            services=_services,
-            functions=_functions,
-            endpoints=["entity_configuration", "metadata_verification"],
+            endpoints=LEAF_ENDPOINTS,
             trust_anchors=ANCHOR,
             entity_type={
                 "openid_relying_party": {
@@ -128,8 +122,7 @@ class TestExplicit(object):
                             'client_secret': 'a longesh password',
                             'redirect_uris': ['https://example.com/cli/authz_cb'],
                             "preference": {
-                                "grant_types": ['authorization_code', 'implicit',
-                                                'refresh_token'],
+                                "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
                                 "id_token_signed_response_alg": "ES256",
                                 "token_endpoint_auth_method": "client_secret_basic",
                                 "token_endpoint_auth_signing_alg": "ES256",
@@ -142,17 +135,18 @@ class TestExplicit(object):
                 }
             }
         )
+
         self.im.server.subordinate[RP_ID] = {
-            "jwks": self.rp["federation_entity"].keyjar.export_jwks(),
-            'entity_types': ['federation_entity']
+            "jwks": self.rp['federation_entity'].keyjar.export_jwks(),
+            'entity_types': ['federation_entity', 'openid_relying_party']
         }
 
         ########################################
         # Leaf OP
         ########################################
 
-        _endpoints = DEFAULT_OIDC_ENDPOINTS.copy()
-        _endpoints["register"] = {
+        _op_endpoints = DEFAULT_OIDC_ENDPOINTS.copy()
+        _op_endpoints["register"] = {
             "path": "registration",
             "class": "fedservice.op.registration.Registration",
             "kwargs": {}
@@ -167,8 +161,8 @@ class TestExplicit(object):
             },
             authority_hints=[TA_ID],
             key_config={"key_defs": DEFAULT_KEY_DEFS},
-            endpoints=["entity_configuration", "metadata_verification"],
             trust_anchors=ANCHOR,
+            endpoints=LEAF_ENDPOINTS,
             entity_type={
                 "openid_provider": {
                     'class': ServerEntity,
@@ -190,9 +184,9 @@ class TestExplicit(object):
                                 "uri_path": "static/jwks.json"},
                             "template_dir": "template",
                             "session_params": SESSION_PARAMS,
-                            "endpoint": _endpoints
+                            "endpoint": _op_endpoints
                         }
-                    }
+                    },
                 }
             }
         )
@@ -264,23 +258,15 @@ class TestExplicit(object):
         # [4] The RP receives the registration response and calculates the preference
 
         _msgs = create_trust_chain_messages(self.rp, self.im, self.ta)
+        # Cached
         del _msgs[WELL_KNOWN_FEDERATION_ENDPOINT.format(self.ta.entity_id)]
         # _msgs = {}
-
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():
                 rsps.add("GET", _url, body=_jwks,
                          headers={"Content-Type": "application/json"}, status=200)
-            _endpoint = self.rp["federation_entity"].server.get_endpoint('metadata_verification')
-
-            _resp = {"registration_response": resp['response_msg']}
-            post_msg = {_endpoint.full_path: _endpoint.process_request(_resp)["response_msg"]}
-
-        with responses.RequestsMock() as rsps:
-            for _url, _body in post_msg.items():
-                rsps.add("POST", _url, body=_body,
-                         headers={"Content-Type": "text/html"}, status=200)
 
             reg_resp = _reg_service.parse_response(resp['response_msg'])
 
-        assert reg_resp == "OK"
+        assert reg_resp
+        assert 'client_id' in reg_resp

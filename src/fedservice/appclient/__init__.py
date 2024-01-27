@@ -1,14 +1,17 @@
 import logging
+import re
 from json import JSONDecodeError
 from typing import Callable
 from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
+from cryptojwt.key_jar import init_key_jar
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.client.defaults import SUCCESSFUL
 from idpyoidc.client.exception import OidcServiceError
 from idpyoidc.client.oidc.registration import Registration
+from idpyoidc.client.rp_handler import RPHandler
 from idpyoidc.client.service import init_services
 from idpyoidc.client.service import REQUEST_INFO
 from idpyoidc.client.service import Service
@@ -47,7 +50,8 @@ class ClientEntity(ClientUnit):
         if config is None:
             config = {}
 
-        client_type = config.get('client_type', client_type)
+        self.client_type = config.get('client_type', client_type)
+        self.entity_id = entity_id or config.get("entity_id", config.get("client_id", ""))
 
         ClientUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, context=context, config=config,
@@ -71,7 +75,8 @@ class ClientEntity(ClientUnit):
                 config['key_conf'] = key_conf
             self.context = ServiceContext(
                 config=config, jwks_uri=jwks_uri, key_conf=key_conf, upstream_get=self.unit_get,
-                keyjar=self.keyjar, metadata_class=RPClaims(), client_type=client_type
+                keyjar=self.keyjar, metadata_class=RPClaims(), client_type=self.client_type,
+                entity_id=self.entity_id
             )
 
         if "add_ons" in config:
@@ -331,9 +336,32 @@ class ClientEntity(ClientUnit):
             return err_resp
         else:
             logger.error(f"Error response ({reqresp.status_code}): {reqresp.text}")
-            raise OidcServiceError(
-                f"HTTP ERROR: {reqresp.text} [{reqresp.status_code}] on {reqresp.url}"
-            )
+            raise OidcServiceError(f"HTTP ERROR: {reqresp.text} [{reqresp.status_code}] on {reqresp.url}")
+
+
+def init_oidc_rp_handler(app, dir: Optional[str] = ""):
+    _rp_conf = app.rp_config
+
+    if _rp_conf.key_conf:
+        _kj = init_key_jar(**_rp_conf.key_conf)
+        _path = _rp_conf.key_conf['public_path']
+        # removes ./ and / from the beginning of the string
+        _path = re.sub('^(.)/', '', _path)
+    else:
+        _kj = KeyJar()
+        _path = ''
+    _kj.httpc_params = _rp_conf.httpc_params
+
+    rph = RPHandler(base_url=dir,
+                    client_configs=_rp_conf.clients,
+                    services=_rp_conf.services,
+                    keyjar=_kj,
+                    hash_seed=_rp_conf.hash_seed,
+                    httpc_params=_rp_conf.httpc_params,
+                    jwks_path=_path,
+                    )
+
+    return rph
 
 #
 # class RPHandler(rp_handler.RPHandler):

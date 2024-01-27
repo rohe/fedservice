@@ -6,7 +6,7 @@ from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.entity import FederationEntity
-from fedservice.rp import ClientEntity
+from fedservice.appclient import ClientEntity
 
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},

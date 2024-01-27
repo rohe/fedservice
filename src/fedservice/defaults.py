@@ -18,18 +18,23 @@ ENTITY_TYPE2METADATA_CLASS = {
 
 DEFAULT_OIDC_FED_SERVICES = {
     'discovery': {
-        'class': 'fedservice.rp.provider_info_discovery.ProviderInfoDiscovery'},
+        'class': 'fedservice.appclient.oidc.provider_info_discovery.ProviderInfoDiscovery'},
     'registration': {
-        'class': 'fedservice.rp.registration.Registration'},
+        'class': 'fedservice.appclient.oidc.registration.Registration'},
+}
+
+DEFAULT_OAUTH2_FED_SERVICES = {
+    'discovery': {
+        'class': 'fedservice.appclient.oauth2.server_metadata.ServerMetadata'}
 }
 
 SERVICES = {
     'discovery': {
-        'class': 'fedservice.rp.provider_info_discovery.ProviderInfoDiscovery',
+        'class': 'fedservice.appclient.oidc.provider_info_discovery.ProviderInfoDiscovery',
         "kwargs": {}
     },
     'registration': {
-        'class': 'fedservice.rp.registration.Registration',
+        'class': 'fedservice.appclient.oidc.registration.Registration',
         "kwargs": {}
     },
     "entity_configuration": {

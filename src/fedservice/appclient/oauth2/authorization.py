@@ -1,12 +1,6 @@
 from idpyoidc.client.exception import OtherError
-from idpyoidc.client.oidc import authorization
+from idpyoidc.client.oauth2 import authorization
 from idpyoidc.exception import UnSupported
-
-
-# def add_callback_uris(request_args=None, service=None, **kwargs):
-#     registration.add_callback_uris(request_args=request_args, service=service, **kwargs)
-#     del request_args['redirect_uris']
-#     return request_args, {}
 
 
 class Authorization(authorization.Authorization):

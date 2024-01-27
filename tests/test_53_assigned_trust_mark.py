@@ -6,7 +6,7 @@ from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
-from fedservice.rp import ClientEntity
+from fedservice.appclient import ClientEntity
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 
