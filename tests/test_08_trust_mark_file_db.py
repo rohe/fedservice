@@ -2,7 +2,7 @@ import os
 
 from cryptojwt.jwt import utc_time_sans_frac
 
-from fedservice.trust_mark_entity.trust_mark_issuer import FileDB
+from fedservice.trust_mark_entity import FileDB
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
