@@ -4,7 +4,7 @@ from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.util import rndstr
 
 from fedservice.defaults import LEAF_ENDPOINTS
-from fedservice.trust_mark_issuer import create_trust_mark
+from fedservice.trust_mark_entity.trust_mark_issuer import create_trust_mark
 from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
 

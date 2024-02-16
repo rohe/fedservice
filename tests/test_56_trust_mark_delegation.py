@@ -10,7 +10,7 @@ import responses
 
 from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.message import TrustMarkRequest
-from fedservice.trust_mark_issuer import TrustMarkIssuer
+from fedservice.trust_mark_entity.trust_mark_issuer import TrustMarkIssuer
 from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
 

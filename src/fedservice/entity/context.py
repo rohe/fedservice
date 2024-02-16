@@ -105,9 +105,12 @@ class FederationContext(ImpExp):
             _unit = self.upstream_get('unit')
             _unit.keyjar = _keyjar
         else:
-            self.kejar = _keyjar
+            self.keyjar = _keyjar
 
         self.setup_client_authn_methods()
+
+        # For backward compatibility
+        self.kid = {"sig": {}, "enc": {}}
 
     def supports(self):
         res = {}
@@ -179,3 +182,4 @@ class FederationServerContext(FederationContext):
                                                                    trust_marks=_sstm)
 
         self.trust_marks = trust_marks
+        self.jti_db = {}

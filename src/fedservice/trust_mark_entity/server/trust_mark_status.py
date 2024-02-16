@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import Callable
 from typing import Optional
@@ -8,9 +7,6 @@ from cryptojwt import JWT
 from idpyoidc.message import Message
 from idpyoidc.message import oidc
 from idpyoidc.server.endpoint import Endpoint
-from idpyoidc.util import instantiate
-
-from fedservice.trust_mark_issuer import TrustMarkIssuer
 
 logger = logging.getLogger(__name__)
 
@@ -23,36 +19,33 @@ def create_trust_mark(keyjar, entity_id, **kwargs):
 class TrustMarkStatus(Endpoint):
     request_cls = oidc.Message
     response_format = "json"
-    name = "status"
+    name = "trust_mark_status"
     endpoint_name = 'federation_trust_mark_status_endpoint'
 
     def __init__(self,
                  upstream_get: Callable,
-                 trust_mark_issuer: Union[TrustMarkIssuer, dict],
                  **kwargs):
+        _client_authn_method = kwargs.get("client_authn_method", None)
+        if not _client_authn_method:
+            kwargs["client_authn_method"] = ["none"]
+
         Endpoint.__init__(self, upstream_get, **kwargs)
-        if isinstance(trust_mark_issuer, dict):
-            self.trust_mark_issuer = instantiate(trust_mark_issuer['class'],
-                                                 upstream_get=upstream_get,
-                                                 **trust_mark_issuer['kwargs'])
-        else:
-            trust_mark_issuer.upstream_get = upstream_get
-            self.trust_mark_issuer = trust_mark_issuer
 
     def process_request(self,
                         request: Optional[dict] = None,
                         **kwargs) -> dict:
+        _trust_mark_issuer = self.upstream_get("unit")
 
         if 'trust_mark' in request:
-            _mark = self.trust_mark_issuer.unpack_trust_mark(request['trust_mark'])
-            if self.trust_mark_issuer.find(_mark['id'], _mark['sub']):
+            _mark = _trust_mark_issuer.unpack_trust_mark(request['trust_mark'])
+            if _trust_mark_issuer.find(_mark['id'], _mark['sub']):
                 return {'response_args': {'active': True}}
         else:
             if 'sub' in request and 'id' in request:
-                if self.trust_mark_issuer.find(request['id'], request['sub']):
+                if _trust_mark_issuer.find(request['id'], request['sub']):
                     return {'response_args': {'active': True}}
 
-        return {'response_args': {'active': False}}
+        return self.error_cls(error="not_found", error_description="No active trust mark matching the query")
 
     def response_info(
             self,

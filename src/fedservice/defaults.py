@@ -49,6 +49,14 @@ SERVICES = {
         "class": 'fedservice.entity.client.trust_mark_status.TrustMarkStatus',
         "kwargs": {}
     },
+    "trust_mark_list": {
+        "class": 'fedservice.entity.client.trust_mark_list.TrustMarkList',
+        "kwargs": {}
+    },
+    "trust_mark": {
+        "class": 'fedservice.entity.client.trust_mark.TrustMark',
+        "kwargs": {}
+    },
     "resolve": {
         "class": 'fedservice.entity.client.resolve.Resolve',
         "kwargs": {}
@@ -94,9 +102,19 @@ FEDERATION_ENDPOINTS = {
         "class": 'fedservice.entity.server.resolve.Resolve',
         "kwargs": {}
     },
-    "status": {
-        "path": "status",
-        "class": 'fedservice.entity.server.status.TrustMarkStatus',
+    "trust_mark_status": {
+        "path": "trust_mark_status",
+        "class": 'fedservice.entity.server.trust_mark_status.TrustMarkStatus',
+        "kwargs": {}
+    },
+    "trust_mark": {
+        "path": "trust_mark",
+        "class": 'fedservice.entity.server.trust_mark.TrustMark',
+        "kwargs": {}
+    },
+    "trust_mark_list": {
+        "path": "trust_mark_list",
+        "class": 'fedservice.entity.server.trust_mark_list.TrustMarkList',
         "kwargs": {}
     },
     "metadata_verification": {
@@ -116,7 +134,8 @@ DEFAULT_FEDERATION_ENTITY_ENDPOINTS = INTERMEDIATE_ENDPOINTS
 
 LEAF_ENDPOINTS = federation_endpoints("entity_configuration")
 
-TRUST_MARK_ISSUER_ENDPOINTS = federation_endpoints("entity_configuration", "status")
+TRUST_MARK_ISSUER_ENDPOINTS = federation_endpoints("entity_configuration", "trust_mark_status",
+                                                   "trust_mark", "trust_mark_list")
 
 WELL_KNOWN_FEDERATION_ENDPOINT = "{}/.well-known/openid-federation"
 

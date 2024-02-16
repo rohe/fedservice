@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class FederationServerEntity(ServerUnit):
-    name = 'federation_entitygi'
+    name = 'federation_entity'
     parameter = {"endpoint": [Endpoint], "context": EndpointContext}
 
     def __init__(
@@ -106,3 +106,9 @@ class FederationServerEntity(ServerUnit):
         self.context.client_authn_methods = client_auth_setup(
             self.unit_get, self.conf.get("client_authn_methods")
         )
+
+class Context(object):
+
+    def __init__(self):
+        self.client_authn_methods = {}
+
