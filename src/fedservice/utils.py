@@ -130,6 +130,9 @@ def make_federation_entity(entity_id: str,
 
     fe = FederationEntity(client_authn_methods=client_authn_methods, **_config)
     if trust_anchors:
+        if "class" in trust_anchors and "kwargs" in trust_anchors:
+            trust_anchors = execute(trust_anchors)
+
         for id, jwk in trust_anchors.items():
             fe.keyjar.import_jwks(jwk, id)
 
@@ -205,7 +208,7 @@ def make_federation_combo(entity_id: str,
         federation_entity = entity
 
     if trust_anchors:
-        if "class" in trust_anchors:
+        if "class" in trust_anchors and "kwargs" in trust_anchors:
             trust_anchors = execute(trust_anchors)
 
         for id, jwk in trust_anchors.items():
@@ -214,7 +217,7 @@ def make_federation_combo(entity_id: str,
         federation_entity.function.trust_chain_collector.trust_anchors = trust_anchors
 
     if subordinate:
-        if "class" in subordinate:
+        if "class" in subordinate and "kwargs" in subordinate:
             federation_entity.server.subordinate = execute(subordinate)
         else:
             for id, info in subordinate.items():
