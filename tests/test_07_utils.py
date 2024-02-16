@@ -17,8 +17,6 @@ jwks = open(os.path.join(BASE_PATH, 'base_data', 'feide.no', 'feide.no', 'jwks.j
 
 ANCHOR = {'https://feide.no': json.loads(jwks)}
 
-BASE_PATH = os.path.abspath(os.path.dirname(__file__))
-
 foodle_jwks = open(
     os.path.join(BASE_PATH, 'base_data', 'foodle.uninett.no', 'foodle.uninett.no', 'jwks.json')
 ).read()

@@ -6,6 +6,7 @@ from cryptojwt import as_unicode
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 from cryptojwt.utils import importer
+from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.server.util import execute
 from idpyoidc.util import instantiate
 from requests import request
@@ -40,6 +41,7 @@ class FederationEntity(Unit):
                  preference: Optional[dict] = None,
                  authority_hints: Optional[list] = None,
                  persistence: Optional[dict] = None,
+                 client_authn_methods: Optional[list] = None,
                  **kwargs
                  ):
 
@@ -71,6 +73,9 @@ class FederationEntity(Unit):
                                          authority_hints=authority_hints, keyjar=self.keyjar,
                                          preference=preference)
 
+        if client_authn_methods:
+            self.context.client_authn_methods = client_auth_setup(client_authn_methods)
+
         self.trust_chain = {}
 
         if persistence:
@@ -86,6 +91,9 @@ class FederationEntity(Unit):
         return self.context
 
     def get_federation_entity(self):
+        return self
+
+    def get_entity(self):
         return self
 
     def get_entity_type(self, entity_type):
@@ -122,10 +130,7 @@ class FederationEntity(Unit):
         metadata = self.get_context().claims.prefer
         # collect endpoints
         metadata.update(self.get_endpoint_claims())
-        if "federation_trust_mark_status_endpoint" in metadata:
-            endp = self.server.get_endpoint("status")
-            _jwks = endp.trust_mark_issuer.keyjar.export_jwks()
-            metadata["jwks"]["keys"].extend(_jwks["keys"])
+        _issuer = getattr(self.server.context, "trust_mark_server", None)
         return {"federation_entity": metadata}
 
     def get_preferences(self):
@@ -159,7 +164,10 @@ class FederationEntity(Unit):
         return list(self.client.service.db.keys())
 
     def get_authority_hints(self, *args):
-        return self.context.authority_hints
+        if isinstance(self.context.authority_hints, list):
+            return self.context.authority_hints
+        else:
+            return list(self.context.authority_hints)
 
     def get_context_attribute(self, attr, *args):
         _val = getattr(self.context, attr, None)
@@ -206,6 +214,13 @@ class FederationEntity(Unit):
         for endp in self.server.endpoint.values():
             if endp.endpoint_name:
                 _info[endp.endpoint_name] = endp.full_path
+                for arg, claim in [("client_authn_method", "auth_methods"),
+                                   ("auth_signing_alg_values", "auth_signing_alg_values")]:
+                    _val = getattr(endp, arg, None)
+                    if _val:
+                        # trust_mark_status_endpoint_auth_methods_supported
+                        md_param = f"{endp.name}_endpoint_{claim}_supported"
+                        _info[md_param] = _val
         return _info
 
     def get_trust_chain(self, entity_id):
@@ -219,7 +234,7 @@ class FederationEntity(Unit):
         else:
             return None
 
-    def get_verified_metadata(self, entity_id):
+    def get_verified_metadata(self, entity_id: str, *args):
         _trust_chains = self.trust_chain.get(entity_id)
         if _trust_chains is None:
             _trust_chains = get_verified_trust_chains(self, entity_id)
@@ -230,6 +245,13 @@ class FederationEntity(Unit):
             return _trust_chains[0].metadata
         else:
             return None
+
+    def get_federation_entity_metadata(self, entity_id: str, *args):
+        metadata = self.get_verified_metadata(entity_id, *args)
+        if metadata:
+            return metadata["federation_entity"]
+        else:
+            return metadata
 
     def do_request(
             self,

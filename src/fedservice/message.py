@@ -96,9 +96,26 @@ class FederationEntity(Message):
     """Class representing a Federation Entity."""
     c_param = {
         "federation_fetch_endpoint": SINGLE_REQUIRED_STRING,
+        "federation_fetch_endpoint_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "federation_fetch_endpoint_auth_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
         "federation_list_endpoint": SINGLE_OPTIONAL_STRING,
+        "federation_list_endpoint_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "federation_list_endpoint_auth_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
         "federation_resolve_endpoint": SINGLE_OPTIONAL_STRING,
-        # "federation_status_endpoint": SINGLE_OPTIONAL_STRING,
+        "federation_resolve_endpoint_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "federation_resolve_endpoint_auth_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "federation_trust_mark_status_endpoint": SINGLE_OPTIONAL_STRING,
+        "trust_mark_status_endpoint_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "trust_mark_status_endpoint_auth_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "federation_trust_mark_list_endpoint":SINGLE_OPTIONAL_STRING,
+        "trust_mark_list_endpoint_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "trust_mark_list_endpoint_auth_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "federation_trust_mark_endpoint": SINGLE_OPTIONAL_STRING,
+        "trust_mark_endpoint_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "trust_mark_endpoint_auth_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "federation_historical_keys_endpoint":SINGLE_OPTIONAL_STRING,
+        "historical_keys_endpoint_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "historical_keys_endpoint_auth_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
         "name": SINGLE_OPTIONAL_STRING,
         "contacts": OPTIONAL_LIST_OF_STRINGS,
         "policy_url": SINGLE_OPTIONAL_STRING,
@@ -107,7 +124,7 @@ class FederationEntity(Message):
         "organization_name": SINGLE_OPTIONAL_STRING,
         # If it's a Trust Anchor
         "trust_mark_owners": SINGLE_OPTIONAL_DICT,
-        "trust_mark_issuers": SINGLE_OPTIONAL_DICT
+        "trust_mark_issuers": SINGLE_OPTIONAL_DICT,
     }
 
 
@@ -447,7 +464,7 @@ class TrustMark(JsonWebToken):
         return True
 
 
-class TrustMarkRequest(Message):
+class TrustMarkStatusRequest(Message):
     c_param = {
         "sub": SINGLE_OPTIONAL_STRING,
         "id": SINGLE_OPTIONAL_STRING,
@@ -544,9 +561,35 @@ class RegistrationResponse(ResponseMessage):
     c_param.update(RegistrationRequest.c_param)
 
 
-class HistroricalKeysResponse(Message):
+class HistoricalKeysResponse(Message):
     c_param = {
         'iss': SINGLE_REQUIRED_STRING,
         'iat': SINGLE_REQUIRED_INT,
         'jwks': SINGLE_REQUIRED_DICT
+    }
+
+class TrustMarkRequest(Message):
+    c_param = {
+        "trust_mark_id": SINGLE_REQUIRED_STRING
+    }
+
+
+class TrustMarkEntity(Message):
+    """Class representing a Trust Mark Issuer Entity."""
+    c_param = {
+        "status_endpoint": SINGLE_OPTIONAL_STRING,
+        "status_endpoint_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "status_endpoint_auth_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "list_endpoint":SINGLE_OPTIONAL_STRING,
+        "list_endpoint_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "list_endpoint_auth_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "trust_mark_endpoint": SINGLE_OPTIONAL_STRING,
+        "trust_mark_endpoint_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "trust_mark_endpoint_auth_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "name": SINGLE_OPTIONAL_STRING,
+        "contacts": OPTIONAL_LIST_OF_STRINGS,
+        "policy_url": SINGLE_OPTIONAL_STRING,
+        "homepage_uri": SINGLE_OPTIONAL_STRING,
+        # "trust_marks": SINGLE_OPTIONAL_JSON,
+        "organization_name": SINGLE_OPTIONAL_STRING,
     }

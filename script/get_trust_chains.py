@@ -38,7 +38,7 @@ LOGGING = {
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', dest='insecure', action='store_true')
-    parser.add_argument('-t', dest='trusted_roots_file')
+    parser.add_argument('-t', dest='trust_anchors')
     parser.add_argument('-l', dest='logging', action='store_true')
     parser.add_argument(dest="url")
     args = parser.parse_args()
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     if args.logging:
         logger = configure_logging(config=LOGGING).getChild(__name__)
 
-    trust_anchors = json.loads(open(args.trusted_roots_file).read())
+    trust_anchors = json.loads(open(args.trust_anchors).read())
 
     # Creates an entity that can do the collecting of information
     federation_entity = make_federation_entity(entity_id="https://localhost",
