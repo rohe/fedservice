@@ -117,7 +117,7 @@ class TestComboCollect(object):
                             }
                         },
                         "trust_mark_db": {
-                            "class": "fedservice.trust_mark_issuer.FileDB",
+                            "class": "fedservice.trust_mark_entity.FileDB",
                             "kwargs": {
                                 "https://refeds.org/sirtfi": "sirtfi",
                             }
