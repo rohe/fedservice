@@ -131,10 +131,11 @@ class TestFederationEntity(object):
                                                                         'homepage_uri',
                                                                         'jwks',
                                                                         'organization_name',
-                                                                        'trust_mark_endpoint_auth_methods_supported',
-                                                                        'trust_mark_endpoint_auth_signing_alg_values_supported',
-                                                                        'trust_mark_list_endpoint_auth_methods_supported',
-                                                                        'trust_mark_status_endpoint_auth_methods_supported'}
+                                                                        'federation_trust_mark_status_endpoint_auth_methods',
+                                                                        'federation_trust_mark_endpoint_auth_signing_alg_values',
+                                                                        'federation_trust_mark_endpoint_auth_methods',
+                                                                        'federation_trust_mark_list_endpoint_auth_methods'
+                                                                        }
 
     def test_fetch(self):
         _endpoint = self.entity.server.get_endpoint('fetch')
