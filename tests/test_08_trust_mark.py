@@ -77,6 +77,16 @@ class TestSignedTrustMark():
                                     "ES256"
                                 ]
                             }
+                        },
+                        "trust_mark_list": {
+                            "path": "trust_mark_list",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList",
+                            "kwargs": {}
+                        },
+                        "trust_mark_status": {
+                            "path": "trust_mark_status",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark_status.TrustMarkStatus",
+                            "kwargs": {}
                         }
                     }
                 }

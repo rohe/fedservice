@@ -59,8 +59,46 @@ class TestTrustMarkDelegation():
 
         ANCHOR = {self.ta.entity_id: self.ta.keyjar.export_jwks()}
 
+        TRUST_MARK_ISSUER_CONF = {
+            "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
+            "kwargs": {
+                "entity_id": TMI_ID,
+                "trust_mark_specification": {
+                    TRUST_MARK_ID: {
+                        "lifetime": 2592000
+                    }
+                },
+                "trust_mark_db": {
+                    "class": "fedservice.trust_mark_entity.FileDB",
+                    "kwargs": {
+                        TRUST_MARK_ID: os.path.join(BASE_PATH, "tmi/trust_mark")
+                    }
+                },
+                "endpoint": {
+                    "trust_mark": {
+                        "path": "trust_mark",
+                        "class": "fedservice.trust_mark_entity.server.trust_mark.TrustMark",
+                        "kwargs": {
+                            "client_authn_method": ["private_key_jwt"],
+                            "auth_signing_alg_values": ["ES256"]
+                        }
+                    },
+                    "trust_mark_list": {
+                        "path": "trust_mark_list",
+                        "class": "fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList",
+                        "kwargs": {}
+                    },
+                    "trust_mark_status": {
+                        "path": "trust_mark_status",
+                        "class": "fedservice.trust_mark_entity.server.trust_mark_status.TrustMarkStatus",
+                        "kwargs": {}
+                    }
+                },
+            }
+        }
+
         # Federation entity with trust mark endpoints
-        self.trust_mark_issuer = make_federation_entity(
+        self.trust_mark_issuer = make_federation_combo(
             TMI_ID,
             preference={
                 "organization_name": "Trust Mark Issuer 'R US"
@@ -69,46 +107,13 @@ class TestTrustMarkDelegation():
             authority_hints=[TA_ID],
             endpoints=["entity_configuration"],
             trust_anchors=ANCHOR,
-            trust_mark_entity={
-                "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
-                "kwargs": {
-                    "trust_mark_specification": {
-                        TRUST_MARK_ID: {"lifetime": 2592000}
-                    },
-                    "trust_mark_db": {
-                        "class": "fedservice.trust_mark_entity.FileDB",
-                        "kwargs": {TRUST_MARK_ID: full_path("trust_mark")}
-                    },
-                    "endpoint": {
-                        "trust_mark": {
-                            "path": "trust_mark",
-                            "class": "fedservice.trust_mark_entity.server.trust_mark.TrustMark",
-                            "kwargs": {
-                                "client_authn_method": [
-                                    "private_key_jwt"
-                                ],
-                                "auth_signing_alg_values": [
-                                    "ES256"
-                                ]
-                            }
-                        },
-                        "trust_mark_list": {
-                            "path": "trust_mark_list",
-                            "class": "fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList",
-                            "kwargs": {}
-                        },
-                        "trust_mark_status": {
-                            "path": "trust_mark_status",
-                            "class": "fedservice.trust_mark_entity.server.trust_mark_status.TrustMarkStatus",
-                            "kwargs": {}
-                        }
-                    }
-                }
+            entity_type={
+                "trust_mark_entity": TRUST_MARK_ISSUER_CONF
             }
         )
 
         self.ta.server.subordinate[TMI_ID] = {
-            "jwks": self.trust_mark_issuer.keyjar.export_jwks(),
+            "jwks": self.trust_mark_issuer["federation_entity"].keyjar.export_jwks(),
             'authority_hints': [TA_ID]
         }
 
@@ -146,7 +151,7 @@ class TestTrustMarkDelegation():
 
     def test_list_trust_marks_empty(self):
         _client_service = self.federation_entity.get_service("trust_mark_list")
-        _server_endpoint = self.trust_mark_issuer.get_endpoint("trust_mark_list")
+        _server_endpoint = self.trust_mark_issuer["trust_mark_entity"].get_endpoint("trust_mark_list")
 
         req_info = _client_service.get_request_parameters(request_args={"trust_mark_id": TRUST_MARK_ID},
                                                           fetch_endpoint=_server_endpoint.full_path)
@@ -162,7 +167,7 @@ class TestTrustMarkDelegation():
     def test_get_trust_mark(self):
         self.federation_entity.client.context.issuer = self.trust_mark_issuer.entity_id
 
-        _server_endpoint = self.trust_mark_issuer.get_endpoint("trust_mark")
+        _server_endpoint = self.trust_mark_issuer["trust_mark_entity"].get_endpoint("trust_mark")
         _client_service = self.federation_entity.get_service("trust_mark")
         _audience = _server_endpoint.full_path
 
@@ -196,7 +201,7 @@ class TestTrustMarkDelegation():
         req_info = _client_service.get_request_parameters(request_args={"trust_mark_id": TRUST_MARK_ID},
                                                           fetch_endpoint=f"{self.trust_mark_issuer.entity_id}/trust_mark_list")
 
-        _server_endpoint = self.trust_mark_issuer.get_endpoint("trust_mark_list")
+        _server_endpoint = self.trust_mark_issuer["trust_mark_entity"].get_endpoint("trust_mark_list")
         _query = req_info["url"].split("?")[1]
         _req = Message().from_urlencoded(_query)
         _parse_resp = _server_endpoint.parse_request(_req.to_dict())
