@@ -148,7 +148,7 @@ class TestExplicit(object):
         _op_endpoints = DEFAULT_OIDC_ENDPOINTS.copy()
         _op_endpoints["register"] = {
             "path": "registration",
-            "class": "fedservice.op.registration.Registration",
+            "class": "fedservice.appserver.oidc.registration.Registration",
             "kwargs": {}
         }
 

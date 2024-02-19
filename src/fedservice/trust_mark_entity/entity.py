@@ -133,8 +133,8 @@ class TrustMarkEntity(Unit):
         for name, endp in self.endpoint.items():
             if endp.full_path:
                 md[f"{endp.name}_endpoint"] = endp.full_path
-            for arg, txt in [("auth_signing_alg_values", "endpoint_auth_signing_alg_values"),
-                             ("client_authn_method", "endpoint_auth_methods")]:
+            for arg, txt in [("auth_signing_alg_values", "auth_signing_algs"),
+                             ("client_authn_method", "auth_methods")]:
                 _val = getattr(endp, arg, None)
                 if _val:
                     md[f"{endp.name}_{txt}"] = _val
