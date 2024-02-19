@@ -151,3 +151,21 @@ Finalizing the setup
 
 At this point, if you have followed the steps above, you should restart the trust anchor.
 I should not be necessary to do so but just in case.
+
+
+Creating a trust mark for an entity
+-----------------------------------
+
+For this the script *create_trust_mark.py* is included.
+Typical usage::
+
+    ./create_trust_mark.py -d trust_mark_issuer -m http://example.com/trust_mark_id -e https://127.0.0.1:6000
+
+
+usage: create_trust_mark.py [-h] [-d DIR_NAME] [-e ENTITY_ID] [-m TRUST_MARK_ID] ::
+
+    options:
+      -h, --help            show this help message and exit
+      -d DIR_NAME, --dir_name DIR_NAME
+      -e ENTITY_ID, --entity_id ENTITY_ID
+      -m TRUST_MARK_ID, --trust_mark_id TRUST_MARK_ID
