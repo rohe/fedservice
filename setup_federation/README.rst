@@ -11,7 +11,8 @@ The federation consists of the following entities:
 In this example all the entities are running on the same machine.
 It is of course not necessary to do so.
 If you run the entities on separate machines you have to move the necessary
-files inbetween them.
+files inbetween them. You also have to change **entity_id**, **port** and **domain**
+in the relevant conf.json file.
 
 Start by setting up the trust anchor.
 
