@@ -115,8 +115,7 @@ class ServerEntity(ServerUnit):
         return self
 
     def get_metadata(self, *args):
-        # static ! Should this be done dynamically ?
-        return {'openid_provider': self.context.provider_info}
+        return {self.name: self.context.provider_info}
 
     def setup_authz(self):
         authz_spec = self.config.get("authz")
