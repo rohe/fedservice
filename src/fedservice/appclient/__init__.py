@@ -112,7 +112,7 @@ class ClientEntity(ClientUnit):
         _registration = Registration(upstream_get=_fed_registration.upstream_get,
                                      conf=_fed_registration.conf)
         request = _registration.construct_request()
-        return {'openid_relying_party': request.to_dict()}
+        return {self.name: request.to_dict()}
 
     def do_request(
             self,
