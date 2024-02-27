@@ -35,7 +35,7 @@ class TrustMarkEntity(Unit):
         Unit.__init__(self, upstream_get=upstream_get)
 
         self.entity_id = entity_id or upstream_get("attribute", "entity_id")
-        self.endpoint = do_endpoints({"endpoint": endpoint, "issuer": entity_id}, self.unit_get)
+        self.endpoint = do_endpoints({"endpoint": endpoint, "issuer": self.entity_id}, self.unit_get)
         self.trust_mark_specification = trust_mark_specification or {}
 
         self.tm_lifetime = {}

@@ -190,6 +190,36 @@ SIMPLE = [
 
 COMPLEX = [
     (
+        {"add": ['Z']},
+        {"default": ['X', 'Y']},
+        {"default": ['X', 'Y'], "add": ['Z']}
+    ),
+    (
+        {"add": ['A']},
+        {"essential": False},
+        {"add": ['A'], "essential": False}
+    ),
+    (
+        {"add": ['Z']},
+        {"subset_of": ['X', 'Y']},
+        PolicyError
+    ),
+    (
+        {"add": ['X']},
+        {"subset_of": ['X', 'Y']},
+        {"subset_of": ['X', 'Y'], "add": ['X']}
+    ),
+    (
+        {"add": ['Z']},
+        {"superset_of": ['X', 'Y']},
+        PolicyError
+    ),
+    (
+        {"add": ['Z', "X", "Y"]},
+        {"superset_of": ['X', 'Y']},
+        {"superset_of": ['X', 'Y'], "add": ['Z', "X", "Y"]}
+    ),
+    (
         {"essential": False},
         {"default": 'A'},
         {"essential": False, "default": 'A'}
@@ -198,6 +228,16 @@ COMPLEX = [
         {"essential": True},
         {"default": 'A'},
         {"essential": True, "default": 'A'}
+    ),
+    (
+        {"essential": False},
+        {"value": 'A'},
+        {"essential": False, "value": 'A'}
+    ),
+    (
+        {"essential": True},
+        {"value": 'A'},
+        {"essential": True, "value": 'A'}
     ),
     (
         {"essential": False, "default": 'A'},
@@ -278,7 +318,7 @@ COMPLEX = [
         {"one_of": ['X', 'Y']},
         {"default": 'Z'},
         PolicyError
-    )
+    ),
 ]
 
 
@@ -483,7 +523,7 @@ def test_combine_metadata_and_metadata_policy_OK(policy, metadata, result):
                                      }
                                  }
                              ],
-[
+                             [
                                  {
                                      'metadata': {'B': 123},
                                  },
@@ -496,7 +536,8 @@ def test_combine_metadata_and_metadata_policy_OK(policy, metadata, result):
                          ])
 def test_combine_metadata_and_metadata_policy_NOT_OK(policy):
     with pytest.raises(PolicyError):
-        combine(policy[0], policy[1])
+        comb_policy = combine(policy[0], policy[1])
+        res = TrustChainPolicy(None).apply_policy({}, comb_policy)
 
 POLICY_1 = {
     "scopes": {
@@ -519,6 +560,7 @@ ENT = {
     "scopes": ["openid", "eduperson", "email", "address"]
 }
 
+
 def test_set_equality():
     comb_policy = combine({'metadata_policy': POLICY_1, 'metadata': {}},
                           {'metadata_policy': POLICY_2, 'metadata': {}})
@@ -527,3 +569,42 @@ def test_set_equality():
 
     assert set(res['scopes']) == {"openid", "eduperson"}
     assert set(res['response_types']) == {"code", "code id_token"}
+
+
+@pytest.mark.parametrize(
+    "policy, metadata, result",
+    [
+        (
+                (
+                        [
+                            {
+                                'metadata': {'B': ["b", "d"]},
+                                'metadata_policy': {
+                                    "A": {"subset_of": ['a', 'b']}
+                                }
+                            },
+                            {
+                                'metadata': {'C': "c"},
+                                'metadata_policy': {
+                                    "A": {"add": ['c']},
+                                    "B": {"subset_of": ["d"]}
+                                }
+                            }
+                        ],
+                        {'B': ['d'], 'C': 'c', 'A': ['a', 'b']},
+                        {'A': ['a', 'b'], 'B': ['d'], 'C': 'c'},
+                )
+
+        )
+    ])
+def test_combine_metadata_and_metadata_policy_OK(policy, metadata, result):
+    comb_policy = policy[0]
+    for pol in policy[1:]:
+        comb_policy = combine(comb_policy, pol)
+
+    res = TrustChainPolicy(None).apply_policy(metadata, comb_policy)
+    for key, val in res.items():
+        if isinstance(val, list):
+            assert set(val) == set(result[key])
+        else:
+            assert val == result[key]

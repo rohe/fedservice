@@ -94,16 +94,17 @@ def do_essential(superior, child, policy):
             return superior[policy]
     elif policy in superior:
         return superior[policy]
-    elif policy in child:  # Not in superior is the same as essential=True
-        return True
-
+    elif policy in child:  # If the essential operator is omitted, this is equivalent to including it with a value of false.
+        return child[policy]
+    # else:
+    #     return False
 
 DO_POLICY = {
+    "add": do_sub_one_super_add,
+    "value": do_value,
     "superset_of": do_sub_one_super_add,
     "subset_of": do_sub_one_super_add,
     "one_of": do_sub_one_super_add,
-    "add": do_sub_one_super_add,
-    "value": do_value,
     "default": do_default,
     "essential": do_essential
 }
@@ -179,74 +180,67 @@ def combine_claim_policy(superior, child):
             else:
                 if {rule['default']}.difference(set(rule['one_of'])):
                     raise PolicyError('default not a super set of one_of')
+        elif comb_policy == {'subset_of', 'add'}:
+            if not set(rule['add']).issubset(set(rule['subset_of'])):
+                raise PolicyError('"add" not a subset of "subset"')
+        elif comb_policy == {'superset_of', 'add'}:
+            if not set(rule['add']).issuperset(set(rule['superset_of'])):
+                raise PolicyError('"add" not a superset of "superset"')
     return rule
 
 
-def combine(superior: dict, sub: dict) -> dict:
+def combine_metadata(superior_metadata: dict, subordinate_metadata: dict) -> dict:
+    sup_m_set = set(superior_metadata.keys())
+    _metadata = superior_metadata
+    if subordinate_metadata:
+        chi_m_set = set(subordinate_metadata.keys())
+        _overlap = chi_m_set.intersection(sup_m_set)
+        if _overlap:
+            for key in _overlap:
+                if superior_metadata[key] != subordinate_metadata[key]:
+                    raise PolicyError(
+                        'A subordinate is not allowed to set a value different from the superiors')
+
+        _metadata = superior_metadata.copy()
+        _metadata.update(subordinate_metadata)
+
+    return _metadata
+
+
+def combine(superior: dict, subordinate: dict) -> dict:
     """
 
     :param rule: Dictionary with two keys metadata_policy and metadata
     :param sub: Dictionary with two keys metadata_policy and metadata
     :return:
     """
-    sup_metadata = superior.get('metadata', {})
-    sub_metadata = sub.get('metadata', {})
-    sup_m_set = set(sup_metadata.keys())
-    if sub_metadata:
-        chi_m_set = set(sub_metadata.keys())
-        _overlap = chi_m_set.intersection(sup_m_set)
-        if _overlap:
-            for key in _overlap:
-                if sup_metadata[key] != sub_metadata[key]:
-                    raise PolicyError(
-                        'A subordinate is not allowed to set a value different then the superiors')
-
-        _metadata = sup_metadata.copy()
-        _metadata.update(sub_metadata)
+    _metadata = combine_metadata(superior.get('metadata', {}), subordinate.get('metadata', {}))
+    if _metadata:
         superior['metadata'] = _metadata
 
     # Now for metadata_policies
     _sup_policy = superior.get('metadata_policy', {})
-    _sub_policy = sub.get('metadata_policy', {})
+    _sub_policy = subordinate.get('metadata_policy', {})
     if _sub_policy:
-        sup_set = set(_sup_policy.keys())
-        chi_set = set(sub['metadata_policy'].keys())
+        super_set = set(_sup_policy.keys())
+        child_set = set(subordinate['metadata_policy'].keys())
 
-        # A metadata_policy claim can not change a metadata claim
-        for claim in chi_set.intersection(sup_m_set):
-            combine_claim_policy({'value': sup_metadata[claim]}, _sub_policy[claim])
+        _metadata_policy = {}
+        # appears both in superior and child
+        for claim in set(super_set).intersection(child_set):
+            _metadata_policy[claim] = combine_claim_policy(_sup_policy[claim], _sub_policy[claim])
 
-        _mp = {}
-        for claim in set(sup_set).intersection(chi_set):
-            _mp[claim] = combine_claim_policy(_sup_policy[claim], _sub_policy[claim])
+        # only in super
+        for claim in super_set.difference(child_set):
+            _metadata_policy[claim] = _sup_policy[claim]
 
-        for claim in sup_set.difference(chi_set):
-            _mp[claim] = _sup_policy[claim]
+        # only if child
+        for claim in child_set.difference(super_set):
+            _metadata_policy[claim] = _sub_policy[claim]
 
-        for claim in chi_set.difference(sup_set):
-            _mp[claim] = _sub_policy[claim]
+        superior['metadata_policy'] = _metadata_policy
 
-        superior['metadata_policy'] = _mp
     return superior
-
-
-# def combine_metadata(superior: dict, child: dict):
-#     res = {}
-#     sup_set = set(superior.keys())
-#     chi_set = set(child.keys())
-#     # No overlap allowed
-#     if chi_set.intersection(sup_set):
-#         raise PolicyError('A subordinate is not allowed to change what a superior has set')
-#
-#     res = superior.copy()
-#     res.update(child)
-#     return res
-#
-#
-# _COMBINE_FUNCTION = {
-#     'metadata': combine_metadata,
-#     'metadata_policy': combine_policy
-# }
 
 
 def union(val1, val2):
@@ -260,6 +254,84 @@ def union(val1, val2):
     else:
         ext = {val2}
     return base.union(ext)
+
+
+def apply_metadata_policy(metadata, metadata_policy):
+    """
+    Apply a metadata policy to a metadata statement.
+    The order is value, add, default and then check subset_of/superset_of and one_of
+    """
+
+    policy_set = set(metadata_policy.keys())
+    metadata_set = set(metadata.keys())
+
+    # Metadata claims that there exists a policy for
+    for claim in metadata_set.intersection(policy_set):
+        if "value" in metadata_policy[claim]:  # value overrides everything
+            metadata[claim] = metadata_policy[claim]["value"]
+        else:
+            if "one_of" in metadata_policy[claim]:
+                # This is for claims that can have only one value
+                if isinstance(metadata[claim], list):  # Should not be but ...
+                    _claim = [c for c in metadata[claim] if
+                              c in metadata_policy[claim]['one_of']]
+                    if _claim:
+                        metadata[claim] = _claim[0]
+                    else:
+                        raise PolicyError(
+                            "{}: None of {} among {}".format(claim, metadata[claim],
+                                                             metadata_policy[claim]['one_of']))
+                else:
+                    if metadata[claim] in metadata_policy[claim]['one_of']:
+                        pass
+                    else:
+                        raise PolicyError(
+                            f"{metadata[claim]} not among {metadata_policy[claim]['one_of']}")
+            else:
+                # The following is for claims that can have lists of values
+                if "add" in metadata_policy[claim]:
+                    metadata[claim] = list(
+                        union(metadata[claim], metadata_policy[claim]['add']))
+
+                if "subset_of" in metadata_policy[claim]:
+                    if isinstance(metadata[claim], list):
+                        _val = set(metadata_policy[claim]['subset_of']).intersection(
+                            set(metadata[claim]))
+                    else:
+                        if metadata[claim] in metadata_policy[claim]:
+                            _val = metadata[claim]
+                        else:
+                            raise PolicyError(f"{metadata[claim]} not in allowed subset: {metadata_policy[claim]}")
+
+                    if _val:
+                        metadata[claim] = list(_val)
+                    else:
+                        raise PolicyError("{} not subset of {}".format(metadata[claim],
+                                                                       metadata_policy[claim][
+                                                                           'subset_of']))
+                if "superset_of" in metadata_policy[claim]:
+                    if set(metadata_policy[claim]['superset_of']).difference(
+                            set(metadata[claim])):
+                        raise PolicyError("{} not superset of {}".format(metadata[claim],
+                                                                         metadata_policy[claim][
+                                                                             'superset_of']))
+                    else:
+                        pass
+
+    # In policy but not in metadata
+    for claim in policy_set.difference(metadata_set):
+        if "value" in metadata_policy[claim]:
+            metadata[claim] = metadata_policy[claim]['value']
+        elif "add" in metadata_policy[claim]:
+            metadata[claim] = metadata_policy[claim]['add']
+        elif "default" in metadata_policy[claim]:
+            metadata[claim] = metadata_policy[claim]['default']
+
+        if claim not in metadata:
+            if "essential" in metadata_policy[claim] and metadata_policy[claim]["essential"]:
+                raise PolicyError(f"Essential claim '{claim}' missing")
+
+    return metadata
 
 
 class TrustChainPolicy(Function):
@@ -301,76 +373,6 @@ class TrustChainPolicy(Function):
 
         return _rule
 
-    def _apply_metadata_policy(self, metadata, metadata_policy):
-        """
-        Apply a metadata policy to a metadata statement.
-        The order is value, add, default and then check subset_of/superset_of and one_of
-        """
-
-        policy_set = set(metadata_policy.keys())
-        metadata_set = set(metadata.keys())
-
-        # Metadata claims that there exists a policy for
-        for claim in metadata_set.intersection(policy_set):
-            if "value" in metadata_policy[claim]:  # value overrides everything
-                metadata[claim] = metadata_policy[claim]["value"]
-            else:
-                if "one_of" in metadata_policy[claim]:
-                    # The is for claims that can have only one value
-                    if isinstance(metadata[claim], list):  # Should not be but ...
-                        _claim = [c for c in metadata[claim] if
-                                  c in metadata_policy[claim]['one_of']]
-                        if _claim:
-                            metadata[claim] = _claim[0]
-                        else:
-                            raise PolicyError(
-                                "{}: None of {} among {}".format(claim, metadata[claim],
-                                                                 metadata_policy[claim]['one_of']))
-                    else:
-                        if metadata[claim] in metadata_policy[claim]['one_of']:
-                            pass
-                        else:
-                            raise PolicyError(
-                                f"{metadata[claim]} not among {metadata_policy[claim]['one_of']}")
-                else:
-                    # The following is for claims that can have lists of values
-                    if "add" in metadata_policy[claim]:
-                        metadata[claim] = list(
-                            union(metadata[claim], metadata_policy[claim]['add']))
-
-                    if "subset_of" in metadata_policy[claim]:
-                        _val = set(metadata_policy[claim]['subset_of']).intersection(
-                            set(metadata[claim]))
-                        if _val:
-                            metadata[claim] = list(_val)
-                        else:
-                            raise PolicyError("{} not subset of {}".format(metadata[claim],
-                                                                           metadata_policy[claim][
-                                                                               'subset_of']))
-                    if "superset_of" in metadata_policy[claim]:
-                        if set(metadata_policy[claim]['superset_of']).difference(
-                                set(metadata[claim])):
-                            raise PolicyError("{} not superset of {}".format(metadata[claim],
-                                                                             metadata_policy[claim][
-                                                                                 'superset_of']))
-                        else:
-                            pass
-
-        # In policy but not in metadata
-        for claim in policy_set.difference(metadata_set):
-            if "value" in metadata_policy[claim]:
-                metadata[claim] = metadata_policy[claim]['value']
-            elif "add" in metadata_policy[claim]:
-                metadata[claim] = metadata_policy[claim]['add']
-            elif "default" in metadata_policy[claim]:
-                metadata[claim] = metadata_policy[claim]['default']
-
-            if claim not in metadata:
-                if "essential" in metadata_policy[claim] and metadata_policy[claim]["essential"]:
-                    raise PolicyError(f"Essential claim '{claim}' missing")
-
-        return metadata
-
     def apply_policy(self, metadata: dict, policy: dict) -> dict:
         """
         Apply a metadata policy on metadata.
@@ -380,11 +382,16 @@ class TrustChainPolicy(Function):
         :return: A metadata statement that adheres to a metadata policy
         """
 
+        if policy["metadata"]:
+            _metadata = policy["metadata"].copy()
+            _metadata.update(metadata)
+            metadata = _metadata
+
         if policy['metadata_policy']:
-            metadata = self._apply_metadata_policy(metadata, policy['metadata_policy'])
+            metadata = apply_metadata_policy(metadata, policy['metadata_policy'])
 
         # All that are in metadata but not in policy should just remain
-        metadata.update(policy['metadata'])
+        # metadata.update(policy.get('metadata', {}))
 
         return metadata
 
