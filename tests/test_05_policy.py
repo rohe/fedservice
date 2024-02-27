@@ -318,7 +318,7 @@ COMPLEX = [
         {"one_of": ['X', 'Y']},
         {"default": 'Z'},
         PolicyError
-    ),
+    )
 ]
 
 
