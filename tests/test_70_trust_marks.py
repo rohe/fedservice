@@ -7,7 +7,6 @@ from idpyoidc.message import Message
 
 from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.entity.function import get_verified_trust_chains
-from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
 
@@ -41,8 +40,8 @@ class TestTrustMarkDelegation():
     @pytest.fixture(autouse=True)
     def setup(self):
         # start from scratch every time
-        if os.path.exists(full_path("tmi/trust_mark")):
-            os.unlink(full_path("tmi/trust_mark"))
+        if os.path.exists(full_path("trust_mark")):
+            os.unlink(full_path("trust_mark"))
 
         self.ta = make_federation_entity(
             TA_ID,
@@ -60,46 +59,8 @@ class TestTrustMarkDelegation():
 
         ANCHOR = {self.ta.entity_id: self.ta.keyjar.export_jwks()}
 
-        TRUST_MARK_ISSUER_CONF = {
-            "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
-            "kwargs": {
-                "entity_id": TMI_ID,
-                "trust_mark_specification": {
-                    TRUST_MARK_ID: {
-                        "lifetime": 2592000
-                    }
-                },
-                "trust_mark_db": {
-                    "class": "fedservice.trust_mark_entity.FileDB",
-                    "kwargs": {
-                        TRUST_MARK_ID: os.path.join(BASE_PATH, "tmi/trust_mark")
-                    }
-                },
-                "endpoint": {
-                    "trust_mark": {
-                        "path": "trust_mark",
-                        "class": "fedservice.trust_mark_entity.server.trust_mark.TrustMark",
-                        "kwargs": {
-                            "client_authn_method": ["private_key_jwt"],
-                            "auth_signing_alg_values": ["ES256"]
-                        }
-                    },
-                    "trust_mark_list": {
-                        "path": "trust_mark_list",
-                        "class": "fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList",
-                        "kwargs": {}
-                    },
-                    "trust_mark_status": {
-                        "path": "trust_mark_status",
-                        "class": "fedservice.trust_mark_entity.server.trust_mark_status.TrustMarkStatus",
-                        "kwargs": {}
-                    }
-                },
-            }
-        }
-
         # Federation entity with trust mark endpoints
-        self.trust_mark_issuer = make_federation_combo(
+        self.trust_mark_issuer = make_federation_entity(
             TMI_ID,
             preference={
                 "organization_name": "Trust Mark Issuer 'R US"
@@ -108,13 +69,46 @@ class TestTrustMarkDelegation():
             authority_hints=[TA_ID],
             endpoints=["entity_configuration"],
             trust_anchors=ANCHOR,
-            entity_type={
-                "trust_mark_entity": TRUST_MARK_ISSUER_CONF
+            trust_mark_entity={
+                "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
+                "kwargs": {
+                    "trust_mark_specification": {
+                        TRUST_MARK_ID: {"lifetime": 2592000}
+                    },
+                    "trust_mark_db": {
+                        "class": "fedservice.trust_mark_entity.FileDB",
+                        "kwargs": {TRUST_MARK_ID: "trust_mark"}
+                    },
+                    "endpoint": {
+                        "trust_mark": {
+                            "path": "trust_mark",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark.TrustMark",
+                            "kwargs": {
+                                "client_authn_method": [
+                                    "private_key_jwt"
+                                ],
+                                "auth_signing_alg_values": [
+                                    "ES256"
+                                ]
+                            }
+                        },
+                        "trust_mark_list": {
+                            "path": "trust_mark_list",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList",
+                            "kwargs": {}
+                        },
+                        "trust_mark_status": {
+                            "path": "trust_mark_status",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark_status.TrustMarkStatus",
+                            "kwargs": {}
+                        }
+                    }
+                }
             }
         )
 
         self.ta.server.subordinate[TMI_ID] = {
-            "jwks": self.trust_mark_issuer["federation_entity"].keyjar.export_jwks(),
+            "jwks": self.trust_mark_issuer.keyjar.export_jwks(),
             'authority_hints': [TA_ID]
         }
 
@@ -129,20 +123,18 @@ class TestTrustMarkDelegation():
             endpoints=LEAF_ENDPOINTS,
             trust_anchors=ANCHOR,
             services={
-                'trust_mark_status': {
-                    'class': 'fedservice.trust_mark_entity.client.trust_mark_status.TrustMarkStatus',
-                    'kwargs': {}},
                 'entity_configuration': {
                     'class': 'fedservice.entity.client.entity_configuration.EntityConfiguration',
                     'kwargs': {}},
-                'trust_mark': {
-                    'class': 'fedservice.trust_mark_entity.client.trust_mark.TrustMark',
-                    'kwargs': {
-                        "client_authn_methods": ["private_key_jwt"],
-                        "default_authn_method": "private_key_jwt"
-                    }},
                 'trust_mark_list': {
-                    'class': 'fedservice.trust_mark_entity.client.trust_mark_list.TrustMarkList', 'kwargs': {}
+                    'class': "fedservice.entity.client.trust_mark_list.TrustMarkList"
+                },
+                'trust_mark': {
+                    'class': "fedservice.entity.client.trust_mark.TrustMark",
+                    "kwargs": {"default_authn_method": "private_key_jwt"}
+                },
+                'trust_mark_status': {
+                    'class': "fedservice.entity.client.trust_mark_status.TrustMarkStatus"
                 }
             }
         )
@@ -154,7 +146,7 @@ class TestTrustMarkDelegation():
 
     def test_list_trust_marks_empty(self):
         _client_service = self.federation_entity.get_service("trust_mark_list")
-        _server_endpoint = self.trust_mark_issuer["trust_mark_entity"].get_endpoint("trust_mark_list")
+        _server_endpoint = self.trust_mark_issuer.get_endpoint("trust_mark_list")
 
         req_info = _client_service.get_request_parameters(request_args={"trust_mark_id": TRUST_MARK_ID},
                                                           fetch_endpoint=_server_endpoint.full_path)
@@ -170,7 +162,7 @@ class TestTrustMarkDelegation():
     def test_get_trust_mark(self):
         self.federation_entity.client.context.issuer = self.trust_mark_issuer.entity_id
 
-        _server_endpoint = self.trust_mark_issuer["trust_mark_entity"].get_endpoint("trust_mark")
+        _server_endpoint = self.trust_mark_issuer.get_endpoint("trust_mark")
         _client_service = self.federation_entity.get_service("trust_mark")
         _audience = _server_endpoint.full_path
 
@@ -204,24 +196,23 @@ class TestTrustMarkDelegation():
         req_info = _client_service.get_request_parameters(request_args={"trust_mark_id": TRUST_MARK_ID},
                                                           fetch_endpoint=f"{self.trust_mark_issuer.entity_id}/trust_mark_list")
 
-        _server_endpoint = self.trust_mark_issuer["trust_mark_entity"].get_endpoint("trust_mark_list")
+        _server_endpoint = self.trust_mark_issuer.get_endpoint("trust_mark_list")
         _query = req_info["url"].split("?")[1]
         _req = Message().from_urlencoded(_query)
         _parse_resp = _server_endpoint.parse_request(_req.to_dict())
         _hw_resp = _server_endpoint.process_request(_parse_resp)
-        _resp = _server_endpoint.do_response(_hw_resp)
-        assert True
+        assert "response_msg" in _hw_resp
+        assert _hw_resp["response_msg"] == '["https://entity.example.org"]'
 
     def test_create_metadata(self):
-        _metadata = self.trust_mark_issuer["trust_mark_entity"].get_metadata()
-        assert set(_metadata.keys()) == {"trust_mark_entity"}
-        assert set(_metadata["trust_mark_entity"].keys()) == {'trust_mark_endpoint',
-                                                              'trust_mark_endpoint_auth_methods',
-                                                              'trust_mark_endpoint_auth_signing_alg_values',
-                                                              'trust_mark_list_endpoint',
-                                                              'trust_mark_list_endpoint_auth_methods',
-                                                              'trust_mark_status_endpoint',
-                                                              'trust_mark_status_endpoint_auth_methods'}
-
         _metadata = self.trust_mark_issuer.get_metadata()
-        assert set(_metadata.keys()) == {'federation_entity', 'trust_mark_entity'}
+        assert set(_metadata.keys()) == {"federation_entity"}
+        assert set(_metadata["federation_entity"].keys()) == {'federation_trust_mark_endpoint',
+                                                              'federation_trust_mark_endpoint_auth_methods',
+                                                              'federation_trust_mark_endpoint_auth_signing_alg_values',
+                                                              'federation_trust_mark_list_endpoint',
+                                                              'federation_trust_mark_list_endpoint_auth_methods',
+                                                              'federation_trust_mark_status_endpoint',
+                                                              'federation_trust_mark_status_endpoint_auth_methods',
+                                                              'jwks',
+                                                              'organization_name'}

@@ -130,7 +130,7 @@ class FederationEntity(Unit):
         metadata = self.get_context().claims.prefer
         # collect endpoints
         metadata.update(self.get_endpoint_claims())
-        _issuer = getattr(self.server.context, "trust_mark_server", None)
+        # _issuer = getattr(self.server.context, "trust_mark_server", None)
         return {"federation_entity": metadata}
 
     def get_preferences(self):
@@ -219,7 +219,7 @@ class FederationEntity(Unit):
                     _val = getattr(endp, arg, None)
                     if _val:
                         # trust_mark_status_endpoint_auth_methods_supported
-                        md_param = f"{endp.name}_endpoint_{claim}_supported"
+                        md_param = f"{endp.endpoint_name}_{claim}"
                         _info[md_param] = _val
         return _info
 

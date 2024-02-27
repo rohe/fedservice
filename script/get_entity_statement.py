@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import json
 
-from fedservice.entity.function.trust_chain_collector import unverified_entity_statement
 from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.data import JsonLexer
 
+from fedservice.entity.function.trust_chain_collector import unverified_entity_statement
 from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
 from fedservice.utils import make_federation_entity
 
@@ -50,8 +50,8 @@ if __name__ == '__main__':
             "federation_fetch_endpoint"]
         # The entity with the entity_id is the one issuing an entity statement
         _jws = _collector.get_entity_statement(fetch_endpoint=_fetch_endpoint,
-                                                           issuer=args.superior,
-                                                           subject=args.entity_id)
+                                               issuer=args.superior,
+                                               subject=args.entity_id)
         entity_statement = unverified_entity_statement(_jws)
         json_str = json.dumps(entity_statement, indent=2)
         print(20 * "=" + " Entity Statement " + 20 * "=")

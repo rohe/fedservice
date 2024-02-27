@@ -66,16 +66,20 @@ class FileDB(object):
 
     def list(self, trust_mark_id: str, sub: Optional[str] = ""):
         res = []
-        with open(self.config[trust_mark_id], "r") as fp:
-            # Get the last issued
-            for line in reversed(list(fp)):
-                _tmi = json.loads(line.rstrip())
-                if _tmi["sub"] not in res:
-                    if sub:
-                        if _tmi["sub"] == sub:
+        try:
+            with open(self.config[trust_mark_id], "r") as fp:
+                # Get the last issued
+                for line in reversed(list(fp)):
+                    _tmi = json.loads(line.rstrip())
+                    if _tmi["sub"] not in res:
+                        if sub:
+                            if _tmi["sub"] == sub:
+                                res.append(_tmi["sub"])
+                        else:
                             res.append(_tmi["sub"])
-                    else:
-                        res.append(_tmi["sub"])
+        except KeyError as err:
+            pass
+
         return res
 
 

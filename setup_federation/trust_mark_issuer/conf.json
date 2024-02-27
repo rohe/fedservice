@@ -71,48 +71,46 @@
         "value_conv": "idpyoidc.util.JSON"
       }
     },
-    "entity_type": {
-      "trust_mark_entity": {
-        "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
-        "kwargs": {
-          "trust_mark_specification": {
-            "http://dc4eu.example.com/PersonIdentificationData/se": {
-              "lifetime": 2592000
-            },
-            "http://dc4eu.example.com/OpenBadgeCredential/se": {
-              "lifetime": 2592000
-            }
+    "trust_mark_entity": {
+      "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
+      "kwargs": {
+        "trust_mark_specification": {
+          "http://dc4eu.example.com/PersonIdentificationData/se": {
+            "lifetime": 2592000
           },
-          "trust_mark_db": {
-            "class": "fedservice.trust_mark_issuer.FileDB",
+          "http://dc4eu.example.com/OpenBadgeCredential/se": {
+            "lifetime": 2592000
+          }
+        },
+        "trust_mark_db": {
+          "class": "fedservice.trust_mark_entity.FileDB",
+          "kwargs": {
+            "http://dc4eu.example.com/PersonIdentificationData/se": "trust_mark_issuer/pid_se",
+            "http://dc4eu.example.com/OpenBadgeCredential/se": "trust_mark_issuer/obc_se"
+          }
+        },
+        "endpoint": {
+          "trust_mark": {
+            "path": "trust_mark",
+            "class": "fedservice.trust_mark_entity.server.trust_mark.TrustMark",
             "kwargs": {
-              "http://dc4eu.example.com/PersonIdentificationData/se": "trust_mark_issuer/pid_se",
-              "http://dc4eu.example.com/OpenBadgeCredential/se": "trust_mark_issuer/obc_se"
+              "client_authn_method": [
+                "private_key_jwt"
+              ],
+              "auth_signing_alg_values": [
+                "ES256"
+              ]
             }
           },
-          "endpoint": {
-            "trust_mark": {
-              "path": "trust_mark",
-              "class": "fedservice.trust_mark_entity.server.trust_mark.TrustMark",
-              "kwargs": {
-                "client_authn_method": [
-                  "private_key_jwt"
-                ],
-                "auth_signing_alg_values": [
-                  "ES256"
-                ]
-              }
-            },
-            "trust_mark_list": {
-              "path": "trust_mark_list",
-              "class": "fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList",
-              "kwargs": {}
-            },
-            "trust_mark_status": {
-              "path": "trust_mark_status",
-              "class": "fedservice.trust_mark_entity.server.trust_mark_status.TrustMarkStatus",
-              "kwargs": {}
-            }
+          "trust_mark_list": {
+            "path": "trust_mark_list",
+            "class": "fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList",
+            "kwargs": {}
+          },
+          "trust_mark_status": {
+            "path": "trust_mark_status",
+            "class": "fedservice.trust_mark_entity.server.trust_mark_status.TrustMarkStatus",
+            "kwargs": {}
           }
         }
       }

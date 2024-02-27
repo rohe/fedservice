@@ -6,6 +6,7 @@ from typing import Union
 from cryptojwt.jwt import utc_time_sans_frac
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.server.util import execute
+from idpyoidc.util import instantiate
 
 from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
@@ -111,7 +112,7 @@ def make_federation_entity(entity_id: str,
                            metadata_policy: Optional[dict] = None,
                            httpc_params: Optional[dict] = None,
                            persistence: Optional[dict] = None,
-                           trust_mark_server: Optional[dict] = None,
+                           trust_mark_entity: Optional[dict] = None,
                            client_authn_methods: Optional[list] = None
                            ):
     _config = build_entity_config(
@@ -130,6 +131,9 @@ def make_federation_entity(entity_id: str,
 
     fe = FederationEntity(client_authn_methods=client_authn_methods, **_config)
     if trust_anchors:
+        if "class" in trust_anchors and "kwargs" in trust_anchors:
+            trust_anchors = execute(trust_anchors)
+
         for id, jwk in trust_anchors.items():
             fe.keyjar.import_jwks(jwk, id)
 
@@ -148,6 +152,13 @@ def make_federation_entity(entity_id: str,
 
     if trust_marks:
         fe.context.trust_marks = trust_marks
+
+    if trust_mark_entity:
+        _kwargs = trust_mark_entity.get("kwargs", {})
+        _tme = instantiate(trust_mark_entity['class'], upstream_get=fe.unit_get, **_kwargs)
+        for name, endp in _tme.endpoint.items():
+            fe.server.endpoint[name] = endp
+        fe.server.trust_mark_entity = _tme
 
     return fe
 
@@ -170,7 +181,7 @@ def make_federation_combo(entity_id: str,
                           persistence: Optional[dict] = None,
                           trust_mark_issuers: Optional[dict] = None,
                           trust_mark_owner: Optional[dict] = None,
-                          trust_mark_server: Optional[dict] = None
+                          trust_mark_entity: Optional[dict] = None
                           ):
     _config = build_entity_config(
         entity_id=entity_id,
@@ -201,11 +212,11 @@ def make_federation_combo(entity_id: str,
         entity = FederationCombo(entity_config)
         federation_entity = entity["federation_entity"]
     else:
-        entity = FederationEntity(trust_mark_server=trust_mark_server, **_config)
+        entity = FederationEntity(**_config)
         federation_entity = entity
 
     if trust_anchors:
-        if "class" in trust_anchors:
+        if "class" in trust_anchors and "kwargs" in trust_anchors:
             trust_anchors = execute(trust_anchors)
 
         for id, jwk in trust_anchors.items():
@@ -214,7 +225,7 @@ def make_federation_combo(entity_id: str,
         federation_entity.function.trust_chain_collector.trust_anchors = trust_anchors
 
     if subordinate:
-        if "class" in subordinate:
+        if "class" in subordinate and "kwargs" in subordinate:
             federation_entity.server.subordinate = execute(subordinate)
         else:
             for id, info in subordinate.items():
@@ -238,5 +249,12 @@ def make_federation_combo(entity_id: str,
             federation_entity.context.trust_mark_owner = execute(trust_mark_owner)
         else:
             federation_entity.context.trust_mark_owner = trust_mark_owner
+
+    if trust_mark_entity:
+        _kwargs = trust_mark_entity.get("kwargs", {})
+        _tme = instantiate(trust_mark_entity['class'], upstream_get=federation_entity.unit_get, **_kwargs)
+        for name, endp in _tme.endpoint.items():
+            federation_entity.server.endpoint[name] = endp
+        federation_entity.server.trust_mark_entity = _tme
 
     return entity

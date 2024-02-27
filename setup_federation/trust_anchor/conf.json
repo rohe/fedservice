@@ -67,7 +67,7 @@
         "value_conv": "idpyoidc.util.JSON"
       }
     },
-    "trust_mark_issuer": {
+    "trust_mark_issuers": {
       "class": "idpyoidc.storage.abfile.AbstractFileSystem",
       "kwargs": {
         "fdir": "trust_anchor/trust_mark_issuers",
