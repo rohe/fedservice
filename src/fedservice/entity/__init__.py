@@ -234,6 +234,9 @@ class FederationEntity(Unit):
         else:
             return None
 
+    def store_trust_chains(self, entity_id, chains):
+        self.trust_chain[entity_id] = chains
+
     def get_verified_metadata(self, entity_id: str, *args):
         _trust_chains = self.trust_chain.get(entity_id)
         if _trust_chains is None:

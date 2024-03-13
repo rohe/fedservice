@@ -2,6 +2,7 @@ import logging
 from typing import List
 from typing import Optional
 
+from fedservice.entity.utils import get_federation_entity
 from idpyoidc.message import oauth2
 from idpyoidc.message.oauth2 import OauthClientMetadata
 from idpyoidc.node import topmost_unit
@@ -121,6 +122,9 @@ class Authorization(authorization.Authorization):
         return authorization.Authorization.client_authentication(
             self, request, auth, **kwargs)
 
-    def extra_response_args(self, aresp):
-        aresp['trust_anchor_id'] = self.upstream_get("context").federation_entity.trust_chain_anchor
+    def extra_response_args(self, aresp, **kwargs):
+        _cid = kwargs.get("client_id")
+        if _cid:
+            _fe = get_federation_entity(self)
+            aresp['trust_anchor_id'] = _fe.get_trust_chain(_cid).anchor
         return aresp

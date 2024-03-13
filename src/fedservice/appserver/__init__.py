@@ -86,7 +86,7 @@ class ServerEntity(ServerUnit):
             _token_endp.allow_refresh = allow_refresh_token(self.context)
 
         self.context.claims_interface = init_service(
-            config["claims_interface"], self.upstream_get
+            config["claims_interface"], self.unit_get
         )
 
         _per_conf = config.get("persistence", None)
