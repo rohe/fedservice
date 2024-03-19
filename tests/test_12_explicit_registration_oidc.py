@@ -186,7 +186,7 @@ class TestExplicit(object):
                             "session_params": SESSION_PARAMS,
                             "endpoint": _op_endpoints
                         }
-                    },
+                    }
                 }
             }
         )

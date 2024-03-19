@@ -1,5 +1,6 @@
 import os
 
+from fedservice.appserver import ServerEntity
 import pytest
 import responses
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
@@ -9,9 +10,9 @@ from idpyoidc.server.oidc.userinfo import UserInfo
 
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.defaults import LEAF_ENDPOINTS
-from fedservice.op import ServerEntity
-from fedservice.op.authorization import Authorization
-from fedservice.op.registration import Registration
+# from fedservice.op import ServerEntity
+# from fedservice.op.authorization import Authorization
+# from fedservice.op.registration import Registration
 from fedservice.appclient import ClientEntity
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity

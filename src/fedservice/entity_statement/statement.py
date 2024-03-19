@@ -1,20 +1,30 @@
 import logging
-from typing import List
 from typing import Optional
 
-from cryptojwt import KeyJar
 from cryptojwt.jwt import utc_time_sans_frac
+from idpyoidc.impexp import ImpExp
 
 __author__ = 'roland'
 
 logger = logging.getLogger(__name__)
 
 
-class TrustChain(object):
+class TrustChain(ImpExp):
     """
     Class in which to store the parsed result from applying metadata policies on a
     metadata statement.
     """
+
+    parameter = {
+        "anchor": "",
+        "chain": [],
+        "combined_policy": {},
+        "err": {},
+        "exp": 0,
+        "iss_path": [],
+        "metadata": {},
+        "verified_chain": []
+    }
 
     def __init__(self,
                  exp: int = 0,
@@ -22,6 +32,7 @@ class TrustChain(object):
         """
         :param exp: Expiration time
         """
+        ImpExp.__init__(self)
         self.anchor = ""
         self.iss_path = []
         self.err = {}
