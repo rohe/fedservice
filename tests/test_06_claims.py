@@ -125,8 +125,7 @@ class TestClaimsFRP():
         assert set(_pref["federation_entity"].keys()) == {'contacts', 'federation_fetch_endpoint',
                                                           'federation_list_endpoint', "jwks",
                                                           'homepage_uri', 'organization_name'}
-        assert set(_pref["openid_relying_party"].keys()) == {'application_type',
-                                                             'grant_types',
+        assert set(_pref["openid_relying_party"].keys()) == {'grant_types',
                                                              'jwks_uri',
                                                              'redirect_uris',
                                                              'response_types'}

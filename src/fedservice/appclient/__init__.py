@@ -108,11 +108,8 @@ class ClientEntity(ClientUnit):
         return self.entity_id
 
     def get_metadata(self, *args):
-        _fed_registration = self.get_service('registration')
-        _registration = Registration(upstream_get=_fed_registration.upstream_get,
-                                     conf=_fed_registration.conf)
-        request = _registration.construct_request()
-        return {self.name: request.to_dict()}
+        request = self.context.claims.create_registration_request()
+        return {self.name: request}
 
     def do_request(
             self,
