@@ -82,6 +82,6 @@
     "cert_chain": null,
     "port": 7003,
     "domain": "127.0.0.1",
-    "debug": true
+    "debug": false
   }
 }

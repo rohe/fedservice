@@ -180,6 +180,7 @@
     "server_key": "certs/example.key",
     "cert_chain": null,
     "port": 5001,
-    "domain": "127.0.0.1"
+    "domain": "127.0.0.1",
+    "debug": false
   }
 }

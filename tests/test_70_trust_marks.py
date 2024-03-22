@@ -77,7 +77,7 @@ class TestTrustMarkDelegation():
                     },
                     "trust_mark_db": {
                         "class": "fedservice.trust_mark_entity.FileDB",
-                        "kwargs": {TRUST_MARK_ID: "trust_mark"}
+                        "kwargs": {TRUST_MARK_ID: full_path("trust_mark")}
                     },
                     "endpoint": {
                         "trust_mark": {

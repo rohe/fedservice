@@ -123,8 +123,10 @@ class Authorization(authorization.Authorization):
             self, request, auth, **kwargs)
 
     def extra_response_args(self, aresp, **kwargs):
-        _cid = kwargs.get("client_id")
-        if _cid:
-            _fe = get_federation_entity(self)
-            aresp['trust_anchor_id'] = _fe.get_trust_chain(_cid).anchor
+        _fe = get_federation_entity(self)
+        _client_id = kwargs.get('client_id')
+        if _client_id:
+            _tcs = _fe.trust_chain.get(_client_id, {})
+            if _tcs:
+                aresp['trust_anchor_id'] = _tcs[0].anchor
         return aresp

@@ -222,7 +222,6 @@ class TestRpService(object):
             'id_token_signed_response_alg',
             'jwks_uri',
             'redirect_uris',
-            'response_types',
             'subject_type',
             'token_endpoint_auth_method'}
 
@@ -303,7 +302,6 @@ class TestRpService(object):
                                       'id_token_signed_response_alg',
                                       'jwks_uri',
                                       'redirect_uris',
-                                      'response_types',
                                       'subject_type',
                                       'token_endpoint_auth_method'}
 
