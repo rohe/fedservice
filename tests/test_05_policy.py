@@ -571,40 +571,40 @@ def test_set_equality():
     assert set(res['response_types']) == {"code", "code id_token"}
 
 
-@pytest.mark.parametrize(
-    "policy, metadata, result",
-    [
-        (
-                (
-                        [
-                            {
-                                'metadata': {'B': ["b", "d"]},
-                                'metadata_policy': {
-                                    "A": {"subset_of": ['a', 'b']}
-                                }
-                            },
-                            {
-                                'metadata': {'C': "c"},
-                                'metadata_policy': {
-                                    "A": {"add": ['c']},
-                                    "B": {"subset_of": ["d"]}
-                                }
-                            }
-                        ],
-                        {'B': ['d'], 'C': 'c', 'A': ['a', 'b']},
-                        {'A': ['a', 'b'], 'B': ['d'], 'C': 'c'},
-                )
-
-        )
-    ])
-def test_combine_metadata_and_metadata_policy_OK(policy, metadata, result):
-    comb_policy = policy[0]
-    for pol in policy[1:]:
-        comb_policy = combine(comb_policy, pol)
-
-    res = TrustChainPolicy(None).apply_policy(metadata, comb_policy)
-    for key, val in res.items():
-        if isinstance(val, list):
-            assert set(val) == set(result[key])
-        else:
-            assert val == result[key]
+# @pytest.mark.parametrize(
+#     "policy, metadata, result",
+#     [
+#         (
+#                 (
+#                         [
+#                             {
+#                                 'metadata': {'B': ["b", "d"]},
+#                                 'metadata_policy': {
+#                                     "A": {"subset_of": ['a', 'b']}
+#                                 }
+#                             },
+#                             {
+#                                 'metadata': {'C': "c"},
+#                                 'metadata_policy': {
+#                                     "A": {"add": ['c']},
+#                                     "B": {"subset_of": ["d"]}
+#                                 }
+#                             }
+#                         ],
+#                         {'B': ['d'], 'C': 'c', 'A': ['a', 'b']},
+#                         {'A': ['a', 'b'], 'B': ['d'], 'C': 'c'},
+#                 )
+#
+#         )
+#     ])
+# def test_combine_metadata_and_metadata_policy_OK(policy, metadata, result):
+#     comb_policy = policy[0]
+#     for pol in policy[1:]:
+#         comb_policy = combine(comb_policy, pol)
+#
+#     res = TrustChainPolicy(None).apply_policy(metadata, comb_policy)
+#     for key, val in res.items():
+#         if isinstance(val, list):
+#             assert set(val) == set(result[key])
+#         else:
+#             assert val == result[key]

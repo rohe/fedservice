@@ -223,16 +223,19 @@ class FederationEntity(Unit):
                         _info[md_param] = _val
         return _info
 
-    def get_trust_chain(self, entity_id):
-        _trust_chains = self.trust_chain.get(entity_id)
+    def get_trust_chains(self, entity_id):
+        _trust_chains = self.trust_chain.get(entity_id, None)
         if _trust_chains is None:
             _trust_chains = get_verified_trust_chains(self, entity_id)
+            if _trust_chains:
+                self.store_trust_chain(entity_id, _trust_chains)
+            else:
+                return []
 
-        if _trust_chains:
-            self.trust_chain[entity_id] = _trust_chains
-            return _trust_chains[0]
-        else:
-            return None
+        return _trust_chains
+
+    def store_trust_chain(self, entity_id, trust_chains):
+        self.trust_chain[entity_id] = trust_chains
 
     def store_trust_chains(self, entity_id, chains):
         self.trust_chain[entity_id] = chains
@@ -242,7 +245,7 @@ class FederationEntity(Unit):
         if _trust_chains is None:
             _trust_chains = get_verified_trust_chains(self, entity_id)
             if _trust_chains:
-                self.trust_chain[entity_id] = _trust_chains
+                self.store_trust_chain(entity_id, _trust_chains)
 
         if _trust_chains:
             return _trust_chains[0].metadata
@@ -307,7 +310,11 @@ class FederationEntity(Unit):
 
     def verify_trust_mark(self, trust_mark: str, check_with_issuer: Optional[bool] = True):
         _trust_mark_payload = get_payload(trust_mark)
-        _tmi_trust_chain = self.get_trust_chain(_trust_mark_payload['iss'])
+        _tmi_trust_chains = self.get_trust_chains(_trust_mark_payload['iss'])
+        if not _tmi_trust_chains:
+            return None
+
+        _tmi_trust_chain = _tmi_trust_chains[0]
 
         # Verifies the signature of the Trust Mark
         verified_trust_mark = self.function.trust_mark_verifier(

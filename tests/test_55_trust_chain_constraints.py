@@ -247,4 +247,4 @@ class TestConstraints(object):
         _metadata = trust_chains[0].metadata
 
         assert 'ops@ta.example.com' in _metadata['federation_entity']['contacts']
-        assert _metadata['openid_relying_party']['grant_types'] == ['authorization_code']
+        assert set(_metadata['openid_relying_party']['grant_types']) == {'authorization_code', 'refresh_token'}

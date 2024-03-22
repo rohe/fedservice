@@ -1,0 +1,1 @@
+./exec.py start trust_anchor trust_mark_issuer wallet_provider
