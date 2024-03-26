@@ -382,13 +382,15 @@ class TrustChainPolicy(Function):
         :return: A metadata statement that adheres to a metadata policy
         """
 
-        if policy["metadata"]:
-            _metadata = policy["metadata"].copy()
+        _metadata = policy.get("metadata", None)
+        if _metadata:
+            _metadata = _metadata.copy()
             _metadata.update(metadata)
             metadata = _metadata
 
-        if policy['metadata_policy']:
-            metadata = apply_metadata_policy(metadata, policy['metadata_policy'])
+        _metadata_policy = policy.get('metadata_policy', None)
+        if _metadata_policy:
+            metadata = apply_metadata_policy(metadata, _metadata_policy)
 
         # All that are in metadata but not in policy should just remain
         # metadata.update(policy.get('metadata', {}))
