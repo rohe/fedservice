@@ -90,6 +90,13 @@ class ClientEntity(ClientUnit):
         if "add_ons" in config:
             do_add_ons(config["add_ons"], self._service)
 
+    def setup_client_authn_methods(self, config):
+        if config and "client_authn_methods" in config:
+            _methods = config.get("client_authn_methods")
+            self.context.client_authn_methods = client_auth_setup(method_to_item(_methods))
+        else:
+            self.context.client_authn_methods = {}
+ 
     def get_services(self, *arg):
         return self._service
 
