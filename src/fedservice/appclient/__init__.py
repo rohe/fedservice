@@ -1,21 +1,19 @@
-from json import JSONDecodeError
 import logging
 import re
+from json import JSONDecodeError
 from typing import Callable
 from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
 from cryptojwt.key_jar import init_key_jar
-from idpyoidc.client.client_auth import client_auth_setup
-from idpyoidc.client.client_auth import method_to_item
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.client.defaults import SUCCESSFUL
 from idpyoidc.client.exception import OidcServiceError
 from idpyoidc.client.rp_handler import RPHandler
+from idpyoidc.client.service import init_services
 from idpyoidc.client.service import REQUEST_INFO
 from idpyoidc.client.service import Service
-from idpyoidc.client.service import init_services
 from idpyoidc.client.service_context import ServiceContext
 from idpyoidc.client.util import do_add_ons
 from idpyoidc.client.util import get_deserialization_method
@@ -27,6 +25,8 @@ from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.node import ClientUnit
 
 from fedservice.entity.claims import RPClaims
+from fedservice.entity.claims import ClientClaims
+from fedservice.entity.claims import ProtectedResourceClaims
 
 logger = logging.getLogger(__name__)
 
@@ -74,23 +74,19 @@ class ClientEntity(ClientUnit):
         else:
             if key_conf:
                 config['key_conf'] = key_conf
+            metadata_class = RPClaims()
+            if (self.name == "oauth_client"):
+                metadata_class = ClientClaims()
+            elif (self.name == "oauth_resource"):
+                metadata_class = ProtectedResourceClaims()
             self.context = ServiceContext(
                 config=config, jwks_uri=jwks_uri, key_conf=key_conf, upstream_get=self.unit_get,
-                keyjar=self.keyjar, metadata_class=RPClaims(), client_type=self.client_type,
+                keyjar=self.keyjar, metadata_class=metadata_class, client_type=self.client_type,
                 entity_id=self.entity_id
-            )
-
-        self.setup_client_authn_methods(config)
+                )
 
         if "add_ons" in config:
             do_add_ons(config["add_ons"], self._service)
-
-    def setup_client_authn_methods(self, config):
-        if config and "client_authn_methods" in config:
-            _methods = config.get("client_authn_methods")
-            self.context.client_authn_methods = client_auth_setup(method_to_item(_methods))
-        else:
-            self.context.client_authn_methods = {}
 
     def get_services(self, *arg):
         return self._service
@@ -118,8 +114,19 @@ class ClientEntity(ClientUnit):
         return self.entity_id
 
     def get_metadata(self, *args):
-        metadata = self.context.claims.get_use()
-        return {self.name: metadata}
+        _fed_registration = self.get_service('registration')
+        # if (self.name == "oauth_resource"):
+        #     #request = OAuthProtectedResourceMetadata(self.context.config.conf)
+        #     request = msg.oauth_protected_resource_deser(self.context.config.conf)
+            
+        # else:
+        #   _registration = RegistrationOauth2(upstream_get=_fed_registration.upstream_get,
+        #                              conf=_fed_registration.conf)
+        # else:
+        #   _registration = RegistrationOIDC(upstream_get=_fed_registration.upstream_get,
+        #                              conf=_fed_registration.conf) 
+        request = _fed_registration.construct_request()
+        return {self.name: request.to_dict()}
 
     def do_request(
             self,
@@ -343,8 +350,7 @@ class ClientEntity(ClientUnit):
             return err_resp
         else:
             logger.error(f"Error response ({reqresp.status_code}): {reqresp.text}")
-            raise OidcServiceError(
-                f"HTTP ERROR: {reqresp.text} [{reqresp.status_code}] on {reqresp.url}")
+            raise OidcServiceError(f"HTTP ERROR: {reqresp.text} [{reqresp.status_code}] on {reqresp.url}")
 
 
 def init_oidc_rp_handler(app, dir: Optional[str] = ""):
