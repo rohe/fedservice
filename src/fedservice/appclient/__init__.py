@@ -7,13 +7,15 @@ from typing import Union
 
 from cryptojwt import KeyJar
 from cryptojwt.key_jar import init_key_jar
+from idpyoidc.client.client_auth import client_auth_setup
+from idpyoidc.client.client_auth import method_to_item
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.client.defaults import SUCCESSFUL
 from idpyoidc.client.exception import OidcServiceError
 from idpyoidc.client.rp_handler import RPHandler
-from idpyoidc.client.service import init_services
 from idpyoidc.client.service import REQUEST_INFO
 from idpyoidc.client.service import Service
+from idpyoidc.client.service import init_services
 from idpyoidc.client.service_context import ServiceContext
 from idpyoidc.client.util import do_add_ons
 from idpyoidc.client.util import get_deserialization_method
@@ -114,19 +116,8 @@ class ClientEntity(ClientUnit):
         return self.entity_id
 
     def get_metadata(self, *args):
-        _fed_registration = self.get_service('registration')
-        # if (self.name == "oauth_resource"):
-        #     #request = OAuthProtectedResourceMetadata(self.context.config.conf)
-        #     request = msg.oauth_protected_resource_deser(self.context.config.conf)
-            
-        # else:
-        #   _registration = RegistrationOauth2(upstream_get=_fed_registration.upstream_get,
-        #                              conf=_fed_registration.conf)
-        # else:
-        #   _registration = RegistrationOIDC(upstream_get=_fed_registration.upstream_get,
-        #                              conf=_fed_registration.conf) 
-        request = _fed_registration.construct_request()
-        return {self.name: request.to_dict()}
+        metadata = self.context.claims.get_use()
+        return {self.name: metadata}
 
     def do_request(
             self,
@@ -350,7 +341,8 @@ class ClientEntity(ClientUnit):
             return err_resp
         else:
             logger.error(f"Error response ({reqresp.status_code}): {reqresp.text}")
-            raise OidcServiceError(f"HTTP ERROR: {reqresp.text} [{reqresp.status_code}] on {reqresp.url}")
+            raise OidcServiceError(
+                f"HTTP ERROR: {reqresp.text} [{reqresp.status_code}] on {reqresp.url}")
 
 
 def init_oidc_rp_handler(app, dir: Optional[str] = ""):
