@@ -96,7 +96,7 @@ class ClientEntity(ClientUnit):
             self.context.client_authn_methods = client_auth_setup(method_to_item(_methods))
         else:
             self.context.client_authn_methods = {}
- 
+
     def get_services(self, *arg):
         return self._service
 
