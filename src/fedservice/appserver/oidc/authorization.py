@@ -10,6 +10,7 @@ from idpyoidc.server.oidc import authorization
 
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
+from fedservice.entity.function import get_verified_jwks
 from fedservice.entity.function import verify_trust_chains
 from fedservice.exception import NoTrustedChains
 
@@ -65,14 +66,30 @@ class Authorization(authorization.Authorization):
         # pick one of the possible
         trust_chain = trust_chains[0]
         _fe = topmost_unit(self)['federation_entity']
-        _fe.trust_chain_anchor = trust_chain.anchor
+        _fe.store_trust_chains(entity_id, trust_chains)
+        # _fe.trust_chain_anchor = trust_chain.anchor
 
         # handle the registration request as in the non-federation case.
         # If there is a jwks_uri in the metadata import keys
-        _jwks_uri = trust_chain.metadata['openid_relying_party'].get('jwks_uri')
-        if _jwks_uri:
-            _keyjar = self.upstream_get('attribute', 'keyjar')
-            _keyjar.add_url(entity_id, _jwks_uri)
+        _root = topmost_unit(self)
+        if "openid_provider" in _root:
+            _metadata = trust_chain.metadata['openid_relying_party']
+            _signed_jwks_uri = _metadata.get('signed_jwks_uri')
+            if _signed_jwks_uri:
+                if _signed_jwks_uri:
+                    _jwks = get_verified_jwks(self, _signed_jwks_uri)
+                    if _jwks:
+                        _keyjar = self.upstream_get('attribute', 'keyjar')
+                        _keyjar.add(entity_id, _jwks)
+            else:
+                _jwks_uri = _metadata.get('jwks_uri')
+                if _jwks_uri:
+                    _keyjar = self.upstream_get('attribute', 'keyjar')
+                    _keyjar.add_url(entity_id, _jwks_uri)
+                else:
+                    _jwks = _metadata.get('jwks')
+                    _keyjar = self.upstream_get('attribute', 'keyjar')
+                    _keyjar.import_jwks(entity_id, _jwks)
 
         req = RegistrationRequest(**trust_chain.metadata['openid_relying_party'])
         req['client_id'] = entity_id

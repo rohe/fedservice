@@ -1,12 +1,11 @@
 import pytest
 import responses
-from fedservice.utils import make_federation_combo
-
-from fedservice.trust_mark_entity.entity import create_trust_mark
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.util import rndstr
 
 from fedservice.defaults import LEAF_ENDPOINTS
+from fedservice.trust_mark_entity.entity import create_trust_mark
+from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
 
@@ -107,51 +106,50 @@ class TestComboCollect(object):
             authority_hints=[TA_ID],
             endpoints=["entity_configuration"],
             trust_anchors=ANCHOR,
-            entity_type={
-                "trust_mark_entity": {
-                    "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
-                    "kwargs": {
-                        "trust_mark_specification": {
-                            "https://refeds.org/sirtfi": {
-                                "lifetime": 2592000
-                            }
-                        },
-                        "trust_mark_db": {
-                            "class": "fedservice.trust_mark_entity.FileDB",
+            trust_mark_entity={
+                "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
+                "kwargs": {
+                    "trust_mark_specification": {
+                        "https://refeds.org/sirtfi": {
+                            "lifetime": 2592000
+                        }
+                    },
+                    "trust_mark_db": {
+                        "class": "fedservice.trust_mark_entity.FileDB",
+                        "kwargs": {
+                            "https://refeds.org/sirtfi": "sirtfi",
+                        }
+                    },
+                    "endpoint": {
+                        "trust_mark": {
+                            "path": "trust_mark",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark.TrustMark",
                             "kwargs": {
-                                "https://refeds.org/sirtfi": "sirtfi",
+                                "client_authn_method": [
+                                    "private_key_jwt"
+                                ],
+                                "auth_signing_alg_values": [
+                                    "ES256"
+                                ]
                             }
                         },
-                        "endpoint": {
-                            "trust_mark": {
-                                "path": "trust_mark",
-                                "class": "fedservice.trust_mark_entity.server.trust_mark.TrustMark",
-                                "kwargs": {
-                                    "client_authn_method": [
-                                        "private_key_jwt"
-                                    ],
-                                    "auth_signing_alg_values": [
-                                        "ES256"
-                                    ]
-                                }
-                            },
-                            "trust_mark_list": {
-                                "path": "trust_mark_list",
-                                "class": "fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList",
-                                "kwargs": {}
-                            },
-                            "trust_mark_status": {
-                                "path": "trust_mark_status",
-                                "class": "fedservice.trust_mark_entity.server.trust_mark_status.TrustMarkStatus",
-                                "kwargs": {}
-                            }
+                        "trust_mark_list": {
+                            "path": "trust_mark_list",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList",
+                            "kwargs": {}
+                        },
+                        "trust_mark_status": {
+                            "path": "trust_mark_status",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark_status.TrustMarkStatus",
+                            "kwargs": {}
                         }
                     }
                 }
-            }        )
+            }
+        )
 
         self.ta.server.subordinate[TRUST_MARK_ISSUER_ID] = {
-            "jwks": self.tmi["federation_entity"].keyjar.export_jwks(),
+            "jwks": self.tmi.keyjar.export_jwks(),
             'authority_hints': [TA_ID]
         }
 

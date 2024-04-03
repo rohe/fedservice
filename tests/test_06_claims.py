@@ -2,11 +2,11 @@ import pytest
 from cryptojwt.jws.jws import factory
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 
+from fedservice.appclient import ClientEntity
 from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.entity import FederationEntity
-from fedservice.appclient import ClientEntity
 
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},
@@ -125,10 +125,25 @@ class TestClaimsFRP():
         assert set(_pref["federation_entity"].keys()) == {'contacts', 'federation_fetch_endpoint',
                                                           'federation_list_endpoint', "jwks",
                                                           'homepage_uri', 'organization_name'}
-        assert set(_pref["openid_relying_party"].keys()) == {'grant_types',
+        assert set(_pref["openid_relying_party"].keys()) == {'callback_uris',
+                                                             'client_id',
+                                                             'client_secret',
+                                                             'encrypt_request_object_supported',
+                                                             'encrypt_userinfo_supported',
+                                                             'grant_types',
                                                              'jwks_uri',
                                                              'redirect_uris',
-                                                             'response_types'}
+                                                             'request_object_encryption_alg',
+                                                             'request_object_encryption_enc',
+                                                             'request_object_signing_alg',
+                                                             'response_modes',
+                                                             'response_types',
+                                                             'scope',
+                                                             'token_endpoint_auth_method',
+                                                             'token_endpoint_auth_signing_alg',
+                                                             'userinfo_encrypted_response_alg',
+                                                             'userinfo_encrypted_response_enc',
+                                                             'userinfo_signed_response_alg'}
 
         # IN this case the Combo has no keys, The federation entity and the openid relying party has
         # separate key jars. Same initial key owner IDs in both keyjars.
