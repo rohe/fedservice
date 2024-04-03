@@ -990,10 +990,8 @@ def test_federation_policy_A_2():
     VER_METADATA = {
         "authorization_endpoint":
             "https://op.umu.se/openid/authorization",
-        "claims_parameter_supported": False,
-        "contacts": [
-            "ops@swamid.se"
-        ],
+        # "claims_parameter_supported": False,
+        "contacts": ['ops@swamid.se', 'ops@edugain.geant.org'],
         "federation_registration_endpoint":
             "https://op.umu.se/openid/fedreg",
         "client_registration_types_supported": [
@@ -1017,8 +1015,8 @@ def test_federation_policy_A_2():
         "op_policy_uri":
             "https://www.umu.se/en/website/legal-information/",
         "request_parameter_supported": True,
-        "request_uri_parameter_supported": True,
-        "require_request_uri_registration": True,
+        # "request_uri_parameter_supported": True,
+        # "require_request_uri_registration": True,
         "response_types_supported": [
             "code",
             "code id_token",

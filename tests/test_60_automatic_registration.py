@@ -6,7 +6,6 @@ from fedservice.appserver.oidc.authorization import Authorization
 
 from fedservice.appserver.oidc.registration import Registration
 
-from fedservice.appserver import ServerEntity
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.oidc.token import Token
@@ -115,7 +114,7 @@ class TestAutomatic(object):
             trust_anchors=ANCHOR,
             entity_type={
                 "openid_relying_party": {
-                    'class': ClientEntity,
+                    'class': "fedservice.appclient.ClientEntity",
                     'kwargs': {
                         # OIDC core keys
                         "key_conf": {"uri_path": "static/jwks.json", "key_defs": DEFAULT_KEY_DEFS},
@@ -124,7 +123,7 @@ class TestAutomatic(object):
                             'client_id': RP_ID,
                             'client_secret': 'a longesh password',
                             'client_type': 'oidc',
-                            'redirect_uris': ['https://example.com/cli/authz_cb'],
+                            'redirect_uris': ['https://rp.example.com/cli/authz_cb'],
                             "preference": {
                                 "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
                                 "id_token_signed_response_alg": "ES256",
@@ -177,7 +176,7 @@ class TestAutomatic(object):
             key_config={"key_defs": DEFAULT_KEY_DEFS},
             entity_type={
                 "openid_provider": {
-                    'class': ServerEntity,
+                    'class': 'fedservice.appserver.ServerEntity',
                     'kwargs': {
                         'config': {
                             "issuer": "https://example.com/",
@@ -314,7 +313,7 @@ class TestAutomatic(object):
         assert _context.provider_info
 
         # automatic registration == not explict registration
-        _context.map_preferred_to_registered(registration_response=_context.provider_info)
+        _context.map_supported_to_preferred(info=_context.provider_info)
 
         _auth_service = self.rp['openid_relying_party'].get_service('authorization')
         authn_request = _auth_service.construct(request_args={'response_type': 'code'})
@@ -323,6 +322,9 @@ class TestAutomatic(object):
         # add the jwks_uri
         _jwks_uri = self.rp['openid_relying_party'].get_context().get_preference('jwks_uri')
         _msgs[_jwks_uri] = self.rp['openid_relying_party'].keyjar.export_jwks_as_json()
+        # https://op.example.org/static/jwks.json
+        # _jwks_uri = self.op['openid_provider'].get_context().get_preference('jwks_uri')
+        # _msgs[_jwks_uri] = self.op['openid_provider'].keyjar.export_jwks_as_json()
 
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():

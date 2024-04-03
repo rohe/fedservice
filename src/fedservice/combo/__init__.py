@@ -63,11 +63,15 @@ class Combo(Unit):
     def items(self):
         return self._part.items()
 
-    def get(self, item: Optional[str], default:Optional[Any] = None):
+    def get(self, item: Optional[str], default: Optional[Any] = None):
         if item in self._part:
             return self._part[item]
         else:
             return default
+
+    def __contains__(self, item):
+        return item in self._part
+
 
 class FederationCombo(Combo):
 

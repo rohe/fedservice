@@ -155,3 +155,9 @@ def get_entity_endpoint(unit, entity_id, metadata_type, metadata_parameter):
         return trust_chains[0].metadata[metadata_type][metadata_parameter]
     else:
         return ""
+
+def get_verified_jwks(unit, _signed_jwks_uri):
+    # Fetch a signed JWT that contains a JWKS.
+    # Verify the signature on the JWS with a federation key
+    # To be implemented
+    return None
