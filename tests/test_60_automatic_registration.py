@@ -2,18 +2,15 @@ import os
 
 import pytest
 import responses
-from fedservice.appserver.oidc.authorization import Authorization
-
-from fedservice.appserver.oidc.registration import Registration
-
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.oidc.token import Token
 from idpyoidc.server.oidc.userinfo import UserInfo
 
+from fedservice.appserver.oidc.authorization import Authorization
+from fedservice.appserver.oidc.registration import Registration
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.defaults import LEAF_ENDPOINTS
-from fedservice.appclient import ClientEntity
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 from . import create_trust_chain_messages
@@ -135,17 +132,6 @@ class TestAutomatic(object):
                             "authorization_request_endpoints": [
                                 'authorization_endpoint', 'pushed_authorization_request_endpoint'
                             ],
-                            "add_ons": {
-                                "pushed_authorization": {
-                                    "function": "idpyoidc.client.oauth2.add_on.par.add_support",
-                                    "kwargs": {
-                                        "body_format": "jws",
-                                        "signing_algorithm": "RS256",
-                                        "http_client": None,
-                                        "merge_rule": "lax",
-                                    },
-                                }
-                            },
                         },
                         "services": oidc_service
                     }
