@@ -161,3 +161,8 @@ def get_verified_jwks(unit, _signed_jwks_uri):
     # Verify the signature on the JWS with a federation key
     # To be implemented
     return None
+
+class PolicyError(Exception):
+    pass
+
+
