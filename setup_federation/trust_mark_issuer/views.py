@@ -155,6 +155,23 @@ def handle_bad_request(e):
     return 'bad request!', 400
 
 
+@entity.route('/trust_mark')
+def trust_mark():
+    _endpoint = current_app.federation_entity.get_endpoint('trust_mark')
+    return service_endpoint(_endpoint)
+
+
+@entity.route('/trust_mark_status')
+def trust_mark_status():
+    _endpoint = current_app.federation_entity.get_endpoint('trust_mark_status')
+    return service_endpoint(_endpoint)
+
+
+@entity.route('/trust_mark_list')
+def trust_mark_list():
+    _endpoint = current_app.federation_entity.get_endpoint('trust_mark_list')
+    return service_endpoint(_endpoint)
+
 @entity.route('/.well-known/openid-federation')
 def wkof():
     _entity = current_app.server
