@@ -3,6 +3,7 @@ import os
 import pytest
 import responses
 from cryptojwt.jws.jws import factory
+from fedservice.appserver import ServerEntity
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.configure import DEFAULT_OIDC_ENDPOINTS
@@ -11,7 +12,6 @@ from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.defaults import FEDERATION_ENTITY_FUNCTIONS
 from fedservice.defaults import FEDERATION_ENTITY_SERVICES
 from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
-from fedservice.op import ServerEntity
 from fedservice.appclient import ClientEntity
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
@@ -154,7 +154,7 @@ class TestExplicit(object):
         _endpoints = DEFAULT_OIDC_ENDPOINTS.copy()
         _endpoints["register"] = {
             "path": "registration",
-            "class": "fedservice.op.registration.Registration",
+            "class": "fedservice.appserver.oidc.registration.Registration",
             "kwargs": {}
         }
 

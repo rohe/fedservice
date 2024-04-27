@@ -1,16 +1,15 @@
 import os
 from urllib.parse import urlparse
 
+import pytest
+import responses
 from cryptojwt import JWT
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import build_keyjar
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
-import pytest
-import responses
 
-from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.message import TrustMarkRequest
-from fedservice.trust_mark_entity.trust_mark_issuer import TrustMarkIssuer
+from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
 
@@ -63,38 +62,7 @@ class TestTrustMarkDelegation():
 
         ANCHOR = {self.ta.entity_id: self.ta.keyjar.export_jwks()}
 
-        TRUST_MARK_ISSUER_CONF = {
-            "entity_id": TA_ID,
-            "key_conf": {
-                "private_path": "private/tmi_keys.json",
-                "key_defs": [
-                    {
-                        "type": "EC",
-                        "crv": "P-256",
-                        "use": [
-                            "sig"
-                        ]
-                    }
-                ],
-                "public_path": "static/tmi_keys.json",
-                "read_only": False
-            },
-            "trust_mark_specification": {
-                SIRTIFI_TRUST_MARK_ID: {
-                    "lifetime": 2592000
-                },
-            },
-            "trust_mark_db": {
-                "class": "fedservice.trust_mark_issuer.FileDB",
-                "kwargs": {
-                    SIRTIFI_TRUST_MARK_ID: os.path.join(BASE_PATH, "tmi/sirtifi_se")
-                }
-            }
-        }
-
-        # The trust mark issuer
-        self.tmi = TrustMarkIssuer(**TRUST_MARK_ISSUER_CONF)
-        # Federation entity with only status endpoint
+        # Federation entity with status endpoints
         self.trust_mark_issuer = make_federation_entity(
             TMI_ID,
             preference={
@@ -102,16 +70,48 @@ class TestTrustMarkDelegation():
             },
             key_config={"key_defs": DEFAULT_KEY_DEFS},
             authority_hints=[TA_ID],
-            endpoints=["status", "entity_configuration"],
+            endpoints=["entity_configuration"],
             trust_anchors=ANCHOR,
-            item_args={
-                "endpoint": {
-                    "status": {
-                        "trust_mark_issuer": self.tmi
+            trust_mark_entity={
+                "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
+                "kwargs": {
+                    "trust_mark_specification": {
+                        "https://refeds.org/sirtfi": {
+                            "lifetime": 2592000
+                        }
+                    },
+                    "trust_mark_db": {
+                        "class": "fedservice.trust_mark_entity.FileDB",
+                        "kwargs": {
+                            "https://refeds.org/sirtfi": "sirtfi",
+                        }
+                    },
+                    "endpoint": {
+                        "trust_mark": {
+                            "path": "trust_mark",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark.TrustMark",
+                            "kwargs": {
+                                "client_authn_method": [
+                                    "private_key_jwt"
+                                ],
+                                "auth_signing_alg_values": [
+                                    "ES256"
+                                ]
+                            }
+                        },
+                        "trust_mark_list": {
+                            "path": "trust_mark_list",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList",
+                            "kwargs": {}
+                        },
+                        "trust_mark_status": {
+                            "path": "trust_mark_status",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark_status.TrustMarkStatus",
+                            "kwargs": {}
+                        }
                     }
                 }
-            }
-        )
+            })
 
         self.ta.server.subordinate[TMI_ID] = {
             "jwks": self.trust_mark_issuer.keyjar.export_jwks(),
@@ -126,10 +126,11 @@ class TestTrustMarkDelegation():
             },
             key_config={"key_defs": DEFAULT_KEY_DEFS},
             authority_hints=[TA_ID],
-            endpoints=LEAF_ENDPOINTS,
+            endpoints=["entity_configuration"],
             trust_anchors=ANCHOR,
-            services=["trust_mark_status", "entity_configuration", "entity_statement"]
+            services=["entity_configuration", "entity_statement", "trust_mark_status"]
         )
+        self.tmi = self.trust_mark_issuer.server.trust_mark_entity
 
     @pytest.fixture()
     def create_trust_mark(self, trust_mark_delegation, tm_receiver):
@@ -176,12 +177,11 @@ class TestTrustMarkDelegation():
                 'sub': verified_trust_mark['sub'],
                 'id': verified_trust_mark['id']
             },
-            fetch_endpoint=tm_issuer_metadata['federation_entity'][
-                'federation_trust_mark_status_endpoint']
+            fetch_endpoint=tm_issuer_metadata["federation_entity"]['federation_trust_mark_status_endpoint']
         )
         p = urlparse(req['url'])
         tmr = TrustMarkRequest().from_urlencoded(p.query)
 
         # The response from the Trust Mark issuer
-        resp = self.trust_mark_issuer.server.endpoint['status'].process_request(tmr.to_dict())
+        resp = self.trust_mark_issuer.server.endpoint['trust_mark_status'].process_request(tmr.to_dict())
         assert resp == {'response_args': {'active': True}}

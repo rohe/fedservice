@@ -11,7 +11,8 @@ The federation consists of the following entities:
 In this example all the entities are running on the same machine.
 It is of course not necessary to do so.
 If you run the entities on separate machines you have to move the necessary
-files inbetween them.
+files inbetween them. You also have to change **entity_id**, **port** and **domain**
+in the relevant conf.json file.
 
 Start by setting up the trust anchor.
 
@@ -52,6 +53,8 @@ trust mark. The information to pass along is collected by doing::
     ./get_info.py -k -t https://127.0.0.1:7003 > trust_anchor.json
 
 This must be done while the Trust anchor is running.
+Of course if you have changed the entity_id of the trust anchor from
+https://127.0.0.1:7003 to something else you have to change this command accordingly.
 
 Now your done with phase 1 concerning the trust anchor. So you can
 kill that process for the time being.
@@ -103,6 +106,10 @@ The fourth is presently done like this (may change in the future)::
 That should do it for the trust mark issuer.
 If you now restart it it should have all the necessary information to be part of the federation.
 
+**Note** The same goes for these commands as was noted above. If you change the
+entity_id of the trust anchor or the trust mark issuer you have to change the
+command parameters accordingly.
+
 Wallet Provider
 ---------------
 
@@ -146,8 +153,31 @@ The third would look like this::
 That should do it for the wallet provider.
 If you now restart it it should have all the necessary information to be part of the federation.
 
+**Note** The same goes for these commands as was noted above. If you change the
+entity_id of the trust anchor or the wallet provider you have to change the
+command parameters accordingly.
+
 Finalizing the setup
 --------------------
 
 At this point, if you have followed the steps above, you should restart the trust anchor.
 I should not be necessary to do so but just in case.
+
+
+Creating a trust mark for an entity
+-----------------------------------
+
+For this the script *create_trust_mark.py* is included.
+Typical usage::
+
+    ./create_trust_mark.py -d trust_mark_issuer -m http://dc4eu.example.com/PersonIdentificationData/se -e
+    https://127.0.0.1:8080
+
+
+usage: create_trust_mark.py [-h] [-d DIR_NAME] [-e ENTITY_ID] [-m TRUST_MARK_ID] ::
+
+    options:
+      -h, --help            show this help message and exit
+      -d DIR_NAME, --dir_name DIR_NAME
+      -e ENTITY_ID, --entity_id ENTITY_ID
+      -m TRUST_MARK_ID, --trust_mark_id TRUST_MARK_ID

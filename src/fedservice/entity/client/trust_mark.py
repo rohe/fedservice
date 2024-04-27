@@ -2,6 +2,9 @@ from typing import Callable
 from typing import Optional
 from typing import Union
 
+from fedservice.entity.function import get_verified_trust_chains
+
+from fedservice.entity.utils import get_federation_entity
 from idpyoidc.client.configure import Configuration
 from idpyoidc.exception import MissingAttribute
 from idpyoidc.message import Message
@@ -14,7 +17,7 @@ from fedservice.message import TrustMarkRequest
 
 
 class TrustMark(FederationService):
-    """The service that talks to the OIDC federation Status endpoint."""
+    """The service that talks to the Trust Mark endpoint."""
 
     msg_type = oauth2.Message
     response_cls = message.Message
@@ -51,3 +54,18 @@ class TrustMark(FederationService):
             raise MissingAttribute("Need a trust mark id")
 
         return TrustMarkRequest(**request_args)
+
+    def get_endpoint(self):
+        federation_entity = get_federation_entity(self)
+        trust_chains=federation_entity.get_trust_chains(federation_entity.client.context.issuer)
+        if trust_chains:
+            pass
+        else:
+            trust_chains = get_verified_trust_chains(federation_entity, federation_entity.client.context.issuer)
+            if trust_chains:
+                federation_entity.store_trust_chains(federation_entity.client.context.issuer, trust_chains)
+            else:
+                return ""
+
+        return trust_chains[0].metadata["federation_entity"]["federation_trust_mark_endpoint"]
+

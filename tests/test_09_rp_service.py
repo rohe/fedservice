@@ -2,6 +2,7 @@ import json
 import os
 from urllib.parse import urlparse
 
+import pytest
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import KeyJar
 from idpyoidc.client.client_auth import PrivateKeyJWT
@@ -9,8 +10,8 @@ from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.defaults import JWT_BEARER
 from idpyoidc.message.oidc import AccessTokenRequest
 from idpyoidc.node import topmost_unit
-import pytest
 
+from fedservice.appclient import ClientEntity
 from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
@@ -21,7 +22,6 @@ from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement
 from fedservice.fetch_entity_statement.fs2 import FSPublisher
-from fedservice.appclient import ClientEntity
 from .utils import DummyCollector
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
@@ -156,9 +156,13 @@ class TestRpService(object):
         assert statement.anchor == 'https://feide.no'
         self.discovery_service.update_service_context(statements)
         assert set(self.discovery_service.upstream_get("context").prefers().keys()) == {
+            'application_type',
             'callback_uris',
             'client_id',
             'client_secret',
+            'default_max_age',
+            'encrypt_request_object_supported',
+            'encrypt_userinfo_supported',
             'grant_types_supported',
             'id_token_encryption_alg_values_supported',
             'id_token_encryption_enc_values_supported',
@@ -167,20 +171,35 @@ class TestRpService(object):
             'redirect_uris',
             'request_object_encryption_alg_values_supported',
             'request_object_encryption_enc_values_supported',
+            'request_object_signing_alg_values_supported',
+            'response_modes_supported',
+            'response_types_supported',
+            'scopes_supported',
+            'subject_types_supported',
             'token_endpoint_auth_methods_supported',
+            'token_endpoint_auth_signing_alg_values_supported',
             'userinfo_encryption_alg_values_supported',
-            'userinfo_encryption_enc_values_supported'}
+            'userinfo_encryption_enc_values_supported',
+            'userinfo_signing_alg_values_supported'}
         assert set(
             [k for k, v in self.discovery_service.upstream_get("context").prefers().items() if v]) == {
+                   'application_type',
                    'callback_uris',
                    'client_id',
                    'client_secret',
+                   'default_max_age',
                    'grant_types_supported',
                    'id_token_signing_alg_values_supported',
                    'jwks_uri',
                    'redirect_uris',
-                   'token_endpoint_auth_methods_supported'
-               }
+                   'request_object_signing_alg_values_supported',
+                   'response_modes_supported',
+                   'response_types_supported',
+                   'scopes_supported',
+                   'subject_types_supported',
+                   'token_endpoint_auth_methods_supported',
+                   'token_endpoint_auth_signing_alg_values_supported',
+                   'userinfo_signing_alg_values_supported'}
 
     def test_create_reqistration_request(self):
         # get the entity statement from the OP
@@ -217,14 +236,24 @@ class TestRpService(object):
                                        'iat', 'authority_hints'}
         assert set(payload['metadata']['openid_relying_party'].keys()) == {
             'application_type',
+            'callback_uris',
+            'client_id',
+            'client_secret',
             'default_max_age',
+            'encrypt_request_object_supported',
+            'encrypt_userinfo_supported',
             'grant_types',
             'id_token_signed_response_alg',
             'jwks_uri',
             'redirect_uris',
+            'request_object_signing_alg',
+            'response_modes',
             'response_types',
+            'scope',
             'subject_type',
-            'token_endpoint_auth_method'}
+            'token_endpoint_auth_method',
+            'token_endpoint_auth_signing_alg',
+            'userinfo_signed_response_alg'}
 
     def test_parse_registration_response(self):
         # construct the entity statement the OP should return
@@ -295,17 +324,25 @@ class TestRpService(object):
         claims = self.registration_service.parse_response(_jwt, request=_info['body'])
 
         assert set(claims.keys()) == {'application_type',
+                                      'callback_uris',
                                       'client_id',
                                       'client_secret',
                                       'contacts',
                                       'default_max_age',
+                                      'encrypt_request_object_supported',
+                                      'encrypt_userinfo_supported',
                                       'grant_types',
                                       'id_token_signed_response_alg',
                                       'jwks_uri',
                                       'redirect_uris',
+                                      'request_object_signing_alg',
+                                      'response_modes',
                                       'response_types',
+                                      'scope',
                                       'subject_type',
-                                      'token_endpoint_auth_method'}
+                                      'token_endpoint_auth_method',
+                                      'token_endpoint_auth_signing_alg',
+                                      'userinfo_signed_response_alg'}
 
 
 class TestRpServiceAuto(object):

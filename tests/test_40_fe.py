@@ -4,9 +4,8 @@ import os
 import pytest
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import init_key_jar
-from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 
-from fedservice.utils import make_federation_entity
+from fedservice.utils import make_federation_combo
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -33,7 +32,7 @@ class TestFederationEntity(object):
 
     @pytest.fixture(autouse=True)
     def server_setup(self):
-        self.entity = make_federation_entity(
+        self.entity = make_federation_combo(
             ENTITY_ID,
             preference={
                 "organization_name": "The leaf operator",
@@ -42,16 +41,43 @@ class TestFederationEntity(object):
             },
             key_config={"uri_path": "static/fed_jwks.json", "key_defs": KEYDEFS},
             authority_hints=['https://ntnu.no'],
-            endpoints=["entity_configuration", "fetch", "list", "resolve", "status"],
-            item_args={
-                "endpoint": {
-                    "status": {
-                        "trust_mark_issuer": {
-                            "class": "fedservice.trust_mark_issuer.TrustMarkIssuer",
+            endpoints=["entity_configuration", "fetch", "list", "resolve"],
+            trust_mark_entity={
+                "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
+                "kwargs": {
+                    "trust_mark_specification": {
+                        "https://refeds.org/sirtfi": {
+                            "lifetime": 2592000
+                        }
+                    },
+                    "trust_mark_db": {
+                        "class": "fedservice.trust_mark_entity.FileDB",
+                        "kwargs": {
+                            "https://refeds.org/sirtfi": "sirtfi",
+                        }
+                    },
+                    "endpoint": {
+                        "trust_mark": {
+                            "path": "trust_mark",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark.TrustMark",
                             "kwargs": {
-                                "key_conf": {"key_defs": DEFAULT_KEY_DEFS},
-                                "trust_mark_specification": {"https://refeds.org/sirtfi": {}}
+                                "client_authn_method": [
+                                    "private_key_jwt"
+                                ],
+                                "auth_signing_alg_values": [
+                                    "ES256"
+                                ]
                             }
+                        },
+                        "trust_mark_list": {
+                            "path": "trust_mark_list",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList",
+                            "kwargs": {}
+                        },
+                        "trust_mark_status": {
+                            "path": "trust_mark_status",
+                            "class": "fedservice.trust_mark_entity.server.trust_mark_status.TrustMarkStatus",
+                            "kwargs": {}
                         }
                     }
                 }
@@ -95,13 +121,21 @@ class TestFederationEntity(object):
         assert payload["iss"] == payload["sub"]
         assert set(payload['metadata'].keys()) == {'federation_entity'}
         # Full set of endpoints
-        for i in payload['metadata']['federation_entity'].keys():
-            assert i in ('organization_name', 'homepage_uri', 'contacts',
-                         'federation_fetch_endpoint',
-                         'federation_list_endpoint',
-                         'federation_resolve_endpoint',
-                         'federation_trust_mark_status_endpoint',
-                         'jwks')
+        assert set(payload['metadata']['federation_entity'].keys()) == {'contacts',
+                                                                        'federation_fetch_endpoint',
+                                                                        'federation_list_endpoint',
+                                                                        'federation_resolve_endpoint',
+                                                                        'federation_trust_mark_endpoint',
+                                                                        'federation_trust_mark_list_endpoint',
+                                                                        'federation_trust_mark_status_endpoint',
+                                                                        'homepage_uri',
+                                                                        'jwks',
+                                                                        'organization_name',
+                                                                        'federation_trust_mark_status_endpoint_auth_methods',
+                                                                        'federation_trust_mark_endpoint_auth_signing_alg_values',
+                                                                        'federation_trust_mark_endpoint_auth_methods',
+                                                                        'federation_trust_mark_list_endpoint_auth_methods'
+                                                                        }
 
     def test_fetch(self):
         _endpoint = self.entity.server.get_endpoint('fetch')
