@@ -183,5 +183,5 @@ class TestTrustMarkDelegation():
         tmr = TrustMarkRequest().from_urlencoded(p.query)
 
         # The response from the Trust Mark issuer
-        resp = self.tmi.endpoint['trust_mark_status'].process_request(tmr.to_dict())
+        resp = self.trust_mark_issuer.server.endpoint['trust_mark_status'].process_request(tmr.to_dict())
         assert resp == {'response_args': {'active': True}}
