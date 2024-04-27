@@ -128,7 +128,7 @@ class TestTrustMarkDelegation():
             authority_hints=[TA_ID],
             endpoints=["entity_configuration"],
             trust_anchors=ANCHOR,
-            services=["trust_mark_status", "entity_configuration", "entity_statement"]
+            services=["entity_configuration", "entity_statement", "trust_mark_status"]
         )
         self.tmi = self.trust_mark_issuer.server.trust_mark_entity
 
@@ -183,5 +183,5 @@ class TestTrustMarkDelegation():
         tmr = TrustMarkRequest().from_urlencoded(p.query)
 
         # The response from the Trust Mark issuer
-        resp = self.trust_mark_issuer.server.endpoint['status'].process_request(tmr.to_dict())
+        resp = self.tmi.endpoint['trust_mark_status'].process_request(tmr.to_dict())
         assert resp == {'response_args': {'active': True}}

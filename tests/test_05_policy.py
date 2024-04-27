@@ -523,7 +523,7 @@ def test_combine_metadata_and_metadata_policy_OK(policy, metadata, result):
                                      }
                                  }
                              ],
-[
+                             [
                                  {
                                      'metadata': {'B': 123},
                                  },
