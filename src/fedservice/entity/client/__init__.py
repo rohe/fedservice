@@ -233,9 +233,7 @@ class FederationClient(FederationClientEntity):
         if client_type:
             self.client_type = client_type
         elif config and 'client_type' in config:
-            client_type = self.client_type = config["client_type"]
-        else:
-            client_type = self.client_type
+            self.client_type = config["client_type"]
 
         if verify_ssl is False:
             # just ignore verify_ssl until it goes away

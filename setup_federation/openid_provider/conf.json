@@ -1,0 +1,375 @@
+{
+  "logging": {
+    "version": 1,
+    "disable_existing_loggers": false,
+    "root": {
+      "handlers": [
+        "default",
+        "console"
+      ],
+      "level": "DEBUG"
+    },
+    "loggers": {
+      "bobcat_idp": {
+        "level": "DEBUG"
+      }
+    },
+    "handlers": {
+      "default": {
+        "class": "logging.FileHandler",
+        "filename": "openid_provider/debug.log",
+        "formatter": "default"
+      },
+      "console": {
+        "class": "logging.StreamHandler",
+        "stream": "ext://sys.stdout",
+        "formatter": "default"
+      }
+    },
+    "formatters": {
+      "default": {
+        "format": "%(asctime)s %(name)s %(levelname)s %(message)s"
+      }
+    }
+  },
+  "entity": {
+    "entity_id": "https://127.0.0.1:4004",
+    "httpc_params": {
+      "verify": false
+    },
+    "key_config": {
+      "private_path": "openid_provider/private/fed_keys.json",
+      "key_defs": [
+        {
+          "type": "RSA",
+          "use": [
+            "sig"
+          ]
+        },
+        {
+          "type": "EC",
+          "crv": "P-256",
+          "use": [
+            "sig"
+          ]
+        }
+      ],
+      "public_path": "openid_provider/static/fed_keys.json",
+      "read_only": false,
+      "uri_path": "jwks/fed"
+    },
+    "authority_hints": {
+      "class": "idpyoidc.storage.listfile.ReadOnlyListFile",
+      "kwargs": {
+        "file_name": "openid_provider/authority_hints"
+      }
+    },
+    "trust_anchors": {
+      "class": "idpyoidc.storage.abfile.AbstractFileSystem",
+      "kwargs": {
+        "fdir": "openid_provider/trust_anchors",
+        "key_conv": "idpyoidc.util.Base64",
+        "value_conv": "idpyoidc.util.JSON"
+      }
+    },
+    "trust_marks": [
+      "eyJhbGciOiJSUzI1NiIsImtpZCI6IlRGSXROekZhT0dzdFRsQldhR1ZtWmpjNVJrUm5XSFIxWlMxTVprUnljV05zU0dWbFJuUkZTa1JLV1EifQ.eyJpYXQiOiAxNzE0NTU2MjU1LCAiaWQiOiAiaHR0cHM6Ly9yZWZlZHMub3JnL2NhdGVnb3J5L3BlcnNvbmFsaXplZCIsICJzdWIiOiAiaHR0cHM6Ly8xMjcuMC4wLjE6NDAwNCIsICJleHAiOiAxNzE3MTQ4MjU1LCAiaXNzIjogImh0dHBzOi8vMTI3LjAuMC4xOjYwMDAifQ.Kt9uXPldAIpfWWi1c7t6M4d-PtWLCtTsRLLVOjjbAUxr5SYrpK3PUj8Vp1wVOR0diVnLXdi1hldrUEq4DXKGmA_KnYSQZF6BlCnnTAXoJEY19Y2xqnuIaVXa0muigciAVHk1AOOwSqQvFFJQB0DYJQaf39elCP3Twl9rIl_ED994Ut1pBkdHfpFK-uGERhNKGIfyj3D3sN4TrIU6OkSPSu8Z4wrr6Zi5EKdUalF2CPGNCvaDyPTR0b8_JBOncg-a0deLUy9YTTc19ZRYLeGspZHquWL6mPZAHYNe66JrpXzWgGKOqIqbmha550G9FeK1Xg9-EEZLaIKwVdTpzP7Oxw"
+    ],
+    "endpoints": [
+      "entity_configuration"
+    ],
+    "entity_type": {
+      "openid_provider": {
+        "class": "fedservice.appserver.ServerEntity",
+        "kwargs": {
+          "httpc_params": {
+            "verify": false
+          },
+          "config": {
+            "preference": {
+              "subject_types_supported": [
+                "public",
+                "pairwise"
+              ],
+              "grant_types_supported": [
+                "authorization_code",
+                "implicit",
+                "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                "refresh_token"
+              ]
+            },
+            "template_dir": "templates",
+            "token_handler_args": {
+              "jwks_def": {
+                "private_path": "openid_provider/private/token_jwk.json",
+                "public_path": "openid_provider/static/token_jwk.json",
+                "read_only": false,
+                "key_defs": [
+                  {
+                    "type": "oct",
+                    "bytes": 24,
+                    "use": [
+                      "enc"
+                    ],
+                    "kid": "code"
+                  },
+                  {
+                    "type": "oct",
+                    "bytes": 24,
+                    "use": [
+                      "enc"
+                    ],
+                    "kid": "refresh"
+                  }
+                ]
+              },
+              "code": {
+                "lifetime": 1200
+              },
+              "token": {
+                "class": "idpyoidc.server.token.jwt_token.JWTToken",
+                "lifetime": 3600,
+                "add_claims": [
+                  "email",
+                  "email_verified",
+                  "phone_number",
+                  "phone_number_verified"
+                ],
+                "add_claim_by_scope": true,
+                "aud": [
+                  "https://example.org/appl"
+                ]
+              },
+              "refresh": {
+                "lifetime": 86400
+              },
+              "id_token": {
+                "class": "idpyoidc.server.token.id_token.IDToken",
+                "kwargs": {
+                  "base_claims": {
+                    "email": {
+                      "essential": true
+                    },
+                    "email_verified": {
+                      "essential": true
+                    }
+                  }
+                }
+              }
+            },
+            "keys": {
+              "private_path": "openid_provider/private/jwks.json",
+              "key_defs": [
+                {
+                  "type": "RSA",
+                  "use": [
+                    "sig"
+                  ]
+                },
+                {
+                  "type": "EC",
+                  "crv": "P-256",
+                  "use": [
+                    "sig"
+                  ]
+                }
+              ],
+              "public_path": "openid_provider/static/jwks.json",
+              "uri_path": "jwks/openid_provider",
+              "read_only": false
+            },
+            "endpoint": {
+              "webfinger": {
+                "path": ".well-known/webfinger",
+                "class": "idpyoidc.server.oidc.discovery.Discovery"
+              },
+              "federation_info": {
+                "path": ".well-known/openid-federation",
+                "class": "fedservice.appserver.oidc.provider_config.ProviderConfiguration",
+                "kwargs": {
+                  "client_authn_method": null
+                }
+              },
+              "federation_registration": {
+                "path": "registration",
+                "class": "fedservice.appserver.oidc.registration.Registration",
+                "kwargs": {
+                  "client_authn_method": null
+                }
+              },
+              "registration_api": {
+                "path": "registration_api",
+                "class": "idpyoidc.server.oidc.read_registration.RegistrationRead",
+                "kwargs": {
+                  "client_authn_method": [
+                    "bearer_header"
+                  ]
+                }
+              },
+              "introspection": {
+                "path": "introspection",
+                "class": "idpyoidc.server.oauth2.introspection.Introspection",
+                "kwargs": {
+                  "client_authn_method": [
+                    "client_secret_post"
+                  ],
+                  "release": [
+                    "username"
+                  ]
+                }
+              },
+              "authorization": {
+                "path": "authorization",
+                "class": "fedservice.appserver.oidc.authorization.Authorization",
+                "kwargs": {
+                  "client_authn_method": null,
+                  "claims_parameter_supported": true,
+                  "request_parameter_supported": true,
+                  "request_uri_parameter_supported": true,
+                  "response_types_supported": [
+                    "code",
+                    "token",
+                    "id_token",
+                    "code token",
+                    "code id_token",
+                    "id_token token",
+                    "code id_token token",
+                    "none"
+                  ],
+                  "response_modes_supported": [
+                    "query",
+                    "fragment",
+                    "form_post"
+                  ]
+                }
+              },
+              "token": {
+                "path": "token",
+                "class": "idpyoidc.server.oidc.token.Token",
+                "kwargs": {
+                  "client_authn_method": [
+                    "client_secret_post",
+                    "client_secret_basic",
+                    "client_secret_jwt",
+                    "private_key_jwt"
+                  ]
+                }
+              },
+              "userinfo": {
+                "path": "userinfo",
+                "class": "idpyoidc.server.oidc.userinfo.UserInfo",
+                "kwargs": {
+                  "claim_types_supported": [
+                    "normal",
+                    "aggregated",
+                    "distributed"
+                  ]
+                }
+              },
+              "end_session": {
+                "path": "session",
+                "class": "idpyoidc.server.oidc.session.Session",
+                "kwargs": {
+                  "logout_verify_url": "verify_logout",
+                  "post_logout_uri_path": "post_logout",
+                  "signing_alg": "ES256",
+                  "frontchannel_logout_supported": true,
+                  "frontchannel_logout_session_supported": true,
+                  "backchannel_logout_supported": true,
+                  "backchannel_logout_session_supported": true,
+                  "check_session_iframe": "check_session_iframe"
+                }
+              }
+            },
+            "userinfo": {
+              "class": "idpyoidc.server.user_info.UserInfo",
+              "kwargs": {
+                "db_file": "openid_provider/users.json"
+              }
+            },
+            "authentication": {
+              "user": {
+                "acr": "idpyoidc.server.user_authn.authn_context.INTERNETPROTOCOLPASSWORD",
+                "class": "idpyoidc.server.user_authn.user.UserPassJinja2",
+                "kwargs": {
+                  "verify_endpoint": "verify/user",
+                  "template": "user_pass.jinja2",
+                  "db": {
+                    "class": "idpyoidc.server.util.JSONDictDB",
+                    "kwargs": {
+                      "filename": "openid_provider/passwd.json"
+                    }
+                  },
+                  "page_header": "Testing log in",
+                  "submit_btn": "Get me in!",
+                  "user_label": "Nickname",
+                  "passwd_label": "Secret sauce"
+                }
+              }
+            },
+            "cookie_dealer": {
+              "class": "idpyoidc.server.cookie.CookieDealer",
+              "sign_jwk": {
+                "filename": "private/cookie_sign_jwk.json",
+                "type": "OCT",
+                "kid": "cookie_sign_key_id"
+              },
+              "kwargs": {
+                "default_values": {
+                  "name": "oidc_op",
+                  "domain": "127.0.0.1",
+                  "path": "/",
+                  "max_age": 3600
+                }
+              }
+            },
+            "add_on": {
+              "pkce": {
+                "function": "idpyoidc.server.oidc.add_on.pkce.add_pkce_support",
+                "kwargs": {
+                  "essential": false,
+                  "code_challenge_method": [
+                    "S256",
+                    "S384",
+                    "S512"
+                  ]
+                }
+              },
+              "extra_args": {
+                "function": "idpyoidc.server.oauth2.add_on.extra_args.add_support",
+                "kwargs": {
+                  "authorization": {
+                    "iss": "issuer"
+                  }
+                }
+              },
+              "claims": {
+                "function": "idpyoidc.server.oidc.add_on.custom_scopes.add_custom_scopes",
+                "kwargs": {
+                  "research_and_scholarship": [
+                    "name",
+                    "given_name",
+                    "family_name",
+                    "email",
+                    "email_verified",
+                    "sub",
+                    "iss",
+                    "eduperson_scoped_affiliation"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webserver": {
+    "server_cert": "certs/example.crt",
+    "server_key": "certs/example.key",
+    "cert_chain": null,
+    "port": 4004,
+    "domain": "127.0.0.1",
+    "debug": true
+  }
+}

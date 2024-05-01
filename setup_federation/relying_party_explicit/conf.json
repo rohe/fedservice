@@ -1,0 +1,173 @@
+{
+  "logging": {
+    "version": 1,
+    "disable_existing_loggers": false,
+    "root": {
+      "handlers": [
+        "default",
+        "console"
+      ],
+      "level": "DEBUG"
+    },
+    "loggers": {
+      "idp": {
+        "level": "DEBUG"
+      }
+    },
+    "handlers": {
+      "default": {
+        "class": "logging.FileHandler",
+        "filename": "relying_party_explicit/debug.log",
+        "formatter": "default"
+      },
+      "console": {
+        "class": "logging.StreamHandler",
+        "stream": "ext://sys.stdout",
+        "formatter": "default"
+      }
+    },
+    "formatters": {
+      "default": {
+        "format": "%(asctime)s %(name)s %(levelname)s %(message)s"
+      }
+    }
+  },
+  "entity": {
+    "entity_id": "https://127.0.0.1:4002",
+    "httpc_params": {
+      "verify": false
+    },
+    "key_config": {
+      "private_path": "relying_party_explicit/private/fed_keys.json",
+      "key_defs": [
+        {
+          "type": "RSA",
+          "key": "",
+          "use": [
+            "sig"
+          ]
+        },
+        {
+          "type": "EC",
+          "crv": "P-256",
+          "use": [
+            "sig"
+          ]
+        }
+      ],
+      "public_path": "relying_party_explicit/static/fed_keys.json",
+      "read_only": false,
+      "uri_path": "jwks/federation_entity"
+    },
+    "authority_hints": {
+      "class": "idpyoidc.storage.listfile.ReadOnlyListFile",
+      "kwargs": {
+        "file_name": "wallet_provider/authority_hints"
+      }
+    },
+    "trust_anchors": {
+      "class": "idpyoidc.storage.abfile.AbstractFileSystem",
+      "kwargs": {
+        "fdir": "wallet_provider/trust_anchors",
+        "key_conv": "idpyoidc.util.Base64",
+        "value_conv": "idpyoidc.util.JSON"
+      }
+    },
+    "trust_marks": [
+      "eyJhbGciOiJSUzI1NiIsImtpZCI6IlRGSXROekZhT0dzdFRsQldhR1ZtWmpjNVJrUm5XSFIxWlMxTVprUnljV05zU0dWbFJuUkZTa1JLV1EifQ.eyJpYXQiOiAxNzE0NTU2MDQ5LCAiaWQiOiAiaHR0cHM6Ly9yZWZlZHMub3JnL2NhdGVnb3J5L3BlcnNvbmFsaXplZCIsICJzdWIiOiAiaHR0cHM6Ly8xMjcuMC4wLjE6NDAwMiIsICJleHAiOiAxNzE3MTQ4MDQ5LCAiaXNzIjogImh0dHBzOi8vMTI3LjAuMC4xOjYwMDAifQ.U4rxJB9GWFXmLT4sN4xLI_lHi8s9TJYjZ4sdUubhwy4kleBaqfPXM6lR26EIVnykhb14BBLZ6ibDLmVjSNSaLbTTTBEMiwZaIs233bfWuJLYmuIWnTVX_EAquPvkYE4JuXZ7oMvtVYyJGSU3Sd8fKkrp9oHR3MuW_hENP4sg2FcMu3TqjfCkqb_ZY7YyN8vCmAkxL1RWLhI29ufmIQGQQTWZ2ofVhh4MKbbs34LrWIdmL4prb4nCT5vsffePz3Ah1M7LYnkPqWta9ayWr-0zlKlPpuUmPhvdIfS4KY3TdwiPaxZ_uM0HiBihQU_YjXlEs_QQEULCjgPDXzIsHHMf_g"
+    ],
+    "endpoints": [
+      "entity_configuration"
+    ],
+    "entity_type": {
+      "openid_relying_party": {
+        "class": "idpyoidc.client.rp_handler.RPHandler",
+        "kwargs": {
+          "base_url": "https://127.0.0.1:4002",
+          "client_type": "oidc",
+          "client_class": "fedservice.appclient.stand_alone_client_entity.StandAloneClientEntity",
+          "key_conf": {
+            "private_path": "private/expl.rp.jwks.json",
+            "key_defs": [
+              {
+                "type": "RSA",
+                "use": [
+                  "sig"
+                ]
+              },
+              {
+                "type": "EC",
+                "crv": "P-256",
+                "use": [
+                  "sig"
+                ]
+              }
+            ],
+            "public_path": "relying_party_explicit/static/rp_keys.json",
+            "read_only": false,
+            "uri_path": "jwks/openid_relying_party"
+          },
+          "preference": {
+            "application_name": "rphandler",
+            "application_type": "web",
+            "contacts": [
+              "ops@example.com"
+            ],
+            "response_types_supported": [
+              "code"
+            ],
+            "scope": [
+              "openid",
+              "profile",
+              "email",
+              "address",
+              "phone"
+            ],
+            "token_endpoint_auth_method": [
+              "private_key_jwt"
+            ]
+          },
+          "services": {
+            "discovery": {
+              "class": "fedservice.appclient.oidc.provider_info_discovery.ProviderInfoDiscovery",
+              "kwargs": {}
+            },
+            "registration": {
+              "class": "fedservice.appclient.oidc.registration.Registration",
+              "kwargs": {}
+            },
+            "authorization": {
+              "class": "idpyoidc.client.oidc.authorization.Authorization",
+              "kwargs": {}
+            },
+            "accesstoken": {
+              "class": "idpyoidc.client.oidc.access_token.AccessToken",
+              "kwargs": {}
+            },
+            "userinfo": {
+              "class": "idpyoidc.client.oidc.userinfo.UserInfo",
+              "kwargs": {}
+            }
+          },
+          "clients": {
+            "": {
+              "redirect_uris": null,
+              "local": {
+                "issuer": "https://127.0.0.1:5000",
+                "redirect_uris": [
+                  "https://{domain}:{port}/authz_cb/local"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webserver": {
+    "port": 4002,
+    "server_cert": "certs/cert.pem",
+    "server_key": "certs/key.pem",
+    "domain": "127.0.0.1"
+  }
+}

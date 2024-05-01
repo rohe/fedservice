@@ -38,7 +38,7 @@ class ClientEntity(ClientUnit):
             self,
             upstream_get: Optional[Callable] = None,
             entity_id: Optional[str] = '',
-            httpc: Optional[object] = None,
+            httpc: Optional[Callable] = None,
             keyjar: Optional[KeyJar] = None,
             config: Optional[Union[dict, Configuration]] = None,
             services: Optional[dict] = None,
@@ -170,7 +170,7 @@ class ClientEntity(ClientUnit):
         :return:
         """
         try:
-            resp = self.httpc("GET", url, data=body, headers=headers)
+            resp = self.httpc(method, url, data=body, headers=headers, **self.httpc_params)
         except Exception as err:
             logger.error(f"Exception on request: {err}")
             raise
@@ -222,6 +222,7 @@ class ClientEntity(ClientUnit):
 
         logger.debug(REQUEST_INFO.format(url, method, body, headers))
 
+        # returns list of trust chains
         response = self.get_response(
             service, url, method, body, response_body_type, headers, **kwargs
         )

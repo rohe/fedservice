@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+
+
+<html>
+<head>
+    <title>idpyoidc RP</title>
+</head>
+<body>
+
+<h1>OP result</h1>
+<h2>You have successfully logged in!</h2>
+<h3>OpenID Provider information</h3>
+<h4>Accesstoken</h4>
+{{ access_token }}
+<h4>OpenID Provider Endpoints</h4>
+{% for end_point, url in endpoints.items() %}
+    <dt>{{ end_point }}</dt>
+    <dd>{{ url }}</dd>
+{% endfor %}
+<h3>User information</h3>
+<dl>
+    {% for key, value in userinfo.items() %}
+        <dt>{{ key }}</dt>
+        <dd>{{ value }}</dd>
+    {% endfor %}
+</dl>
+<h3>Federation information</h3>
+<h4>Federation Endpoints</h4>
+{% for end_point, url in federation_endpoints.items() %}
+    <dt>{{ end_point }}</dt>
+    <dd>{{ url }}</dd>
+{% endfor %}
+<h4>Trust Path</h4>
+{{ trust_path }}
+<h4>Trust path expires</h4>
+{{ trust_path_expires }}
+</body>
+</html>

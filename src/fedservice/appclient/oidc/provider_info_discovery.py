@@ -12,7 +12,6 @@ from fedservice.entity.function import tree2chains
 from fedservice.entity.function import verify_self_signed_signature
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity_statement.statement import chains2dict
-from fedservice.exception import NoTrustedClaims
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +58,19 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
 
         return {'method': method, 'url': _qurl, 'iss': _iss}
 
+    def save_trust_chains(self, federation_context, trust_chains):
+        _tc_dict = chains2dict(trust_chains)
+        if federation_context.trust_chain:
+            for ta, tc in _tc_dict.items():
+                _ent = tc.iss_path[0]
+                if _ent not in federation_context.trust_chains:
+                    federation_context.trust_chain = {_ent: {ta: tc}}
+                else:
+                    federation_context.trust_chain[_ent] = {ta: tc}
+        else:
+            for ta, tc in _tc_dict.items():
+                federation_context.trust_chain[tc.iss_path[0]] = {ta: tc}
+
     def update_service_context(self, trust_chains, **kwargs):
         """
         The list of :py:class:`fedservice.entity_statement.statement.Statement` instances are
@@ -76,12 +88,13 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
         _federation_context = _federation_entity.get_context()
 
         # If two chains lead to the same trust anchor only one remains after this
-        _federation_context.trust_chains = chains2dict(trust_chains)
+        self.save_trust_chains(_federation_context, trust_chains)
 
         provider_info_per_trust_anchor = {}
-        for entity_id, trust_chain in _federation_context.trust_chains.items():
-            claims = trust_chain.metadata['openid_provider']
-            provider_info_per_trust_anchor[entity_id] = self.response_cls(**claims)
+        for entity_id, trust_info in _federation_context.trust_chain.items():
+            for ta, trust_chain in trust_info.items():
+                claims = trust_chain.metadata['openid_provider']
+                provider_info_per_trust_anchor[ta] = self.response_cls(**claims)
 
         # _federation_context.proposed_authority_hints = create_authority_hints(trust_chains)
         #

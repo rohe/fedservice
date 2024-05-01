@@ -57,6 +57,9 @@ class Registration(registration.Registration):
         _combo = _federation_entity.upstream_get('unit')
         _md = _combo.get_metadata()
         _keyjar = _federation_entity.get_attribute("keyjar")
+        _entity = self.upstream_get('unit')
+        if _entity.name not in _md:
+            _md.update(_entity.get_metadata())
         _authority_hints = _federation_entity.get_authority_hints()
         _context = _federation_entity.get_context()
         _entity_id = _federation_entity.upstream_get('attribute', 'entity_id')
@@ -146,5 +149,3 @@ class Registration(registration.Registration):
 
     def update_service_context(self, resp, **kwargs):
         registration.Registration.update_service_context(self, resp, **kwargs)
-        _fe = self.upstream_get("context").federation_entity
-        _fe.iss = resp['client_id']

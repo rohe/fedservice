@@ -22,6 +22,9 @@ def init_app(dir_name, **kwargs) -> Flask:
     app = Flask(name, static_url_path='', **kwargs)
     sys.path.insert(0, dir_path)
 
+    # Session key for the application session
+    app.config['SECRET_KEY'] = os.urandom(12).hex()
+
     entity = importer(f"{dir_name}.views.entity")
     app.register_blueprint(entity)
 
