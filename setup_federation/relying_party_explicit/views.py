@@ -181,6 +181,7 @@ def finalize(op_identifier, request_args):
                                federation_endpoints=federation_endpoints,
                                trust_path=trust_path,
                                trust_path_expires=trust_path_expires,
+                               trust_marks=trust_marks,
                                **kwargs)
     else:
         return make_response(res['error'], 400)

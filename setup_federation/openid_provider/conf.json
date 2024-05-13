@@ -64,6 +64,22 @@
         "file_name": "openid_provider/authority_hints"
       }
     },
+    "self_signed_trust_mark": {
+      "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
+      "kwargs": {
+        "trust_mark_specification": {
+          "http://dc4eu.example.com/PersonIdentificationData/se": {
+            "lifetime": 2592000
+          },
+          "http://dc4eu.example.com/OpenBadgeCredential/se": {
+            "lifetime": 2592000
+          },
+          "https://refeds.org/category/personalized": {
+            "lifetime": 2592000
+          }
+        }
+      }
+    }
     "trust_anchors": {
       "class": "idpyoidc.storage.abfile.AbstractFileSystem",
       "kwargs": {

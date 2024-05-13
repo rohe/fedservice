@@ -27,16 +27,30 @@ class TrustChain(ImpExp):
     }
 
     def __init__(self,
-                 exp: int = 0,
-                 verified_chain: Optional[list] = None):
+                 anchor: Optional[str] = "",
+                 chain: Optional[list] = None,
+                 combined_policy: Optional[dict] = None,
+                 err: Optional[dict] = None,
+                 exp: Optional[int] = 0,
+                 iss_path: Optional[list] = None,
+                 metadata: Optional[dict] = None,
+                 verified_chain: Optional[list] = None,
+                 ):
         """
+        :param anchor: The trust anchor for this trust chain
+        :param chain: The trust chain
+        :param combined_policy: The combined metadata policy
+        :param err: Errors that occured while processing the trust chain
         :param exp: Expiration time
+        :param iss_path: The entity identifiers of the entities in the trust chain. The TA last
+        :param metadata: The entity metadata
+        :param: Verified chain of Entity configurations and Subordinate statements
         """
         ImpExp.__init__(self)
-        self.anchor = ""
-        self.iss_path = []
-        self.err = {}
-        self.metadata = {}
+        self.anchor = anchor
+        self.iss_path = iss_path or []
+        self.err = err or {}
+        self.metadata = metadata or {}
         self.exp = exp
         self.verified_chain = verified_chain
         self.combined_policy = {}

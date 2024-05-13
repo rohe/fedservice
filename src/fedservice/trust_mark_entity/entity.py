@@ -145,3 +145,31 @@ class TrustMarkEntity(Unit):
 
     def get_endpoint(self, endpoint_name, **args):
         return self.endpoint[endpoint_name]
+
+
+class SelfSignedTrustMarkEntity(Unit):
+    name = 'self_signed_trust_mark_entity'
+
+    def __init__(self,
+                 keyjar: Callable,
+                 entity_id: str = "",
+                 upstream_get: Optional[Callable] = None,
+                 trust_mark_ids: Optional[list] = None,
+                 **kwargs
+                 ):
+
+        Unit.__init__(self, upstream_get=upstream_get)
+
+        self.entity_id = entity_id or upstream_get("attribute", "entity_id")
+        self.trust_mark_ids = trust_mark_ids or []
+        self.keyjar = keyjar
+
+    def __call__(self, *args, **kwargs):
+        _entity_id = self.upstream_get("attribute", 'entity_id')
+        _keyjar = self.upstream_get('attribute', 'keyjar')
+
+        packer = JWT(key_jar=_keyjar, iss=_entity_id)
+        if 'sub' not in kwargs:
+            kwargs['sub'] = _entity_id
+        sstm = packer.pack(payload=kwargs)
+        self.issued
