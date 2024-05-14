@@ -7,6 +7,7 @@ from idpyoidc.client.oauth2 import server_metadata
 from idpyoidc.message.oauth2 import ASConfigurationResponse
 from idpyoidc.node import topmost_unit
 
+from fedservice import save_trust_chains
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import tree2chains
 from fedservice.entity.function import verify_self_signed_signature
@@ -75,12 +76,13 @@ class ServerMetadata(server_metadata.ServerMetadata):
         _federation_context = _federation_entity.get_context()
 
         # If two chains lead to the same trust anchor only one remains after this
-        _federation_context.trust_chains = chains2dict(trust_chains)
+        save_trust_chains(_federation_context, trust_chains)
 
         provider_info_per_trust_anchor = {}
-        for entity_id, trust_chain in _federation_context.trust_chains.items():
-            claims = trust_chain.metadata['openid_relaying_party']
-            provider_info_per_trust_anchor[entity_id] = self.response_cls(**claims)
+        for entity_id, trust_info in _federation_context.trust_chain.items():
+            for ta, trust_chain in trust_info:
+                claims = trust_chain.metadata['openid_relaying_party']
+                provider_info_per_trust_anchor[ta] = self.response_cls(**claims)
 
         # _federation_context.proposed_authority_hints = create_authority_hints(trust_chains)
         #
@@ -95,11 +97,6 @@ class ServerMetadata(server_metadata.ServerMetadata):
         _context = self.upstream_get("context")
         _context.set('provider_info', _pi)
         self._update_service_context(_pi)
-        # _client = self.upstream_get("entity")
-        # _metadata = _client.get_metadata()
-        # _metadata.update(_federation_entity.get_metadata())
-        # _context.set('behaviour',
-        #              map_configuration_to_preference(_pi, _metadata['openid_relying_party']))
 
     def parse_response(self, info, sformat="", state="", **kwargs):
         # returns a list of TrustChain instances

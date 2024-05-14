@@ -204,6 +204,11 @@ class TestTrustMarkDelegation():
         assert "response_msg" in _hw_resp
         assert _hw_resp["response_msg"] == '["https://entity.example.org"]'
 
+        # Status should be OK
+        _client_service = self.federation_entity.get_service("trust_mark_status")
+        _server_endpoint = self.trust_mark_issuer.get_endpoint("trust_mark_status")
+
+
     def test_create_metadata(self):
         _metadata = self.trust_mark_issuer.get_metadata()
         assert set(_metadata.keys()) == {"federation_entity"}

@@ -55,6 +55,7 @@ class FederationContext(ImpExp):
                                                  self.upstream_get("attribute", "entity_id"))
         self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
         self.trust_marks = trust_marks or config.get('trust_marks')
+        self.trust_chain = {}
         # self.issuer = self.entity_id
 
         self.claims = FederationEntityClaims(prefer=preference)

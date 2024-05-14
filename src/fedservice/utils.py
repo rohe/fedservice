@@ -115,7 +115,8 @@ def make_federation_entity(entity_id: str,
                            httpc_params: Optional[dict] = None,
                            persistence: Optional[dict] = None,
                            trust_mark_entity: Optional[dict] = None,
-                           client_authn_methods: Optional[list] = None
+                           client_authn_methods: Optional[list] = None,
+                           self_signed_trust_mark_entity: Optional[dict] = None
                            ):
     _config = build_entity_config(
         entity_id=entity_id,
@@ -162,6 +163,11 @@ def make_federation_entity(entity_id: str,
             fe.server.endpoint[name] = endp
         fe.server.trust_mark_entity = _tme
 
+    if self_signed_trust_mark_entity:
+        _kwargs = trust_mark_entity.get("kwargs", {})
+        _tme = instantiate(trust_mark_entity['class'], upstream_get=fe.unit_get, **_kwargs)
+        fe.server.self_signed_trust_mark_entity = _tme
+
     return fe
 
 
@@ -183,7 +189,8 @@ def make_federation_combo(entity_id: str,
                           persistence: Optional[dict] = None,
                           trust_mark_issuers: Optional[dict] = None,
                           trust_mark_owner: Optional[dict] = None,
-                          trust_mark_entity: Optional[dict] = None
+                          trust_mark_entity: Optional[dict] = None,
+                          self_signed_trust_mark_entity: Optional[dict] = None
                           ):
     _config = build_entity_config(
         entity_id=entity_id,
@@ -258,6 +265,11 @@ def make_federation_combo(entity_id: str,
         for name, endp in _tme.endpoint.items():
             federation_entity.server.endpoint[name] = endp
         federation_entity.server.trust_mark_entity = _tme
+
+    if self_signed_trust_mark_entity:
+        _kwargs = trust_mark_entity.get("kwargs", {})
+        _tme = instantiate(trust_mark_entity['class'], upstream_get=federation_entity.unit_get, **_kwargs)
+        federation_entity.server.self_signed_trust_mark_entity = _tme
 
     return entity
 

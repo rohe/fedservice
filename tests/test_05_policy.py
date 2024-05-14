@@ -1,8 +1,8 @@
 import pytest
 
+from fedservice.entity.function import PolicyError
 from fedservice.entity.function.policy import combine
 from fedservice.entity.function.policy import combine_claim_policy
-from fedservice.entity.function.policy import PolicyError
 from fedservice.entity.function.policy import TrustChainPolicy
 
 SIMPLE = [

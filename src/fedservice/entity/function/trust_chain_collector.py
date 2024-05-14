@@ -11,6 +11,7 @@ from cryptojwt import JWT
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import utc_time_sans_frac
+from fedservice.entity.utils import get_federation_entity
 from idpyoidc.exception import MissingPage
 from idpyoidc.message import Message
 from requests.exceptions import ConnectionError
@@ -98,8 +99,13 @@ class TrustChainCollector(Function):
         :return: Signed EntityStatement
         """
         _keyjar = self.upstream_get('attribute', 'keyjar')
+
         _httpc_params = _keyjar.httpc_params
-        logger.debug(f"Using HTTPC Params: {_keyjar.httpc_params}")
+        if not _httpc_params:
+            federation_entity = get_federation_entity(self)
+            _httpc_params = federation_entity.httpc_params
+
+        logger.debug(f"Using HTTPC Params: {_httpc_params}")
         try:
             response = self.upstream_get('attribute', 'httpc')("GET", url, **_httpc_params)
         except ConnectionError as err:

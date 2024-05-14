@@ -80,13 +80,17 @@
           },
           "http://dc4eu.example.com/OpenBadgeCredential/se": {
             "lifetime": 2592000
+          },
+          "https://refeds.org/category/personalized": {
+            "lifetime": 2592000
           }
         },
         "trust_mark_db": {
           "class": "fedservice.trust_mark_entity.FileDB",
           "kwargs": {
             "http://dc4eu.example.com/PersonIdentificationData/se": "trust_mark_issuer/pid_se",
-            "http://dc4eu.example.com/OpenBadgeCredential/se": "trust_mark_issuer/obc_se"
+            "http://dc4eu.example.com/OpenBadgeCredential/se": "trust_mark_issuer/obc_se",
+            "https://refeds.org/category/personalized": "trust_mark_issuer/personalized"
           }
         },
         "endpoint": {

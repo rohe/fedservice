@@ -1,4 +1,5 @@
 import logging
+from typing import Callable
 
 from cryptojwt.jwt import JWT
 
@@ -18,7 +19,7 @@ def create_entity_statement(iss, sub, key_jar, metadata=None, metadata_policy=No
     :param metadata_policy: Metadata policy
     :param authority_hints: A dictionary with immediate superiors in the
         trust chains as keys and lists of identifier of trust roots as values.
-    :param lifetime: The life time of the signed JWT.
+    :param lifetime: The lifetime of the signed JWT.
     :param aud: Possible audience for the JWT
     :param include_jwks: Add JWKS
     :param constraints: A dictionary with constraints.
@@ -33,7 +34,10 @@ def create_entity_statement(iss, sub, key_jar, metadata=None, metadata_policy=No
         msg['metadata_policy'] = metadata_policy
 
     if authority_hints:
-        msg['authority_hints'] = authority_hints
+        if isinstance(authority_hints, Callable):
+            msg['authority_hints'] = authority_hints()
+        else:
+            msg['authority_hints'] = authority_hints
 
     if aud:
         msg['aud'] = aud
