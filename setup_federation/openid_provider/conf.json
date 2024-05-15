@@ -4,8 +4,7 @@
     "disable_existing_loggers": false,
     "root": {
       "handlers": [
-        "default",
-        "console"
+        "default"
       ],
       "level": "DEBUG"
     },
@@ -18,11 +17,6 @@
       "default": {
         "class": "logging.FileHandler",
         "filename": "openid_provider/debug.log",
-        "formatter": "default"
-      },
-      "console": {
-        "class": "logging.StreamHandler",
-        "stream": "ext://sys.stdout",
         "formatter": "default"
       }
     },
@@ -64,7 +58,7 @@
         "file_name": "openid_provider/authority_hints"
       }
     },
-    "self_signed_trust_mark": {
+    "self_signed_trust_mark_entity": {
       "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
       "kwargs": {
         "trust_mark_specification": {
@@ -79,7 +73,7 @@
           }
         }
       }
-    }
+    },
     "trust_anchors": {
       "class": "idpyoidc.storage.abfile.AbstractFileSystem",
       "kwargs": {
@@ -88,9 +82,12 @@
         "value_conv": "idpyoidc.util.JSON"
       }
     },
-    "trust_marks": [
-      "eyJhbGciOiJSUzI1NiIsImtpZCI6IlRGSXROekZhT0dzdFRsQldhR1ZtWmpjNVJrUm5XSFIxWlMxTVprUnljV05zU0dWbFJuUkZTa1JLV1EifQ.eyJpYXQiOiAxNzE0NTU2MjU1LCAiaWQiOiAiaHR0cHM6Ly9yZWZlZHMub3JnL2NhdGVnb3J5L3BlcnNvbmFsaXplZCIsICJzdWIiOiAiaHR0cHM6Ly8xMjcuMC4wLjE6NDAwNCIsICJleHAiOiAxNzE3MTQ4MjU1LCAiaXNzIjogImh0dHBzOi8vMTI3LjAuMC4xOjYwMDAifQ.Kt9uXPldAIpfWWi1c7t6M4d-PtWLCtTsRLLVOjjbAUxr5SYrpK3PUj8Vp1wVOR0diVnLXdi1hldrUEq4DXKGmA_KnYSQZF6BlCnnTAXoJEY19Y2xqnuIaVXa0muigciAVHk1AOOwSqQvFFJQB0DYJQaf39elCP3Twl9rIl_ED994Ut1pBkdHfpFK-uGERhNKGIfyj3D3sN4TrIU6OkSPSu8Z4wrr6Zi5EKdUalF2CPGNCvaDyPTR0b8_JBOncg-a0deLUy9YTTc19ZRYLeGspZHquWL6mPZAHYNe66JrpXzWgGKOqIqbmha550G9FeK1Xg9-EEZLaIKwVdTpzP7Oxw"
-    ],
+    "trust_marks": {
+      "class": "idpyoidc.storage.listfile.ReadOnlyListFile",
+      "kwargs": {
+        "file_name": "openid_provider/trust_marks"
+      }
+    },
     "endpoints": [
       "entity_configuration"
     ],
@@ -386,6 +383,6 @@
     "cert_chain": null,
     "port": 4004,
     "domain": "127.0.0.1",
-    "debug": true
+    "debug": false
   }
 }

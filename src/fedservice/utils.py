@@ -267,8 +267,8 @@ def make_federation_combo(entity_id: str,
         federation_entity.server.trust_mark_entity = _tme
 
     if self_signed_trust_mark_entity:
-        _kwargs = trust_mark_entity.get("kwargs", {})
-        _tme = instantiate(trust_mark_entity['class'], upstream_get=federation_entity.unit_get, **_kwargs)
+        _kwargs = self_signed_trust_mark_entity.get("kwargs", {})
+        _tme = instantiate(self_signed_trust_mark_entity['class'], upstream_get=federation_entity.unit_get, **_kwargs)
         federation_entity.server.self_signed_trust_mark_entity = _tme
 
     return entity

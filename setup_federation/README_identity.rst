@@ -142,8 +142,8 @@ Now four things have to happen::
 
 The first two are simply::
 
-    ./add_info.py -s trust_anchor.json -t wallet_provider/trust_anchors
-    echo -e "https://127.0.0.1:7003" >> wallet_provider/authority_hints
+    ./add_info.py -s trust_anchor.json -t openid_provider/trust_anchors
+    echo -e "https://127.0.0.1:7003" >> openid_provider/authority_hints
 
 The third would look like this::
 
@@ -164,7 +164,7 @@ OpenID Relying Party
 Much the same as for the openid provider.
 To start running the relying party you have to do::
 
-    ./entity.py relaying_party_explicit
+    ./entity.py relying_party_explicit
 
 A slightly different set of files/directories has been added
 
@@ -189,8 +189,8 @@ Now four things have to happen::
 
 The first two are simply::
 
-    ./add_info.py -s trust_anchor.json -t relaying_party_explicit/trust_anchors
-    echo -e "https://127.0.0.1:7003" >> relaying_party_explicit/authority_hints
+    ./add_info.py -s trust_anchor.json -t relying_party_explicit/trust_anchors
+    echo -e "https://127.0.0.1:7003" >> relying_party_explicit/authority_hints
 
 The third would look like this::
 
