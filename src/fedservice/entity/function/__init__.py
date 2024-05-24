@@ -77,7 +77,11 @@ def collect_trust_chains(unit,
             entity_configuration["authority_hints"] = authority_hints
         tree = _collector.collect_tree(entity_id, entity_configuration, stop_at=stop_at)
     else:
-        _collector_response = _collector(entity_id, stop_at=stop_at)
+        try:
+            _collector_response = _collector(entity_id, stop_at=stop_at)
+        except Exception as err:
+            logger.error(f"Trust chain collection failed {err}")
+            raise(err)
         if _collector_response:
             tree, signed_entity_configuration = _collector_response
         else:

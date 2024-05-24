@@ -23,7 +23,7 @@ The configuration of the trust anchor can be found in the *trust_anchor* directo
 Consists of two files
 
 * conf.json
-    The configuration of the entitys components
+    The configuration of the entity's components
 * views.py
     The webserver's (Flask) interface configuration
 
@@ -181,3 +181,11 @@ usage: create_trust_mark.py [-h] [-d DIR_NAME] [-e ENTITY_ID] [-m TRUST_MARK_ID]
       -d DIR_NAME, --dir_name DIR_NAME
       -e ENTITY_ID, --entity_id ENTITY_ID
       -m TRUST_MARK_ID, --trust_mark_id TRUST_MARK_ID
+
+The TRUST_MARK_ID is http://dc4eu.example.com/PersonIdentificationData/se.
+Which is something I just invented for this setup
+https://127.0.0.1:8080 is where the Credential Issuer (The OpenID4VCI SATOSA frontend)
+can be found.
+
+To finalize the setup of the Credential Issuer step over to the
+satosa-openid4vci/openid4vci_oidc directory

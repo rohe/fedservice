@@ -7,6 +7,7 @@ from cryptojwt.exception import MissingKey
 from cryptojwt.jws.jws import factory
 
 from fedservice.entity.function import Function
+from fedservice.entity.utils import get_federation_entity
 from fedservice.entity_statement.constraints import meets_restrictions
 from fedservice.entity_statement.statement import TrustChain
 
@@ -14,14 +15,15 @@ logger = logging.getLogger(__name__)
 
 
 class TrustChainVerifier(Function):
+
     def __init__(self, upstream_get: Callable):
         Function.__init__(self, upstream_get)
 
     def trusted_anchor(self, entity_statement):
         _jwt = factory(entity_statement)
         payload = _jwt.jwt.payload()
-        _keyjar = self.upstream_get("attribute", "keyjar")
-        if payload['iss'] not in _keyjar:
+        _federation_entity = get_federation_entity(self)
+        if payload['iss'] not in _federation_entity.keyjar:
             logger.warning(
                 f"Trust chain ending in a trust anchor I do not know: {payload['iss']}", )
             return False

@@ -1,4 +1,6 @@
 import logging
+from typing import Any
+from typing import Optional
 
 from cryptojwt.jwt import utc_time_sans_frac
 from idpyoidc.impexp import ImpExp
@@ -48,3 +50,6 @@ class ESCache(ImpExp):
 
     def __contains__(self, item):
         return item in self._db
+
+    def get(self, key, default: Optional[Any] = None):
+        return self._db.get(key, default)

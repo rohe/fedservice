@@ -348,8 +348,8 @@ class TrustChainCollector(Function):
                  max_superiors: Optional[int] = 10,
                  seen: Optional[List[str]] = None,
                  stop_at: Optional[str] = ''):
-        if entity_id in self.config_cache and not self.too_old(self.config_cache[entity_id]):
-            entity_config = self.config_cache[entity_id]
+        entity_config = self.config_cache.get(entity_id, None)
+        if entity_config and not self.too_old(entity_config):
             signed_entity_config = entity_config.get("_jws")
             if not signed_entity_config:
                 signed_entity_config = getattr(entity_config, "_jws")

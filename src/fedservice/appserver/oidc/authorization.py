@@ -111,7 +111,7 @@ class Authorization(authorization.Authorization):
         # If this is a registered client then this should return some info
         client_info = _context.cdb.get(_cid)
         if client_info is None:
-            if 'automatic' in _context.provider_info.get('client_registration_types_supported'):
+            if 'automatic' in _context.provider_info.get('client_registration_types_supported', []):
                 # try the federation way
                 _trust_chain = request.get('trust_chain', [])
                 registered_client_id = self.do_automatic_registration(_cid, _trust_chain)
