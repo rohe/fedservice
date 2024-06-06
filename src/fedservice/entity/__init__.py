@@ -126,7 +126,7 @@ class FederationEntity(Unit):
             except AttributeError:
                 return None
 
-    def get_metadata(self):
+    def get_metadata(self, *args):
         metadata = self.get_context().claims.prefer
         # collect endpoints
         metadata.update(self.get_endpoint_claims())

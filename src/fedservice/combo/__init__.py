@@ -100,9 +100,9 @@ class FederationCombo(Combo):
 
     def get_metadata(self):
         res = {}
-        for item in self._part.values():
+        for federation_type, item in self._part.items():
             if getattr(item, "get_metadata", None):
-                res.update(item.get_metadata())
+                res.update(item.get_metadata(federation_type))
         return res
 
     def get_preferences(self):
