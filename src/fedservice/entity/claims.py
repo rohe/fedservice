@@ -1,6 +1,7 @@
 from idpyoidc import metadata
 from idpyoidc.claims import Claims as ClaimsBase
 from idpyoidc.client.claims import oauth2 as OAuth2ClientClaims
+from idpyoidc.client.claims import oauth2resource as OAuth2ResourceClaims
 from idpyoidc.client.claims import oidc as OIDCClientClaims
 from idpyoidc.client.claims.transform import REGISTER2PREFERRED
 from idpyoidc.server.claims import oauth2 as OAUTH2ServerClaims
@@ -79,6 +80,12 @@ class ClientClaims(OAuth2ClientClaims.Claims):
     registration_response = message.OauthClientInformationResponse
     registration_request = message.OauthClientMetadata
 
+class ProtectedResourceClaims(OAuth2ResourceClaims.Claims):
+    _supports = OAuth2ResourceClaims.Claims._supports.copy()
+
+    register2preferred = REGISTER2PREFERRED
+    registration_response = message.OAuthProtectedResourceMetadata
+    registration_request = message.OAuthProtectedResourceMetadata
 
 class FederationEntityClaims(ClaimsBase):
     _supports = {

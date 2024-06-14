@@ -202,11 +202,28 @@ class OAuthProtectedResourceMetadata(Message):
         "scopes_provided": OPTIONAL_LIST_OF_STRINGS,
         "bearer_methods_supported": OPTIONAL_LIST_OF_STRINGS,
         "resource_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "resource_encryption_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "resource_encryption_enc_values_supported": OPTIONAL_LIST_OF_STRINGS,
         "client_registration_types": OPTIONAL_LIST_OF_STRINGS,
         "organization_name": SINGLE_OPTIONAL_STRING,
+        "resource_policy_uri": SINGLE_OPTIONAL_STRING,
+        "resource_tos_uri": SINGLE_OPTIONAL_STRING
     }
 
 
+class OAuthProtectedResourceInformationResponse(OAuthProtectedResourceMetadata):
+    """The information returned by a OAuth2 Server about an OAuth2 client."""
+    c_param = OAuthProtectedResourceMetadata.c_param.copy()
+
+
+class OauthClientMetadata(OAuth2Message.OauthClientMetadata):
+    """Metadata for an OAuth2 Client."""
+    c_param = OAuth2Message.OauthClientMetadata.c_param.copy()
+    c_param.update({
+        "organization_name": SINGLE_OPTIONAL_STRING,
+        "signed_jwks_uri": SINGLE_OPTIONAL_STRING,
+    })
+    
 def oauth_protected_resource_deser(val, sformat="json"):
     """Deserializes a JSON object (most likely) into a OAuthProtectedResourceMetadata."""
     return deserialize_from_one_of(val, OAuthProtectedResourceMetadata, sformat)
