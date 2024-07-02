@@ -359,6 +359,7 @@ class TrustChainCollector(Function):
             # get leaf Entity Configuration
             signed_entity_config = self.get_entity_configuration(entity_id)
             if not signed_entity_config:
+                logger.warning(f"Could not find any entity configuration for {entity_id}")
                 return None
             entity_config = verify_self_signed_signature(signed_entity_config)
             logger.debug(f'Verified self signed statement: {entity_config}')
