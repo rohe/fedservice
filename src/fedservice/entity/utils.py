@@ -19,11 +19,16 @@ def get_federation_entity(unit):
     # Look both upstream and downstream if necessary
     if unit.__class__.__name__ == 'FederationEntity':
         return unit
-    elif unit.upstream_get:
-        return get_federation_entity(unit.upstream_get('unit'))
+    _ug = getattr(unit,'upstream_get', None)
+    if _ug:
+        return get_federation_entity(_ug('unit'))
+
+    _get = getattr(unit, "get", None)
+    if _get:
+        return _get('federation_entity', None)
+
+    _get_giuse = getattr(unit, "get_guise", None)
+    if _get_giuse:
+        return _get_giuse("federation_entity")
     else:
-        _get = getattr(unit, "get", None)
-        if _get:
-            return _get('federation_entity', None)
-        else:
-            return None
+        return None
