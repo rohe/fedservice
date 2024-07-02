@@ -2,8 +2,8 @@ import logging
 from typing import Callable
 from typing import Optional
 
-from cryptojwt import as_unicode
 from cryptojwt import KeyJar
+from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
 from cryptojwt.utils import importer
 from idpyoidc.client.client_auth import client_auth_setup
@@ -283,16 +283,23 @@ class FederationEntity(Unit):
             # Fetch Entity Configuration
             _ec = self.client.do_request("entity_configuration", entity_id=subordinate)
 
+        if entity_type in _ec["metadata"]:
+            _issuers = [_ec["sub"]]
+        else:
+            _issuers = []
+
         if "federation_list_endpoint" not in _ec["metadata"]["federation_entity"]:
-            return []
+            return _issuers
 
         # One step down the tree
         # All subordinates that are of a specific entity_type
-        _issuers = self.client.do_request("list",
-                                          entity_id=subordinate,
-                                          entity_type=entity_type)
-        if _issuers is None:
-            _issuers = []
+        _added_issuers = self.client.do_request("list",
+                                                entity_id=subordinate,
+                                                entity_type=entity_type)
+        if _added_issuers is None:
+            pass
+        else:
+            _issuers.extend(_added_issuers)
 
         # All subordinates that are intermediates
         _intermediates = self.client.do_request("list",
