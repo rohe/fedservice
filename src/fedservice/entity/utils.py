@@ -27,8 +27,8 @@ def get_federation_entity(unit):
     if _get:
         return _get('federation_entity', None)
 
-    _get_giuse = getattr(unit, "get_guise", None)
-    if _get_giuse:
-        return _get_giuse("federation_entity")
+    _get_guise = getattr(unit, "get_guise", None)
+    if _get_guise:
+        return _get_guise("federation_entity")
     else:
         return None
