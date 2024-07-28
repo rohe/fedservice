@@ -5,6 +5,7 @@ from typing import Optional
 from urllib.parse import urlparse
 
 from cryptojwt.key_jar import KeyJar
+from fedservice.entity.utils import get_federation_entity
 
 from fedservice.entity.function import Function
 from fedservice.entity.function.trust_chain_collector import cache_key
@@ -139,7 +140,8 @@ class DummyCollector(Function):
         if self.keyjar:
             _keyjar = self.keyjar
         elif self.upstream_get:
-            _keyjar = self.upstream_get('attribute', 'keyjar')
+            _fedservice = get_federation_entity(self)
+            _keyjar = _fedservice.keyjar
         else:
             raise ValueError("Missing keyjar")
 

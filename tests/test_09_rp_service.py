@@ -90,6 +90,7 @@ class TestRpService(object):
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
+            key_conf = {'private_path': FOODLE_JWKS},
             authority_hints=['https://ntnu.no']
         )
         ENT.add_services()
@@ -101,7 +102,6 @@ class TestRpService(object):
         # del oidc_service['web_finger']
         config = {
             'entity_id': LEAF_ID,
-            'key_conf': {'private_path': FOODLE_JWKS},
             "federation_entity": {
                 'class': FederationEntity,
                 'kwargs': ENT.conf

@@ -62,7 +62,11 @@ class TestComboCollect(object):
                 "contacts": "operations@ta.example.com"
             },
             key_config={"key_defs": KEYDEFS},
-            endpoints=TA_ENDPOINTS
+            endpoints=TA_ENDPOINTS,
+            httpc_params={
+                "verify": False,
+                "timeout": 14
+            }
         )
 
         ANCHOR = {TA_ID: self.ta.keyjar.export_jwks()}
@@ -79,7 +83,11 @@ class TestComboCollect(object):
             key_config={"key_defs": KEYDEFS},
             authority_hints=[TA_ID],
             endpoints=["entity_configuration", "fetch", "list"],
-            trust_anchors=ANCHOR
+            trust_anchors=ANCHOR,
+            httpc_params={
+                "verify": False,
+                "timeout": 14
+            }
         )
         self.ta.server.subordinate[IM_ID] = {
             "jwks": self.im.keyjar.export_jwks(),
@@ -104,6 +112,10 @@ class TestComboCollect(object):
             authority_hints=[IM_ID],
             endpoints=LEAF_ENDPOINTS,
             trust_anchors=ANCHOR,
+            httpc_params={
+                "verify": False,
+                "timeout": 14
+            },
             entity_type={
                 "openid_relying_party": {
                     'class': ClientEntity,
@@ -144,6 +156,10 @@ class TestComboCollect(object):
             authority_hints=[TA_ID],
             endpoints=LEAF_ENDPOINTS,
             trust_anchors=ANCHOR,
+            httpc_params={
+                "verify": False,
+                "timeout": 14
+            },
             entity_type={
                 "openid_provider": {
                     'class': ServerEntity,

@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 from typing import Callable
 from typing import Optional
@@ -6,6 +7,7 @@ from typing import Union
 from cryptojwt import KeyJar
 from cryptojwt.utils import importer
 from idpyoidc.configure import Base
+from idpyoidc.node import topmost_unit
 from idpyoidc.server import allow_refresh_token
 from idpyoidc.server import ASConfiguration
 from idpyoidc.server import authz
@@ -22,6 +24,7 @@ from idpyoidc.server.util import execute
 from fedservice.entity.claims import OPClaims
 from fedservice.server import ServerUnit
 
+logger = logging.getLogger(__name__)
 
 def do_endpoints(conf, upstream_get):
     _endpoints = conf.get("endpoint")
@@ -116,6 +119,19 @@ class ServerEntity(ServerUnit):
 
     def get_metadata(self, *args):
         return {self.name: self.context.provider_info}
+
+    def pick_guise(self, entity_type: Optional[str] = "", *args):
+        if not entity_type:
+            entity_type = self.name
+        _root = topmost_unit(self)
+        _guise = _root.get(entity_type, None)
+        if _guise is None:
+            logger.error(f"Could not find guise '{entity_type}'")
+            logger.info(f"Available guises: {list(_root.keys())}")
+        return _guise
+
+    def get_guise(self):
+        return self.name
 
     def setup_authz(self):
         authz_spec = self.config.get("authz")

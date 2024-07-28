@@ -4,18 +4,14 @@ from cryptojwt.jws.jws import factory
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 
-from fedservice.build_entity import FederationEntityBuilder
-from fedservice.combo import FederationCombo
+from fedservice.appclient import ClientEntity
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.defaults import LEAF_ENDPOINTS
-from fedservice.entity import FederationEntity
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import verify_trust_chains
-from fedservice.appclient import ClientEntity
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
-
 
 TA_ID = "https://ta.example.org"
 RP_ID = "https://rp.example.org"
@@ -23,6 +19,7 @@ RESOLVER_ID = "https://resolver.example.org"
 IM_ID = "https://intermediate.example.org"
 
 TA_ENDPOINTS = ["list", "fetch", "entity_configuration"]
+
 
 class TestComboCollect(object):
 
@@ -132,7 +129,6 @@ class TestComboCollect(object):
             "jwks": self.resolver.keyjar.export_jwks(),
             'authority_hints': [TA_ID]
         }
-
 
     def test_setup(self):
         assert self.ta

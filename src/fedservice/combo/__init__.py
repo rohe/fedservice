@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 from typing import Optional
 from typing import Union
@@ -8,6 +9,7 @@ from idpyoidc.node import Unit
 from idpyoidc.server.util import execute
 from requests import request
 
+logger = logging.getLogger(__name__)
 
 class Combo(Unit):
     name = 'root'
@@ -30,6 +32,7 @@ class Combo(Unit):
             if isinstance(spec, dict) and 'class' in spec:
                 if httpc_params:
                     self._add_httpc_params(spec, httpc_params)
+                logger.info(f"Initiating entity type: '{key}' with config: {spec}")
                 self._part[key] = execute(spec, upstream_get=self.unit_get,
                                           entity_id=self.entity_id, httpc=httpc)
 

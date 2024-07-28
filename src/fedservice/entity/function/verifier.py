@@ -23,10 +23,19 @@ class TrustChainVerifier(Function):
         _jwt = factory(entity_statement)
         payload = _jwt.jwt.payload()
         _federation_entity = get_federation_entity(self)
-        if payload['iss'] not in _federation_entity.keyjar:
-            logger.warning(
-                f"Trust chain ending in a trust anchor I do not know: {payload['iss']}", )
-            return False
+        if _federation_entity:
+            if payload['iss'] not in _federation_entity.keyjar:
+                logger.warning(
+                    f"Trust chain ending in a trust anchor I do not know: {payload['iss']}", )
+                return False
+        else:
+            _keyjar = self.upstream_get("attribute", "keyjar")
+            if not _keyjar:
+                return False
+            elif payload['iss'] not in _keyjar:
+                logger.warning(
+                    f"Trust chain ending in a trust anchor I do not know: {payload['iss']}", )
+                return False
 
         return True
 

@@ -1,8 +1,11 @@
+from typing import Optional
+
 from idpyoidc import metadata
 from idpyoidc.claims import Claims as ClaimsBase
 from idpyoidc.client.claims import oauth2 as OAuth2ClientClaims
 from idpyoidc.client.claims import oidc as OIDCClientClaims
 from idpyoidc.client.claims.transform import REGISTER2PREFERRED
+from idpyoidc.message import Message
 from idpyoidc.server.claims import oauth2 as OAUTH2ServerClaims
 from idpyoidc.server.claims import oidc as OIDCServerClaims
 
@@ -26,9 +29,12 @@ class OPClaims(OIDCServerClaims.Claims):
         'federation_registration_endpoint': None
     })
 
-    def provider_info(self, supports):
+    def provider_info(self, supports, schema: Optional[Message] = None):
         _info = {}
-        for key in message.OPMetadataMessage.c_param.keys():
+        if schema is None:
+            schema = message.OPMetadataMessage
+
+        for key in schema.c_param.keys():
             _val = self.get_preference(key, supports.get(key, None))
             if _val is not None:
                 _info[key] = _val

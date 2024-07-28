@@ -52,6 +52,8 @@ if __name__ == "__main__":
     _cert = "{}/{}".format(dir_path, lower_or_upper(_web_conf, "server_cert"))
 
     print('Listening on {}:{}'.format(_web_conf.get('domain'), _web_conf.get('port')))
+    _trust_anchors = {k:v for k,v in app.federation_entity.function.trust_chain_collector.trust_anchors.items()}
+    print(f"Trust Anchors: {_trust_anchors}")
     # app.rph.federation_entity.collector.web_cert_path = _cert
     app.run(host=_web_conf.get('domain'), port=_web_conf.get('port'),
             debug=_web_conf.get("debug"), ssl_context=context)

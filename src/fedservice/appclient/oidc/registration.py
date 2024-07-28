@@ -54,8 +54,8 @@ class Registration(registration.Registration):
 
         _federation_entity = get_federation_entity(self)
         # _md = {_federation_context.entity_type: request_args.to_dict()}
-        _combo = _federation_entity.upstream_get('unit')
-        _md = _combo.get_metadata()
+        _root = _federation_entity.upstream_get('unit')
+        _md = _root.get_metadata()
         _keyjar = _federation_entity.get_attribute("keyjar")
         _entity = self.upstream_get('unit')
         if _entity.name not in _md:

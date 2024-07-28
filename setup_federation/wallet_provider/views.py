@@ -58,13 +58,17 @@ def do_response(endpoint, req_args, error='', **args):
             resp = redirect(info['response'])
     else:
         if _response_placement == 'body':
-            _log.info('Response: {}'.format(info['response']))
-            resp = make_response(info['response'], 200)
+            if "response" in info:
+                _log.info('Response: {}'.format(info['response']))
+                resp = make_response(info['response'], 200)
+            else:
+                resp = make_response('', args["response_code"])
         else:  # _response_placement == 'url':
             _log.info('Redirect to: {}'.format(info['response']))
             resp = redirect(info['response'])
 
-    for key, value in info['http_headers']:
+    _headers = info.get("http_headers", [])
+    for key, value in _headers:
         resp.headers[key] = value
 
     if 'cookie' in info:
@@ -144,16 +148,53 @@ def send_js(path):
     return send_from_directory('static', path)
 
 
+@entity.route('/dis_jwks.json')
+def dis_jwks():
+    _jwks = current_app.server["device_integrity_service"].context.keyjar.export_jwks_as_json()
+    return _jwks
+
+
+@entity.route('/wp_jwks.json')
+def wp_jwks():
+    _jwks = current_app.server["wallet_provider"].context.keyjar.export_jwks_as_json()
+    return _jwks
+
+
+@entity.route('/wp_fed_keys.json')
+def wp_fed_keys():
+    _jwks = current_app.server["federation_entity"].context.keyjar.export_jwks_as_json()
+    return _jwks
+
+
 @entity.route('/token', methods=['GET', 'POST'])
 def token():
     _endpoint = current_app.server["wallet_provider"].get_endpoint('wallet_provider_token')
     return service_endpoint(_endpoint)
 
 
-@entity.route('/app_attestation', methods=['GET'])
-def app_attestation():
-    _endpoint = current_app.server["wallet_provider"].get_endpoint('app_attestation')
+@entity.route('/challenge', methods=['GET', 'POST'])
+def challenge():
+    _endpoint = current_app.server["wallet_provider"].get_endpoint('challenge')
     return service_endpoint(_endpoint)
+
+
+@entity.route('/registration', methods=['POST'])
+def registration():
+    _endpoint = current_app.server["wallet_provider"].get_endpoint('registration')
+    return service_endpoint(_endpoint)
+
+
+@entity.route('/integrity', methods=['GET'])
+def integrity():
+    _endpoint = current_app.server["device_integrity_service"].get_endpoint('integrity')
+    return service_endpoint(_endpoint)
+
+
+@entity.route('/key_attest', methods=['GET'])
+def key_attest():
+    _endpoint = current_app.server["device_integrity_service"].get_endpoint('key_attestation')
+    return service_endpoint(_endpoint)
+
 
 @entity.errorhandler(werkzeug.exceptions.BadRequest)
 def handle_bad_request(e):

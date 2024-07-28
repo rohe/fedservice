@@ -100,9 +100,11 @@ class TrustChainCollector(Function):
         _keyjar = self.upstream_get('attribute', 'keyjar')
 
         _httpc_params = _keyjar.httpc_params
+        logger.debug(f"keyjar.httpc_params: {_httpc_params}")
         if not _httpc_params:
             federation_entity = get_federation_entity(self)
             _httpc_params = federation_entity.httpc_params
+            logger.debug(f"federation_entity.httpc_params: {_httpc_params}")
 
         logger.debug(f"Using HTTPC Params: {_httpc_params}")
         try:
