@@ -60,7 +60,8 @@
     "endpoints": [
       "fetch",
       "list",
-      "entity_configuration"
+      "entity_configuration",
+      "resolve"
     ],
     "subordinate": {
       "class": "idpyoidc.storage.abfile.AbstractFileSystem",

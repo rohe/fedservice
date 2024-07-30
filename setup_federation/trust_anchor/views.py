@@ -150,6 +150,12 @@ def list():
     return service_endpoint(_endpoint)
 
 
+@entity.route('/resolve')
+def resolve():
+    _endpoint = current_app.federation_entity.get_endpoint('resolve')
+    return service_endpoint(_endpoint)
+
+
 @entity.errorhandler(werkzeug.exceptions.BadRequest)
 def handle_bad_request(e):
     return 'bad request!', 400
