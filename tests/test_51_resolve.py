@@ -158,7 +158,7 @@ class TestComboCollect(object):
         assert set(payload['metadata'].keys()) == {'federation_entity', 'openid_relying_party'}
         assert len(payload['trust_chain']) == 3
 
-        # verify that I get the same result using the return trust chain
+        # verify that I get the same result using the returned trust chain
         # Since what I got was EC+[ES]* where the last ES is from the Trust Anchor I have to
         # reverse the order.
         payload['trust_chain'].reverse()

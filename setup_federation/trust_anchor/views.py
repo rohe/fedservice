@@ -156,6 +156,11 @@ def resolve():
     return service_endpoint(_endpoint)
 
 
+@entity.route('/pid_query')
+def pid_query():
+    _endpoint = current_app.federation_entity.get_endpoint('pid_query')
+    return service_endpoint(_endpoint)
+
 @entity.errorhandler(werkzeug.exceptions.BadRequest)
 def handle_bad_request(e):
     return 'bad request!', 400

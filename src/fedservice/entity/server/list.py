@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Optional
 
 from cryptojwt import JWT
 from cryptojwt import KeyJar

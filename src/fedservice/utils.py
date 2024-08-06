@@ -36,9 +36,9 @@ def build_entity_config(entity_id: str,
                         key_config: Optional[dict] = None,
                         authority_hints: Optional[List[str]] = None,
                         preference: Optional[dict] = None,
-                        endpoints: Optional[List[str]] = None,
-                        services: Optional[List[str]] = None,
-                        functions: Optional[List[str]] = None,
+                        endpoints: Optional[list] = None,
+                        services: Optional[list] = None,
+                        functions: Optional[list] = None,
                         init_kwargs: Optional[dict] = None,
                         item_args: Optional[dict] = None,
                         subordinate: Optional[dict] = None,
@@ -74,8 +74,8 @@ def build_entity_config(entity_id: str,
         if items:
             if name == "service":
                 if isinstance(items, dict):
-                    _filtered_spec = {k: v for k, v in items.items() if k in SERVICES}
-                    func(args=_args, kwargs_spec=kwargs_spec, **_filtered_spec)
+                    # _filtered_spec = {k: v for k, v in items.items() if isinstance(k, str) and k in SERVICES}
+                    func(args=_args, kwargs_spec=kwargs_spec, **items)
                 else:
                     func(args=_args, kwargs_spec=kwargs_spec, **federation_services(*items))
             elif name == "function":
@@ -104,9 +104,9 @@ def make_federation_entity(entity_id: str,
                            authority_hints: Optional[List[str]] = None,
                            trust_anchors: Optional[dict] = None,
                            preference: Optional[dict] = None,
-                           endpoints: Optional[List[str]] = None,
-                           services: Optional[Union[List[str], dict]] = None,
-                           functions: Optional[Union[List[str], dict]] = None,
+                           endpoints: Optional[list] = None,
+                           services: Optional[Union[list, dict]] = None,
+                           functions: Optional[Union[list, dict]] = None,
                            trust_marks: Optional[list] = None,
                            init_kwargs: Optional[dict] = None,
                            item_args: Optional[dict] = None,

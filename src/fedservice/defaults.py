@@ -126,7 +126,11 @@ FEDERATION_ENDPOINTS = {
 
 
 def federation_endpoints(*apis) -> dict:
-    return {a: FEDERATION_ENDPOINTS[a] for a in apis}
+    interm = {a: FEDERATION_ENDPOINTS[a] for a in apis if isinstance(a, str)}
+    for a in apis:
+        if isinstance(a, dict):
+            interm.update(a)
+    return interm
 
 
 INTERMEDIATE_ENDPOINTS = federation_endpoints("entity_configuration", "fetch", "list")

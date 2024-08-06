@@ -18,6 +18,7 @@ class Resolve(FederationService):
     synchronous = True
     service_name = "resolve"
     http_method = "GET"
+    response_body_type = "jose"
 
     def __init__(self,
                  upstream_get: Callable,

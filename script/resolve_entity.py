@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 
 from fedservice.utils import make_federation_entity
 
@@ -9,20 +10,21 @@ if __name__ == '__main__':
     parser.add_argument('-k', "--insecure", action='store_true')
     parser.add_argument('-t', "--trust_anchor")
     parser.add_argument('-r', "--resolver")
+    parser.add_argument('-T', "--trust_anchor_file")
     parser.add_argument(dest="entity_id")
     args = parser.parse_args()
 
     if not args.entity_id:
         print("Need an entity_id to work with")
 
-    # if args.trust_anchors_file:
-    #     trust_anchors = json.loads(open(args.trust_anchors_file).read())
-    # else:
-    #     trust_anchors = {}
+    if args.trust_anchor_file:
+        trust_anchors = json.loads(open(args.trust_anchor_file).read())
+    else:
+        trust_anchors = {}
 
     federation_entity = make_federation_entity(
         entity_id="https://localhost",
-        # trust_anchors=trust_anchors
+        trust_anchors=trust_anchors
     )
 
     if args.insecure:

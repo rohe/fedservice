@@ -34,7 +34,7 @@
   },
   "entity": {
     "entity_id": "https://127.0.0.1:7003",
-        "httpc_params": {
+    "httpc_params": {
       "verify": false
     },
     "key_config": {
@@ -61,7 +61,17 @@
       "fetch",
       "list",
       "entity_configuration",
-      "resolve"
+      "resolve",
+      {
+        "pid_query": {
+          "class": "fedservice.entity.server.pid_query.PIDQuery",
+          "kwargs": {
+            "entity_type": "credential_issuer",
+            "credential_type": "PersonIdentificationData",
+            "trust_mark_id": "http://dc4eu.example.com/PersonIdentificationData/se"
+          }
+        }
+      }
     ],
     "subordinate": {
       "class": "idpyoidc.storage.abfile.AbstractFileSystem",
