@@ -1,6 +1,6 @@
-from json import JSONDecodeError
 import logging
 import re
+from json import JSONDecodeError
 from typing import Callable
 from typing import Optional
 from typing import Union
@@ -27,6 +27,8 @@ from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.node import ClientUnit
 
 from fedservice.entity.claims import RPClaims
+from fedservice.entity.claims import ClientClaims
+from fedservice.entity.claims import ProtectedResourceClaims
 
 logger = logging.getLogger(__name__)
 
@@ -74,13 +76,16 @@ class ClientEntity(ClientUnit):
         else:
             if key_conf:
                 config['key_conf'] = key_conf
+            metadata_class = RPClaims()
+            if (self.name == "oauth_client"):
+                metadata_class = ClientClaims()
+            elif (self.name == "oauth_resource"):
+                metadata_class = ProtectedResourceClaims()
             self.context = ServiceContext(
                 config=config, jwks_uri=jwks_uri, key_conf=key_conf, upstream_get=self.unit_get,
-                keyjar=self.keyjar, metadata_class=RPClaims(), client_type=self.client_type,
+                keyjar=self.keyjar, metadata_class=metadata_class, client_type=self.client_type,
                 entity_id=self.entity_id
-            )
-
-        self.setup_client_authn_methods(config)
+                )
 
         if "add_ons" in config:
             do_add_ons(config["add_ons"], self._service)
