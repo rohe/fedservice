@@ -84,9 +84,11 @@ class EntityConfiguration(FederationService):
                 if key == "federation_entity":
                     pass
                 else:
-                    _issuer = _unit.context.get("issuer")
-                    if _issuer:
-                        break
+                    _context = getattr(_unit, "context", None)
+                    if _context:
+                        _issuer = _unit.context.get("issuer", None)
+                        if _issuer:
+                            break
 
             if not _issuer:
                 raise AttributeError("Missing issuer id")

@@ -16,7 +16,7 @@
     "handlers": {
       "default": {
         "class": "logging.FileHandler",
-        "filename": "pid_local/debug.log",
+        "filename": "pid_issuer/debug.log",
         "formatter": "default"
       }
     },
@@ -32,7 +32,7 @@
       "verify": false
     },
     "key_config": {
-      "private_path": "pid_local/private/fed_keys.json",
+      "private_path": "pid_issuer/private/fed_keys.json",
       "key_defs": [
         {
           "type": "RSA",
@@ -59,13 +59,13 @@
     "authority_hints": {
       "class": "idpyoidc.storage.listfile.ReadOnlyListFile",
       "kwargs": {
-        "file_name": "pid_local/authority_hints"
+        "file_name": "pid_issuer/authority_hints"
       }
     },
     "trust_anchors": {
       "class": "idpyoidc.storage.abfile.AbstractFileSystem",
       "kwargs": {
-        "fdir": "pid_local/trust_anchors",
+        "fdir": "pid_issuer/trust_anchors",
         "key_conv": "idpyoidc.util.Base64",
         "value_conv": "idpyoidc.util.JSON"
       }
@@ -370,7 +370,7 @@
             "userinfo": {
               "class": "idpyoidc.server.user_info.UserInfo",
               "kwargs": {
-                "db_file": "pid_local/users.json"
+                "db_file": "pid_issuer/users.json"
               }
             },
             "preference": {

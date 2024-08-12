@@ -133,7 +133,7 @@ A slightly different set of files/directories has been added
 * debug.log
     A log file
 
-Now four things have to happen::
+Now three things have to happen::
 
 1. Adding information about trust anchors
 2. Add authority hints
