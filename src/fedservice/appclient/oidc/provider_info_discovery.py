@@ -2,6 +2,7 @@ import logging
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 
+from idpyoidc.client.entity_metadata import EntityMetadata
 from idpyoidc.client.exception import ResponseError
 from idpyoidc.client.oidc import provider_info_discovery
 from idpyoidc.message.oidc import ProviderConfigurationResponse
@@ -91,10 +92,15 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
         self.save_trust_chains(_federation_context, trust_chains)
 
         provider_info_per_trust_anchor = {}
+        server_metadata_per_ta = {}
         for entity_id, trust_info in _federation_context.trust_chain.items():
             for ta, trust_chain in trust_info.items():
-                claims = trust_chain.metadata['openid_provider']
-                provider_info_per_trust_anchor[ta] = self.response_cls(**claims)
+                server_metadata_per_ta[ta] = EntityMetadata(trust_chain.metadata)
+                claims = trust_chain.metadata.get('openid_provider')
+                if not claims:
+                    claims = trust_chain.metadata.get('oauth_authorization_server')
+                if claims:
+                    provider_info_per_trust_anchor[ta] = self.response_cls(**claims)
 
         # _federation_context.proposed_authority_hints = create_authority_hints(trust_chains)
         #
@@ -108,12 +114,8 @@ class ProviderInfoDiscovery(provider_info_discovery.ProviderInfoDiscovery):
 
         _context = self.upstream_get("context")
         _context.set('provider_info', _pi)
+        _context.set('server_metadata', server_metadata_per_ta[_anchor])
         self._update_service_context(_pi)
-        # _client = self.upstream_get("entity")
-        # _metadata = _client.get_metadata()
-        # _metadata.update(_federation_entity.get_metadata())
-        # _context.set('behaviour',
-        #              map_configuration_to_preference(_pi, _metadata['openid_relying_party']))
 
     def parse_response(self, info, sformat="", state="", **kwargs):
         # returns a list of TrustChain instances

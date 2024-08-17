@@ -351,3 +351,14 @@ class FederationEntity(Unit):
     @trust_anchors.setter
     def trust_anchors(self, value):
         self.get_function("trust_chain_collector").trust_anchors = value
+
+    def add_trust_anchor(self, entity_id, jwks):
+        if self.keyjar:
+            _keyjar = self.keyjar
+        elif self.upstream_get:
+            _keyjar = self.upstream_get('attribute', 'keyjar')
+        else:
+            raise ValueError("Missing keyjar")
+
+        _keyjar.import_jwks(jwks, entity_id)
+        self.trust_anchors[entity_id] = jwks

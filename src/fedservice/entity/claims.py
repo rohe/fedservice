@@ -32,7 +32,7 @@ class OPClaims(OIDCServerClaims.Claims):
     def provider_info(self, supports, schema: Optional[Message] = None):
         _info = {}
         if schema is None:
-            schema = message.OPMetadataMessage
+            schema = message.OPMetadata
 
         for key in schema.c_param.keys():
             _val = self.get_preference(key, supports.get(key, None))

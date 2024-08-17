@@ -79,15 +79,15 @@ class ServerMetadata(server_metadata.ServerMetadata):
         save_trust_chains(_federation_context, trust_chains)
 
         provider_info_per_trust_anchor = {}
+        server_metadata_per_ta = {}
         for entity_id, trust_info in _federation_context.trust_chain.items():
             for ta, trust_chain in trust_info:
-                claims = trust_chain.metadata['openid_relaying_party']
-                provider_info_per_trust_anchor[ta] = self.response_cls(**claims)
-
-        # _federation_context.proposed_authority_hints = create_authority_hints(trust_chains)
-        #
-        # if not _federation_context.proposed_authority_hints:
-        #     raise AttributeError("No possible authority hints")
+                server_metadata_per_ta[ta] = ServerMetadata(trust_chain.metadata)
+                claims = trust_chain.metadata.get('openid_relaying_party', None)
+                if claims is None:
+                    claims = trust_chain.metadata.get('oauth_authorization_server', None)
+                if claims:
+                    provider_info_per_trust_anchor[ta] = self.response_cls(**claims)
 
         _anchor = pick_preferred_trust_anchor(trust_chains, _federation_context)
 
@@ -96,6 +96,7 @@ class ServerMetadata(server_metadata.ServerMetadata):
 
         _context = self.upstream_get("context")
         _context.set('provider_info', _pi)
+        _context.set('server_metadata', server_metadata_per_ta[_anchor])
         self._update_service_context(_pi)
 
     def parse_response(self, info, sformat="", state="", **kwargs):

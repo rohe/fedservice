@@ -81,7 +81,8 @@ class ServerEntity(ServerUnit):
             cwd=cwd,
             cookie_handler=cookie_handler,
             httpc=httpc,
-            claims_class=OPClaims()
+            claims_class=OPClaims(),
+            keyjar=self.keyjar
         )
 
         _token_endp = self.endpoint.get("token")

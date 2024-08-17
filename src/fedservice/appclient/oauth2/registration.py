@@ -211,7 +211,7 @@ class Registration(registration.Registration):
         for item in ["id_token_signed_response_alg", "userinfo_signed_response_alg"]:
             if item in request:
                 _claim = _context.claims.register2preferred[item]
-                _support = _context.provider_info.get(_claim)
+                _support = _context.get_metadata_claim(_claim)
                 if _support is None:
                     logger.warning(f'Lacking support for "{item}"')
                     del _cinfo[item]

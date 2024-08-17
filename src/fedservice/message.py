@@ -17,6 +17,7 @@ from idpyoidc.message import SINGLE_OPTIONAL_JSON
 from idpyoidc.message import SINGLE_OPTIONAL_STRING
 from idpyoidc.message import SINGLE_REQUIRED_INT
 from idpyoidc.message import SINGLE_REQUIRED_STRING
+from idpyoidc.message.oauth2 import ASConfigurationResponse
 from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.message.oidc import deserialize_from_one_of
 from idpyoidc.message.oidc import dict_deser
@@ -248,19 +249,40 @@ OPTIONAL_RP_REGISTRATION_RESPONSE = (
     Message, False, msg_ser, rp_registration_response_deser, False)
 
 
-class OPMetadataMessage(ProviderConfigurationResponse):
+class OPMetadata(ProviderConfigurationResponse):
     c_param = ProviderConfigurationResponse.c_param.copy()
     c_param.update({
         "client_registration_types_supported": REQUIRED_LIST_OF_STRINGS,
         "federation_registration_endpoint": SINGLE_OPTIONAL_STRING,
         "request_authentication_methods_supported": SINGLE_OPTIONAL_JSON,
-        "request_authentication_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS
+        "request_authentication_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "organization_name": SINGLE_OPTIONAL_STRING,
+        "contacts": OPTIONAL_LIST_OF_STRINGS,
+        "logo_uri": SINGLE_OPTIONAL_STRING,
+        "policy_uri": SINGLE_OPTIONAL_STRING,
+        "homepage_uri": SINGLE_OPTIONAL_STRING,
+        "jwks": SINGLE_OPTIONAL_DICT,
+        "jwks_uri": SINGLE_OPTIONAL_STRING,
+        "signed_jwks_uri": SINGLE_OPTIONAL_STRING
+    })
+
+class FedASConfigurationResponse(ASConfigurationResponse):
+    c_param = ASConfigurationResponse.c_param.copy()
+    c_param.update({
+        "organization_name": SINGLE_OPTIONAL_STRING,
+        "contacts": OPTIONAL_LIST_OF_STRINGS,
+        "logo_uri": SINGLE_OPTIONAL_STRING,
+        "policy_uri": SINGLE_OPTIONAL_STRING,
+        "homepage_uri": SINGLE_OPTIONAL_STRING,
+        "jwks": SINGLE_OPTIONAL_DICT,
+        "jwks_uri": SINGLE_OPTIONAL_STRING,
+        "signed_jwks_uri": SINGLE_OPTIONAL_STRING
     })
 
 
 def op_metadata_deser(val, sformat="json"):
     """Deserializes a JSON object (most likely) into a ProviderConfigurationResponse."""
-    return deserialize_from_one_of(val, OPMetadataMessage, sformat)
+    return deserialize_from_one_of(val, OPMetadata, sformat)
 
 
 OPTIONAL_OP_METADATA = (Message, False, msg_ser, op_metadata_deser, False)

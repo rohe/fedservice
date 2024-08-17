@@ -90,7 +90,7 @@ class TestRpService(object):
                 "homepage_uri": "https://leaf.example.com",
                 "contacts": "operations@leaf.example.com"
             },
-            key_conf = {'private_path': FOODLE_JWKS},
+            key_conf={'private_path': FOODLE_JWKS},
             authority_hints=['https://ntnu.no']
         )
         ENT.add_services()
@@ -200,6 +200,7 @@ class TestRpService(object):
                    'token_endpoint_auth_methods_supported',
                    'token_endpoint_auth_signing_alg_values_supported',
                    'userinfo_signing_alg_values_supported'}
+        assert self.discovery_service.upstream_get("context").server_metadata.entity_types() == ["openid_provider"]
 
     def test_create_reqistration_request(self):
         # get the entity statement from the OP
@@ -217,8 +218,8 @@ class TestRpService(object):
         assert jws
 
         _sc = self.registration_service.upstream_get("context")
-        self.registration_service.endpoint = _sc.get('provider_info')[
-            'federation_registration_endpoint']
+        self.registration_service.endpoint = _sc.get_metadata_claim('federation_registration_endpoint',
+                                                                    ['federation_entity'])
 
         # construct the information needed to send the request
         _info = self.registration_service.get_request_parameters(

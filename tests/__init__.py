@@ -1,3 +1,5 @@
+from cryptojwt.utils import importer
+
 from fedservice.entity import FederationEntity
 from fedservice.entity.utils import get_federation_entity
 
@@ -93,3 +95,9 @@ def create_trust_chain(leaf, *entity):
         chain.append(_endpoint.process_request(_req)["response"])
 
     return chain
+
+
+
+
+def make_federation(conf):
+    pass

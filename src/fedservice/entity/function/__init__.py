@@ -81,7 +81,7 @@ def collect_trust_chains(unit,
             _collector_response = _collector(entity_id, stop_at=stop_at)
         except Exception as err:
             logger.error(f"Trust chain collection failed {err}")
-            raise(err)
+            raise (err)
         if _collector_response:
             tree, signed_entity_configuration = _collector_response
         else:
@@ -108,6 +108,14 @@ def verify_trust_chains(unit, chains: List[List[str]], *entity_statements):
         if trust_chain:
             res.append(trust_chain)
     return res
+
+
+def verify_trust_chain(unit, chain: List[str]):
+    #
+    _verifier = get_federation_entity(unit).function.verifier
+
+    logger.debug("verify_trust_chain")
+    return _verifier(chain)
 
 
 def apply_policies(unit, trust_chains):
@@ -160,13 +168,13 @@ def get_entity_endpoint(unit, entity_id, metadata_type, metadata_parameter):
     else:
         return ""
 
+
 def get_verified_jwks(unit, _signed_jwks_uri):
     # Fetch a signed JWT that contains a JWKS.
     # Verify the signature on the JWS with a federation key
     # To be implemented
     return None
 
+
 class PolicyError(Exception):
     pass
-
-
