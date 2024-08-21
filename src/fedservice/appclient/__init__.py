@@ -9,6 +9,7 @@ from cryptojwt import KeyJar
 from cryptojwt.key_jar import init_key_jar
 from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.client.client_auth import method_to_item
+from idpyoidc.client.defaults import DEFAULT_OAUTH2_SERVICES
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.client.defaults import SUCCESSFUL
 from idpyoidc.client.exception import OidcServiceError
@@ -25,6 +26,7 @@ from idpyoidc.exception import FormatError
 from idpyoidc.message import Message
 from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.node import ClientUnit
+from idpyoidc.util import instantiate
 
 from fedservice.entity.claims import RPClaims
 
@@ -46,13 +48,27 @@ class ClientEntity(ClientUnit):
             httpc_params: Optional[dict] = None,
             context: Optional[OidcContext] = None,
             key_conf: Optional[dict] = None,
-            client_type: Optional[str] = 'oauth2',
+            client_type: Optional[str] = '',
+            entity_type: Optional[str] = ''
     ):
         if config is None:
             config = {}
 
         self.client_type = config.get('client_type', client_type)
+        if not self.client_type:
+            if entity_type == 'openid_relying_party':
+                self.client_type = "oidc"
+            elif entity_type == "oauth_client":
+                self.client_type = "oauth2"
+            else:
+                raise KeyError("Unknown entity_type")
+
         self.entity_id = entity_id or config.get("entity_id", config.get("client_id", ""))
+
+        if self.client_type == "oauth2":
+            self.metadata_class = "fedservice.message.OauthClientMetadata"
+        else:
+            self.metadata_class = "fedservice.message.OIDCRPMetadata"
 
         ClientUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, context=context, config=config,
@@ -65,7 +81,10 @@ class ClientEntity(ClientUnit):
         _srvs = services or config.get("services")
 
         if not _srvs:
-            _srvs = DEFAULT_OIDC_SERVICES
+            if self.client_type == "oidc":
+                _srvs = DEFAULT_OIDC_SERVICES
+            elif client_type == "oauth2":
+                _srvs = DEFAULT_OAUTH2_SERVICES
 
         self._service = init_services(service_definitions=_srvs, upstream_get=self.unit_get)
 
@@ -119,7 +138,12 @@ class ClientEntity(ClientUnit):
 
     def get_metadata(self, *args):
         metadata = self.context.claims.get_use()
-        return {self.name: metadata}
+        _mc = instantiate(self.metadata_class, **metadata)
+        _mc.weed()
+        if self.client_type == "oauth2":
+            return {"oauth_client": _mc.to_dict()}
+        else:
+            return {"openid_relying_party": _mc.to_dict()}
 
     def do_request(
             self,

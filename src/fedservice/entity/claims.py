@@ -5,6 +5,7 @@ from idpyoidc.claims import Claims as ClaimsBase
 from idpyoidc.client.claims import oauth2 as OAuth2ClientClaims
 from idpyoidc.client.claims import oidc as OIDCClientClaims
 from idpyoidc.client.claims.transform import REGISTER2PREFERRED
+from idpyoidc.client.claims.transform import create_registration_request
 from idpyoidc.message import Message
 from idpyoidc.server.claims import oauth2 as OAUTH2ServerClaims
 from idpyoidc.server.claims import oidc as OIDCServerClaims
@@ -107,3 +108,6 @@ class FederationEntityClaims(ClaimsBase):
 
     def get_id(self, configuration: dict):
         return ''
+
+    def create_registration_request(self):
+        return create_registration_request(self.prefer, self.supports())

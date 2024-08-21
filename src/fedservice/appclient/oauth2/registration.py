@@ -30,6 +30,7 @@ class Registration(registration.Registration):
     error_cls = ResponseMessage
     request_body_type = 'jose'
     response_body_type = 'jose'
+    content_type = "application/entity-statement+jwt"
     name = 'registration'
 
     def __init__(self, upstream_get, conf=None, client_authn_factory=None, **kwargs):
@@ -62,13 +63,18 @@ class Registration(registration.Registration):
         _authority_hints = _federation_entity.get_authority_hints()
         _context = _federation_entity.get_context()
         _entity_id = _federation_entity.upstream_get('attribute', 'entity_id')
+
+        kwargs = {}
+        if _context.trust_marks:
+            kwargs["trust_marks"] = _context.trust_marks
+
         _jws = _context.create_entity_statement(
             iss=_entity_id,
             sub=_entity_id,
             metadata=_md,
             key_jar=_keyjar,
             authority_hints=_authority_hints,
-            trust_marks=_context.trust_marks)
+            **kwargs)
         # store for later reference
         _federation_entity.entity_configuration = _jws
         return _jws
@@ -141,7 +147,10 @@ class Registration(registration.Registration):
                 _trust_chains[0].verified_chain[-1]['metadata'] = _metadata
             # If it's metadata_policy what to do ?
             _trust_chains = apply_policies(_federation_entity, _trust_chains)
-            _resp = _trust_chains[0].metadata['openid_relying_party']
+            if self.upstream_get('unit').client_type == "oauth2":
+                _resp = _trust_chains[0].metadata['oauth_client']
+            else:
+                _resp = _trust_chains[0].metadata['openid_relying_party']
             _context = self.upstream_get('context')
             _context.registration_response = _resp
             return _resp

@@ -34,7 +34,8 @@ class Combo(Unit):
                     self._add_httpc_params(spec, httpc_params)
                 logger.info(f"Initiating entity type: '{key}' with config: {spec}")
                 self._part[key] = execute(spec, upstream_get=self.unit_get,
-                                          entity_id=self.entity_id, httpc=httpc)
+                                          entity_id=self.entity_id, httpc=httpc,
+                                          entity_type=key)
 
     def _get_httpc_params(self, config):
         return config.get("httpc_params")

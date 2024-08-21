@@ -1,3 +1,5 @@
+import os
+
 from cryptojwt.utils import importer
 
 from fedservice.entity import FederationEntity
@@ -96,8 +98,9 @@ def create_trust_chain(leaf, *entity):
 
     return chain
 
+def rm_dir_files(dir):
+    for file_object in os.listdir(dir):
+        file_object_path = os.path.join(dir, file_object)
+        if os.path.isfile(file_object_path) or os.path.islink(file_object_path):
+            os.unlink(file_object_path)
 
-
-
-def make_federation(conf):
-    pass

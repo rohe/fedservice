@@ -46,10 +46,10 @@ def main(entity_id: str,
                 'kwargs': {
                     'config': {
                         "issuer": entity_id,
-                        "metadata_schema": "fedservice.message.OPMetadata",
+                        "metadata_schema": "fedservice.message.FedASConfigurationResponse",
+                        "server_type": "oauth2",
                         "httpc_params": {"verify": False, "timeout": 1},
                         "preference": {
-                            "subject_types_supported": ["public", "pairwise", "ephemeral"],
                             "grant_types_supported": [
                                 "authorization_code",
                                 "implicit",
@@ -82,17 +82,8 @@ def main(entity_id: str,
                                 "class": "idpyoidc.server.token.jwt_token.JWTToken",
                                 "kwargs": {
                                     "lifetime": 3600,
-                                },
-                            },
-                            "id_token": {
-                                "class": "idpyoidc.server.token.id_token.IDToken",
-                                "kwargs": {
-                                    "base_claims": {
-                                        "email": {"essential": True},
-                                        "email_verified": {"essential": True},
-                                    }
-                                },
-                            },
+                                }
+                            }
                         },
                         "endpoint": {
                             "registration": {
@@ -129,12 +120,7 @@ def main(entity_id: str,
                                         "private_key_jwt",
                                     ]
                                 }
-                            },
-                            "userinfo": {
-                                "path": "userinfo",
-                                "class": "idpyoidc.server.oidc.userinfo.UserInfo",
-                                "kwargs": {}
-                            },
+                            }
                         },
                         "template_dir": "template",
                         "session_params": SESSION_PARAMS,

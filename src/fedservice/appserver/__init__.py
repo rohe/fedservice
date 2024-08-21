@@ -8,13 +8,13 @@ from cryptojwt import KeyJar
 from cryptojwt.utils import importer
 from idpyoidc.configure import Base
 from idpyoidc.node import topmost_unit
-from idpyoidc.server import allow_refresh_token
 from idpyoidc.server import ASConfiguration
-from idpyoidc.server import authz
-from idpyoidc.server import build_endpoints
 from idpyoidc.server import Endpoint
 from idpyoidc.server import EndpointContext
 from idpyoidc.server import OPConfiguration
+from idpyoidc.server import allow_refresh_token
+from idpyoidc.server import authz
+from idpyoidc.server import build_endpoints
 from idpyoidc.server.client_authn import client_auth_setup
 from idpyoidc.server.endpoint_context import init_service
 from idpyoidc.server.endpoint_context import init_user_info
@@ -25,6 +25,7 @@ from fedservice.entity.claims import OPClaims
 from fedservice.server import ServerUnit
 
 logger = logging.getLogger(__name__)
+
 
 def do_endpoints(conf, upstream_get):
     _endpoints = conf.get("endpoint")
@@ -49,10 +50,15 @@ class ServerEntity(ServerUnit):
             httpc_params: Optional[dict] = None,
             entity_id: Optional[str] = "",
             key_conf: Optional[dict] = None,
-            server_type: Optional[str] = "oidc"
+            server_type: Optional[str] = "",
+            entity_type: Optional[str] = ''
     ):
         if config is None:
             config = {}
+
+        self.server_type = server_type or config.get("server_type", "oidc")
+        if self.server_type == "oauth2":
+            self.name = "oauth_authorization_server"
 
         ServerUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, entity_id=entity_id, key_conf=key_conf,
@@ -61,14 +67,14 @@ class ServerEntity(ServerUnit):
         if not isinstance(config, Base):
             config['issuer'] = entity_id
             config['base_url'] = entity_id
-            if server_type == "oauth2":
+            if self.server_type == "oauth2":
                 config = ASConfiguration(config)
             else:
                 config = OPConfiguration(config)
 
-        if server_type == "oidc" and not isinstance(config, OPConfiguration):
+        if self.server_type == "oidc" and not isinstance(config, OPConfiguration):
             raise ValueError("Server type and configuration type does not match")
-        elif server_type == "oauth2" and not isinstance(config, ASConfiguration):
+        elif self.server_type == "oauth2" and not isinstance(config, ASConfiguration):
             raise ValueError("Server type and configuration type does not match")
 
         self.config = config
@@ -119,7 +125,10 @@ class ServerEntity(ServerUnit):
         return self
 
     def get_metadata(self, *args):
-        return {self.name: self.context.provider_info}
+        if self.server_type == "oidc":
+            return {"openid_provider": self.context.provider_info}
+        else:
+            return {"oauth_authorization_server": self.context.provider_info}
 
     def pick_guise(self, entity_type: Optional[str] = "", *args):
         if not entity_type:

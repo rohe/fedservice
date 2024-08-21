@@ -1,68 +1,70 @@
 # AbstractFileSystem
 import json
+import os
+import shutil
 
-import pytest
-from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.util import QPKey
+import pytest
 
-from fedservice.defaults import LEAF_ENDPOINTS
-from fedservice.utils import make_federation_entity
+from tests import rm_dir_files
+from tests.build_federation import build_federation
+
+BASE_PATH = os.path.abspath(os.path.dirname(__file__))
+def full_path(local_file):
+    return os.path.join(BASE_PATH, local_file)
 
 TA_ID = "https://trust_anchor.example.com"
-TA_ID2 = "https://2nd.trust_anchor.example.com"
-LEAF_ID = "https://leaf.example.com"
-INTERMEDIATE_ID = "https://intermediate.example.com"
-TENNANT_ID = "https://example.org/tennant1"
+RP_ID = "https://rp.example.com"
 
-# As long as it doesn't provide the Resolve endpoint it doesn't need
-# services and functions.
-# It must have the openid-federation and fetch endpoints. It may have the
-# list and status endpoint. That's the case here.
+FEDERATION_CONFIG = {
+    TA_ID: {
+        "entity_type": "trust_anchor",
+        "subordinates": {
+            'class': 'idpyoidc.storage.abfile.AbstractFileSystem',
+            'kwargs': {
+                'fdir': full_path('subordinate')
+            }
+        },
+        "kwargs": {
+            "preference": {
+                "organization_name": "The example federation operator",
+                "homepage_uri": "https://ta.example.org",
+                "contacts": "operations@ta.example.org"
+            },
+            "endpoints": ['entity_configuration', 'list', 'fetch', 'resolve'],
+        }
+    },
+    RP_ID: {
+        "entity_type": "openid_relying_party",
+        "trust_anchors": [TA_ID],
+        "kwargs": {
+            "authority_hints": [TA_ID],
+            "preference": {
+                "organization_name": "The example federation RP operator",
+                "homepage_uri": "https://rp.example.com",
+                "contacts": "operations@rp.example.com"
+            }
+        }
+    }
+}
 
-TA_ENDPOINTS = ["entity_configuration", "fetch", "list"]
 
-
-class TestClient(object):
+class TestSubordinatePersistenceFileSystem(object):
 
     @pytest.fixture(autouse=True)
     def create_entities(self):
-        self.ta = make_federation_entity(
-            TA_ID,
-            preference={
-                "organization_name": "The example federation operator",
-                "homepage_uri": "https://ta.example.com",
-                "contacts": "operations@ta.example.com"
-            },
-            key_config={"key_defs": DEFAULT_KEY_DEFS},
-            endpoints=TA_ENDPOINTS,
-            subordinate={
-                'class': 'idpyoidc.storage.abfile.AbstractFileSystem',
-                'kwargs': {
-                    'fdir': 'subordinate'
-                }
-            }
-        )
-
-        # Leaf
-
-        self.entity = make_federation_entity(
-            LEAF_ID,
-            preference={
-                "organization_name": "The leaf operator",
-                "homepage_uri": "https://leaf.example.com",
-                "contacts": "operations@leaf.example.com"
-            },
-            key_config={"key_defs": DEFAULT_KEY_DEFS},
-            authority_hints=[TA_ID],
-            endpoints=LEAF_ENDPOINTS,
-            trust_anchors={self.ta.entity_id: self.ta.keyjar.export_jwks()}
-        )
+        federation = build_federation(FEDERATION_CONFIG)
+        self.ta = federation[TA_ID]
+        self.rp = federation[RP_ID]
 
         _info = {
-            "jwks": self.entity.keyjar.export_jwks(),
+            "jwks": self.rp["federation_entity"].keyjar.export_jwks(),
             'authority_hints': [TA_ID]
         }
-        fname = f'subordinate/{QPKey().serialize(LEAF_ID)}'
+
+        _dir = full_path('subordinate')
+        rm_dir_files(_dir)
+        fname = os.path.join(_dir, QPKey().serialize(RP_ID))
         with open(fname, 'w') as f:
             f.write(json.dumps(_info))
 
@@ -71,4 +73,4 @@ class TestClient(object):
         _req = _endpoint.parse_request({})
         _resp_args = _endpoint.process_request(_req)
         assert _resp_args
-        assert _resp_args['response_msg'] == f'["{self.entity.entity_id}"]'
+        assert _resp_args['response_msg'] == f'["{self.rp["federation_entity"].entity_id}"]'

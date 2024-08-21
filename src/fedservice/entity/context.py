@@ -5,6 +5,7 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
+from idpyoidc.client.claims.transform import preferred_to_registered
 from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.configure import Configuration
 from idpyoidc.impexp import ImpExp
@@ -54,7 +55,7 @@ class FederationContext(ImpExp):
         self.entity_id = entity_id or config.get("entity_id",
                                                  self.upstream_get("attribute", "entity_id"))
         self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
-        self.trust_marks = trust_marks or config.get('trust_marks')
+        self.trust_marks = trust_marks or config.get('trust_marks', [])
         self.trust_chain = {}
         # self.issuer = self.entity_id
 
@@ -154,6 +155,15 @@ class FederationContext(ImpExp):
         return create_entity_statement(iss, sub, key_jar=key_jar, metadata=metadata,
                                        metadata_policy=metadata_policy,
                                        authority_hints=authority_hints, lifetime=lifetime, **kwargs)
+
+    def map_preferred_to_registered(self, registration_response: Optional[dict] = None):
+        self.claims.use = preferred_to_registered(
+            self.claims.prefer,
+            supported=self.supports(),
+            registration_response=registration_response,
+        )
+
+        return self.claims.use
 
 
 class FederationServerContext(FederationContext):

@@ -1,6 +1,7 @@
 import os
 
 from cryptojwt.utils import importer
+from idpyoidc.server.util import execute
 
 from fedservice.entity import FederationEntity
 
@@ -80,8 +81,11 @@ def build_federation(federation_conf):
         else:
             fed_ent = ent["federation_entity"]
         if subordinates:
-            for sub in subordinates:
-                fed_ent.server.subordinate[sub] = get_subordinate_info(entity[sub])
+            if isinstance(subordinates, list):
+                for sub in subordinates:
+                    fed_ent.server.subordinate[sub] = get_subordinate_info(entity[sub])
+            else:
+                fed_ent.server.subordinate = execute(subordinates)
         trust_anchor = federation_conf[entity_id].get("trust_anchors", None)
         if trust_anchor:
             for ta_entity_id in trust_anchor:

@@ -164,8 +164,8 @@ def make_federation_entity(entity_id: str,
         fe.server.trust_mark_entity = _tme
 
     if self_signed_trust_mark_entity:
-        _kwargs = trust_mark_entity.get("kwargs", {})
-        _tme = instantiate(trust_mark_entity['class'], upstream_get=fe.unit_get, **_kwargs)
+        _kwargs = self_signed_trust_mark_entity.get("kwargs", {})
+        _tme = instantiate(self_signed_trust_mark_entity['class'], upstream_get=fe.unit_get, **_kwargs)
         fe.server.self_signed_trust_mark_entity = _tme
 
     return fe

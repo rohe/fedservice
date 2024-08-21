@@ -35,7 +35,8 @@ class TrustMarkEntity(Unit):
         Unit.__init__(self, upstream_get=upstream_get)
 
         self.entity_id = entity_id or upstream_get("attribute", "entity_id")
-        self.endpoint = do_endpoints({"endpoint": endpoint, "issuer": self.entity_id}, self.unit_get)
+        self.endpoint = do_endpoints({"endpoint": endpoint, "issuer": self.entity_id},
+                                     self.unit_get)
         self.trust_mark_specification = trust_mark_specification or {}
 
         self.tm_lifetime = {}
@@ -151,10 +152,10 @@ class SelfSignedTrustMarkEntity(Unit):
     name = 'self_signed_trust_mark_entity'
 
     def __init__(self,
-                 keyjar: Callable,
                  entity_id: str = "",
                  upstream_get: Optional[Callable] = None,
                  trust_mark_ids: Optional[list] = None,
+                 trust_mark_specification: Optional[dict] = None,
                  **kwargs
                  ):
 
@@ -162,14 +163,39 @@ class SelfSignedTrustMarkEntity(Unit):
 
         self.entity_id = entity_id or upstream_get("attribute", "entity_id")
         self.trust_mark_ids = trust_mark_ids or []
-        self.keyjar = keyjar
+        self.trust_mark_specification = trust_mark_specification or {}
+        self.issued = []
+        self.tm_lifetime = 86400*30
 
-    def __call__(self, *args, **kwargs):
-        _entity_id = self.upstream_get("attribute", 'entity_id')
-        _keyjar = self.upstream_get('attribute', 'keyjar')
+    def __call__(self, id: [str], **kwargs) -> str:
+        """
 
-        packer = JWT(key_jar=_keyjar, iss=_entity_id)
-        if 'sub' not in kwargs:
-            kwargs['sub'] = _entity_id
-        sstm = packer.pack(payload=kwargs)
-        self.issued
+        :param id: Trust Mark identifier
+        :param sub: The receiver of the Trust Mark
+        :param kwargs: extra claims to be added to the Trust Mark's claims
+        :return: Trust Mark
+        """
+        _now = utc_time_sans_frac()
+        sub = self.upstream_get('attribute', 'entity_id')
+        _add = {'iat': _now, 'id': id, 'sub': sub}
+        lifetime = self.tm_lifetime
+        if lifetime:
+            _add['exp'] = _now + lifetime
+
+        if id not in self.trust_mark_specification:
+            raise ValueError('Unknown trust mark ID')
+
+        content = self.trust_mark_specification[id].copy()
+        content.update(_add)
+        if kwargs:
+            content.update(kwargs)
+        self.issued.append(content)
+
+        _federation_entity = get_federation_entity(self)
+        packer = JWT(key_jar=_federation_entity.keyjar, iss=_federation_entity.entity_id)
+        _trust_mark = packer.pack(payload=content)
+        entity = self.upstream_get("unit")
+        entity.context.trust_marks.append(_trust_mark)
+
+        return _trust_mark
+
