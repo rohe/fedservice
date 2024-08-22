@@ -16,7 +16,8 @@ class Authorization(authorization.Authorization):
 
         if "request_object" in ams['authorization_endpoint']:
             post_args['request_param'] = "request"
-            post_args['recv'] = context.get_metadata_claim("oauth_authorization_server", "authorization_endpoint")
+            post_args['recv'] = context.get_metadata_claim("oauth_authorization_server",
+                                                           "authorization_endpoint")
             post_args["with_jti"] = True
             post_args["lifetime"] = self.conf.get("request_object_expires_in", 300)
             post_args['issuer'] = self.upstream_get('attribute', 'entity_id')
@@ -40,7 +41,8 @@ class Authorization(authorization.Authorization):
         if not _request_endpoints:
             _request_endpoints = _context.config.conf.get('authorization_request_endpoints')
 
-        _ams = _context.get_metadata_claim('oauth_authorization_server','request_authentication_methods_supported')
+        _ams = _context.get_metadata_claim('oauth_authorization_server',
+                                           'request_authentication_methods_supported')
         # what if request_param is already set ??
         # What if request_param in not in client_auth ??
         if _ams:

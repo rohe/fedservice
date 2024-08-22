@@ -41,15 +41,15 @@ class Authorization(authorization.Authorization):
         if not _request_endpoints:
             _request_endpoints = _context.config.conf.get('authorization_request_endpoints')
 
-        _ams = _context.get_metadata_claim('request_authentication_methods_supported',
+        _auth_meth_supported = _context.get_metadata_claim('request_authentication_methods_supported',
                                            ['openid_provider', 'oauth_authorization_server'])
         # what if request_param is already set ??
         # What if request_param in not in client_auth ??
-        if _ams:
+        if _auth_meth_supported:
             for endpoint in _request_endpoints:
-                if endpoint in _ams:
+                if endpoint in _auth_meth_supported:
                     _func = getattr(self, f'_use_{endpoint}')
-                    post_args = _func(_context, post_args, _ams)
+                    post_args = _func(_context, post_args, _auth_meth_supported)
                     break
         else:  # The OP does not support any authn methods
             # am I already registered ?
