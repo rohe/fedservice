@@ -1,0 +1,4 @@
+-e git+https://github.com/IdentityPython/idpy-oidc.git@dpop_add#egg=idpyoidc
+-e git+https://github.com/rohe/openid4v.git#egg=openid4v
+-e git+https://github.com/rohe/idpy-sdjwt.git#egg=idpysdjwt
+flask

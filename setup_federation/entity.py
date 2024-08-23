@@ -24,12 +24,16 @@ def init_app(dir_name, **kwargs) -> Flask:
 
     # Session key for the application session
     app.config['SECRET_KEY'] = os.urandom(12).hex()
-
+    app.config.from_prefixed_env(prefix="FEDSERVICE")
     entity = importer(f"{dir_name}.views.entity")
     app.register_blueprint(entity)
 
     # Initialize the oidc_provider after views to be able to set correct urls
     app.cnf = load_config_file(f"{dir_name}/conf.json")
+    if os.environ.get('FEDSERVICE_ENTITYID'):
+        entity_id = os.environ.get('FEDSERVICE_ENTITYID')
+        print(f"Setting entity_id to {entity_id} from env")
+        app.cnf['entity']['entity_id'] = entity_id
     app.cnf["cwd"] = dir_path
     app.server = make_federation_combo(**app.cnf["entity"])
     if isinstance(app.server, FederationCombo):
@@ -48,6 +52,10 @@ if __name__ == "__main__":
     if "logging" in app.cnf:
         configure_logging(config=app.cnf["logging"])
     _web_conf = app.cnf["webserver"]
+    if os.environ.get('FEDSERVICE_WEBCERT_KEY'):
+        _web_conf['server_key'] = os.environ.get('FEDSERVICE_WEBCERT_KEY')
+        _web_conf['server_chain'] = os.environ.get('FEDSERVICE_WEBCERT_CHAIN')
+        _web_conf['server_cert'] = os.environ.get('FEDSERVICE_WEBCERT_CERT')
     context = create_context(dir_path, _web_conf)
     _cert = "{}/{}".format(dir_path, lower_or_upper(_web_conf, "server_cert"))
 
@@ -55,5 +63,7 @@ if __name__ == "__main__":
     _trust_anchors = {k:v for k,v in app.federation_entity.function.trust_chain_collector.trust_anchors.items()}
     print(f"Trust Anchors: {_trust_anchors}")
     # app.rph.federation_entity.collector.web_cert_path = _cert
-    app.run(host=_web_conf.get('domain'), port=_web_conf.get('port'),
+    domain = os.environ.get('FEDSERVICE_BIND') or _web_conf.get('domain')
+    port = os.environ.get('FEDSERVICE_PORT') or _web_conf.get('port')
+    app.run(host=domain, port=port,
             debug=_web_conf.get("debug"), ssl_context=context)
