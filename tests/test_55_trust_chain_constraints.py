@@ -53,10 +53,15 @@ FEDERATION_CONFIG = {
         "trust_anchors": [TA_ID],
         "kwargs": {
             "authority_hints": [IM_ID],
+            "entity_type_config": {
+                "preference": {
+                    "grant_types": ['authorization_code', 'refresh_token']
+                }
+            },
             "preference": {
                 "organization_name": "The example federation RP operator",
                 "homepage_uri": "https://rp.example.com",
-                "contacts": "operations@rp.example.com"
+                "contacts": "operations@rp.example.com",
             }
         }
     }

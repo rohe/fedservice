@@ -37,6 +37,7 @@ def main(entity_id: str,
             },
             "server_type": "oauth2"
         }
+
     entity = make_federation_combo(
         entity_id,
         preference=preference,

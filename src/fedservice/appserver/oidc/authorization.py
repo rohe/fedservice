@@ -2,6 +2,8 @@ import logging
 from typing import List
 from typing import Optional
 
+from fedservice.entity.function import get_verified_trust_chains
+
 from fedservice.entity.utils import get_federation_entity
 from idpyoidc.message import oidc
 from idpyoidc.message.oidc import RegistrationRequest
@@ -49,24 +51,22 @@ class Authorization(authorization.Authorization):
     def find_client_keys(self, iss):
         return self.do_automatic_registration(iss, [])
 
-    def do_automatic_registration(self, entity_id: str, provided_trust_chain: List[str]):
+    def do_automatic_registration(self, client_entity_id: str, provided_trust_chain: List[str]):
         if provided_trust_chain:
             # So I get the TA's entity statement first
             provided_trust_chain.reverse()
             trust_chains = verify_trust_chains(self, [provided_trust_chain])
+            trust_chains = apply_policies(self, trust_chains)
         else:
-            chains, signed_entity_configuration = collect_trust_chains(self, entity_id)
-            trust_chains = verify_trust_chains(self, chains, signed_entity_configuration)
-
-        trust_chains = apply_policies(self, trust_chains)
+            trust_chains = get_verified_trust_chains(self, client_entity_id)
 
         if not trust_chains:
             raise NoTrustedChains()
 
         # pick one of the possible
         trust_chain = trust_chains[0]
-        _fe = topmost_unit(self)['federation_entity']
-        _fe.store_trust_chains(entity_id, trust_chains)
+        _fe = get_federation_entity(self)
+        _fe.store_trust_chains(client_entity_id, trust_chains)
         # _fe.trust_chain_anchor = trust_chain.anchor
 
         # handle the registration request as in the non-federation case.
@@ -80,19 +80,19 @@ class Authorization(authorization.Authorization):
                     _jwks = get_verified_jwks(self, _signed_jwks_uri)
                     if _jwks:
                         _keyjar = self.upstream_get('attribute', 'keyjar')
-                        _keyjar.add(entity_id, _jwks)
+                        _keyjar.add(client_entity_id, _jwks)
             else:
                 _jwks_uri = _metadata.get('jwks_uri')
                 if _jwks_uri:
                     _keyjar = self.upstream_get('attribute', 'keyjar')
-                    _keyjar.add_url(entity_id, _jwks_uri)
+                    _keyjar.add_url(client_entity_id, _jwks_uri)
                 else:
                     _jwks = _metadata.get('jwks')
                     _keyjar = self.upstream_get('attribute', 'keyjar')
-                    _keyjar.import_jwks(entity_id, _jwks)
+                    _keyjar.import_jwks(_jwks, client_entity_id)
 
         req = RegistrationRequest(**trust_chain.metadata['openid_relying_party'])
-        req['client_id'] = entity_id
+        req['client_id'] = client_entity_id
         kwargs = {}
         kwargs['new_id'] = self.new_client_id
 

@@ -30,12 +30,8 @@ TA_ENDPOINTS = ["entity_configuration", "fetch", "metadata_verification"]
 
 RESPONSE_TYPES_SUPPORTED = [
     ["code"],
-    ["token"],
     ["id_token"],
-    ["code", "token"],
     ["code", "id_token"],
-    ["id_token", "token"],
-    ["code", "token", "id_token"],
     ["none"],
 ]
 

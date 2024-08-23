@@ -79,7 +79,7 @@ class Authorization(authorization.Authorization):
         kwargs = {}
         kwargs['new_id'] = self.new_client_id
 
-        op = topmost_unit(self)['openid_relaying_party']
+        op = topmost_unit(self)['oauth_authorization_server']
         _registration = op.get_endpoint("registration")
         response_info = _registration.non_fed_process_request(req=req, **kwargs)
 

@@ -53,6 +53,9 @@ class TestSubordinatePersistenceFileSystem(object):
 
     @pytest.fixture(autouse=True)
     def create_entities(self):
+        _dir = full_path('subordinate')
+        rm_dir_files(_dir)
+
         federation = build_federation(FEDERATION_CONFIG)
         self.ta = federation[TA_ID]
         self.rp = federation[RP_ID]
@@ -62,8 +65,6 @@ class TestSubordinatePersistenceFileSystem(object):
             'authority_hints': [TA_ID]
         }
 
-        _dir = full_path('subordinate')
-        rm_dir_files(_dir)
         fname = os.path.join(_dir, QPKey().serialize(RP_ID))
         with open(fname, 'w') as f:
             f.write(json.dumps(_info))

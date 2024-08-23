@@ -86,8 +86,7 @@ class TrustChainCollector(Function):
             keyjar.import_jwks(keys, id)
 
     def _get_service(self, service):
-        _collection = self.upstream_get('unit')
-        federation_entity = _collection.upstream_get('unit')
+        federation_entity = get_federation_entity(self)
         return federation_entity.client.get_service(service)
 
     def get_document(self, url: str):

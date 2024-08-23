@@ -4,7 +4,9 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
+from idpyoidc.client.entity_metadata import EntityMetadata
 from idpyoidc.configure import Configuration
+from idpyoidc.message import Message
 from idpyoidc.node import Unit
 from idpyoidc.server.util import execute
 from requests import request
@@ -135,3 +137,11 @@ class FederationCombo(Combo):
             return self.keyjar
         else:
             return self.get_federation_entity().keyjar
+
+    def apply_metadata(self, trust_chain_metadata: Union[dict, Message]):
+        _info = {k:EntityMetadata(v) for k,v in trust_chain_metadata.items()}
+        for guise in self._part.keys():
+            _context = getattr(self[guise], 'context', None)
+            if _context:
+                _context.server_metadata = _info
+        return

@@ -1,10 +1,9 @@
 from fedservice.message import AuthorizationServerMetadata
 from fedservice.message import FederationEntity
+from fedservice.message import OauthClientMetadata
 from fedservice.message import OAuthProtectedResourceMetadata
 from fedservice.message import OIDCRPMetadata
 from fedservice.message import OPMetadata
-from fedservice.message import OauthClientMetadata
-from fedservice.message import TrustMarkIssuerMetadata
 
 ENTITY_TYPE2METADATA_CLASS = {
     "openid_relying_party": OIDCRPMetadata,
@@ -12,8 +11,7 @@ ENTITY_TYPE2METADATA_CLASS = {
     "oauth_authorization_server": AuthorizationServerMetadata,
     "oauth_client": OauthClientMetadata,
     "oauth_resource": OAuthProtectedResourceMetadata,
-    "federation_entity": FederationEntity,
-    "trust_mark_issuer": TrustMarkIssuerMetadata
+    "federation_entity": FederationEntity
 }
 
 DEFAULT_OIDC_FED_SERVICES = {
@@ -33,21 +31,6 @@ DEFAULT_OAUTH2_FED_SERVICES = {
     'oauth_registration': {
         'class': 'fedservice.appclient.oauth2.registration.Registration'},
 }
-
-# APP_CLIENT_SERVICES = {
-#     'oauth_authorization': {
-#         'class': 'fedservice.appclient.oauth2.authorization.Authorization'},
-#     'oauth_discovery': {
-#         'class': 'fedservice.appclient.oauth2.server_metadata.ServerMetadata'},
-#     'oauth_registration': {
-#         'class': 'fedservice.appclient.oauth2.registration.Registration'},
-#     'oidc_authorization': {
-#         'class': 'fedservice.appclient.oauth2.authorization.Authorization'},
-#     'oidc_discovery': {
-#         'class': 'fedservice.appclient.oidc.provider_info_discovery.ProviderInfoDiscovery'},
-#     'oidc_registration': {
-#         'class': 'fedservice.appclient.oidc.registration.Registration'}
-# }
 
 SERVICES = {
     "entity_configuration": {
@@ -101,6 +84,24 @@ FEDERATION_ENTITY_SERVICES = federation_services("entity_configuration", "entity
                                                  "resolve", "list")
 
 DEFAULT_FEDERATION_ENTITY_SERVICES = FEDERATION_ENTITY_SERVICES
+
+OIDC_FED_ENDPOINTS = {
+    'oidc_authorization': {
+        'class': 'fedservice.appserver.oidc.authorization.Authorization'},
+    'oidc_discovery': {
+        'class': 'fedservice.appserver.oidc.provider_config.ProviderConfiguration'},
+    'oidc_registration': {
+        'class': 'fedservice.appserver.oidc.registration.Registration'},
+}
+
+OAUTH2_FED_ENDPOINTS = {
+    'oauth_authorization': {
+        'class': 'fedservice.appserver.oauth2.authorization.Authorization'},
+    'oauth_discovery': {
+        'class': 'fedservice.appserver.oauth2.server_metadata.ServerMetadata'},
+    'oauth_registration': {
+        'class': 'fedservice.appserver.oauth2.registration.Registration'},
+}
 
 FEDERATION_ENDPOINTS = {
     "entity_configuration": {

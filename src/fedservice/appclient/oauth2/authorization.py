@@ -41,8 +41,16 @@ class Authorization(authorization.Authorization):
         if not _request_endpoints:
             _request_endpoints = _context.config.conf.get('authorization_request_endpoints')
 
-        _ams = _context.get_metadata_claim('oauth_authorization_server',
-                                           'request_authentication_methods_supported')
+        # What does the server support
+        if self.upstream_get('unit').client_type == 'oidc':
+            _entity_type = "openid_provider"
+        elif self.upstream_get('unit').client_type == 'oauth2':
+            _entity_type = "oauth_authorization_server"
+        else:
+            raise KeyError("Unknown client_type")
+
+        _ams = _context.get_metadata_claim('request_authentication_methods_supported', [_entity_type])
+
         # what if request_param is already set ??
         # What if request_param in not in client_auth ??
         if _ams:

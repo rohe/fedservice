@@ -1,12 +1,11 @@
 from typing import List
 from typing import Optional
 
+from fedservice import defaults
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 
-from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_ENDPOINTS
+from fedservice.defaults import DEFAULT_OAUTH2_FED_SERVICES
 from fedservice.utils import make_federation_combo
-
-TA_ENDPOINTS = DEFAULT_FEDERATION_ENTITY_ENDPOINTS.copy()
 
 
 def main(entity_id: str,
@@ -28,6 +27,11 @@ def main(entity_id: str,
             "homepage_uri": "https://rp.example.com",
             "contacts": "operations@rp.example.com"
         }
+    if services is None:
+        _services = defaults.federation_services("entity_configuration", "entity_statement")
+        _services.update(DEFAULT_OAUTH2_FED_SERVICES)
+        services = _services
+
     if entity_type_config is None:
         entity_type_config = {
             'redirect_uris': [f'{entity_id}/cli/authz_cb'],

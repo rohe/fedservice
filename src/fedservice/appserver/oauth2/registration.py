@@ -12,6 +12,7 @@ from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.server import Endpoint
 from idpyoidc.server.exception import CapabilitiesMisMatch
 from idpyoidc.server.exception import InvalidRedirectURIError
+from idpyoidc.server.oidc import registration
 from idpyoidc.server.oidc.registration import comb_uri
 from idpyoidc.server.oidc.registration import secret
 from idpyoidc.server.oidc.registration import verify_url
@@ -24,17 +25,19 @@ from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
 from fedservice.entity.utils import get_federation_entity
+from fedservice.message import OauthClientInformationResponse
 
 logger = logging.getLogger(__name__)
 
 
 class Registration(Endpoint):
     msg_type = oauth2.OauthClientMetadata
-    response_cls = oauth2.OauthClientMetadata
+    response_cls = OauthClientInformationResponse
     request_format = 'jose'
     request_placement = 'body'
     response_format = 'jose'
     endpoint_name = "federation_registration_endpoint"
+    name = "registration"
     _status = {
         "client_registration_types_supported": ["automatic", "explicit"]
     }
@@ -429,3 +432,7 @@ class Registration(Endpoint):
                                            metadata=_md,
                                            authority_hints=_fe.get_authority_hints(),
                                            trust_marks=_fe.context.trust_marks)
+
+    def non_fed_process_request(self, req, **kwargs):
+        # handle the registration request as in the non-federation case.
+        return registration.Registration.process_request(self, req, authn=None, **kwargs)
