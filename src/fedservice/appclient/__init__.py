@@ -9,8 +9,6 @@ from cryptojwt import KeyJar
 from cryptojwt.key_jar import init_key_jar
 from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.client.client_auth import method_to_item
-from idpyoidc.client.defaults import DEFAULT_OAUTH2_SERVICES
-from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.client.defaults import SUCCESSFUL
 from idpyoidc.client.exception import OidcServiceError
 from idpyoidc.client.rp_handler import RPHandler
@@ -28,6 +26,8 @@ from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.node import ClientUnit
 from idpyoidc.util import instantiate
 
+from fedservice.defaults import COMBINED_DEFAULT_OAUTH2_SERVICES
+from fedservice.defaults import COMBINED_DEFAULT_OIDC_SERVICES
 from fedservice.entity.claims import RPClaims
 
 logger = logging.getLogger(__name__)
@@ -82,9 +82,9 @@ class ClientEntity(ClientUnit):
 
         if not _srvs:
             if self.client_type == "oidc":
-                _srvs = DEFAULT_OIDC_SERVICES
+                _srvs = COMBINED_DEFAULT_OIDC_SERVICES
             elif client_type == "oauth2":
-                _srvs = DEFAULT_OAUTH2_SERVICES
+                _srvs = COMBINED_DEFAULT_OAUTH2_SERVICES
 
         self._service = init_services(service_definitions=_srvs, upstream_get=self.unit_get)
 

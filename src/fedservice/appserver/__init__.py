@@ -56,7 +56,13 @@ class ServerEntity(ServerUnit):
         if config is None:
             config = {}
 
-        self.server_type = server_type or config.get("server_type", "oidc")
+        self.server_type = server_type or config.get("server_type", "")
+        if not self.server_type:
+            if entity_type == "oauth_authorization_server":
+                self.server_type = "oauth2"
+            elif entity_type == "openid_provider":
+                self.server_type = "oidc"
+
         if self.server_type == "oauth2":
             self.name = "oauth_authorization_server"
 

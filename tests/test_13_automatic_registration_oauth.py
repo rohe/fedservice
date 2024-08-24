@@ -1,26 +1,27 @@
 import os
 
-import pytest
-import responses
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.server.oidc.token import Token
 from idpyoidc.util import rndstr
+import pytest
+import responses
 
+from fedservice.defaults import COMBINED_DEFAULT_OAUTH2_SERVICES
 from fedservice.defaults import DEFAULT_OAUTH2_FED_SERVICES
 from fedservice.defaults import federation_endpoints
 from fedservice.defaults import federation_services
 from fedservice.entity.function import get_verified_trust_chains
-from . import create_trust_chain_messages
 from . import CRYPT_CONFIG
 from . import RESPONSE_TYPES_SUPPORTED
+from . import create_trust_chain_messages
 from .build_federation import build_federation
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, "base_data")
 
 TA_ID = "https://ta.example.org"
-OC_ID = "https://rp.example.org"
-AS_ID = "https://op.example.org"
+OC_ID = "https://client.example.org"
+AS_ID = "https://as.example.org"
 IM_ID = "https://im.example.org"
 
 SESSION_PARAMS = {"encrypter": CRYPT_CONFIG}
@@ -52,14 +53,13 @@ FEDERATION_CONFIG = {
         "services": OC_SERVICES,
         "kwargs": {
             "authority_hints": [IM_ID],
-            "services": DEFAULT_OAUTH2_FED_SERVICES,
+            "services": COMBINED_DEFAULT_OAUTH2_SERVICES,
             "entity_type_config": {
                 # OAuth2 core keys
                 "keys": {"key_defs": DEFAULT_KEY_DEFS},
                 "base_url": OC_ID,
                 "client_id": OC_ID,
-                "client_secret": "a longesh password",
-                "client_type": "oidc",
+                "client_secret": "a longeeesh password",
                 "redirect_uris": ["https://rp.example.com/cli/authz_cb"],
                 "preference": {
                     "grant_types": ["authorization_code", "implicit", "refresh_token"],
@@ -259,9 +259,8 @@ class TestAutomatic(object):
                          status=200)
 
             # The OP handles the authorization request
-            req = self.oas["oauth_authorization_server"].get_endpoint(
-                "authorization").parse_request(
-                authn_request.to_dict())
+            _authz_endpoint = self.oas["oauth_authorization_server"].get_endpoint("authorization")
+            req = _authz_endpoint.parse_request(authn_request.to_dict())
 
         assert "response_type" in req
 

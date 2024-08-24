@@ -69,12 +69,12 @@ class Authorization(authorization.Authorization):
 
         # handle the registration request as in the non-federation case.
         # If there is a jwks_uri in the metadata import keys
-        _jwks_uri = trust_chain.metadata['openid_relying_party'].get('jwks_uri')
+        _jwks_uri = trust_chain.metadata['oauth_client'].get('jwks_uri')
         if _jwks_uri:
             _keyjar = self.upstream_get('attribute', 'keyjar')
             _keyjar.add_url(entity_id, _jwks_uri)
 
-        req = OauthClientMetadata(**trust_chain.metadata['openid_relying_party'])
+        req = OauthClientMetadata(**trust_chain.metadata['oauth_client'])
         req['client_id'] = entity_id
         kwargs = {}
         kwargs['new_id'] = self.new_client_id

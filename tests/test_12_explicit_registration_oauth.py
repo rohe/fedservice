@@ -137,7 +137,7 @@ class TestRpService(object):
         assert set(payload.keys()) == {"sub", "iss", "metadata", "jwks", "exp",
                                        "iat", "authority_hints"}
         assert set(payload["metadata"]["oauth_client"].keys()) == {
-            'response_types', 'redirect_uris', 'jwks'}
+            'redirect_uris', 'jwks', 'response_types', 'token_endpoint_auth_method'}
 
     def test_parse_registration_response(self):
         # Collect trust chain OP->TA
@@ -206,5 +206,9 @@ class TestRpService(object):
 
             claims = self.registration_service.parse_response(_jwt, request=_info["body"])
 
-        assert set(claims.keys()) == {'response_types', 'client_id', 'client_secret', 'jwks',
-                                      'redirect_uris'}
+        assert set(claims.keys()) == {'client_id',
+                                      'client_secret',
+                                      'jwks',
+                                      'redirect_uris',
+                                      'response_types',
+                                      'token_endpoint_auth_method'}

@@ -17,8 +17,6 @@ ENTITY_TYPE2METADATA_CLASS = {
 DEFAULT_OIDC_FED_SERVICES = {
     'oidc_authorization': {
         'class': 'fedservice.appclient.oidc.authorization.Authorization'},
-    'oidc_discovery': {
-        'class': 'fedservice.appclient.oidc.provider_info_discovery.ProviderInfoDiscovery'},
     'oidc_registration': {
         'class': 'fedservice.appclient.oidc.registration.Registration'},
 }
@@ -26,11 +24,26 @@ DEFAULT_OIDC_FED_SERVICES = {
 DEFAULT_OAUTH2_FED_SERVICES = {
     'oauth_authorization': {
         'class': 'fedservice.appclient.oauth2.authorization.Authorization'},
-    'oauth_discovery': {
-        'class': 'fedservice.appclient.oauth2.server_metadata.ServerMetadata'},
     'oauth_registration': {
         'class': 'fedservice.appclient.oauth2.registration.Registration'},
 }
+
+COMBINED_DEFAULT_OIDC_SERVICES = DEFAULT_OIDC_FED_SERVICES
+COMBINED_DEFAULT_OIDC_SERVICES.update({
+    "discovery": {"class": "idpyoidc.client.oidc.provider_info_discovery.ProviderInfoDiscovery"},
+    "access_token": {"class": "idpyoidc.client.oidc.access_token.AccessToken"},
+    "refresh_access_token": {
+        "class": "idpyoidc.client.oidc.refresh_access_token.RefreshAccessToken"},
+    "userinfo": {"class": "idpyoidc.client.oidc.userinfo.UserInfo"}
+})
+
+COMBINED_DEFAULT_OAUTH2_SERVICES = DEFAULT_OAUTH2_FED_SERVICES
+COMBINED_DEFAULT_OAUTH2_SERVICES.update({
+    "discovery": {"class": "idpyoidc.client.oauth2.server_metadata.ServerMetadata"},
+    "access_token": {"class": "idpyoidc.client.oauth2.access_token.AccessToken"},
+    "refresh_access_token": {
+        "class": "idpyoidc.client.oauth2.refresh_access_token.RefreshAccessToken"}
+})
 
 SERVICES = {
     "entity_configuration": {

@@ -1,5 +1,8 @@
 import os
 
+from fedservice import get_trust_chain
+from fedservice import save_trust_chains
+from fedservice.entity.function import get_verified_trust_chains
 import pytest
 import responses
 from cryptojwt.jws.jws import factory
@@ -65,7 +68,6 @@ FEDERATION_CONFIG_1 = {
 
 
 class TestClient(object):
-
     @pytest.fixture(autouse=True)
     def create_entities(self):
         self.federation_entity = build_federation(FEDERATION_CONFIG_1)
@@ -366,3 +368,24 @@ class TestFunction:
     def test_trust_anchors_attribute(self):
         assert set(self.leaf["federation_entity"].trust_anchors.keys()) == {'https://ta.example.org',
                                                                             'https://2nd.ta.example.org'}
+
+    def test_save_trust_chains(self):
+        _msgs = create_trust_chain_messages(self.leaf, self.intermediate, self.ta1)
+        _msgs.update(create_trust_chain_messages(self.leaf, self.ta2))
+
+        with responses.RequestsMock() as rsps:
+            for _url, _jwks in _msgs.items():
+                rsps.add("GET", _url, body=_jwks,
+                         adding_headers={"Content-Type": "application/json"}, status=200)
+
+            _trust_chains = get_verified_trust_chains(self.leaf, self.leaf["federation_entity"].entity_id)
+
+        federation_context = self.leaf["federation_entity"].context
+        save_trust_chains(federation_context, _trust_chains)
+        assert set(federation_context.trust_chain.keys()) == {LEAF_ID}
+        assert set(federation_context.trust_chain[LEAF_ID].keys()) == {TA1_ID, TA2_ID}
+
+        trust_chain = get_trust_chain(federation_context, LEAF_ID, TA1_ID)
+        assert trust_chain
+        assert trust_chain.anchor == TA1_ID
+        assert trust_chain.iss_path == [LEAF_ID, INTERMEDIATE_ID, TA1_ID]
