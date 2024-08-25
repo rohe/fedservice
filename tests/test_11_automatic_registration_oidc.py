@@ -218,7 +218,7 @@ class TestAutomatic(object):
         self.entity_config_service.upstream_get("context").issuer = OP_ID
         self.registration_service = self.rp["federation_entity"].get_service("registration")
 
-    def test_automatic_registration_new_client_id(self):
+    def test_automatic_registration(self):
         # No clients registered with the OP at the beginning
         assert len(self.op["openid_provider"].get_context().cdb.keys()) == 0
 
@@ -272,8 +272,8 @@ class TestAutomatic(object):
                          adding_headers={"Content-Type": "application/json"}, status=200)
 
             # The OP handles the authorization request
-            req = self.op["openid_provider"].get_endpoint("authorization").parse_request(
-                authn_request.to_dict())
+            authz_endpoint = self.op["openid_provider"].get_endpoint("authorization")
+            req = authz_endpoint.parse_request(authn_request.to_dict())
 
         assert "response_type" in req
 

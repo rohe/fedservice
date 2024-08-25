@@ -1,5 +1,6 @@
 from idpyoidc.client.exception import OtherError
 from idpyoidc.client.oauth2 import authorization
+from idpyoidc.client.oauth2.add_on.jar import construct_request_parameter
 from idpyoidc.exception import UnSupported
 
 
@@ -8,6 +9,7 @@ class Authorization(authorization.Authorization):
     def __init__(self, upstream_get, conf=None):
         authorization.Authorization.__init__(self, upstream_get=upstream_get, conf=conf)
         self.pre_construct.append(self._automatic_registration)
+        self.post_construct.append(self.create_request)
 
     def _use_authorization_endpoint(self, context, post_args, ams):
         if 'pushed_authorization' in context.add_on:
@@ -70,3 +72,13 @@ class Authorization(authorization.Authorization):
             request_args['client_id'] = self.upstream_get('attribute', 'entity_id')
 
         return request_args, post_args
+
+    def create_request(self, request_args, **kwargs):
+        request_arg = kwargs.get('request_param', "")
+        if request_arg == "request":
+            service = kwargs.get("service")
+            del kwargs["service"]
+            _req = construct_request_parameter(service, request_args, **kwargs)
+            return {'request': _req}
+        else:
+            return request_args
