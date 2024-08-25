@@ -5,6 +5,7 @@ from fedservice import defaults
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 
 from fedservice.defaults import DEFAULT_OAUTH2_FED_SERVICES
+from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.utils import make_federation_combo
 
 
@@ -29,7 +30,7 @@ def main(entity_id: str,
         }
     if services is None:
         _services = defaults.federation_services("entity_configuration", "entity_statement")
-        _services.update(DEFAULT_OAUTH2_FED_SERVICES)
+        _services.update(DEFAULT_OIDC_FED_SERVICES)
         services = _services
 
     if entity_type_config is None:

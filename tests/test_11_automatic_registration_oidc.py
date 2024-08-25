@@ -213,11 +213,6 @@ class TestAutomatic(object):
         self.op = federation[OP_ID]
         self.im = federation[IM_ID]
 
-        self.entity_config_service = self.rp["federation_entity"].get_service(
-            "entity_configuration")
-        self.entity_config_service.upstream_get("context").issuer = OP_ID
-        self.registration_service = self.rp["federation_entity"].get_service("registration")
-
     def test_automatic_registration(self):
         # No clients registered with the OP at the beginning
         assert len(self.op["openid_provider"].get_context().cdb.keys()) == 0
@@ -273,7 +268,7 @@ class TestAutomatic(object):
 
             # The OP handles the authorization request
             authz_endpoint = self.op["openid_provider"].get_endpoint("authorization")
-            req = authz_endpoint.parse_request(authn_request.to_dict())
+            req = authz_endpoint.parse_request(authn_request)
 
         assert "response_type" in req
 

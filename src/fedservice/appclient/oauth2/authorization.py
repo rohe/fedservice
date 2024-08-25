@@ -11,15 +11,14 @@ class Authorization(authorization.Authorization):
         self.pre_construct.append(self._automatic_registration)
         self.post_construct.append(self.create_request)
 
-    def _use_authorization_endpoint(self, context, post_args, ams):
+    def _use_authorization_endpoint(self, context, post_args, ams, entity_type):
         if 'pushed_authorization' in context.add_on:
             # Turn off pushed auth
             context.add_on['pushed_authorization']['apply'] = False
 
         if "request_object" in ams['authorization_endpoint']:
             post_args['request_param'] = "request"
-            post_args['recv'] = context.get_metadata_claim("oauth_authorization_server",
-                                                           "authorization_endpoint")
+            post_args['recv'] = context.get_metadata_claim("authorization_endpoint", [entity_type])
             post_args["with_jti"] = True
             post_args["lifetime"] = self.conf.get("request_object_expires_in", 300)
             post_args['issuer'] = self.upstream_get('attribute', 'entity_id')
@@ -28,7 +27,7 @@ class Authorization(authorization.Authorization):
 
         return post_args
 
-    def _use_pushed_authorization_endpoint(self, context, post_args, ams):
+    def _use_pushed_authorization_endpoint(self, context, post_args, ams, entity_type):
         if 'pushed_authorization' not in context.add_on:
             raise UnSupported('Pushed Authorization not supported')
         else:  # Make it happen
@@ -44,9 +43,9 @@ class Authorization(authorization.Authorization):
             _request_endpoints = _context.config.conf.get('authorization_request_endpoints')
 
         # What does the server support
-        if self.upstream_get('unit').client_type == 'oidc':
+        if self.upstream_get('attribute', "client_type") == 'oidc':
             _entity_type = "openid_provider"
-        elif self.upstream_get('unit').client_type == 'oauth2':
+        elif self.upstream_get('attribute', "client_type") == 'oauth2':
             _entity_type = "oauth_authorization_server"
         else:
             raise KeyError("Unknown client_type")
@@ -59,7 +58,7 @@ class Authorization(authorization.Authorization):
             for endpoint in _request_endpoints:
                 if endpoint in _ams:
                     _func = getattr(self, f'_use_{endpoint}')
-                    post_args = _func(_context, post_args, _ams)
+                    post_args = _func(_context, post_args, _ams, _entity_type)
                     break
         else:  # The OP does not support any authn methods
             # am I already registered ?
@@ -78,7 +77,9 @@ class Authorization(authorization.Authorization):
         if request_arg == "request":
             service = kwargs.get("service")
             del kwargs["service"]
+            _args = {k: request_args[k] for k in self.msg_type().required_parameters() if k in request_args}
             _req = construct_request_parameter(service, request_args, **kwargs)
-            return {'request': _req}
+            _args["request"] = _req
+            return _args
         else:
             return request_args
