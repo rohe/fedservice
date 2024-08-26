@@ -21,7 +21,7 @@ services:
     ports:
       - "6001:6001"
     environment:
-      FEDSERVICE_ENTITYID: https://example.com:5005
+      FEDSERVICE_ENTITYID: https://example.com:6001
       FEDSERVICE_WEBCERT_KEY: /cert/privkey.pem
       FEDSERVICE_WEBCERT_CHAIN: /cert/chain.pem
       FEDSERVICE_SECRET_KEY: 12345678909987654321
