@@ -98,6 +98,7 @@ class TestRpService(object):
             "entity_configuration")
         self.entity_config_service.upstream_get("context").issuer = OP_ID
         self.registration_service = self.rp["federation_entity"].get_service("registration")
+
     def test_create_reqistration_request(self):
         # Collect information about the OP
         _msgs = create_trust_chain_messages(self.op, self.ta)
@@ -182,6 +183,9 @@ class TestRpService(object):
             request_body_type="jose", method="POST")
 
         # >>>>> The OP as federation entity <<<<<<<<<<
+
+        _reg_endp = self.op["openid_provider"].get_endpoint("registration")
+
         # Collect trust chain for RP->TA
         _msgs = create_trust_chain_messages(self.rp, self.ta)
         with responses.RequestsMock() as rsps:
@@ -190,22 +194,8 @@ class TestRpService(object):
                          adding_headers={"Content-Type": "application/entity-statement+jwt"},
                          status=200)
 
-            _trust_chains = get_verified_trust_chains(self.op,
-                                                      self.rp["federation_entity"].entity_id)
-
-        _metadata = _trust_chains[0].metadata["openid_relying_party"]
-        _metadata.update({
-            "client_id": {"value": "aaaaaaaaa"},
-            "client_secret": {"value": "bbbbbbbbbb"}
-        })
-
-        # This is the registration response from the OP
-        _jwt = _rp_fe.context.create_entity_statement(
-            OP_ID,
-            RP_ID,
-            metadata={"openid_relying_party": _metadata},
-            key_jar=self.op["federation_entity"].keyjar,
-            trust_anchor_id=_trust_chains[0].anchor)
+            _req = _reg_endp.parse_request(_info["request"])
+            resp = _reg_endp.process_request(_req)
 
         # >>>>>>>>>> On the RP"s side <<<<<<<<<<<<<<
         _msgs = create_trust_chain_messages(self.rp, self.ta)
@@ -217,16 +207,16 @@ class TestRpService(object):
                          adding_headers={"Content-Type": "application/entity-statement+jwt"},
                          status=200)
 
-            claims = self.registration_service.parse_response(_jwt, request=_info["body"])
+            claims = self.registration_service.parse_response(resp["response_msg"],
+                                                              request=_info["body"])
 
-        assert set(claims.keys()) == {'application_type',
-                                      'client_id',
+        assert set(claims.keys()) == {'client_id',
+                                      'client_id_issued_at',
                                       'client_secret',
+                                      'client_secret_expires_at',
                                       'default_max_age',
                                       'grant_types',
                                       'id_token_signed_response_alg',
-                                      'jwks',
-                                      'redirect_uris',
                                       'request_object_signing_alg',
                                       'response_modes',
                                       'response_types',

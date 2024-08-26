@@ -260,7 +260,7 @@ class TestAutomatic(object):
 
             # The OP handles the authorization request
             _authz_endpoint = self.oas["oauth_authorization_server"].get_endpoint("authorization")
-            req = _authz_endpoint.parse_request(authn_request.to_dict())
+            req = _authz_endpoint.parse_request(authn_request)
 
         assert "response_type" in req
 

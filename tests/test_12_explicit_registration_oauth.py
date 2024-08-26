@@ -5,8 +5,10 @@ from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 import pytest
 import responses
 
-from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_SERVICES
+from fedservice.defaults import COMBINED_DEFAULT_OAUTH2_SERVICES
 from fedservice.defaults import DEFAULT_OAUTH2_FED_SERVICES
+from fedservice.defaults import OAUTH2_FED_ENDPOINTS
+from fedservice.defaults import federation_services
 from fedservice.entity.function import get_verified_trust_chains
 from . import create_trust_chain_messages
 from .build_federation import build_federation
@@ -18,27 +20,8 @@ TA_ID = "https://ta.example.org"
 RP_ID = "https://rp.example.org"
 AS_ID = "https://op.example.org"
 
-FE_FUNCTIONS = {
-    "trust_chain_collector": {
-        "class": "fedservice.entity.function.trust_chain_collector.TrustChainCollector",
-        "kwargs": {}
-    },
-    "verifier": {
-        "class": "fedservice.entity.function.verifier.TrustChainVerifier",
-        "kwargs": {}
-    },
-    "policy": {
-        "class": "fedservice.entity.function.policy.TrustChainPolicy",
-        "kwargs": {}
-    },
-    "trust_mark_verifier": {
-        "class": "fedservice.entity.function.trust_mark_verifier.TrustMarkVerifier",
-        "kwargs": {}
-    }
-}
-
-OAUTH_SERVICE = DEFAULT_OAUTH2_FED_SERVICES.copy()
-OAUTH_SERVICE.update(DEFAULT_FEDERATION_ENTITY_SERVICES)
+OAUTH_SERVICE = DEFAULT_OAUTH2_FED_SERVICES
+OAUTH_FED_SERVICE = federation_services('entity_configuration', "entity_statement")
 
 FEDERATION_CONFIG = {
     TA_ID: {
@@ -57,7 +40,7 @@ FEDERATION_CONFIG = {
         "entity_type": "oauth_client",
         "trust_anchors": [TA_ID],
         "kwargs": {
-            "federation_services": OAUTH_SERVICE,
+            "federation_services": OAUTH_FED_SERVICE,
             "authority_hints": [TA_ID],
             "services": OAUTH_SERVICE,
             "entity_type_config": {
@@ -78,6 +61,9 @@ FEDERATION_CONFIG = {
         "trust_anchors": [TA_ID],
         "kwargs": {
             "authority_hints": [TA_ID],
+            "entity_type_config": {
+                "endpoint": OAUTH2_FED_ENDPOINTS
+            }
         }
     }
 }
@@ -90,16 +76,13 @@ class TestRpService(object):
         federation = build_federation(FEDERATION_CONFIG)
         self.ta = federation[TA_ID]
         self.rp = federation[RP_ID]
-        self.op = federation[AS_ID]
+        self.oas = federation[AS_ID]
 
-        self.entity_config_service = self.rp["federation_entity"].get_service(
-            "entity_configuration")
-        self.entity_config_service.upstream_get("context").issuer = AS_ID
-        self.registration_service = self.rp["federation_entity"].get_service("registration")
+        self.registration_service = self.rp["oauth_client"].get_service("registration")
 
     def test_create_reqistration_request(self):
         # Collect information about the OP
-        _msgs = create_trust_chain_messages(self.op, self.ta)
+        _msgs = create_trust_chain_messages(self.oas, self.ta)
 
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():
@@ -108,7 +91,7 @@ class TestRpService(object):
                          status=200)
 
             _trust_chains = get_verified_trust_chains(self.rp,
-                                                      self.op["federation_entity"].entity_id)
+                                                      self.oas["federation_entity"].entity_id)
 
         self.rp["oauth_client"].context.server_metadata = _trust_chains[0].metadata
         self.rp["federation_entity"].client.context.server_metadata = _trust_chains[0].metadata
@@ -141,7 +124,7 @@ class TestRpService(object):
 
     def test_parse_registration_response(self):
         # Collect trust chain OP->TA
-        _msgs = create_trust_chain_messages(self.op, self.ta)
+        _msgs = create_trust_chain_messages(self.oas, self.ta)
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():
                 rsps.add("GET", _url, body=_jwks,
@@ -149,7 +132,7 @@ class TestRpService(object):
                          status=200)
 
             _trust_chains = get_verified_trust_chains(self.rp,
-                                                      self.op["federation_entity"].entity_id)
+                                                      self.oas["federation_entity"].entity_id)
         # Store it in a number of places
         self.rp["oauth_client"].context.server_metadata = _trust_chains[0].metadata
         self.rp["federation_entity"].client.context.server_metadata = _trust_chains[0].metadata
@@ -169,46 +152,39 @@ class TestRpService(object):
             request_body_type="jose", method="POST")
 
         # >>>>> The OP as federation entity <<<<<<<<<<
+
+        _reg_endp = self.oas["oauth_authorization_server"].get_endpoint("registration")
+
         # Collect trust chain for RP->TA
         _msgs = create_trust_chain_messages(self.rp, self.ta)
+        del _msgs['https://rp.example.org/.well-known/openid-federation']
+
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():
                 rsps.add("GET", _url, body=_jwks,
                          adding_headers={"Content-Type": "application/entity-statement+jwt"},
                          status=200)
 
-            _trust_chains = get_verified_trust_chains(self.op,
-                                                      self.rp["federation_entity"].entity_id)
-
-        _metadata = _trust_chains[0].metadata["oauth_client"]
-        _metadata.update({
-            "client_id": {"value": "aaaaaaaaa"},
-            "client_secret": {"value": "bbbbbbbbbb"}
-        })
-
-        # This is the registration response from the OP
-        _jwt = _rp_fe.context.create_entity_statement(
-            AS_ID,
-            RP_ID,
-            metadata={"oauth_client": _metadata},
-            key_jar=self.op["federation_entity"].keyjar,
-            trust_anchor_id=_trust_chains[0].anchor)
+            _req = _reg_endp.parse_request(_info["request"])
+            resp = _reg_endp.process_request(_req)
 
         # >>>>>>>>>> On the RP"s side <<<<<<<<<<<<<<
         _msgs = create_trust_chain_messages(self.rp, self.ta)
-        # Already has the TA EC
+        # Already have this EC
         del _msgs['https://ta.example.org/.well-known/openid-federation']
+
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():
                 rsps.add("GET", _url, body=_jwks,
                          adding_headers={"Content-Type": "application/entity-statement+jwt"},
                          status=200)
 
-            claims = self.registration_service.parse_response(_jwt, request=_info["body"])
+            claims = self.registration_service.parse_response(resp["response_msg"],
+                                                              request=_info["body"])
 
         assert set(claims.keys()) == {'client_id',
+                                      'client_id_issued_at',
                                       'client_secret',
-                                      'jwks',
-                                      'redirect_uris',
+                                      'client_secret_expires_at',
                                       'response_types',
                                       'token_endpoint_auth_method'}

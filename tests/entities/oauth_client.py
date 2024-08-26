@@ -3,6 +3,7 @@ from typing import Optional
 
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 
+from fedservice.defaults import OAUTH2_FED_ENDPOINTS
 from fedservice.utils import make_federation_combo
 
 
@@ -35,7 +36,8 @@ def main(entity_id: str,
                 "token_endpoint_auth_method": "client_secret_basic",
                 "token_endpoint_auth_signing_alg": "ES256"
             },
-            "server_type": "oauth2"
+            "server_type": "oauth2",
+            "endpoint": OAUTH2_FED_ENDPOINTS
         }
 
     entity = make_federation_combo(

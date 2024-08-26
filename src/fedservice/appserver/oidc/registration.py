@@ -3,11 +3,10 @@ import logging
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.server.oidc import registration
 
-from fedservice.entity.utils import get_federation_entity
-from fedservice.entity.function import apply_policies
-from fedservice.entity.function import collect_trust_chains
-from fedservice.entity.function import verify_trust_chains
+from fedservice import save_trust_chains
+from fedservice.entity.function import get_verified_trust_chains
 from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
+from fedservice.entity.utils import get_federation_entity
 
 logger = logging.getLogger(__name__)
 
@@ -36,28 +35,36 @@ class Registration(registration.Registration):
         :return:
         """
         payload = verify_self_signed_signature(request)
-        opponent_entity_type = set(payload['metadata'].keys()).difference({'federation_entity'}).pop()
+        opponent_entity_type = set(payload['metadata'].keys()).difference(
+            {'federation_entity'}).pop()
         _federation_entity = get_federation_entity(self)
 
         # Collect trust chains
-        _chains, _ = collect_trust_chains(self.upstream_get('unit'),
-                                          entity_id=payload['sub'],
-                                          signed_entity_configuration=request)
-        _trust_chains = verify_trust_chains(_federation_entity, _chains, request)
-        _trust_chains = apply_policies(_federation_entity, _trust_chains)
+        _trust_chains = get_verified_trust_chains(self, entity_id=payload['sub'])
+        save_trust_chains(self.upstream_get("context"), _trust_chains)
+
         trust_chain = _federation_entity.pick_trust_chain(_trust_chains)
+
         _federation_entity.trust_chain_anchor = trust_chain.anchor
+
+        req = RegistrationRequest(**payload["metadata"][opponent_entity_type])
+        req["client_id"] = payload['sub']
         # Perform non-federation registration
-        req = RegistrationRequest(**trust_chain.metadata[opponent_entity_type])
         response_info = self.non_fed_process_request(req, **kwargs)
         if "response_args" in response_info:
             _context = _federation_entity.context
+
+            for item in ["jwks", "jwks_uri", "signed_jwks_uri"]:
+                try:
+                    del req[item]
+                except KeyError:
+                    pass
+
             _policy_metadata = req.to_dict()
             _policy_metadata.update(response_info['response_args'])
             # Should I filter out stuff I have no reason to change ?
             _policy_metadata = {k: v for k, v in _policy_metadata.items() if k not in [
                 'application_type',
-                'jwks',
                 'redirect_uris']}
             entity_statement = _context.create_entity_statement(
                 _federation_entity.upstream_get('attribute', 'entity_id'),
@@ -65,6 +72,7 @@ class Registration(registration.Registration):
                 trust_anchor_id=trust_chain.anchor,
                 metadata={opponent_entity_type: _policy_metadata},
                 aud=payload['iss'],
+                authority_hints=_federation_entity.context.authority_hints
             )
             response_info["response_msg"] = entity_statement
             del response_info["response_args"]
@@ -72,6 +80,8 @@ class Registration(registration.Registration):
         return response_info
 
     def non_fed_process_request(self, req, **kwargs):
+        if "new_id" not in kwargs:
+            kwargs["net_id"] = False
         # handle the registration request as in the non-federation case.
         return registration.Registration.process_request(self, req, authn=None, **kwargs)
 

@@ -171,24 +171,3 @@ class ServerEntity(ServerUnit):
                 target.endpoint_to_authn_method[method.action] = method
             except AttributeError:
                 pass
-
-    def setup_login_hint_lookup(self):
-        _conf = self.config.get("login_hint_lookup")
-        if _conf:
-            _userinfo = None
-            _kwargs = _conf.get("kwargs")
-            if _kwargs:
-                _userinfo_conf = _kwargs.get("userinfo")
-                if _userinfo_conf:
-                    _userinfo = init_user_info(_userinfo_conf, self.context.cwd)
-
-            if _userinfo is None:
-                _userinfo = self.context.userinfo
-
-            self.context.login_hint_lookup = init_service(_conf)
-            self.context.login_hint_lookup.userinfo = _userinfo
-
-    def setup_client_authn_methods(self):
-        self.context.client_authn_methods = client_auth_setup(
-            self.unit_get, self.config.get("client_authn_methods")
-        )

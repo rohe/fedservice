@@ -101,19 +101,19 @@ DEFAULT_FEDERATION_ENTITY_SERVICES = FEDERATION_ENTITY_SERVICES
 OIDC_FED_ENDPOINTS = {
     'oidc_authorization': {
         'class': 'fedservice.appserver.oidc.authorization.Authorization'},
-    'oidc_discovery': {
-        'class': 'fedservice.appserver.oidc.provider_config.ProviderConfiguration'},
     'oidc_registration': {
         'class': 'fedservice.appserver.oidc.registration.Registration'},
 }
 
 OAUTH2_FED_ENDPOINTS = {
     'oauth_authorization': {
-        'class': 'fedservice.appserver.oauth2.authorization.Authorization'},
-    'oauth_discovery': {
-        'class': 'fedservice.appserver.oauth2.server_metadata.ServerMetadata'},
+        "path": "authz",
+        'class': 'fedservice.appserver.oauth2.authorization.Authorization'
+    },
     'oauth_registration': {
-        'class': 'fedservice.appserver.oauth2.registration.Registration'},
+        "path": "registration",
+        'class': 'fedservice.appserver.oauth2.registration.Registration'
+    }
 }
 
 FEDERATION_ENDPOINTS = {
