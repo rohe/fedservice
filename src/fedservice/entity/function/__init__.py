@@ -91,6 +91,8 @@ def collect_trust_chains(unit,
         chains = tree2chains(tree)
         logger.debug("%d chains", len(chains))
         return chains, signed_entity_configuration
+    elif tree == {}:
+        return [], signed_entity_configuration
     else:
         return [], None
 

@@ -595,14 +595,14 @@ class TrustMarkRequest(Message):
         "trust_mark_id": SINGLE_REQUIRED_STRING
     }
 
-class PIDQueryRequest(Message):
+class WhoRequest(Message):
     c_param = {
         "entity_type": SINGLE_OPTIONAL_STRING,
         "credential_type": SINGLE_OPTIONAL_STRING,
         "trust_mark_id": SINGLE_OPTIONAL_STRING
     }
 
-class PIDQueryResponse(Message):
+class WhoResponse(Message):
     c_param = {
-        "servers_to_use": OPTIONAL_LIST_OF_STRINGS
+        "entities_to_use": REQUIRED_LIST_OF_STRINGS
     }

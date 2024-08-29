@@ -74,10 +74,10 @@ SERVICES = {
         "class": 'fedservice.entity.client.list.List',
         "kwargs": {}
     },
-    "metadata_verification": {
-        "class": "fedservice.entity.client.metadata_verification.MetadataVerification",
+    "who": {
+        "class": 'fedservice.entity.client.who.Who',
         "kwargs": {}
-    }
+    },
 }
 
 
@@ -152,9 +152,9 @@ FEDERATION_ENDPOINTS = {
         "class": 'fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList',
         "kwargs": {}
     },
-    "metadata_verification": {
-        "path": "verifier",
-        "class": "fedservice.entity.server.metadata_verification.MetadataVerification",
+    "who": {
+        "path": "who",
+        "class": "fedservice.entity.server.who.Who",
         "kwargs": {}
     }
 }
