@@ -11,6 +11,7 @@ from idpyoidc.configure import Configuration
 from idpyoidc.impexp import ImpExp
 
 from fedservice.entity.claims import FederationEntityClaims
+from fedservice.entity.utils import get_federation_entity
 from fedservice.entity_statement.create import create_entity_statement
 
 
@@ -115,20 +116,7 @@ class FederationContext(ImpExp):
         self.kid = {"sig": {}, "enc": {}}
 
     def supports(self):
-        res = {}
-        if self.upstream_get:
-            _services = self.upstream_get('services')
-            if _services:
-                for service in _services:
-                    res.update(service.supports())
-
-            _endpoints = self.upstream_get('endpoints')
-            if _endpoints:
-                for name, endp in _endpoints.items():
-                    res.update(endp.supports())
-
-        res.update(self.claims.supports())
-        return res
+        return self.claims._supports
 
     def setup_client_authn_methods(self):
         self.client_authn_methods = client_auth_setup(self.config.get("client_authn_methods"))

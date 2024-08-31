@@ -70,6 +70,8 @@ class ClientEntity(ClientUnit):
         else:
             self.metadata_class = "fedservice.message.OIDCRPMetadata"
 
+        self.metadata = {}
+
         ClientUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, context=context, config=config,
                             entity_id=entity_id, key_conf=key_conf)

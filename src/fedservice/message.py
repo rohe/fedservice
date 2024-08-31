@@ -49,17 +49,18 @@ class AuthorizationServerMetadata(Message):
         "response_types_supported": OPTIONAL_LIST_OF_STRINGS,
         "response_modes_supported": OPTIONAL_LIST_OF_STRINGS,
         "grant_types_supported": OPTIONAL_LIST_OF_STRINGS,
-        "token_auth_methods": OPTIONAL_LIST_OF_STRINGS,
-        "token_auth_signing_algs": OPTIONAL_LIST_OF_STRINGS,
+        "token_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "token_auth_signing_algs_supported": OPTIONAL_LIST_OF_STRINGS,
         "service_documentation": SINGLE_OPTIONAL_STRING,
         "ui_locales_supported": OPTIONAL_LIST_OF_STRINGS,
         "op_policy_uri": SINGLE_OPTIONAL_STRING,
+        "op_tos_uri": SINGLE_OPTIONAL_STRING,
         "revocation_endpoint": SINGLE_OPTIONAL_STRING,
-        "revocation_auth_methods": SINGLE_OPTIONAL_JSON,
-        "revocation_auth_signing_algs": SINGLE_OPTIONAL_JSON,
+        "revocation_auth_methods_supported": SINGLE_OPTIONAL_JSON,
+        "revocation_auth_signing_algs_supported": SINGLE_OPTIONAL_JSON,
         "introspection_endpoint": SINGLE_OPTIONAL_STRING,
-        "introspection_auth_methods": OPTIONAL_LIST_OF_STRINGS,
-        "introspection_auth_signing_algs": OPTIONAL_LIST_OF_STRINGS,
+        "introspection_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "introspection_auth_signing_algs_supported": OPTIONAL_LIST_OF_STRINGS,
         "code_challenge_methods_supported": OPTIONAL_LIST_OF_STRINGS,
         # below Federation additions
         'client_registration_types_supported': OPTIONAL_LIST_OF_STRINGS,
@@ -94,7 +95,7 @@ SINGLE_OPTIONAL_NAMING_CONSTRAINTS = (Message, False, msg_ser, naming_constraint
 
 
 class FederationEntity(Message):
-    """Class representing a Federation Entity."""
+    """Class representing Federation Entity metadata."""
     c_param = {
         "federation_fetch_endpoint": SINGLE_REQUIRED_STRING,
         "federation_fetch_auth_methods": OPTIONAL_LIST_OF_STRINGS,

@@ -6,6 +6,8 @@ from cryptojwt import KeyJar
 from cryptojwt import as_unicode
 from cryptojwt.jws.jws import factory
 from cryptojwt.utils import importer
+from idpyoidc.client.claims.transform import preferred_to_registered
+from idpyoidc.client.claims.transform import supported_to_preferred
 from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.server.util import execute
 from idpyoidc.util import instantiate
@@ -72,6 +74,8 @@ class FederationEntity(Unit):
         self.context = FederationContext(entity_id=entity_id, upstream_get=self.unit_get,
                                          authority_hints=authority_hints, keyjar=self.keyjar,
                                          preference=preference)
+
+        self.map_supported_to_preferred(preference=preference)
 
         if client_authn_methods:
             self.context.client_authn_methods = client_auth_setup(client_authn_methods)
@@ -362,3 +366,28 @@ class FederationEntity(Unit):
 
         _keyjar.import_jwks(jwks, entity_id)
         self.trust_anchors[entity_id] = jwks
+
+    def supports(self):
+        res = {}
+        for name, service in self.client.service.items():
+            res.update(service.supports())
+
+        for name, endp in self.server.endpoint.items():
+            res.update(endp.supports())
+
+        res.update(self.context.claims._supports)
+        return res
+    def map_supported_to_preferred(self, preference, info: Optional[dict] = None):
+        self.context.claims.prefer = supported_to_preferred(
+            self.supports(), preference, base_url=self.context.base_url, info=info
+        )
+        return self.context.claims.prefer
+
+    def map_preferred_to_registered(self, registration_response: Optional[dict] = None):
+        self.context.claims.use = preferred_to_registered(
+            self.context.claims.prefer,
+            supported=self.supports(),
+            registration_response=registration_response,
+        )
+
+        return self.context.claims.use

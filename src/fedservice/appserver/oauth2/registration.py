@@ -38,7 +38,7 @@ class Registration(Endpoint):
     response_format = 'jose'
     endpoint_name = "federation_registration_endpoint"
     name = "registration"
-    _status = {
+    _supports = {
         "client_registration_types_supported": ["automatic", "explicit"]
     }
 
