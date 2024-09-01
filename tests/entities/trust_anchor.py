@@ -15,11 +15,14 @@ def main(entity_id: str,
          preference: Optional[dict] = None,
          subordinates: Optional[list] = None,
          endpoints: Optional[list] = None,
-         key_config: Optional[dict] = None):
+         key_config: Optional[dict] = None,
+         services: Optional[list] = None):
     if not endpoints:
         endpoints = TA_ENDPOINTS
     if not key_config:
         key_config = {"key_defs": DEFAULT_KEY_DEFS}
+    if not services:
+        services = ["entity_configuration", "entity_statement"]
 
     ta = make_federation_entity(
         entity_id,
@@ -28,7 +31,8 @@ def main(entity_id: str,
         endpoints=endpoints,
         subordinate=subordinates,
         authority_hints=authority_hints,
-        trust_anchors=trust_anchors
+        trust_anchors=trust_anchors,
+        services=services
     )
 
     return ta

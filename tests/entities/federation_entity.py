@@ -14,7 +14,7 @@ def main(entity_id: str,
          endpoints: Optional[list] = None,
          key_config: Optional[dict] = None,
          httpc_params: Optional[dict] = None,
-         service: Optional[list] = None,
+         services: Optional[list] = None,
          functions: Optional[Union[list, dict]] = None,
          **kwargs
          ):
@@ -29,6 +29,8 @@ def main(entity_id: str,
         }
     if not endpoints:
         endpoints = ["entity_configuration"]
+    if not services:
+        services = ["entity_configuration", "entity_statement"]
 
     entity = make_federation_entity(
         entity_id,
@@ -39,6 +41,7 @@ def main(entity_id: str,
         trust_anchors=trust_anchors,
         httpc_params=httpc_params,
         functions=functions,
+        services=services,
         **kwargs
     )
     return entity

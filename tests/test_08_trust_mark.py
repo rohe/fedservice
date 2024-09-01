@@ -1,10 +1,11 @@
 from urllib.parse import urlparse
 
-from cryptojwt.jws.jws import factory
 import pytest
 import responses
+from cryptojwt.jws.jws import factory
 
-from fedservice.defaults import INTERMEDIATE_ENDPOINTS
+from fedservice.defaults import federation_endpoints
+from fedservice.defaults import federation_services
 from fedservice.message import TrustMark
 from fedservice.message import TrustMarkRequest
 from tests import create_trust_chain_messages
@@ -18,7 +19,8 @@ KEYSPEC = [
 TM_ID = "https://refeds.org/wp-content/uploads/2016/01/Sirtfi-1.0.pdf"
 TA_ID = "https://anchor.example.com"
 
-TA_ENDPOINTS = INTERMEDIATE_ENDPOINTS.copy()
+TA_ENDPOINTS = federation_endpoints("entity_configuration", "fetch", "list")
+TA_SERVICES = federation_services("entity_configuration", "entity_statement", "trust_mark_status")
 
 TRUST_MARK_ISSUER_ID = "https://tmi.example.com"
 
@@ -26,7 +28,6 @@ FEDERATION_CONFIG = {
     TA_ID: {
         "entity_type": "trust_anchor",
         "subordinates": [TRUST_MARK_ISSUER_ID],
-        "services": ["trust_mark_status"],
         "kwargs": {
             "preference": {
                 "organization_name": "The example federation operator",
@@ -34,11 +35,12 @@ FEDERATION_CONFIG = {
                 "contacts": "operations@ta.example.org"
             },
             "endpoints": TA_ENDPOINTS,
+            "services": TA_SERVICES,
         }
     },
     TRUST_MARK_ISSUER_ID: {
         "entity_type": "trust_mark_issuer",
-        "trust_anchor": [TA_ID],
+        "trust_anchors": [TA_ID],
         "kwargs": {
             "preference": {
                 "organization_name": "Trust Mark Issuer 'R US"
@@ -194,8 +196,18 @@ class TestSignedTrustMark():
                 trust_mark=_trust_mark, trust_anchor=self.ta.entity_id)
 
         assert verified_trust_mark
-        assert set(verified_trust_mark.keys()) == {'iat', 'iss', 'id', 'sub', 'ref', 'exp'}
+        assert set(verified_trust_mark.keys()) == {'iat', 'iss', 'id', 'sub', 'ref'}
 
     def test_metadata(self):
         _metadata = self.tmi.get_metadata()
-        assert len(_metadata["federation_entity"]["jwks"]["keys"]) == 2
+        assert "federation_entity" in _metadata
+        assert set(_metadata["federation_entity"].keys()) == {'federation_resolve_endpoint',
+                                                              'federation_trust_mark_endpoint',
+                                                              'federation_trust_mark_endpoint_auth_methods',
+                                                              'federation_trust_mark_endpoint_auth_signing_alg_values',
+                                                              'federation_trust_mark_list_endpoint',
+                                                              'federation_trust_mark_list_endpoint_auth_methods',
+                                                              'federation_trust_mark_status_endpoint',
+                                                              'federation_trust_mark_status_endpoint_auth_methods',
+                                                              'organization_name'}
+        assert _metadata["federation_entity"]["federation_trust_mark_endpoint"] == 'https://tmi.example.com/trust_mark'

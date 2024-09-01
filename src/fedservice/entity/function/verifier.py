@@ -10,6 +10,7 @@ from fedservice.entity.function import Function
 from fedservice.entity.utils import get_federation_entity
 from fedservice.entity_statement.constraints import meets_restrictions
 from fedservice.entity_statement.statement import TrustChain
+from fedservice.exception import UnknownTrustAnchor
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class TrustChainVerifier(Function):
             if payload['iss'] not in _federation_entity.keyjar:
                 logger.warning(
                     f"Trust chain ending in a trust anchor I do not know: {payload['iss']}", )
-                return False
+                raise UnknownTrustAnchor(payload['iss'])
         else:
             _keyjar = self.upstream_get("attribute", "keyjar")
             if not _keyjar:
@@ -35,7 +36,7 @@ class TrustChainVerifier(Function):
             elif payload['iss'] not in _keyjar:
                 logger.warning(
                     f"Trust chain ending in a trust anchor I do not know: {payload['iss']}", )
-                return False
+                raise UnknownTrustAnchor(payload['iss'])
 
         return True
 

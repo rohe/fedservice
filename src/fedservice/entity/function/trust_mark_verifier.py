@@ -4,6 +4,7 @@ from typing import Optional
 
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
+from fedservice.entity.function import get_verified_trust_chains
 
 from fedservice import message
 from fedservice.entity import apply_policies
@@ -52,9 +53,10 @@ class TrustMarkVerifier(Function):
                 logger.warning("Could not verify the delegation")
 
         # Get trust chain
-        _federation_entity = get_federation_entity(self)
-        _chains, entity_conf = collect_trust_chains(_federation_entity, _trust_mark['iss'])
-        _trust_chains = verify_trust_chains(_federation_entity, _chains, entity_conf)
+        # _federation_entity = get_federation_entity(self)
+        # _chains, entity_conf = collect_trust_chains(_federation_entity, _trust_mark['iss'])
+        # _trust_chains = verify_trust_chains(_federation_entity, _chains, entity_conf)
+        _trust_chains = get_verified_trust_chains(self, _trust_mark['iss'])
         if not _trust_chains:
             logger.warning(f"Could not find any verifiable trust chains for {_trust_mark['iss']}")
             return None
@@ -67,6 +69,7 @@ class TrustMarkVerifier(Function):
 
         # Now try to verify the signature on the trust_mark
         # should have the necessary keys
+        _federation_entity = get_federation_entity(self)
         _jwt = factory(trust_mark)
         keyjar = _federation_entity.get_attribute('keyjar')
 

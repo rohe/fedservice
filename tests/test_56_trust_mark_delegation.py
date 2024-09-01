@@ -107,13 +107,14 @@ FEDERATION_CONFIG = {
 
 @pytest.fixture()
 def tm_receiver():
-    return "https://op.ntnu.no"
+    return "https://entity.example.org"
 
 
 @pytest.fixture()
 def trust_mark_delegation(tm_receiver):
     _jwt = JWT(TRUST_MARK_OWNERS_KEYS, iss=TM_OWNERS_ID, sign_alg='RS256')
-    return _jwt.pack({'sub': TMI_ID})
+    return _jwt.pack({'sub': TMI_ID, "id": SIRTIFI_TRUST_MARK_ID},
+                     jws_headers={"typ":"trust-mark-delegation+jwt"})
 
 
 class TestTrustMarkDelegation():

@@ -131,6 +131,7 @@ class ServerEntity(ServerUnit):
         return self
 
     def get_metadata(self, *args):
+
         if self.server_type == "oidc":
             return {"openid_provider": self.context.provider_info}
         else:
