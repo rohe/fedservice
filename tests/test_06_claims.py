@@ -45,7 +45,7 @@ class TestClaimsEntity():
                                               'trust_mark_issuers'}
 
         assert set(self.entity.context.claims.prefer.keys()) == {
-            "organization_name", "homepage_uri", "contacts", "jwks"
+            "organization_name", "homepage_uri", "contacts"
         }
 
         assert self.entity.get_endpoint_claims() == {
@@ -60,7 +60,6 @@ class TestClaimsEntity():
             'federation_fetch_endpoint',
             'federation_list_endpoint',
             'homepage_uri',
-            'jwks',
             'organization_name'}
 
         # stored under 2 IDs
@@ -123,7 +122,7 @@ class TestClaimsFRP():
         _pref = self.combo.get_preferences()
         assert set(_pref.keys()) == {'federation_entity', "openid_relying_party"}
         assert set(_pref["federation_entity"].keys()) == {'contacts', 'federation_fetch_endpoint',
-                                                          'federation_list_endpoint', "jwks",
+                                                          'federation_list_endpoint',
                                                           'homepage_uri', 'organization_name'}
         assert set(_pref["openid_relying_party"].keys()) == {'application_type',
                                                              'default_max_age',

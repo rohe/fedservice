@@ -378,8 +378,11 @@ class FederationEntity(Unit):
         res.update(self.context.claims._supports)
         return res
     def map_supported_to_preferred(self, preference, info: Optional[dict] = None):
+        _base_url = getattr(self, "entity_id", getattr(self.context, "entity_id", None))
+        if _base_url is None:
+            raise ValueError("Missing entity_id")
         self.context.claims.prefer = supported_to_preferred(
-            self.supports(), preference, base_url=self.context.base_url, info=info
+            self.supports(), preference, base_url="", info=info
         )
         return self.context.claims.prefer
 
