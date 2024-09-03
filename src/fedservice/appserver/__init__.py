@@ -128,12 +128,11 @@ class ServerEntity(ServerUnit):
     def get_server(self, *args):
         return self
 
-    def get_metadata(self, *args):
+    def get_metadata(self, entity_type="", *args):
+        if not entity_type:
+            entity_type = self.name
         _claims = self.get_context().claims
-        if not _claims.use:
-            _claims.use = preferred_to_registered(_claims.prefer, supported=self.supports())
-
-        metadata = self.get_context().claims.use
+        metadata = _claims.get_server_metadata(endpoint=self.endpoint.values())
         # remove these from the metadata
         for item in ["jwks", "jwks_uri", "signed_jwks_uri"]:
             try:
@@ -141,13 +140,7 @@ class ServerEntity(ServerUnit):
             except KeyError:
                 pass
         # collect endpoints
-        metadata.update(self.get_endpoint_claims())
-        # _issuer = getattr(self.server.context, "trust_mark_server", None)
-        return {"federation_entity": metadata}
-        if self.server_type == "oidc":
-            return {"openid_provider": self.context.provider_info}
-        else:
-            return {"oauth_authorization_server": self.context.provider_info}
+        return {entity_type: metadata}
 
     def pick_guise(self, entity_type: Optional[str] = "", *args):
         if not entity_type:

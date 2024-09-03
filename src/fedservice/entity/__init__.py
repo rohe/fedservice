@@ -127,22 +127,21 @@ class FederationEntity(Unit):
             except AttributeError:
                 return None
 
-    def get_metadata(self, *args):
-        _claims = self.get_context().claims
-        if not _claims.use:
-            _claims.use = preferred_to_registered(_claims.prefer, supported=self.supports())
+    def get_metadata(self, entity_type="federation_entity", *args):
+        _context = self.get_context()
+        _claims = _context.claims
 
-        metadata = self.get_context().claims.use
+        metadata = _claims.get_server_metadata(endpoints=self.get_all_endpoints())
+
         # remove these from the metadata
         for item in ["jwks", "jwks_uri", "signed_jwks_uri"]:
             try:
                 del metadata[item]
             except KeyError:
                 pass
-        # collect endpoints
-        metadata.update(self.get_endpoint_claims())
+
         # _issuer = getattr(self.server.context, "trust_mark_server", None)
-        return {"federation_entity": metadata}
+        return {entity_type: metadata}
 
     def get_preferences(self):
         preference = self.get_context().claims.prefer
@@ -152,7 +151,7 @@ class FederationEntity(Unit):
 
     def get_all_endpoints(self, *arg):
         if self.server:
-            return list(self.server.endpoint.keys())
+            return list(self.server.endpoint.values())
         else:
             return None
 

@@ -138,14 +138,14 @@ class ClientEntity(ClientUnit):
     def get_client_id(self):
         return self.entity_id
 
-    def get_metadata(self, *args):
-        metadata = self.context.claims.get_use()
-        _mc = instantiate(self.metadata_class, **metadata)
-        _mc.weed()
-        if self.client_type == "oauth2":
-            return {"oauth_client": _mc.to_dict()}
-        else:
-            return {"openid_relying_party": _mc.to_dict()}
+    def get_metadata(self, entity_type="", *args):
+        if not entity_type:
+            if self.client_type == "oauth2":
+                entity_type = "oauth_client"
+            elif self.client_type == "oidc":
+                entity_type = "openid_relying_party"
+
+        return self.context.claims.get_server_metadata(entity_type=entity_type)
 
     def do_request(
             self,

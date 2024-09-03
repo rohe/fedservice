@@ -35,6 +35,8 @@ class TestFedOauth2Client:
         # These are all the available configuration parameters
         assert set(self.supported.keys()) == {'client_name',
                                               'client_uri',
+                                              'client_id',
+                                              'client_secret',
                                               'contacts',
                                               'grant_types',
                                               'grant_types_supported',
@@ -85,6 +87,8 @@ class TestFedOauth2Client:
             set(AuthorizationServerMetadata.c_param.keys())
         ) == {'client_name',
               'client_uri',
+              'client_id',
+              'client_secret',
               'contacts',
               'grant_types',
               'jwks',
