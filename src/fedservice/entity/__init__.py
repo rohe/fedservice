@@ -88,8 +88,6 @@ class FederationEntity(Unit):
             else:
                 self.persistence = _class(**kwargs)
 
-        self.metadata = self.get_metadata()
-
     def get_context(self, *arg):
         return self.context
 
@@ -130,15 +128,17 @@ class FederationEntity(Unit):
                 return None
 
     def get_metadata(self, *args):
-        _metadata = getattr(self, "metadata", None)
-        if _metadata :
-            return _metadata
-
         _claims = self.get_context().claims
         if not _claims.use:
             _claims.use = preferred_to_registered(_claims.prefer, supported=self.supports())
 
         metadata = self.get_context().claims.use
+        # remove these from the metadata
+        for item in ["jwks", "jwks_uri", "signed_jwks_uri"]:
+            try:
+                del metadata[item]
+            except KeyError:
+                pass
         # collect endpoints
         metadata.update(self.get_endpoint_claims())
         # _issuer = getattr(self.server.context, "trust_mark_server", None)

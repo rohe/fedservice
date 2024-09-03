@@ -15,9 +15,7 @@ from idpyoidc.server import OPConfiguration
 from idpyoidc.server import allow_refresh_token
 from idpyoidc.server import authz
 from idpyoidc.server import build_endpoints
-from idpyoidc.server.client_authn import client_auth_setup
 from idpyoidc.server.endpoint_context import init_service
-from idpyoidc.server.endpoint_context import init_user_info
 from idpyoidc.server.user_authn.authn_context import populate_authn_broker
 from idpyoidc.server.util import execute
 
@@ -131,7 +129,21 @@ class ServerEntity(ServerUnit):
         return self
 
     def get_metadata(self, *args):
+        _claims = self.get_context().claims
+        if not _claims.use:
+            _claims.use = preferred_to_registered(_claims.prefer, supported=self.supports())
 
+        metadata = self.get_context().claims.use
+        # remove these from the metadata
+        for item in ["jwks", "jwks_uri", "signed_jwks_uri"]:
+            try:
+                del metadata[item]
+            except KeyError:
+                pass
+        # collect endpoints
+        metadata.update(self.get_endpoint_claims())
+        # _issuer = getattr(self.server.context, "trust_mark_server", None)
+        return {"federation_entity": metadata}
         if self.server_type == "oidc":
             return {"openid_provider": self.context.provider_info}
         else:
