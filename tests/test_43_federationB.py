@@ -114,5 +114,5 @@ class TestComboCollect(object):
         assert trust_chain.metadata
         assert set(trust_chain.metadata.keys()) == {'openid_relying_party', 'federation_entity'}
         assert set(trust_chain.metadata['federation_entity'].keys()) == {
-            'organization_name', 'homepage_uri', 'contacts', "jwks"}
+            'organization_name', 'homepage_uri', 'contacts'}
         assert trust_chain.metadata['federation_entity']["contacts"] == 'operations@rp.example.com'

@@ -126,25 +126,18 @@ class TestClaimsFRP():
                                                           'homepage_uri', 'organization_name'}
         _keys = [k for k, v in _pref["openid_relying_party"].items() if v != []]
         assert set(_keys) == {'application_type',
-                              'callback_uris',
-                              'client_id',
-                              'client_secret',
                               'default_max_age',
-                              'encrypt_request_object_supported',
-                              'encrypt_userinfo_supported',
-                              'grant_types_supported',
-                              'id_token_signing_alg_values_supported',
+                              'grant_types',
+                              'id_token_signed_response_alg',
                               'jwks_uri',
                               'redirect_uris',
-                              'request_object_signing_alg_values_supported',
-                              'request_parameter_supported',
-                              'response_modes_supported',
-                              'response_types_supported',
-                              'scopes_supported',
-                              'subject_types_supported',
-                              'token_endpoint_auth_methods_supported',
-                              'token_endpoint_auth_signing_alg_values_supported',
-                              'userinfo_signing_alg_values_supported'}
+                              'request_object_signing_alg',
+                              'response_modes',
+                              'response_types',
+                              'subject_type',
+                              'token_endpoint_auth_method',
+                              'token_endpoint_auth_signing_alg',
+                              'userinfo_signed_response_alg'}
 
         # IN this case the Combo has no keys, The federation entity and the openid relying party has
         # separate key jars. Same initial key owner IDs in both keyjars.

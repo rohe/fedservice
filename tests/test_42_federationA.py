@@ -84,7 +84,7 @@ class TestComboCollect(object):
 
         assert trust_chain.metadata
         assert set(trust_chain.metadata.keys()) == {'federation_entity', 'openid_provider'}
-        assert set(trust_chain.metadata['federation_entity'].keys()) == {'jwks'}
+        assert set(trust_chain.metadata['federation_entity'].keys()) == set()
 
         assert trust_chain.is_expired() is False
 

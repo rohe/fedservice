@@ -21,6 +21,7 @@ from idpyoidc.server.util import execute
 
 from fedservice.entity.claims import OPClaims
 from fedservice.message import AuthorizationServerMetadata
+from fedservice.message import FederationEntity
 from fedservice.server import ServerUnit
 
 logger = logging.getLogger(__name__)
@@ -108,7 +109,7 @@ class ServerEntity(ServerUnit):
 
         self.context.provider_info = self.context.claims.get_server_metadata(
             endpoints=self.endpoint.values(),
-            metadata_schema=FederationEntity,
+            metadata_schema=self.metadata_schema,
         )
         self.context.provider_info["issuer"] = self.context.entity_id
         self.context.metadata = self.context.provider_info
@@ -142,7 +143,8 @@ class ServerEntity(ServerUnit):
         if not entity_type:
             entity_type = self.name
         _claims = self.get_context().claims
-        metadata = _claims.get_server_metadata(endpoint=self.endpoint.values())
+        metadata = _claims.get_server_metadata(endpoints=self.endpoint.values(),
+                                               metadata_schema=self.metadata_schema)
         # remove these from the metadata
         for item in ["jwks", "jwks_uri", "signed_jwks_uri"]:
             try:

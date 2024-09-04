@@ -29,6 +29,8 @@ from idpyoidc.util import instantiate
 from fedservice.defaults import COMBINED_DEFAULT_OAUTH2_SERVICES
 from fedservice.defaults import COMBINED_DEFAULT_OIDC_SERVICES
 from fedservice.entity.claims import RPClaims
+from fedservice.message import OauthClientMetadata
+from fedservice.message import OIDCRPMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -66,9 +68,9 @@ class ClientEntity(ClientUnit):
         self.entity_id = entity_id or config.get("entity_id", config.get("client_id", ""))
 
         if self.client_type == "oauth2":
-            self.metadata_class = "fedservice.message.OauthClientMetadata"
+            self.metadata_class = OauthClientMetadata
         else:
-            self.metadata_class = "fedservice.message.OIDCRPMetadata"
+            self.metadata_class = OIDCRPMetadata
 
         self.metadata = {}
 
@@ -97,7 +99,7 @@ class ClientEntity(ClientUnit):
                 config['key_conf'] = key_conf
             self.context = ServiceContext(
                 config=config, jwks_uri=jwks_uri, key_conf=key_conf, upstream_get=self.unit_get,
-                keyjar=self.keyjar, metadata_class=RPClaims(), client_type=self.client_type,
+                keyjar=self.keyjar, metadata_class=self.metadata_class, client_type=self.client_type,
                 entity_id=self.entity_id
             )
 
@@ -145,7 +147,8 @@ class ClientEntity(ClientUnit):
             elif self.client_type == "oidc":
                 entity_type = "openid_relying_party"
 
-        return self.context.claims.get_server_metadata(entity_type=entity_type)
+        return self.context.claims.get_client_metadata(entity_type=entity_type,
+                                                       metadata_schema=self.metadata_class)
 
     def do_request(
             self,

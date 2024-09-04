@@ -110,7 +110,7 @@ class TestComboCollect(object):
         assert trust_chain.metadata
         assert set(trust_chain.metadata.keys()) == {'federation_entity', 'openid_relying_party'}
         assert set(trust_chain.metadata['federation_entity'].keys()) == {
-            'organization_name', 'homepage_uri', 'contacts', "jwks"}
+            'organization_name', 'homepage_uri', 'contacts'}
 
     def test_provider_info_discovery(self):
         _rp_fe = self.rp['federation_entity']

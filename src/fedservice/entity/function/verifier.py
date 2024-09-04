@@ -28,7 +28,7 @@ class TrustChainVerifier(Function):
             if payload['iss'] not in _federation_entity.keyjar:
                 logger.warning(
                     f"Trust chain ending in a trust anchor I do not know: {payload['iss']}", )
-                raise UnknownTrustAnchor(payload['iss'])
+                return False
         else:
             _keyjar = self.upstream_get("attribute", "keyjar")
             if not _keyjar:
@@ -36,7 +36,7 @@ class TrustChainVerifier(Function):
             elif payload['iss'] not in _keyjar:
                 logger.warning(
                     f"Trust chain ending in a trust anchor I do not know: {payload['iss']}", )
-                raise UnknownTrustAnchor(payload['iss'])
+                return False
 
         return True
 

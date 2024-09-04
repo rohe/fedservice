@@ -11,6 +11,7 @@ from idpyoidc.server.util import execute
 from idpyoidc.util import instantiate
 from requests import request
 
+from fedservice import message
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import get_payload
@@ -80,7 +81,7 @@ class FederationEntity(Unit):
 
         self.context.provider_info = self.context.claims.get_server_metadata(
             endpoints=self.server.endpoint.values(),
-            metadata_schema=FederationEntity,
+            metadata_schema=message.FederationEntity,
         )
         self.context.provider_info["issuer"] = self.context.entity_id
         self.context.metadata = self.context.provider_info
