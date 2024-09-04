@@ -6,7 +6,6 @@ from cryptojwt import as_unicode
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 from cryptojwt.utils import importer
-from idpyoidc.client.claims.transform import preferred_to_registered
 from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.server.util import execute
 from idpyoidc.util import instantiate
@@ -78,6 +77,13 @@ class FederationEntity(Unit):
             self.context.client_authn_methods = client_auth_setup(client_authn_methods)
 
         self.trust_chain = {}
+
+        self.context.provider_info = self.context.claims.get_server_metadata(
+            endpoints=self.server.endpoint.values(),
+            metadata_schema=FederationEntity,
+        )
+        self.context.provider_info["issuer"] = self.context.entity_id
+        self.context.metadata = self.context.provider_info
 
         if persistence:
             _storage = execute(persistence["kwargs"]["storage"])

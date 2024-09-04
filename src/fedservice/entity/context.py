@@ -5,13 +5,12 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
-from idpyoidc.client.claims.transform import preferred_to_registered
 from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.configure import Configuration
 from idpyoidc.impexp import ImpExp
+from idpyoidc.transform import preferred_to_registered
 
 from fedservice.entity.claims import FederationEntityClaims
-from fedservice.entity.utils import get_federation_entity
 from fedservice.entity_statement.create import create_entity_statement
 
 

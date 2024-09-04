@@ -2,9 +2,8 @@ from typing import Callable
 
 import pytest
 from cryptojwt.utils import importer
-from idpyoidc.client.claims.transform import supported_to_preferred
+from idpyoidc.transform import supported_to_preferred
 
-# from idpyoidc.client.claims.transform import supported_to_preferred
 from fedservice.appclient.claims.oauth2 import Claims
 from fedservice.message import AuthorizationServerMetadata
 from fedservice.message import OauthClientMetadata

@@ -100,7 +100,10 @@ DEFAULT_FEDERATION_ENTITY_SERVICES = FEDERATION_ENTITY_SERVICES
 
 OIDC_FED_ENDPOINTS = {
     'oidc_authorization': {
-        'class': 'fedservice.appserver.oidc.authorization.Authorization'},
+        "path": "authn",
+        'class': 'fedservice.appserver.oidc.authorization.Authorization',
+        "kwargs": {}
+    },
     'oidc_registration': {
         'class': 'fedservice.appserver.oidc.registration.Registration'},
 }

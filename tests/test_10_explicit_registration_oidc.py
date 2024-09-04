@@ -80,6 +80,18 @@ FEDERATION_CONFIG = {
         "trust_anchors": [TA_ID],
         "kwargs": {
             "authority_hints": [TA_ID],
+            "endpoints": [{
+                "oidc_authz": {
+                    "path": "authz",
+                    'class': 'fedservice.appserver.oidc.authorization.Authorization',
+                    "kwargs": {}
+                }},{
+                "oidc_registration": {
+                    "path": "registration",
+                    'class': 'fedservice.appserver.oidc.registration.Registration',
+                    "kwargs": {}
+                }},
+                "entity_configuration"]
         }
     }
 }

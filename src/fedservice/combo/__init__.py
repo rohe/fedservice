@@ -11,6 +11,8 @@ from idpyoidc.node import Unit
 from idpyoidc.server.util import execute
 from requests import request
 
+from fedservice.entity import FederationEntity
+
 logger = logging.getLogger(__name__)
 
 class Combo(Unit):

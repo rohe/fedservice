@@ -20,6 +20,7 @@ from idpyoidc.server.user_authn.authn_context import populate_authn_broker
 from idpyoidc.server.util import execute
 
 from fedservice.entity.claims import OPClaims
+from fedservice.message import AuthorizationServerMetadata
 from fedservice.server import ServerUnit
 
 logger = logging.getLogger(__name__)
@@ -57,9 +58,11 @@ class ServerEntity(ServerUnit):
         self.server_type = server_type or config.get("server_type", "")
         if not self.server_type:
             if entity_type == "oauth_authorization_server":
+                self.metadata_schema = AuthorizationServerMetadata
                 self.server_type = "oauth2"
             elif entity_type == "openid_provider":
                 self.server_type = "oidc"
+                self.metadata_schema = AuthorizationServerMetadata
 
         if self.server_type == "oauth2":
             self.name = "oauth_authorization_server"
@@ -102,6 +105,13 @@ class ServerEntity(ServerUnit):
         self.context.claims_interface = init_service(
             config["claims_interface"], self.unit_get
         )
+
+        self.context.provider_info = self.context.claims.get_server_metadata(
+            endpoints=self.endpoint.values(),
+            metadata_schema=FederationEntity,
+        )
+        self.context.provider_info["issuer"] = self.context.entity_id
+        self.context.metadata = self.context.provider_info
 
         _per_conf = config.get("persistence", None)
         if _per_conf:
