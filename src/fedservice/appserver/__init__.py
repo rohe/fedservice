@@ -7,21 +7,21 @@ from typing import Union
 from cryptojwt import KeyJar
 from cryptojwt.utils import importer
 from idpyoidc.configure import Base
+from idpyoidc.message import Message
 from idpyoidc.node import topmost_unit
+from idpyoidc.server import allow_refresh_token
 from idpyoidc.server import ASConfiguration
+from idpyoidc.server import authz
+from idpyoidc.server import build_endpoints
 from idpyoidc.server import Endpoint
 from idpyoidc.server import EndpointContext
 from idpyoidc.server import OPConfiguration
-from idpyoidc.server import allow_refresh_token
-from idpyoidc.server import authz
-from idpyoidc.server import build_endpoints
 from idpyoidc.server.endpoint_context import init_service
 from idpyoidc.server.user_authn.authn_context import populate_authn_broker
 from idpyoidc.server.util import execute
 
 from fedservice.entity.claims import OPClaims
 from fedservice.message import AuthorizationServerMetadata
-from fedservice.message import FederationEntity
 from fedservice.server import ServerUnit
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,22 @@ def do_endpoints(conf, upstream_get):
         return build_endpoints(_endpoints, upstream_get=upstream_get, issuer=conf["issuer"])
     else:
         return {}
+
+
+def import_client_keys(information: Union[Message, dict], keyjar: KeyJar, entity_id: str):
+    _signed_jwks_uri = information.get('signed_jwks_uri')
+    if _signed_jwks_uri:
+        pass
+    else:
+        _jwks_uri = information.get('jwks_uri')
+        if _jwks_uri:
+            # if it can't load keys because the URL is false it will
+            # just silently fail. Waiting for better times.
+            keyjar.add_url(entity_id, _jwks_uri)
+        else:
+            _jwks = information.get('jwks')
+            if _jwks:
+                keyjar.import_jwks(_jwks, entity_id)
 
 
 class ServerEntity(ServerUnit):
@@ -145,6 +161,11 @@ class ServerEntity(ServerUnit):
         _claims = self.get_context().claims
         metadata = _claims.get_server_metadata(endpoints=self.endpoint.values(),
                                                metadata_schema=self.metadata_schema)
+
+        for param in ["issuer", "certificate_issuer"]:
+            if param in self.metadata_schema.c_param:
+                metadata[param] = self.context.entity_id
+
         # remove these from the metadata
         for item in ["jwks", "jwks_uri", "signed_jwks_uri"]:
             try:

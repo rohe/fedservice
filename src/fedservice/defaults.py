@@ -84,12 +84,19 @@ SERVICES = {
 def federation_services(*api):
     res = {}
     for a in api:
+        if isinstance(a, dict):
+            continue
         if a in SERVICES:
             res[a] = SERVICES[a]
         elif a in DEFAULT_OAUTH2_FED_SERVICES:
             res[a] = DEFAULT_OAUTH2_FED_SERVICES[a]
         elif a in DEFAULT_OIDC_FED_SERVICES:
             res[a] = DEFAULT_OIDC_FED_SERVICES[a]
+
+    for a in api:
+        if isinstance(a, dict):
+            res.update(a)
+
     return res
 
 

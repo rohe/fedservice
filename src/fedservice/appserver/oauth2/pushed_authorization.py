@@ -1,50 +1,43 @@
 import logging
 from typing import List
-from typing import Optional
-
-from idpyoidc.message import oauth2
-from idpyoidc.message.oauth2 import OauthClientMetadata
-from idpyoidc.node import topmost_unit
-from idpyoidc.server.oauth2 import authorization
 
 from fedservice.appserver import import_client_keys
+from fedservice.entity.function import get_verified_trust_chains
+from idpyoidc.message import oauth2
+from idpyoidc.node import topmost_unit
+from idpyoidc.server.oauth2.authorization import Authorization
+from idpyoidc.server.oauth2 import authorization
+
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity.utils import get_federation_entity
 from fedservice.exception import NoTrustedChains
+from fedservice.message import OauthClientMetadata
 
 logger = logging.getLogger(__name__)
 
 
-class Authorization(authorization.Authorization):
-    msg_type = oauth2.AuthorizationRequest
-    response_cls = oauth2.AuthorizationResponse
-    error_msg = oauth2.ResponseMessage
+class PushedAuthorization(Authorization):
+    request_cls = oauth2.PushedAuthorizationRequest
+    response_cls = oauth2.Message
+    endpoint_name = "pushed_authorization_request_endpoint"
+    request_placement = "body"
+    request_format = "urlencoded"
+    response_placement = "body"
+    response_format = "json"
+    name = "pushed_authorization"
+    endpoint_type = "oauth2"
 
-    _supports = authorization.Authorization._supports.copy()
-    _supports.update({
-        "request_authentication_signing_alg_values_supported": ["RS256"],
-        "request_authentication_methods_supported": {
-            "authorization_endpoint": [
-                "request_object"
-            ],
-            "pushed_authorization_request_endpoint": [
-                "private_key_jwt",
-            ]
-        }
-    })
-
-    def __init__(self, upstream_get, conf: Optional[dict] = None, **kwargs):
-        authorization.Authorization.__init__(self, upstream_get, **kwargs)
+    def __init__(self, upstream_get, **kwargs):
+        Authorization.__init__(self, upstream_get, **kwargs)
         # self.pre_construct.append(self._pre_construct)
-        self.post_parse_request.append(self._reset_client_id)
-        self.new_client_id = kwargs.get('new_client_id', False)
-        self.config = conf or {}
-
-    def _reset_client_id(self, request, client_id, context, **kwargs):
-        request['client_id'] = client_id
-        return request
+        self.post_parse_request.append(self._post_parse_request)
+        self.ttl = kwargs.get("ttl", 3600)
+        self.new_client_id = ""
+        # When a signed JWT is used as client credentials this matches the "aud"
+        # default self.allowed_targets = [self.name]
+        self.allowed_targets.append("")
 
     def find_client_keys(self, iss):
         return self.do_automatic_registration(iss, [])
@@ -54,11 +47,9 @@ class Authorization(authorization.Authorization):
             # So I get the TA's entity statement first
             provided_trust_chain.reverse()
             trust_chains = verify_trust_chains(self, [provided_trust_chain])
+            trust_chains = apply_policies(self, trust_chains)
         else:
-            chains, signed_entity_configuration = collect_trust_chains(self, entity_id)
-            trust_chains = verify_trust_chains(self, chains, signed_entity_configuration)
-
-        trust_chains = apply_policies(self, trust_chains)
+            trust_chains = get_verified_trust_chains(self, entity_id)
 
         if not trust_chains:
             raise NoTrustedChains()
@@ -68,14 +59,16 @@ class Authorization(authorization.Authorization):
         _fe = topmost_unit(self)['federation_entity']
         _fe.trust_chain_anchor = trust_chain.anchor
 
-        # handle the registration request as in the non-federation case.
-        # If there is a signed_jwks_uri, jwks_uri or jwks in the metadata import keys
-        import_client_keys(trust_chain.metadata['oauth_client'], self.upstream_get('attribute', 'keyjar'), entity_id)
+        _metadata = trust_chain.metadata['oauth_client']
 
-        req = OauthClientMetadata(**trust_chain.metadata['oauth_client'])
+        # If there is a signed_jwks_uri, jwks_uri or jwks in the metadata import the keys
+        import_client_keys(_metadata, self.upstream_get('attribute', 'keyjar'), entity_id)
+
+        req = OauthClientMetadata(**_metadata)
         req['client_id'] = entity_id
         kwargs = {}
-        kwargs['new_id'] = self.new_client_id
+        if self.new_client_id:
+            kwargs['new_id'] = self.new_client_id
 
         op = topmost_unit(self)['oauth_authorization_server']
         _registration = op.get_endpoint("registration")

@@ -20,6 +20,7 @@ from idpyoidc.util import rndstr
 from idpyoidc.util import sanitize
 from idpyoidc.util import split_uri
 
+from fedservice.appserver import import_client_keys
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
@@ -291,15 +292,7 @@ class Registration(Endpoint):
                             logger.warning('Lacking support for "{}"'.format(request[item]))
                             del _cinfo[item]
 
-        t = {"jwks_uri": "", "jwks": None}
-
-        for item in ["jwks_uri", "jwks"]:
-            if item in request:
-                t[item] = request[item]
-
-        # if it can't load keys because the URL is false it will
-        # just silently fail. Waiting for better times.
-        _keyjar.load_keys(client_id, jwks_uri=t["jwks_uri"], jwks=t["jwks"])
+        import_client_keys(request, _keyjar, client_id)
         logger.debug(f"Keys for {client_id}: {_keyjar.key_summary(client_id)}")
 
         return _cinfo
