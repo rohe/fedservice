@@ -17,6 +17,7 @@ from idpyoidc.message import SINGLE_OPTIONAL_JSON
 from idpyoidc.message import SINGLE_OPTIONAL_STRING
 from idpyoidc.message import SINGLE_REQUIRED_INT
 from idpyoidc.message import SINGLE_REQUIRED_STRING
+from idpyoidc.message.oauth2 import ASConfigurationResponse
 from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.message.oidc import deserialize_from_one_of
 from idpyoidc.message.oidc import dict_deser
@@ -48,17 +49,18 @@ class AuthorizationServerMetadata(Message):
         "response_types_supported": OPTIONAL_LIST_OF_STRINGS,
         "response_modes_supported": OPTIONAL_LIST_OF_STRINGS,
         "grant_types_supported": OPTIONAL_LIST_OF_STRINGS,
-        "token_auth_methods": OPTIONAL_LIST_OF_STRINGS,
-        "token_auth_signing_algs": OPTIONAL_LIST_OF_STRINGS,
+        "token_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "token_auth_signing_algs_supported": OPTIONAL_LIST_OF_STRINGS,
         "service_documentation": SINGLE_OPTIONAL_STRING,
         "ui_locales_supported": OPTIONAL_LIST_OF_STRINGS,
         "op_policy_uri": SINGLE_OPTIONAL_STRING,
+        "op_tos_uri": SINGLE_OPTIONAL_STRING,
         "revocation_endpoint": SINGLE_OPTIONAL_STRING,
-        "revocation_auth_methods": SINGLE_OPTIONAL_JSON,
-        "revocation_auth_signing_algs": SINGLE_OPTIONAL_JSON,
+        "revocation_auth_methods_supported": SINGLE_OPTIONAL_JSON,
+        "revocation_auth_signing_algs_supported": SINGLE_OPTIONAL_JSON,
         "introspection_endpoint": SINGLE_OPTIONAL_STRING,
-        "introspection_auth_methods": OPTIONAL_LIST_OF_STRINGS,
-        "introspection_auth_signing_algs": OPTIONAL_LIST_OF_STRINGS,
+        "introspection_auth_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "introspection_auth_signing_algs_supported": OPTIONAL_LIST_OF_STRINGS,
         "code_challenge_methods_supported": OPTIONAL_LIST_OF_STRINGS,
         # below Federation additions
         'client_registration_types_supported': OPTIONAL_LIST_OF_STRINGS,
@@ -93,7 +95,7 @@ SINGLE_OPTIONAL_NAMING_CONSTRAINTS = (Message, False, msg_ser, naming_constraint
 
 
 class FederationEntity(Message):
-    """Class representing a Federation Entity."""
+    """Class representing Federation Entity metadata."""
     c_param = {
         "federation_fetch_endpoint": SINGLE_REQUIRED_STRING,
         "federation_fetch_auth_methods": OPTIONAL_LIST_OF_STRINGS,
@@ -248,19 +250,40 @@ OPTIONAL_RP_REGISTRATION_RESPONSE = (
     Message, False, msg_ser, rp_registration_response_deser, False)
 
 
-class OPMetadataMessage(ProviderConfigurationResponse):
+class OPMetadata(ProviderConfigurationResponse):
     c_param = ProviderConfigurationResponse.c_param.copy()
     c_param.update({
         "client_registration_types_supported": REQUIRED_LIST_OF_STRINGS,
         "federation_registration_endpoint": SINGLE_OPTIONAL_STRING,
         "request_authentication_methods_supported": SINGLE_OPTIONAL_JSON,
-        "request_authentication_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS
+        "request_authentication_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "organization_name": SINGLE_OPTIONAL_STRING,
+        "contacts": OPTIONAL_LIST_OF_STRINGS,
+        "logo_uri": SINGLE_OPTIONAL_STRING,
+        "policy_uri": SINGLE_OPTIONAL_STRING,
+        "homepage_uri": SINGLE_OPTIONAL_STRING,
+        "jwks": SINGLE_OPTIONAL_DICT,
+        "jwks_uri": SINGLE_OPTIONAL_STRING,
+        "signed_jwks_uri": SINGLE_OPTIONAL_STRING
+    })
+
+class FedASConfigurationResponse(ASConfigurationResponse):
+    c_param = ASConfigurationResponse.c_param.copy()
+    c_param.update({
+        "organization_name": SINGLE_OPTIONAL_STRING,
+        "contacts": OPTIONAL_LIST_OF_STRINGS,
+        "logo_uri": SINGLE_OPTIONAL_STRING,
+        "policy_uri": SINGLE_OPTIONAL_STRING,
+        "homepage_uri": SINGLE_OPTIONAL_STRING,
+        "jwks": SINGLE_OPTIONAL_DICT,
+        "jwks_uri": SINGLE_OPTIONAL_STRING,
+        "signed_jwks_uri": SINGLE_OPTIONAL_STRING
     })
 
 
 def op_metadata_deser(val, sformat="json"):
     """Deserializes a JSON object (most likely) into a ProviderConfigurationResponse."""
-    return deserialize_from_one_of(val, OPMetadataMessage, sformat)
+    return deserialize_from_one_of(val, OPMetadata, sformat)
 
 
 OPTIONAL_OP_METADATA = (Message, False, msg_ser, op_metadata_deser, False)
@@ -573,14 +596,14 @@ class TrustMarkRequest(Message):
         "trust_mark_id": SINGLE_REQUIRED_STRING
     }
 
-class PIDQueryRequest(Message):
+class WhoRequest(Message):
     c_param = {
         "entity_type": SINGLE_OPTIONAL_STRING,
         "credential_type": SINGLE_OPTIONAL_STRING,
         "trust_mark_id": SINGLE_OPTIONAL_STRING
     }
 
-class PIDQueryResponse(Message):
+class WhoResponse(Message):
     c_param = {
-        "servers_to_use": OPTIONAL_LIST_OF_STRINGS
+        "entities_to_use": REQUIRED_LIST_OF_STRINGS
     }

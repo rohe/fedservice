@@ -7,6 +7,7 @@ from typing import Union
 from cryptojwt import KeyJar
 from cryptojwt.utils import importer
 from idpyoidc.configure import Base
+from idpyoidc.message import Message
 from idpyoidc.node import topmost_unit
 from idpyoidc.server import allow_refresh_token
 from idpyoidc.server import ASConfiguration
@@ -15,16 +16,16 @@ from idpyoidc.server import build_endpoints
 from idpyoidc.server import Endpoint
 from idpyoidc.server import EndpointContext
 from idpyoidc.server import OPConfiguration
-from idpyoidc.server.client_authn import client_auth_setup
 from idpyoidc.server.endpoint_context import init_service
-from idpyoidc.server.endpoint_context import init_user_info
 from idpyoidc.server.user_authn.authn_context import populate_authn_broker
 from idpyoidc.server.util import execute
 
 from fedservice.entity.claims import OPClaims
+from fedservice.message import AuthorizationServerMetadata
 from fedservice.server import ServerUnit
 
 logger = logging.getLogger(__name__)
+
 
 def do_endpoints(conf, upstream_get):
     _endpoints = conf.get("endpoint")
@@ -32,6 +33,22 @@ def do_endpoints(conf, upstream_get):
         return build_endpoints(_endpoints, upstream_get=upstream_get, issuer=conf["issuer"])
     else:
         return {}
+
+
+def import_client_keys(information: Union[Message, dict], keyjar: KeyJar, entity_id: str):
+    _signed_jwks_uri = information.get('signed_jwks_uri')
+    if _signed_jwks_uri:
+        pass
+    else:
+        _jwks_uri = information.get('jwks_uri')
+        if _jwks_uri:
+            # if it can't load keys because the URL is false it will
+            # just silently fail. Waiting for better times.
+            keyjar.add_url(entity_id, _jwks_uri)
+        else:
+            _jwks = information.get('jwks')
+            if _jwks:
+                keyjar.import_jwks(_jwks, entity_id)
 
 
 class ServerEntity(ServerUnit):
@@ -49,10 +66,23 @@ class ServerEntity(ServerUnit):
             httpc_params: Optional[dict] = None,
             entity_id: Optional[str] = "",
             key_conf: Optional[dict] = None,
-            server_type: Optional[str] = "oidc"
+            server_type: Optional[str] = "",
+            entity_type: Optional[str] = ''
     ):
         if config is None:
             config = {}
+
+        self.server_type = server_type or config.get("server_type", "")
+        if not self.server_type:
+            if entity_type == "oauth_authorization_server":
+                self.metadata_schema = AuthorizationServerMetadata
+                self.server_type = "oauth2"
+            elif entity_type == "openid_provider":
+                self.server_type = "oidc"
+                self.metadata_schema = AuthorizationServerMetadata
+
+        if self.server_type == "oauth2":
+            self.name = "oauth_authorization_server"
 
         ServerUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, entity_id=entity_id, key_conf=key_conf,
@@ -61,14 +91,14 @@ class ServerEntity(ServerUnit):
         if not isinstance(config, Base):
             config['issuer'] = entity_id
             config['base_url'] = entity_id
-            if server_type == "oauth2":
+            if self.server_type == "oauth2":
                 config = ASConfiguration(config)
             else:
                 config = OPConfiguration(config)
 
-        if server_type == "oidc" and not isinstance(config, OPConfiguration):
+        if self.server_type == "oidc" and not isinstance(config, OPConfiguration):
             raise ValueError("Server type and configuration type does not match")
-        elif server_type == "oauth2" and not isinstance(config, ASConfiguration):
+        elif self.server_type == "oauth2" and not isinstance(config, ASConfiguration):
             raise ValueError("Server type and configuration type does not match")
 
         self.config = config
@@ -81,7 +111,8 @@ class ServerEntity(ServerUnit):
             cwd=cwd,
             cookie_handler=cookie_handler,
             httpc=httpc,
-            claims_class=OPClaims()
+            claims_class=OPClaims(),
+            keyjar=self.keyjar
         )
 
         _token_endp = self.endpoint.get("token")
@@ -91,6 +122,13 @@ class ServerEntity(ServerUnit):
         self.context.claims_interface = init_service(
             config["claims_interface"], self.unit_get
         )
+
+        self.context.provider_info = self.context.claims.get_server_metadata(
+            endpoints=self.endpoint.values(),
+            metadata_schema=self.metadata_schema,
+        )
+        self.context.provider_info["issuer"] = self.context.entity_id
+        self.context.metadata = self.context.provider_info
 
         _per_conf = config.get("persistence", None)
         if _per_conf:
@@ -117,8 +155,25 @@ class ServerEntity(ServerUnit):
     def get_server(self, *args):
         return self
 
-    def get_metadata(self, *args):
-        return {self.name: self.context.provider_info}
+    def get_metadata(self, entity_type="", *args):
+        if not entity_type:
+            entity_type = self.name
+        _claims = self.get_context().claims
+        metadata = _claims.get_server_metadata(endpoints=self.endpoint.values(),
+                                               metadata_schema=self.metadata_schema)
+
+        for param in ["issuer", "certificate_issuer"]:
+            if param in self.metadata_schema.c_param:
+                metadata[param] = self.context.entity_id
+
+        # remove these from the metadata
+        for item in ["jwks", "jwks_uri", "signed_jwks_uri"]:
+            try:
+                del metadata[item]
+            except KeyError:
+                pass
+        # collect endpoints
+        return {entity_type: metadata}
 
     def pick_guise(self, entity_type: Optional[str] = "", *args):
         if not entity_type:
@@ -155,24 +210,3 @@ class ServerEntity(ServerUnit):
                 target.endpoint_to_authn_method[method.action] = method
             except AttributeError:
                 pass
-
-    def setup_login_hint_lookup(self):
-        _conf = self.config.get("login_hint_lookup")
-        if _conf:
-            _userinfo = None
-            _kwargs = _conf.get("kwargs")
-            if _kwargs:
-                _userinfo_conf = _kwargs.get("userinfo")
-                if _userinfo_conf:
-                    _userinfo = init_user_info(_userinfo_conf, self.context.cwd)
-
-            if _userinfo is None:
-                _userinfo = self.context.userinfo
-
-            self.context.login_hint_lookup = init_service(_conf)
-            self.context.login_hint_lookup.userinfo = _userinfo
-
-    def setup_client_authn_methods(self):
-        self.context.client_authn_methods = client_auth_setup(
-            self.unit_get, self.config.get("client_authn_methods")
-        )

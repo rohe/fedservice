@@ -4,11 +4,12 @@ import pytest
 import responses
 from cryptojwt.jws.jws import factory
 
-from fedservice.defaults import INTERMEDIATE_ENDPOINTS
+from fedservice.defaults import federation_endpoints
+from fedservice.defaults import federation_services
 from fedservice.message import TrustMark
 from fedservice.message import TrustMarkRequest
-from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
+from tests.build_federation import build_federation
 
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},
@@ -18,39 +19,34 @@ KEYSPEC = [
 TM_ID = "https://refeds.org/wp-content/uploads/2016/01/Sirtfi-1.0.pdf"
 TA_ID = "https://anchor.example.com"
 
-TA_ENDPOINTS = INTERMEDIATE_ENDPOINTS.copy()
+TA_ENDPOINTS = federation_endpoints("entity_configuration", "fetch", "list")
+TA_SERVICES = federation_services("entity_configuration", "entity_statement", "trust_mark_status")
 
-TRUST_MARK_ISSUER_ID = "https://entity.example.com"
+TRUST_MARK_ISSUER_ID = "https://tmi.example.com"
 
-
-class TestSignedTrustMark():
-
-    @pytest.fixture(autouse=True)
-    def create_entity(self):
-        # The Trust Anchor
-        self.ta = make_federation_entity(
-            TA_ID,
-            preference={
+FEDERATION_CONFIG = {
+    TA_ID: {
+        "entity_type": "trust_anchor",
+        "subordinates": [TRUST_MARK_ISSUER_ID],
+        "kwargs": {
+            "preference": {
                 "organization_name": "The example federation operator",
-                "homepage_uri": "https://ta.example.com",
-                "contacts": "operations@ta.example.com"
+                "homepage_uri": "https://ta.example.org",
+                "contacts": "operations@ta.example.org"
             },
-            key_config={"key_defs": KEYSPEC},
-            endpoints=TA_ENDPOINTS,
-            services=["trust_mark_status"]
-        )
-
-        # Federation entity with only status endpoint
-        self.entity = make_federation_entity(
-            TRUST_MARK_ISSUER_ID,
-            preference={
+            "endpoints": TA_ENDPOINTS,
+            "services": TA_SERVICES,
+        }
+    },
+    TRUST_MARK_ISSUER_ID: {
+        "entity_type": "trust_mark_issuer",
+        "trust_anchors": [TA_ID],
+        "kwargs": {
+            "preference": {
                 "organization_name": "Trust Mark Issuer 'R US"
             },
-            key_config={"key_defs": KEYSPEC},
-            authority_hints=[TA_ID],
-            trust_anchors={TA_ID: self.ta.keyjar.export_jwks()},
-            endpoints=["entity_configuration"],
-            trust_mark_entity={
+            "authority_hints": [TA_ID],
+            "trust_mark_entity": {
                 "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
                 "kwargs": {
                     "trust_mark_specification": {
@@ -79,28 +75,35 @@ class TestSignedTrustMark():
                         },
                         "trust_mark_list": {
                             "path": "trust_mark_list",
-                            "class": "fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList",
+                            "class":
+                                "fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList",
                             "kwargs": {}
                         },
                         "trust_mark_status": {
                             "path": "trust_mark_status",
-                            "class": "fedservice.trust_mark_entity.server.trust_mark_status.TrustMarkStatus",
+                            "class":
+                                "fedservice.trust_mark_entity.server.trust_mark_status"
+                                ".TrustMarkStatus",
                             "kwargs": {}
                         }
                     }
                 }
             }
-        )
-
-        self.ta.server.subordinate[TRUST_MARK_ISSUER_ID] = {
-            "jwks": self.entity.keyjar.export_jwks(),
-            'authority_hints': [TA_ID]
         }
+    }
+}
 
-        #
+
+class TestSignedTrustMark():
+
+    @pytest.fixture(autouse=True)
+    def create_entities(self):
+        self.federation_entity = build_federation(FEDERATION_CONFIG)
+        self.ta = self.federation_entity[TA_ID]
+        self.tmi = self.federation_entity[TRUST_MARK_ISSUER_ID]
 
     def test_create_trust_mark_self_signed(self):
-        _endpoint = self.entity.get_endpoint('trust_mark_status')
+        _endpoint = self.tmi.get_endpoint('trust_mark_status')
         _issuer = _endpoint.upstream_get("unit")
         _trust_mark = _issuer.self_signed_trust_mark(
             id='https://openid.net/certification',
@@ -114,13 +117,13 @@ class TestSignedTrustMark():
         assert isinstance(_mark, TrustMark)
         assert _mark["id"] == "https://openid.net/certification"
         assert _mark['iss'] == _mark['sub']
-        assert _mark['iss'] == self.entity.entity_id
+        assert _mark['iss'] == self.tmi.entity_id
         assert set(_mark.keys()) == {'iss', 'sub', 'iat', 'id', 'logo_uri'}
 
     def test_create_unpack_trust_3rd_party(self):
         _sub = "https://op.ntnu.no"
 
-        _tme = self.entity.server.trust_mark_entity
+        _tme = self.tmi.server.trust_mark_entity
         _trust_mark = _tme.create_trust_mark("https://refeds.org/sirtfi", _sub)
         _mark = _tme.unpack_trust_mark(_trust_mark, _sub)
 
@@ -128,7 +131,7 @@ class TestSignedTrustMark():
 
     def test_process_request(self):
         _sub = "https://op.ntnu.no"
-        _endpoint = self.entity.get_endpoint('trust_mark_status')
+        _endpoint = self.tmi.get_endpoint('trust_mark_status')
         _issuer = _endpoint.upstream_get("unit")
         _issuer.trust_mark_specification["https://refeds.org/sirtfi"] = {}
         _trust_mark = _issuer.create_trust_mark("https://refeds.org/sirtfi", _sub)
@@ -138,19 +141,19 @@ class TestSignedTrustMark():
 
     def test_request_response_mark(self):
         _sub = "https://op.ntnu.no"
-        _endpoint = self.entity.get_endpoint('trust_mark_status')
+        _endpoint = self.tmi.get_endpoint('trust_mark_status')
         _issuer = _endpoint.upstream_get("unit")
         _trust_mark = _issuer.create_trust_mark("https://refeds.org/sirtfi", _sub)
 
         _jws = factory(_trust_mark)
         _payload = _jws.jwt.payload()
-        resp = self.entity.get_endpoint('trust_mark_status').process_request(_payload)
+        resp = self.tmi.get_endpoint('trust_mark_status').process_request(_payload)
         assert resp == {'response_args': {'active': True}}
 
     def test_request_response_args(self):
         # Create a Trust Mark
         _sub = "https://op.ntnu.no"
-        _endpoint = self.entity.get_endpoint('trust_mark_status')
+        _endpoint = self.tmi.get_endpoint('trust_mark_status')
         _issuer = _endpoint.upstream_get("unit")
         _trust_mark = _issuer.create_trust_mark("https://refeds.org/sirtfi", _sub)
 
@@ -164,37 +167,47 @@ class TestSignedTrustMark():
                 'sub': _payload['sub'],
                 'id': _payload['id']
             },
-            fetch_endpoint=self.entity.get_endpoint('trust_mark_status').full_path
+            fetch_endpoint=self.tmi.get_endpoint('trust_mark_status').full_path
         )
         p = urlparse(req['url'])
         tmr = TrustMarkRequest().from_urlencoded(p.query)
 
-        resp = self.entity.get_endpoint('trust_mark_status').process_request(tmr.to_dict())
+        resp = self.tmi.get_endpoint('trust_mark_status').process_request(tmr.to_dict())
         assert resp == {'response_args': {'active': True}}
 
     def test_trust_mark_verifier(self):
-        _endpoint = self.entity.get_endpoint('trust_mark_status')
+        _endpoint = self.tmi.get_endpoint('trust_mark_status')
         _issuer = _endpoint.upstream_get("unit")
         _issuer.trust_mark_specification["https://refeds.org/sirtfi"] = {
             "ref": 'https://refeds.org/sirtfi'
         }
 
         _trust_mark = _issuer.create_trust_mark(id="https://refeds.org/sirtfi",
-                                                sub=self.entity.entity_id)
+                                                sub=self.tmi.entity_id)
 
-        where_and_what = create_trust_chain_messages(self.entity, self.ta)
+        where_and_what = create_trust_chain_messages(self.tmi, self.ta)
 
         with responses.RequestsMock() as rsps:
             for _url, _jwks in where_and_what.items():
                 rsps.add("GET", _url, body=_jwks,
                          adding_headers={"Content-Type": "application/json"}, status=200)
 
-            verified_trust_mark = self.entity.function.trust_mark_verifier(
+            verified_trust_mark = self.tmi.function.trust_mark_verifier(
                 trust_mark=_trust_mark, trust_anchor=self.ta.entity_id)
 
         assert verified_trust_mark
-        assert set(verified_trust_mark.keys()) == {'iat', 'iss', 'id', 'sub', 'ref', 'exp'}
+        assert set(verified_trust_mark.keys()) == {'iat', 'iss', 'id', 'sub', 'ref'}
 
     def test_metadata(self):
-        _metadata = self.entity.get_metadata()
-        assert len(_metadata["federation_entity"]["jwks"]["keys"]) == 2
+        _metadata = self.tmi.get_metadata()
+        assert "federation_entity" in _metadata
+        assert set(_metadata["federation_entity"].keys()) == {'federation_resolve_endpoint',
+                                                              'federation_trust_mark_endpoint',
+                                                              'federation_trust_mark_endpoint_auth_methods',
+                                                              'federation_trust_mark_endpoint_auth_signing_alg_values',
+                                                              'federation_trust_mark_list_endpoint',
+                                                              'federation_trust_mark_list_endpoint_auth_methods',
+                                                              'federation_trust_mark_status_endpoint',
+                                                              'federation_trust_mark_status_endpoint_auth_methods',
+                                                              'organization_name'}
+        assert _metadata["federation_entity"]["federation_trust_mark_endpoint"] == 'https://tmi.example.com/trust_mark'

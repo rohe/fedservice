@@ -12,11 +12,9 @@ from idpyoidc.util import instantiate
 
 from fedservice.build_entity import FederationEntityBuilder
 from fedservice.combo import FederationCombo
-from fedservice.defaults import FEDERATION_ENDPOINTS
 from fedservice.defaults import federation_endpoints
 from fedservice.defaults import federation_functions
 from fedservice.defaults import federation_services
-from fedservice.defaults import SERVICES
 from fedservice.entity import FederationEntity
 
 logger = logging.getLogger(__name__)
@@ -82,8 +80,8 @@ def build_entity_config(entity_id: str,
                 func(args=_args, kwargs_spec=kwargs_spec, **federation_functions(*items))
             elif name == "endpoint":
                 if isinstance(items, dict):
-                    _filtered_spec = {k: v for k, v in items.items() if k in FEDERATION_ENDPOINTS}
-                    func(args=_args, kwargs_spec=kwargs_spec, **_filtered_spec)
+                    # _filtered_spec = {k: v for k, v in items.items() if k in FEDERATION_ENDPOINTS}
+                    func(args=_args, kwargs_spec=kwargs_spec, **items)
                 else:
                     func(args=_args, kwargs_spec=kwargs_spec, **federation_endpoints(*items))
         elif services == []:
@@ -164,8 +162,8 @@ def make_federation_entity(entity_id: str,
         fe.server.trust_mark_entity = _tme
 
     if self_signed_trust_mark_entity:
-        _kwargs = trust_mark_entity.get("kwargs", {})
-        _tme = instantiate(trust_mark_entity['class'], upstream_get=fe.unit_get, **_kwargs)
+        _kwargs = self_signed_trust_mark_entity.get("kwargs", {})
+        _tme = instantiate(self_signed_trust_mark_entity['class'], upstream_get=fe.unit_get, **_kwargs)
         fe.server.self_signed_trust_mark_entity = _tme
 
     return fe

@@ -1,20 +1,15 @@
 import logging
 from typing import Optional
-from urllib.parse import urlparse
 
-from cryptojwt.jws.utils import alg2keytype
 from idpyoidc.client.exception import ResponseError
 from idpyoidc.client.oidc import registration
 from idpyoidc.message.oauth2 import OauthClientInformationResponse
 from idpyoidc.message.oauth2 import OauthClientMetadata
 from idpyoidc.message.oauth2 import ResponseMessage
-from idpyoidc.server.exception import InvalidRedirectURIError
-from idpyoidc.server.oidc.registration import verify_url
-from idpyoidc.util import sanitize
-from idpyoidc.util import split_uri
 
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
+from fedservice.entity.function import get_verified_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
 from fedservice.entity.utils import get_federation_entity
@@ -30,6 +25,7 @@ class Registration(registration.Registration):
     error_cls = ResponseMessage
     request_body_type = 'jose'
     response_body_type = 'jose'
+    content_type = "application/entity-statement+jwt"
     name = 'registration'
 
     def __init__(self, upstream_get, conf=None, client_authn_factory=None, **kwargs):
@@ -62,13 +58,18 @@ class Registration(registration.Registration):
         _authority_hints = _federation_entity.get_authority_hints()
         _context = _federation_entity.get_context()
         _entity_id = _federation_entity.upstream_get('attribute', 'entity_id')
+
+        kwargs = {}
+        if _context.trust_marks:
+            kwargs["trust_marks"] = _context.trust_marks
+
         _jws = _context.create_entity_statement(
             iss=_entity_id,
             sub=_entity_id,
             metadata=_md,
             key_jar=_keyjar,
             authority_hints=_authority_hints,
-            trust_marks=_context.trust_marks)
+            **kwargs)
         # store for later reference
         _federation_entity.entity_configuration = _jws
         return _jws
@@ -109,8 +110,9 @@ class Registration(registration.Registration):
         payload = verify_self_signed_signature(resp)
         # Do I trust the TA the OP chose ?
         logger.debug(f"trust_anchor_id: {payload['trust_anchor_id']}")
-        if payload[
-            'trust_anchor_id'] not in _federation_entity.function.trust_chain_collector.trust_anchors:
+        if (payload[
+            'trust_anchor_id'] not in
+                _federation_entity.function.trust_chain_collector.trust_anchors):
             raise ValueError("Trust anchor I don't trust")
 
         # This is where I should decide to use the metadata verification service or do it
@@ -128,11 +130,10 @@ class Registration(registration.Registration):
                                             _federation_entity):
                 raise SignatureFailure("Could not verify signature")
 
-            # This is the trust chain from the RP to the TA
-            _chains, _ = collect_trust_chains(self.upstream_get('unit'),
-                                              entity_id=self.upstream_get('attribute', 'entity_id'),
-                                              stop_at=payload['trust_anchor_id'])
-            _trust_chains = verify_trust_chains(_federation_entity, _chains, resp)
+            # This is the trust chain from myself to the TA
+            _trust_chains = get_verified_trust_chains(self, entity_id=self.upstream_get('attribute',
+                                                                                        'entity_id'))
+
             # should only be one chain
             if len(_trust_chains) != 1:
                 raise SystemError(f"More then one chain ending in {payload['trust_anchor_id']}")
@@ -141,7 +142,10 @@ class Registration(registration.Registration):
                 _trust_chains[0].verified_chain[-1]['metadata'] = _metadata
             # If it's metadata_policy what to do ?
             _trust_chains = apply_policies(_federation_entity, _trust_chains)
-            _resp = _trust_chains[0].metadata['openid_relying_party']
+            if self.upstream_get('unit').client_type == "oauth2":
+                _resp = _trust_chains[0].metadata['oauth_client']
+            else:
+                _resp = _trust_chains[0].metadata['openid_relying_party']
             _context = self.upstream_get('context')
             _context.registration_response = _resp
             return _resp
@@ -150,95 +154,3 @@ class Registration(registration.Registration):
         registration.Registration.update_service_context(self, resp, **kwargs)
         _fe = self.upstream_get("context").federation_entity
         _fe.iss = resp['client_id']
-
-    def do_client_registration(self, request, client_id, ignore=None):
-        if ignore is None:
-            ignore = []
-        _context = self.upstream_get("context")
-        _cinfo = _context.cdb[client_id].copy()
-        logger.debug("_cinfo: %s" % sanitize(_cinfo))
-
-        for key, val in request.items():
-            if key not in ignore:
-                _cinfo[key] = val
-
-        _uri = request.get("post_logout_redirect_uri")
-        if _uri:
-            if urlparse(_uri).fragment:
-                err = self.error_cls(
-                    error="invalid_configuration_parameter",
-                    error_description="post_logout_redirect_uri contains fragment",
-                )
-                return err
-            _cinfo["post_logout_redirect_uri"] = split_uri(_uri)
-
-        if "redirect_uris" in request:
-            try:
-                ruri = self.verify_redirect_uris(request)
-                _cinfo["redirect_uris"] = ruri
-            except InvalidRedirectURIError as e:
-                return self.error_cls(error="invalid_redirect_uri", error_description=str(e))
-
-        if "request_uris" in request:
-            _uris = []
-            for uri in request["request_uris"]:
-                _up = urlparse(uri)
-                if _up.query:
-                    err = self.error_cls(
-                        error="invalid_configuration_parameter",
-                        error_description="request_uris contains query part",
-                    )
-                    return err
-                if _up.fragment:
-                    # store base and fragment
-                    _uris.append(uri.split("#"))
-                else:
-                    _uris.append([uri, ""])
-            _cinfo["request_uris"] = _uris
-
-        for item in ["policy_uri", "logo_uri", "tos_uri"]:
-            if item in request:
-                if verify_url(request[item], _cinfo["redirect_uris"]):
-                    _cinfo[item] = request[item]
-                else:
-                    return ResponseMessage(
-                        error="invalid_configuration_parameter",
-                        error_description="%s pointed to illegal URL" % item,
-                    )
-
-        _keyjar = self.upstream_get("attribute", "keyjar")
-        # Do I have the necessary keys
-        for item in ["id_token_signed_response_alg", "userinfo_signed_response_alg"]:
-            if item in request:
-                _claim = _context.claims.register2preferred[item]
-                _support = _context.provider_info.get(_claim)
-                if _support is None:
-                    logger.warning(f'Lacking support for "{item}"')
-                    del _cinfo[item]
-                    continue
-
-                if request[item] in _support:
-                    ktyp = alg2keytype(request[item])
-                    # do I have this ktyp and for EC type keys the curve
-                    if ktyp not in ["none", "oct"]:
-                        _k = []
-                        for iss in ["", _context.issuer]:
-                            _k.extend(
-                                _keyjar.get_signing_key(ktyp, alg=request[item], issuer_id=iss)
-                            )
-                        if not _k:
-                            logger.warning('Lacking support for "{}"'.format(request[item]))
-                            del _cinfo[item]
-
-        t = {"jwks_uri": "", "jwks": None}
-
-        for item in ["jwks_uri", "jwks"]:
-            if item in request:
-                t[item] = request[item]
-
-        # if it can't load keys because the URL is false it will
-        # just silently fail. Waiting for better times.
-        _keyjar.load_keys(client_id, jwks_uri=t["jwks_uri"], jwks=t["jwks"])
-        logger.debug(f"Keys for {client_id}: {_keyjar.key_summary(client_id)}")
-
-        return _cinfo

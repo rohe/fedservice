@@ -13,14 +13,59 @@ from fedservice.appclient import ClientEntity
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
+from tests.build_federation import build_federation
 
 TA_ID = "https://ta.example.org"
 LEAF_ID = "https://leaf.example.org"
 IM_ID = "https://im.example.org"
 RP_ID = "https://rp.example.org"
 
-TA_ENDPOINTS = ["list", "fetch", "entity_configuration"]
-
+FEDERATION_CONFIG = {
+    TA_ID: {
+        "entity_type": "trust_anchor",
+        "subordinates": [IM_ID, LEAF_ID],
+        "kwargs": {
+            "preference": {
+                "organization_name": "The example federation operator",
+                "homepage_uri": "https://ta.example.org",
+                "contacts": "operations@ta.example.org"
+            },
+            "endpoints": ['entity_configuration', 'list', 'fetch', 'resolve'],
+        }
+    },
+    IM_ID: {
+        "entity_type": "intermediate",
+        "trust_anchors": [TA_ID],
+        "subordinates": [RP_ID, LEAF_ID],
+        "kwargs": {
+            "authority_hints": [TA_ID],
+        }
+    },
+    LEAF_ID: {
+        "entity_type": "federation_entity",
+        "trust_anchors": [TA_ID],
+        "kwargs": {
+            "authority_hints": [IM_ID]
+        }
+    },
+    RP_ID: {
+        "entity_type": "openid_relying_party",
+        "trust_anchors": [TA_ID],
+        "kwargs": {
+            "authority_hints": [IM_ID],
+            "entity_type_config": {
+                "preference": {
+                    "grant_types": ['authorization_code', 'refresh_token']
+                }
+            },
+            "preference": {
+                "organization_name": "The example federation RP operator",
+                "homepage_uri": "https://rp.example.com",
+                "contacts": "operations@rp.example.com",
+            }
+        }
+    }
+}
 
 class TestConstraints(object):
 
@@ -28,107 +73,17 @@ class TestConstraints(object):
     def setup(self):
         #          TA
         #          |
-        #          IM      OP
+        #          IM
         #          |
         #       +--+--+
         #       |     |
         #      RP   LEAF
 
-        # TRUST ANCHOR
-
-        self.ta = make_federation_entity(
-            TA_ID,
-            preference={
-                "organization_name": "The example federation operator",
-                "homepage_uri": "https://ta.example.com",
-                "contacts": "operations@ta.example.com"
-            },
-            key_config={"key_defs": DEFAULT_KEY_DEFS},
-            endpoints=TA_ENDPOINTS
-        )
-
-        ANCHOR = {TA_ID: self.ta.keyjar.export_jwks()}
-
-        ########################################
-        # intermediate
-        ########################################
-
-        self.im = make_federation_entity(
-            IM_ID,
-            preference={
-                "organization_name": "The organization",
-                "homepage_uri": "https://example.com",
-                "contacts": "operations@example.com"
-            },
-            key_config={"key_defs": DEFAULT_KEY_DEFS},
-            authority_hints=[TA_ID],
-            trust_anchors=ANCHOR
-        )
-        self.ta.server.subordinate[IM_ID] = {
-            "jwks": self.im.keyjar.export_jwks()
-        }
-
-        ########################################
-        # Leaf
-        ########################################
-
-        self.leaf = make_federation_entity(
-            LEAF_ID,
-            preference={
-                "organization_name": "A leaf",
-                "homepage_uri": "https://leaf.example.com",
-                "contacts": "operations@leaf.example.com"
-            },
-            key_config={"key_defs": DEFAULT_KEY_DEFS},
-            authority_hints=[IM_ID],
-            endpoints=LEAF_ENDPOINTS,
-            trust_anchors=ANCHOR
-        )
-        self.im.server.subordinate[LEAF_ID] = {
-            "jwks": self.leaf.keyjar.export_jwks(),
-            'entity_types': ['federation_entity']
-        }
-
-        ########################################
-        # Leaf RP
-        ########################################
-
-        oidc_service = DEFAULT_OIDC_SERVICES.copy()
-        oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
-
-        self.rp = make_federation_combo(
-            RP_ID,
-            preference={
-                "organization_name": "The RP",
-                "homepage_uri": "https://rp.example.com",
-                "contacts": "operations@rp.example.com"
-            },
-            authority_hints=[IM_ID],
-            endpoints=LEAF_ENDPOINTS,
-            trust_anchors=ANCHOR,
-            entity_type={
-                "openid_relying_party": {
-                    'class': ClientEntity,
-                    'kwargs': {
-                        'config': {
-                            'client_id': RP_ID,
-                            'client_secret': 'a longesh password',
-                            'redirect_uris': ['https://example.com/cli/authz_cb'],
-                            "keys": {"uri_path": "static/jwks.json", "key_defs": DEFAULT_KEY_DEFS},
-                            "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
-                            "id_token_signed_response_alg": "ES256",
-                            "token_endpoint_auth_method": "client_secret_basic",
-                            "token_endpoint_auth_signing_alg": "ES256"
-                        },
-                        "services": oidc_service
-                    }
-                }
-            }
-        )
-        self.im.server.subordinate[RP_ID] = {
-            "jwks": self.rp["federation_entity"].keyjar.export_jwks(),
-            'entity_types': ['openid_relying_party', 'federation_entity']
-        }
+        federation = build_federation(FEDERATION_CONFIG)
+        self.ta = federation[TA_ID]
+        self.im = federation[IM_ID]
+        self.leaf = federation[LEAF_ID]
+        self.rp = federation[RP_ID]
 
         #########################
         # Policies

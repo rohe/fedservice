@@ -219,5 +219,4 @@ class TestTrustMarkDelegation():
                                                               'federation_trust_mark_list_endpoint_auth_methods',
                                                               'federation_trust_mark_status_endpoint',
                                                               'federation_trust_mark_status_endpoint_auth_methods',
-                                                              'jwks',
                                                               'organization_name'}

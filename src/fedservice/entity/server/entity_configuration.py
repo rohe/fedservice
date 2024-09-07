@@ -3,6 +3,7 @@ from typing import Union
 
 from idpyoidc.message import Message
 
+from fedservice.entity.utils import get_federation_entity
 from fedservice.entity_statement.create import create_entity_statement
 from idpyoidc.message import oauth2
 from idpyoidc.server import Endpoint
@@ -28,19 +29,19 @@ class EntityConfiguration(Endpoint):
 
     def process_request(self, request=None, **kwargs):
         _server = self.upstream_get("unit")
-        _entity = _server.upstream_get('unit')
-        _entity_id = _entity.get_attribute('entity_id')
-        if _entity.upstream_get:
-            _metadata = _entity.upstream_get("metadata")
+        _fed_entity = get_federation_entity(self)
+        _entity_id = _fed_entity.get_attribute('entity_id')
+        if _fed_entity.upstream_get:
+            _metadata = _fed_entity.upstream_get("metadata")
         else:
-            _metadata = _entity.get_metadata()
-        if _entity.context.trust_marks:
-            args = {"trust_marks": _entity.context.trust_marks}
+            _metadata = _fed_entity.get_metadata()
+        if _fed_entity.context.trust_marks:
+            args = {"trust_marks": _fed_entity.context.trust_marks}
         else:
             args = {}
         _ec = create_entity_statement(iss=_entity_id,
                                       sub=_entity_id,
-                                      key_jar=_entity.get_attribute('keyjar'),
+                                      key_jar=_fed_entity.get_attribute('keyjar'),
                                       metadata=_metadata,
                                       authority_hints=_server.upstream_get('authority_hints'),
                                       **args

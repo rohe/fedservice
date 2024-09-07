@@ -12,131 +12,73 @@ from fedservice.entity.function import verify_trust_chains
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
+from tests.build_federation import build_federation
 
 TA_ID = "https://ta.example.org"
 RP_ID = "https://rp.example.org"
-RESOLVER_ID = "https://resolver.example.org"
 IM_ID = "https://intermediate.example.org"
 
 TA_ENDPOINTS = ["list", "fetch", "entity_configuration"]
 
-
+FEDERATION_CONFIG = {
+    TA_ID: {
+        "entity_type": "trust_anchor",
+        "subordinates": [IM_ID],
+        "kwargs": {
+            "preference": {
+                "organization_name": "The example federation operator",
+                "homepage_uri": "https://ta.example.org",
+                "contacts": "operations@ta.example.org"
+            },
+            "endpoints": ['entity_configuration', 'list', 'fetch', 'resolve'],
+        }
+    },
+    IM_ID: {
+        "entity_type": "intermediate",
+        "trust_anchors": [TA_ID],
+        "subordinates": [RP_ID],
+        "kwargs": {
+            "authority_hints": [TA_ID],
+        }
+    },
+    RP_ID: {
+        "entity_type": "openid_relying_party",
+        "trust_anchors": [TA_ID],
+        "kwargs": {
+            "authority_hints": [IM_ID],
+            "preference": {
+                "organization_name": "The example federation RP operator",
+                "homepage_uri": "https://rp.example.com",
+                "contacts": "operations@rp.example.com"
+            }
+        }
+    }
+}
 class TestComboCollect(object):
 
     @pytest.fixture(autouse=True)
     def setup(self):
         #     Federation tree
         #
-        #            TA
-        #        +---|-------+
-        #        |           |
-        #        IM      RESOLVER
+        #    TA/RESOLVER
+        #        |
+        #        IM
         #        |
         #        RP
 
-        # TRUST ANCHOR
+        federation = build_federation(FEDERATION_CONFIG)
+        self.ta = federation[TA_ID]
+        self.im = federation[IM_ID]
+        self.rp = federation[RP_ID]
 
-        self.ta = make_federation_entity(
-            TA_ID,
-            preference={
-                "organization_name": "The example federation operator",
-                "homepage_uri": "https://ta.example.com",
-                "contacts": "operations@ta.example.com"
-            },
-            key_config={"key_defs": DEFAULT_KEY_DEFS},
-            endpoints=TA_ENDPOINTS
-        )
-
-        ANCHOR = {TA_ID: self.ta.keyjar.export_jwks()}
-
-        # intermediate
-
-        self.im = make_federation_entity(
-            IM_ID,
-            preference={
-                "organization_name": "The organization",
-                "homepage_uri": "https://example.com",
-                "contacts": "operations@example.com"
-            },
-            key_config={"key_defs": DEFAULT_KEY_DEFS},
-            authority_hints=[TA_ID],
-            trust_anchors=ANCHOR
-        )
-        self.ta.server.subordinate[IM_ID] = {
-            "jwks": self.im.keyjar.export_jwks(),
-            'authority_hints': [TA_ID]
-        }
-
-        ########################################
-        # Leaf RP
-        ########################################
-
-        oidc_service = DEFAULT_OIDC_SERVICES.copy()
-        oidc_service.update(DEFAULT_OIDC_FED_SERVICES)
-
-        self.rp = make_federation_combo(
-            entity_id=RP_ID,
-            preference={
-                "organization_name": "The RP",
-                "homepage_uri": "https://rp.example.com",
-                "contacts": "operations@rp.example.com"
-            },
-            authority_hints=[IM_ID],
-            endpoints=LEAF_ENDPOINTS,
-            trust_anchors=ANCHOR,
-            entity_type={
-                "openid_relying_party": {
-                    'class': ClientEntity,
-                    'kwargs': {
-                        'config': {
-                            'client_id': RP_ID,
-                            'client_secret': 'a longesh password',
-                            'redirect_uris': ['https://example.com/cli/authz_cb'],
-                            "keys": {"uri_path": "static/jwks.json", "key_defs": DEFAULT_KEY_DEFS},
-                            "preference": {
-                                "grant_types": ['authorization_code', 'implicit', 'refresh_token'],
-                                "id_token_signed_response_alg": "ES256",
-                                "token_endpoint_auth_method": "client_secret_basic",
-                                "token_endpoint_auth_signing_alg": "ES256"
-                            }
-                        },
-                        "services": oidc_service
-                    }
-                }
-            }
-        )
-        self.im.server.subordinate[RP_ID] = {
-            "jwks": self.rp["federation_entity"].keyjar.export_jwks(),
-            'authority_hints': [IM_ID]
-        }
-
-        # Resolver
-
-        self.resolver = make_federation_entity(
-            entity_id=RP_ID,
-            key_config={"key_defs": DEFAULT_KEY_DEFS},
-            preference={
-                "organization_name": "The RP",
-                "homepage_uri": "https://rp.example.com",
-                "contacts": "operations@rp.example.com"
-            },
-            authority_hints=[TA_ID],
-            endpoints=["entity_configuration", "fetch", "resolve"],
-            trust_anchors=ANCHOR
-        )
-
-        self.ta.server.subordinate[RESOLVER_ID] = {
-            "jwks": self.resolver.keyjar.export_jwks(),
-            'authority_hints': [TA_ID]
-        }
 
     def test_setup(self):
         assert self.ta
         assert self.ta.server
-        assert set(self.ta.server.subordinate.keys()) == {RESOLVER_ID, IM_ID}
+        assert set(self.ta.server.subordinate.keys()) == {IM_ID}
 
     def test_resolver(self):
-        resolver = self.resolver.server.endpoint["resolve"]
+        resolver = self.ta.server.endpoint["resolve"]
 
         where_and_what = create_trust_chain_messages(self.rp, self.im, self.ta)
 

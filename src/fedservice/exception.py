@@ -48,3 +48,6 @@ class SignatureFailure(FedServiceError):
 
 class FailedInformationRetrieval(Exception):
     pass
+
+class UnknownTrustAnchor(UnknownEntity):
+    pass

@@ -4,10 +4,14 @@ from typing import Optional
 from typing import Union
 
 from cryptojwt import KeyJar
+from idpyoidc.client.entity_metadata import EntityMetadata
 from idpyoidc.configure import Configuration
+from idpyoidc.message import Message
 from idpyoidc.node import Unit
 from idpyoidc.server.util import execute
 from requests import request
+
+from fedservice.entity import FederationEntity
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +38,8 @@ class Combo(Unit):
                     self._add_httpc_params(spec, httpc_params)
                 logger.info(f"Initiating entity type: '{key}' with config: {spec}")
                 self._part[key] = execute(spec, upstream_get=self.unit_get,
-                                          entity_id=self.entity_id, httpc=httpc)
+                                          entity_id=self.entity_id, httpc=httpc,
+                                          entity_type=key)
 
     def _get_httpc_params(self, config):
         return config.get("httpc_params")
@@ -105,7 +110,7 @@ class FederationCombo(Combo):
         res = {}
         for federation_type, item in self._part.items():
             if getattr(item, "get_metadata", None):
-                res.update(item.get_metadata(federation_type))
+                res.update(item.get_metadata(entity_type=federation_type))
         return res
 
     def get_preferences(self):
@@ -134,3 +139,11 @@ class FederationCombo(Combo):
             return self.keyjar
         else:
             return self.get_federation_entity().keyjar
+
+    def apply_metadata(self, trust_chain_metadata: Union[dict, Message]):
+        _info = {k:EntityMetadata(v) for k,v in trust_chain_metadata.items()}
+        for guise in self._part.keys():
+            _context = getattr(self[guise], 'context', None)
+            if _context:
+                _context.server_metadata = _info
+        return

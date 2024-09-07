@@ -1,77 +1,60 @@
 import pytest
 import responses
 
-from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
-from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
-
-KEYDEFS = [
-    {"type": "RSA", "key": "", "use": ["sig"]},
-    {"type": "EC", "crv": "P-256", "use": ["sig"]},
-]
+from tests.build_federation import build_federation
 
 TA_ID = "https://ta.example.org"
 RP_ID = "https://rp.example.org"
 OP_ID = "https://op.example.org"
 
-TA_ENDPOINTS = ["entity_configuration", "fetch", "list"]
+FEDERATION_CONFIG = {
+    TA_ID: {
+        "entity_type": "trust_anchor",
+        "subordinates": [RP_ID, OP_ID],
+        "kwargs": {
+            "preference": {
+                "organization_name": "The example federation operator",
+                "homepage_uri": "https://ta.example.org",
+                "contacts": "operations@ta.example.org"
+            },
+            "endpoints": ['entity_configuration', 'list', 'fetch', 'resolve'],
+        }
+    },
+    OP_ID: {
+        "entity_type": "openid_provider",
+        "trust_anchors": [TA_ID],
+        "kwargs": {
+            "authority_hints": [TA_ID],
+        }
+    },
+    RP_ID: {
+        "entity_type": "openid_relying_party",
+        "trust_anchors": [TA_ID],
+        "kwargs": {
+            "authority_hints": [TA_ID]
+        }
+    }
+}
 
 
 class TestComboCollect(object):
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        self.ta = make_federation_entity(
-            TA_ID,
-            preference={
-                "organization_name": "The example federation operator",
-                "homepage_uri": "https://ta.example.com",
-                "contacts": "operations@ta.example.com"
-            },
-            key_config={"key_defs": KEYDEFS}
-        )
+        #          TA
+        #          |
+        #       +--+--+
+        #       |     |
+        #      RP     OP
 
-        # Leaf RP
-
-        self.rp = make_federation_entity(
-            RP_ID,
-            preference={
-                "organization_name": "The RP",
-                "homepage_uri": "https://rp.example.com",
-                "contacts": "operations@rp.example.com"
-            },
-            key_config={"key_defs": KEYDEFS},
-            authority_hints=[TA_ID],
-            endpoints=LEAF_ENDPOINTS,
-            trust_anchors={TA_ID: self.ta.keyjar.export_jwks()}
-        )
-        self.ta.server.subordinate[RP_ID] = {
-            "jwks": self.rp.keyjar.export_jwks(),
-            'authority_hints': [TA_ID]
-        }
-
-        # Leaf OP
-
-        self.op = make_federation_entity(
-            OP_ID,
-            preference={
-                "organization_name": "The OP operator",
-                "homepage_uri": "https://op.example.com",
-                "contacts": "operations@op.example.com"
-            },
-            key_config={"key_defs": KEYDEFS},
-            authority_hints=[TA_ID],
-            endpoints=LEAF_ENDPOINTS,
-            trust_anchors={TA_ID: self.ta.keyjar.export_jwks()}
-        )
-
-        self.ta.server.subordinate[OP_ID] = {
-            "jwks": self.op.keyjar.export_jwks(),
-            'authority_hints': [TA_ID]
-        }
+        self.federation = build_federation(FEDERATION_CONFIG)
+        self.ta = self.federation[TA_ID]
+        self.op = self.federation[OP_ID]
+        self.rp = self.federation[RP_ID]
 
     def test_setup(self):
         assert self.ta
@@ -79,9 +62,7 @@ class TestComboCollect(object):
         assert set(self.ta.server.subordinate.keys()) == {OP_ID, RP_ID}
 
     def test_collect_trust_chain(self):
-        # Need 2 entity configurations (leaf and TA) and 1 entity statement (TA about the leaf)
-        # leaf = OP
-
+        # Need 2 entity configurations (OP and TA) and 1 entity statement (TA about the OP)
         _msgs = create_trust_chain_messages(self.op, self.ta)
 
         assert len(_msgs) == 3
@@ -102,9 +83,8 @@ class TestComboCollect(object):
         trust_chain = trust_chains[0]
 
         assert trust_chain.metadata
-        assert set(trust_chain.metadata.keys()) == {'federation_entity'}
-        assert set(trust_chain.metadata['federation_entity'].keys()) == {
-            "organization_name", "homepage_uri", "contacts", "jwks"}
+        assert set(trust_chain.metadata.keys()) == {'federation_entity', 'openid_provider'}
+        assert set(trust_chain.metadata['federation_entity'].keys()) == set()
 
         assert trust_chain.is_expired() is False
 

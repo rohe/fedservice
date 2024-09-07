@@ -1,10 +1,9 @@
 import os
 
 from cryptojwt.jws.jws import factory
-from idpyoidc.message.oidc import RegistrationResponse
 
-from fedservice.message import EntityStatement
 from fedservice.fetch_entity_statement.fs2 import FSFetchEntityStatement
+from fedservice.message import EntityStatement
 from fedservice.message import OIDCRPMetadata
 
 BASE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "base_data")
@@ -37,5 +36,3 @@ def test_make_entity_statement():
     es = EntityStatement().from_dict(payload)
     _item = es['metadata_policy']['openid_relying_party']
     assert _item['contacts'] == {"add": 'ops@ntnu.no'}
-
-
