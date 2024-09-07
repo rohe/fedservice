@@ -63,7 +63,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Topic :: Software Development :: Libraries :: Python Modules"],
     install_requires=[
-        'idpyoidc>=4.1.0',
+        'idpyoidc>=5.0.0',
         'cryptojwt>=1.8.4'
     ],
     tests_require=[
