@@ -56,13 +56,13 @@
     "authority_hints": {
       "class": "idpyoidc.storage.listfile.ReadOnlyListFile",
       "kwargs": {
-        "file_name": "wallet_provider/authority_hints"
+        "file_name": "relying_party_explicit/authority_hints"
       }
     },
     "trust_anchors": {
       "class": "idpyoidc.storage.abfile.AbstractFileSystem",
       "kwargs": {
-        "fdir": "wallet_provider/trust_anchors",
+        "fdir": "relying_party_explicit/trust_anchors",
         "key_conv": "idpyoidc.util.Base64",
         "value_conv": "idpyoidc.util.JSON"
       }
@@ -122,10 +122,6 @@
             ]
           },
           "services": {
-            "discovery": {
-              "class": "fedservice.appclient.oidc.provider_info_discovery.ProviderInfoDiscovery",
-              "kwargs": {}
-            },
             "registration": {
               "class": "fedservice.appclient.oidc.registration.Registration",
               "kwargs": {}
