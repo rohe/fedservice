@@ -161,7 +161,7 @@ command parameters accordingly.
 OpenID Relying Party
 --------------------
 
-Much the same as for the openid provider.
+Much the same as for the openid relying party.
 To start running the relying party you have to do::
 
     ./entity.py relying_party_explicit
@@ -198,7 +198,7 @@ The third would look like this::
     ./add_info.py -s tmp.json -t trust_anchor/subordinates
 
 
-That should do it for the wallet provider.
+That should do it for the openid relying party.
 If you now restart it it should have all the necessary information to be part of the federation.
 
 **Note** The same goes for these commands as was noted above. If you change the
@@ -229,3 +229,5 @@ usage: create_trust_mark.py [-h] [-d DIR_NAME] [-e ENTITY_ID] [-m TRUST_MARK_ID]
       -e ENTITY_ID, --entity_id ENTITY_ID The target of the Trust Mark
       -m TRUST_MARK_ID, --trust_mark_id TRUST_MARK_ID
 
+The trust mark issuer doesn't have to be running for this to work.
+Once you have the trust mark drop it in the relying_party_explicit/

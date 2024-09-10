@@ -1,3 +1,4 @@
+from typing import Callable
 from typing import Optional
 from typing import Union
 
@@ -31,14 +32,20 @@ class EntityConfiguration(Endpoint):
         _server = self.upstream_get("unit")
         _fed_entity = get_federation_entity(self)
         _entity_id = _fed_entity.get_attribute('entity_id')
+
         if _fed_entity.upstream_get:
             _metadata = _fed_entity.upstream_get("metadata")
         else:
             _metadata = _fed_entity.get_metadata()
+
         if _fed_entity.context.trust_marks:
-            args = {"trust_marks": _fed_entity.context.trust_marks}
+            if isinstance(_fed_entity.context.trust_marks, Callable):
+                args = {"trust_marks": _fed_entity.context.trust_marks()}
+            else:
+                args = {"trust_marks": _fed_entity.context.trust_marks}
         else:
             args = {}
+
         _ec = create_entity_statement(iss=_entity_id,
                                       sub=_entity_id,
                                       key_jar=_fed_entity.get_attribute('keyjar'),

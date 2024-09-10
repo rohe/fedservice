@@ -243,7 +243,10 @@ def make_federation_combo(entity_id: str,
             federation_entity.server.policy[id] = info
 
     if trust_marks:
-        federation_entity.context.trust_marks = trust_marks
+        if "class" in trust_marks:
+            federation_entity.context.trust_marks = execute(trust_marks)
+        else:
+            federation_entity.context.trust_marks = trust_marks
 
     if trust_mark_issuers:
         if "class" in trust_mark_issuers:

@@ -67,9 +67,12 @@
         "value_conv": "idpyoidc.util.JSON"
       }
     },
-    "trust_marks": [
-      "eyJhbGciOiJSUzI1NiIsImtpZCI6IlRGSXROekZhT0dzdFRsQldhR1ZtWmpjNVJrUm5XSFIxWlMxTVprUnljV05zU0dWbFJuUkZTa1JLV1EifQ.eyJpYXQiOiAxNzE0NTU2MDQ5LCAiaWQiOiAiaHR0cHM6Ly9yZWZlZHMub3JnL2NhdGVnb3J5L3BlcnNvbmFsaXplZCIsICJzdWIiOiAiaHR0cHM6Ly8xMjcuMC4wLjE6NDAwMiIsICJleHAiOiAxNzE3MTQ4MDQ5LCAiaXNzIjogImh0dHBzOi8vMTI3LjAuMC4xOjYwMDAifQ.U4rxJB9GWFXmLT4sN4xLI_lHi8s9TJYjZ4sdUubhwy4kleBaqfPXM6lR26EIVnykhb14BBLZ6ibDLmVjSNSaLbTTTBEMiwZaIs233bfWuJLYmuIWnTVX_EAquPvkYE4JuXZ7oMvtVYyJGSU3Sd8fKkrp9oHR3MuW_hENP4sg2FcMu3TqjfCkqb_ZY7YyN8vCmAkxL1RWLhI29ufmIQGQQTWZ2ofVhh4MKbbs34LrWIdmL4prb4nCT5vsffePz3Ah1M7LYnkPqWta9ayWr-0zlKlPpuUmPhvdIfS4KY3TdwiPaxZ_uM0HiBihQU_YjXlEs_QQEULCjgPDXzIsHHMf_g"
-    ],
+    "trust_marks": {
+      "class": "idpyoidc.storage.listfile.ReadOnlyListFile",
+      "kwargs": {
+        "file_name": "relying_party_explicit/trust_marks"
+      }
+    },
     "endpoints": [
       "entity_configuration"
     ],

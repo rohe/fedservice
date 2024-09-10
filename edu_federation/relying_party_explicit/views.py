@@ -1,6 +1,7 @@
 import logging
 import time
 from datetime import datetime
+from typing import Callable
 
 import werkzeug
 from flask import Blueprint
@@ -65,9 +66,13 @@ def wkof():
     _fed_entity = current_app.server["federation_entity"]
 
     if _fed_entity.context.trust_marks:
-        args = {"trust_marks": _fed_entity.context.trust_marks}
+        if isinstance(_fed_entity.context.trust_marks, Callable):
+            args = {"trust_marks": _fed_entity.context.trust_marks()}
+        else:
+            args = {"trust_marks": _fed_entity.context.trust_marks}
     else:
         args = {}
+
     _ec = create_entity_statement(iss=_fed_entity.entity_id,
                                   sub=_fed_entity.entity_id,
                                   key_jar=_fed_entity.get_attribute('keyjar'),
