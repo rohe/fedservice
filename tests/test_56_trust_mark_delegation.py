@@ -169,7 +169,7 @@ class TestTrustMarkDelegation():
         req = service.get_request_parameters(
             request_args={
                 'sub': verified_trust_mark['sub'],
-                'id': verified_trust_mark['id']
+                'trust_mark_id': verified_trust_mark['id']
             },
             fetch_endpoint=tm_issuer_metadata["federation_entity"][
                 'federation_trust_mark_status_endpoint']

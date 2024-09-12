@@ -4,7 +4,7 @@
 # Trust Mark Issuer: https://127.0.0.1:6000
 
 # Get the entity configuration
-./get_entity_configuration.py -k -t trust_anchor_local.json -c https://127.0.0.1:4002
+./get_entity_configuration.py -k -t trust_anchor_local.json https://127.0.0.1:4002
 
 # Get subordinate statement from superior
 ./get_subordinate_statement.py -k -t trust_anchor_local.json -s https://127.0.0.1:7003 https://127.0.0.1:4002
@@ -21,3 +21,4 @@
   -s https://127.0.0.1:4002 https://127.0.0.1:6000
 
 # List subordinates
+./list_subordinates.py -k -t trust_anchor_local.json https://127.0.0.1:7003

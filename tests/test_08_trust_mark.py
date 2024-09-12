@@ -147,7 +147,8 @@ class TestSignedTrustMark():
 
         _jws = factory(_trust_mark)
         _payload = _jws.jwt.payload()
-        resp = self.tmi.get_endpoint('trust_mark_status').process_request(_payload)
+        query = {"sub": _payload["sub"], "trust_mark_id": _payload["id"]}
+        resp = self.tmi.get_endpoint('trust_mark_status').process_request(query)
         assert resp == {'response_args': {'active': True}}
 
     def test_request_response_args(self):
@@ -165,7 +166,7 @@ class TestSignedTrustMark():
         req = tms.get_request_parameters(
             request_args={
                 'sub': _payload['sub'],
-                'id': _payload['id']
+                'trust_mark_id': _payload['id']
             },
             fetch_endpoint=self.tmi.get_endpoint('trust_mark_status').full_path
         )
