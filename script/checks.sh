@@ -22,3 +22,6 @@
 
 # List subordinates
 ./list_subordinates.py -k -t trust_anchor_local.json https://127.0.0.1:7003
+
+# Resolve entity
+./resolve_entity.py -k -T trust_anchor_local.json -r https://127.0.0.1:7003 -t https://127.0.0.1:7003 https://127.0.0.1:4004
