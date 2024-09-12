@@ -25,6 +25,7 @@ class TrustMark(FederationService):
     synchronous = True
     service_name = "trust_mark"
     http_method = "GET"
+    response_body_type = "jwt"
 
     def __init__(self,
                  upstream_get: Callable,

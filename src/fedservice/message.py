@@ -490,15 +490,15 @@ class TrustMark(JsonWebToken):
 class TrustMarkStatusRequest(Message):
     c_param = {
         "sub": SINGLE_OPTIONAL_STRING,
-        "id": SINGLE_OPTIONAL_STRING,
+        "trust_mark_id": SINGLE_OPTIONAL_STRING,
         "iat": SINGLE_OPTIONAL_INT,
         "trust_mark": SINGLE_OPTIONAL_STRING
     }
 
     def verify(self, **kwargs):
         if 'trust_mark' not in self:
-            if 'sub' not in self or 'id' not in self:
-                raise AttributeError('Must have both "sub" and "id" or "trust_mark"')
+            if 'sub' not in self or 'trust_mark_id' not in self:
+                raise AttributeError('Must have both "sub" and "trust_mark_id" or "trust_mark"')
 
 
 def trust_mark_deser(val, sformat="json"):
@@ -593,7 +593,8 @@ class HistoricalKeysResponse(Message):
 
 class TrustMarkRequest(Message):
     c_param = {
-        "trust_mark_id": SINGLE_REQUIRED_STRING
+        "trust_mark_id": SINGLE_REQUIRED_STRING,
+        "sub": SINGLE_REQUIRED_STRING
     }
 
 class WhoRequest(Message):

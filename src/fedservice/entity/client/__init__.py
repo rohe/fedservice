@@ -344,7 +344,7 @@ class FederationClient(FederationClientEntity):
             return {"http_response": resp}
         elif resp.status_code >= 400:
             logger.error(f"HTTP error: {resp}")
-
+            return service.error_msg(error="System error", error_description=f"{resp.text}")
         if resp.status_code < 300:
             if "keyjar" not in kwargs:
                 kwargs["keyjar"] = self.get_attribute("keyjar")

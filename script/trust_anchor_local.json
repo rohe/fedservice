@@ -1,0 +1,21 @@
+{
+  "https://127.0.0.1:7003": {
+    "keys": [
+      {
+        "kty": "RSA",
+        "use": "sig",
+        "kid": "ZXFYbDlqWkNzaWd1eDNseTVfWFBNUWRFX3lrQ2Y3b2owaWVMTjNhcnpBMA",
+        "e": "AQAB",
+        "n": "qHE53SwNAYWZfLQufshE5vhJDBzAEgdO762SkGcV59GDx2VZIyoSek3Y8X8_Z6pVGeDovBQCBstwD7X4ZL4ynMsGb_Szphx2dlcvYPHfY4BFJWGoROPzo8VJ-z5CLseHKg_LXL-PxTHziZFBawMJn5vTodRQVJIU_WA5K408WuNgBh_IhkTj37L-fajwExYoPMWu-YMNlUWD8ta_hnHxLE43QZW5shq09LcTj9VcJdWey1i4q_ftHoZsFngML-kA8KBImeiirtCHs6V1eA3LxJ5a_KojK7aPcA9VgvPH1987I4gqHFedtLZkV5dewYt4HGQ4O3YQ8IsX1Nse0ib2Sw"
+      },
+      {
+        "kty": "EC",
+        "use": "sig",
+        "kid": "Nng1Yy1SMmFoRC1VQ2g4NllXSEU1dEtkY0VkX3pweG5RXzdLMjY1WkJNMA",
+        "crv": "P-256",
+        "x": "yLcidWumqjOPjJI1OcSjgTtqmOfNzC0APWKdRIFik3Y",
+        "y": "8IkDqyQyLHB10Klvz7vJIb6jrlJ_-HDgMGusR_JzckE"
+      }
+    ]
+  }
+}

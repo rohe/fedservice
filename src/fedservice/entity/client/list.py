@@ -3,16 +3,11 @@ from typing import Optional
 from typing import Union
 from urllib.parse import urlencode
 
-from cryptojwt.jws.jws import factory
 from idpyoidc.client.configure import Configuration
 from idpyoidc.message.oauth2 import ResponseMessage
 
-from fedservice.entity import get_verified_trust_chains
 from fedservice.entity.function.trust_anchor import get_verified_endpoint
-from fedservice.entity.function.trust_anchor import get_verified_trust_anchor_statement
 from fedservice.entity.service import FederationService
-from fedservice.entity.utils import get_federation_entity
-from fedservice.message import ListResponse
 
 
 class List(FederationService):
@@ -24,6 +19,7 @@ class List(FederationService):
     service_name = "list"
     http_method = "GET"
     endpoint_name = "federation_list_endpoint"
+    response_body_type = "json"
 
     def __init__(self,
                  upstream_get: Callable,

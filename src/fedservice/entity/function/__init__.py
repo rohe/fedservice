@@ -161,14 +161,18 @@ def get_verified_trust_chains(unit, entity_id):
 
 
 def get_entity_endpoint(unit, entity_id, metadata_type, metadata_parameter):
-    # get endpoint from the Entity Configuration
-
-    trust_chains = get_verified_trust_chains(unit, entity_id)
-    # pick one
-    if trust_chains:
-        return trust_chains[0].metadata[metadata_type][metadata_parameter]
+    _federation_entity = get_federation_entity(unit)
+    if entity_id in _federation_entity.trust_anchors:
+        # Fetch Entity Configuration
+        _ec = _federation_entity.client.do_request("entity_configuration", entity_id=entity_id)
+        return _ec["metadata"][metadata_type][metadata_parameter]
     else:
-        return ""
+        trust_chains = get_verified_trust_chains(unit, entity_id)
+        # pick one
+        if trust_chains:
+            return trust_chains[0].metadata[metadata_type][metadata_parameter]
+        else:
+            return ""
 
 
 def get_verified_jwks(unit, _signed_jwks_uri):

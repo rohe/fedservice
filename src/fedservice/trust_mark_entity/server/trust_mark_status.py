@@ -41,8 +41,8 @@ class TrustMarkStatus(Endpoint):
             if _trust_mark_issuer.find(_mark['id'], _mark['sub']):
                 return {'response_args': {'active': True}}
         else:
-            if 'sub' in request and 'id' in request:
-                if _trust_mark_issuer.find(request['id'], request['sub']):
+            if 'sub' in request and 'trust_mark_id' in request:
+                if _trust_mark_issuer.find(request['trust_mark_id'], request['sub']):
                     return {'response_args': {'active': True}}
 
         return self.error_cls(error="not_found", error_description="No active trust mark matching the query")
