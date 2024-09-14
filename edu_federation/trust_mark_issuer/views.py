@@ -121,7 +121,7 @@ def service_endpoint(endpoint):
         return redirect(args['redirect_location'])
     if 'http_response' in args:
         resp = make_response(args['http_response'], 200)
-        resp.headers['Content-Type'] = endpoint.response_content_type
+        #resp.headers['content-type'] = endpoint.response_content_type
         return resp
 
     response = do_response(endpoint, req_args, **args)

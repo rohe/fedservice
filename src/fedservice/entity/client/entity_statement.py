@@ -36,6 +36,7 @@ class EntityStatement(FederationService):
     http_method = "GET"
     endpoint_name = "federation_fetch_endpoint"
     response_body_type = "jose"
+    response_content_type = "application/entity-statement+jwt"
 
     def __init__(self,
                  upstream_get: Callable,

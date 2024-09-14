@@ -99,7 +99,7 @@
             "class": "fedservice.trust_mark_entity.server.trust_mark.TrustMark",
             "kwargs": {
               "client_authn_method": [
-                "private_key_jwt"
+                "none"
               ],
               "auth_signing_alg_values": [
                 "ES256"

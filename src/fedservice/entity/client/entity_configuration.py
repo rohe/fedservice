@@ -38,6 +38,7 @@ class EntityConfiguration(FederationService):
     service_name = "entity_configuration"
     http_method = "GET"
     response_body_type = "jwt"
+    response_content_type = "application/entity-statement+jwt"
 
     def __init__(self,
                  upstream_get: Callable,
