@@ -1,14 +1,15 @@
 from typing import Optional
 
+from idpyoidc import alg_info
 from idpyoidc import metadata
 from idpyoidc.claims import Claims as ClaimsBase
 from idpyoidc.client.claims import oauth2 as OAuth2ClientClaims
 from idpyoidc.client.claims import oidc as OIDCClientClaims
-from idpyoidc.transform import REGISTER2PREFERRED
-from idpyoidc.transform import create_registration_request
 from idpyoidc.message import Message
 from idpyoidc.server.claims import oauth2 as OAUTH2ServerClaims
 from idpyoidc.server.claims import oidc as OIDCServerClaims
+from idpyoidc.transform import REGISTER2PREFERRED
+from idpyoidc.transform import create_registration_request
 
 from fedservice import message
 
@@ -26,7 +27,7 @@ class OPClaims(OIDCServerClaims.Claims):
                 "private_key_jwt"
             ]
         },
-        'request_authentication_signing_alg_values_supported': metadata.get_signing_algs,
+        'request_authentication_signing_alg_values_supported': alg_info.get_signing_algs,
         'federation_registration_endpoint': None
     })
 
@@ -55,7 +56,7 @@ class ASClaims(OAUTH2ServerClaims.Claims):
                 "private_key_jwt"
             ]
         },
-        'request_authentication_signing_alg_values_supported': metadata.get_signing_algs,
+        'request_authentication_signing_alg_values_supported': alg_info.get_signing_algs,
         'federation_registration_endpoint': None
     })
 
