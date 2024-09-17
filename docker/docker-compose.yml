@@ -6,8 +6,9 @@ services:
       - "5001:5001"
     environment:
       FEDSERVICE_ENTITYID: https://example.com:5001
-      FEDSERVICE_WEBCERT_KEY: /cert/privkey.pem
-      FEDSERVICE_WEBCERT_CHAIN: /cert/chain.pem
+      FEDSERVICE_WEBCERT_KEY: /certs/privkey.pem
+      FEDSERVICE_WEBCERT_CHAIN: /certs/chain.pem
+      FEDSERVICE_WEBCERT_CERT: /certs/cert.pem
       FEDSERVICE_SECRET_KEY: 12345678909987654321
       FEDSERVICE_DEBUG: true
       FEDSERVICE_PORT: 5001
