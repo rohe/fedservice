@@ -2,8 +2,8 @@ import logging
 from typing import Callable
 from typing import Optional
 
-from cryptojwt import KeyJar
 from cryptojwt import as_unicode
+from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 from cryptojwt.utils import importer
 from idpyoidc.client.client_auth import client_auth_setup
@@ -11,6 +11,7 @@ from idpyoidc.server.util import execute
 from idpyoidc.util import instantiate
 from requests import request
 
+from fedservice import message
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import get_payload
@@ -78,6 +79,13 @@ class FederationEntity(Unit):
 
         self.trust_chain = {}
 
+        self.context.provider_info = self.context.claims.get_server_metadata(
+            endpoints=self.server.endpoint.values(),
+            metadata_schema=message.FederationEntity,
+        )
+        self.context.provider_info["issuer"] = self.context.entity_id
+        self.context.metadata = self.context.provider_info
+
         if persistence:
             _storage = execute(persistence["kwargs"]["storage"])
             _class = persistence["class"]
@@ -126,12 +134,21 @@ class FederationEntity(Unit):
             except AttributeError:
                 return None
 
-    def get_metadata(self, *args):
-        metadata = self.get_context().claims.prefer
-        # collect endpoints
-        metadata.update(self.get_endpoint_claims())
+    def get_metadata(self, entity_type="federation_entity", *args):
+        _context = self.get_context()
+        _claims = _context.claims
+
+        metadata = _claims.get_server_metadata(endpoints=self.get_all_endpoints())
+
+        # remove these from the metadata
+        for item in ["jwks", "jwks_uri", "signed_jwks_uri"]:
+            try:
+                del metadata[item]
+            except KeyError:
+                pass
+
         # _issuer = getattr(self.server.context, "trust_mark_server", None)
-        return {"federation_entity": metadata}
+        return {entity_type: metadata}
 
     def get_preferences(self):
         preference = self.get_context().claims.prefer
@@ -141,7 +158,7 @@ class FederationEntity(Unit):
 
     def get_all_endpoints(self, *arg):
         if self.server:
-            return list(self.server.endpoint.keys())
+            return list(self.server.endpoint.values())
         else:
             return None
 
@@ -351,3 +368,25 @@ class FederationEntity(Unit):
     @trust_anchors.setter
     def trust_anchors(self, value):
         self.get_function("trust_chain_collector").trust_anchors = value
+
+    def add_trust_anchor(self, entity_id, jwks):
+        if self.keyjar:
+            _keyjar = self.keyjar
+        elif self.upstream_get:
+            _keyjar = self.upstream_get('attribute', 'keyjar')
+        else:
+            raise ValueError("Missing keyjar")
+
+        _keyjar.import_jwks(jwks, entity_id)
+        self.trust_anchors[entity_id] = jwks
+
+    def supports(self):
+        res = {}
+        for name, service in self.client.service.items():
+            res.update(service.supports())
+
+        for name, endp in self.server.endpoint.items():
+            res.update(endp.supports())
+
+        res.update(self.context.claims._supports)
+        return res

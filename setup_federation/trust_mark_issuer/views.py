@@ -78,23 +78,9 @@ def service_endpoint(endpoint):
 
     if request.method == 'GET':
         if request.args:
-            _req_args = request.args.to_dict()
+            req_args = request.args.to_dict()
         else:
-            _req_args = {}
-        try:
-            req_args = endpoint.parse_request(_req_args)
-        except (InvalidClient, UnknownClient) as err:
-            _log.error(err)
-            return make_response(json.dumps({
-                'error': 'unauthorized_client',
-                'error_description': str(err)
-            }), 400)
-        except Exception as err:
-            _log.error(err)
-            return make_response(json.dumps({
-                'error': 'invalid_request',
-                'error_description': str(err)
-            }), 400)
+            req_args = {}
     else:
         if request.data:
             if isinstance(request.data, str):
@@ -103,12 +89,19 @@ def service_endpoint(endpoint):
                 req_args = request.data.decode()
         else:
             req_args = dict([(k, v) for k, v in request.form.items()])
-        try:
-            req_args = endpoint.parse_request(req_args)
-        except Exception as err:
-            _log.error(err)
-            err_msg = ResponseMessage(error='invalid_request', error_description=str(err))
-            return make_response(err_msg.to_json(), 400)
+
+    try:
+        req_args = endpoint.parse_request(req_args)
+    except (InvalidClient, UnknownClient) as err:
+        _log.error(err)
+        return make_response(json.dumps({
+            'error': 'unauthorized_client',
+            'error_description': str(err)
+        }), 400)
+    except Exception as err:
+        _log.error(err)
+        err_msg = ResponseMessage(error='invalid_request', error_description=str(err))
+        return make_response(err_msg.to_json(), 400)
 
     _log.info('request: {}'.format(req_args))
     if isinstance(req_args, ResponseMessage) and 'error' in req_args:
@@ -127,7 +120,9 @@ def service_endpoint(endpoint):
     if 'redirect_location' in args:
         return redirect(args['redirect_location'])
     if 'http_response' in args:
-        return make_response(args['http_response'], 200)
+        resp = make_response(args['http_response'], 200)
+        resp.headers['Content-Type'] = endpoint.response_content_type
+        return resp
 
     response = do_response(endpoint, req_args, **args)
     return response

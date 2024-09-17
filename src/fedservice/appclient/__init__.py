@@ -9,7 +9,6 @@ from cryptojwt import KeyJar
 from cryptojwt.key_jar import init_key_jar
 from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.client.client_auth import method_to_item
-from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.client.defaults import SUCCESSFUL
 from idpyoidc.client.exception import OidcServiceError
 from idpyoidc.client.rp_handler import RPHandler
@@ -18,6 +17,7 @@ from idpyoidc.client.service import Service
 from idpyoidc.client.service import init_services
 from idpyoidc.client.service_context import ServiceContext
 from idpyoidc.client.util import do_add_ons
+from idpyoidc.client.util import get_content_type
 from idpyoidc.client.util import get_deserialization_method
 from idpyoidc.configure import Configuration
 from idpyoidc.context import OidcContext
@@ -26,7 +26,10 @@ from idpyoidc.message import Message
 from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.node import ClientUnit
 
-from fedservice.entity.claims import RPClaims
+from fedservice.defaults import COMBINED_DEFAULT_OAUTH2_SERVICES
+from fedservice.defaults import COMBINED_DEFAULT_OIDC_SERVICES
+from fedservice.message import OIDCRPMetadata
+from fedservice.message import OauthClientMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -46,13 +49,29 @@ class ClientEntity(ClientUnit):
             httpc_params: Optional[dict] = None,
             context: Optional[OidcContext] = None,
             key_conf: Optional[dict] = None,
-            client_type: Optional[str] = 'oauth2',
+            client_type: Optional[str] = '',
+            entity_type: Optional[str] = ''
     ):
         if config is None:
             config = {}
 
         self.client_type = config.get('client_type', client_type)
+        if not self.client_type:
+            if entity_type == 'openid_relying_party':
+                self.client_type = "oidc"
+            elif entity_type == "oauth_client":
+                self.client_type = "oauth2"
+            else:
+                raise KeyError("Unknown entity_type")
+
         self.entity_id = entity_id or config.get("entity_id", config.get("client_id", ""))
+
+        if self.client_type == "oauth2":
+            self.metadata_class = OauthClientMetadata
+        else:
+            self.metadata_class = OIDCRPMetadata
+
+        self.metadata = {}
 
         ClientUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, context=context, config=config,
@@ -65,7 +84,10 @@ class ClientEntity(ClientUnit):
         _srvs = services or config.get("services")
 
         if not _srvs:
-            _srvs = DEFAULT_OIDC_SERVICES
+            if self.client_type == "oidc":
+                _srvs = COMBINED_DEFAULT_OIDC_SERVICES
+            elif client_type == "oauth2":
+                _srvs = COMBINED_DEFAULT_OAUTH2_SERVICES
 
         self._service = init_services(service_definitions=_srvs, upstream_get=self.unit_get)
 
@@ -76,7 +98,8 @@ class ClientEntity(ClientUnit):
                 config['key_conf'] = key_conf
             self.context = ServiceContext(
                 config=config, jwks_uri=jwks_uri, key_conf=key_conf, upstream_get=self.unit_get,
-                keyjar=self.keyjar, metadata_class=RPClaims(), client_type=self.client_type,
+                keyjar=self.keyjar, metadata_class=self.metadata_class,
+                client_type=self.client_type,
                 entity_id=self.entity_id
             )
 
@@ -117,9 +140,15 @@ class ClientEntity(ClientUnit):
     def get_client_id(self):
         return self.entity_id
 
-    def get_metadata(self, *args):
-        metadata = self.context.claims.get_use()
-        return {self.name: metadata}
+    def get_metadata(self, entity_type="", *args):
+        if not entity_type:
+            if self.client_type == "oauth2":
+                entity_type = "oauth_client"
+            elif self.client_type == "oidc":
+                entity_type = "openid_relying_party"
+
+        return self.context.claims.get_client_metadata(entity_type=entity_type,
+                                                       metadata_schema=self.metadata_class)
 
     def do_request(
             self,
@@ -283,14 +312,11 @@ class ClientEntity(ClientUnit):
 
         if reqresp.status_code in SUCCESSFUL:
             logger.debug(f'response_body_type: "{response_body_type}"')
-            _deser_method = get_deserialization_method(reqresp)
+            _ctype = get_content_type(reqresp)
+            _deser_method = get_deserialization_method(_ctype)
 
-            if _deser_method != response_body_type:
-                logger.warning(
-                    "Not the body type I expected: {} != {}".format(
-                        _deser_method, response_body_type
-                    )
-                )
+            if _ctype != response_body_type:
+                logger.warning(f"Not the body type I expected: {_ctype} != {response_body_type}")
             if _deser_method in ["json", "jwt", "urlencoded"]:
                 body_type = _deser_method
             else:
@@ -312,15 +338,16 @@ class ClientEntity(ClientUnit):
         elif 400 <= reqresp.status_code < 500:
             logger.error(f"Error response ({reqresp.status_code}): {reqresp.text}")
             # expecting an error response
-            body_type = get_deserialization_method(reqresp)
-            if not body_type:
-                body_type = "json"
+            content_type = get_content_type(reqresp)
+            _deser_method = get_deserialization_method(content_type)
+            if not content_type:
+                content_type = "application/json"
 
             try:
-                err_resp = self._parse_response(service, reqresp.text, body_type, state, **kwargs)
+                err_resp = self._parse_response(service, reqresp.text, content_type, state, **kwargs)
             except (FormatError, ValueError):
-                if body_type != response_body_type:
-                    logger.warning(f'Response with wrong content-type: {body_type}')
+                if content_type != response_body_type:
+                    logger.warning(f'Response with wrong content-type: {content_type}')
                     try:
                         err_resp = self._parse_response(service,
                                                         response=reqresp.text,

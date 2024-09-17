@@ -81,7 +81,7 @@ def collect_trust_chains(unit,
             _collector_response = _collector(entity_id, stop_at=stop_at)
         except Exception as err:
             logger.error(f"Trust chain collection failed {err}")
-            raise(err)
+            raise (err)
         if _collector_response:
             tree, signed_entity_configuration = _collector_response
         else:
@@ -91,6 +91,8 @@ def collect_trust_chains(unit,
         chains = tree2chains(tree)
         logger.debug("%d chains", len(chains))
         return chains, signed_entity_configuration
+    elif tree == {}:
+        return [], signed_entity_configuration
     else:
         return [], None
 
@@ -108,6 +110,14 @@ def verify_trust_chains(unit, chains: List[List[str]], *entity_statements):
         if trust_chain:
             res.append(trust_chain)
     return res
+
+
+def verify_trust_chain(unit, chain: List[str]):
+    #
+    _verifier = get_federation_entity(unit).function.verifier
+
+    logger.debug("verify_trust_chain")
+    return _verifier(chain)
 
 
 def apply_policies(unit, trust_chains):
@@ -151,14 +161,19 @@ def get_verified_trust_chains(unit, entity_id):
 
 
 def get_entity_endpoint(unit, entity_id, metadata_type, metadata_parameter):
-    # get endpoint from the Entity Configuration
-
-    trust_chains = get_verified_trust_chains(unit, entity_id)
-    # pick one
-    if trust_chains:
-        return trust_chains[0].metadata[metadata_type][metadata_parameter]
+    _federation_entity = get_federation_entity(unit)
+    if entity_id in _federation_entity.trust_anchors:
+        # Fetch Entity Configuration
+        _ec = _federation_entity.client.do_request("entity_configuration", entity_id=entity_id)
+        return _ec["metadata"][metadata_type][metadata_parameter]
     else:
-        return ""
+        trust_chains = get_verified_trust_chains(unit, entity_id)
+        # pick one
+        if trust_chains:
+            return trust_chains[0].metadata[metadata_type][metadata_parameter]
+        else:
+            return ""
+
 
 def get_verified_jwks(unit, _signed_jwks_uri):
     # Fetch a signed JWT that contains a JWKS.
@@ -166,7 +181,6 @@ def get_verified_jwks(unit, _signed_jwks_uri):
     # To be implemented
     return None
 
+
 class PolicyError(Exception):
     pass
-
-

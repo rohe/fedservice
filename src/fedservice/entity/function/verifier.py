@@ -10,6 +10,7 @@ from fedservice.entity.function import Function
 from fedservice.entity.utils import get_federation_entity
 from fedservice.entity_statement.constraints import meets_restrictions
 from fedservice.entity_statement.statement import TrustChain
+from fedservice.exception import UnknownTrustAnchor
 
 logger = logging.getLogger(__name__)
 

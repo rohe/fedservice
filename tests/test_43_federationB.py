@@ -1,12 +1,11 @@
 import pytest
 import responses
 
-from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
-from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
+from tests.build_federation import build_federation
 
 KEYDEFS = [
     {"type": "RSA", "key": "", "use": ["sig"]},
@@ -20,6 +19,48 @@ IM_ID = "https://im.example.org"
 
 TA_ENDPOINTS = ["list", "fetch", "entity_configuration"]
 
+FEDERATION_CONFIG = {
+    TA_ID: {
+        "entity_type": "trust_anchor",
+        "subordinates": [IM_ID, OP_ID],
+        "kwargs": {
+            "preference": {
+                "organization_name": "The example federation operator",
+                "homepage_uri": "https://ta.example.org",
+                "contacts": "operations@ta.example.org"
+            },
+            "endpoints": ['entity_configuration', 'list', 'fetch', 'resolve'],
+        }
+    },
+    IM_ID: {
+        "entity_type": "intermediate",
+        "trust_anchors": [TA_ID],
+        "subordinates": [RP_ID],
+        "kwargs": {
+            "authority_hints": [TA_ID],
+        }
+    },
+    OP_ID: {
+        "entity_type": "openid_provider",
+        "trust_anchors": [TA_ID],
+        "kwargs": {
+            "authority_hints": [TA_ID]
+        }
+    },
+    RP_ID: {
+        "entity_type": "openid_relying_party",
+        "trust_anchors": [TA_ID],
+        "kwargs": {
+            "authority_hints": [IM_ID],
+            "preference": {
+                "organization_name": "The example federation RP operator",
+                "homepage_uri": "https://rp.example.com",
+                "contacts": "operations@rp.example.com"
+            }
+        }
+    }
+}
+
 
 class TestComboCollect(object):
 
@@ -32,85 +73,11 @@ class TestComboCollect(object):
         #          |
         #          RP
 
-        self.ta = make_federation_entity(
-            TA_ID,
-            preference={
-                "organization_name": "The example federation operator",
-                "homepage_uri": "https://ta.example.com",
-                "contacts": "operations@ta.example.com"
-            },
-            key_config={"key_defs": KEYDEFS},
-            endpoints=TA_ENDPOINTS
-        )
-
-        ANCHOR = {self.ta.entity_id: self.ta.keyjar.export_jwks()}
-
-        # Leaf RP
-
-        self.rp = make_federation_entity(
-            RP_ID,
-            preference={
-                "organization_name": "The RP",
-                "homepage_uri": "https://rp.example.com",
-                "contacts": "operations@rp.example.com"
-            },
-            key_config={"key_defs": KEYDEFS},
-            authority_hints=[IM_ID],
-            trust_anchors=ANCHOR,
-            endpoints=LEAF_ENDPOINTS
-        )
-
-        # intermediate
-
-        self.im = make_federation_entity(
-            IM_ID,
-            preference={
-                "organization_name": "The organization",
-                "homepage_uri": "https://example.com",
-                "contacts": "operations@example.com"
-            },
-            key_config={"key_defs": KEYDEFS},
-            authority_hints=[TA_ID],
-            trust_anchors=ANCHOR,
-            endpoints=["entity_configuration", "fetch", "list"],
-            subordinate={
-                RP_ID: {
-                    "jwks": self.rp.keyjar.export_jwks(),
-                    'authority_hints': [IM_ID]
-                }
-            },
-            metadata_policy={
-                RP_ID: {
-                    "federation_entity": {
-                        "organization_name": {"value": "Example Inc."}
-                    }
-                }
-            }
-        )
-
-        self.ta.server.subordinate[IM_ID] = {
-            "jwks": self.im.keyjar.export_jwks(),
-            'authority_hints': [TA_ID]
-        }
-
-        # Leaf OP
-
-        self.op = make_federation_entity(
-            OP_ID,
-            preference={
-                "organization_name": "The OP operator",
-                "homepage_uri": "https://op.example.com",
-                "contacts": "operations@op.example.com"
-            },
-            key_config={"key_defs": KEYDEFS},
-            authority_hints=[TA_ID],
-            trust_anchors={self.ta.entity_id: self.ta.keyjar.export_jwks()},
-            endpoints=LEAF_ENDPOINTS
-        )
-        self.ta.server.subordinate[OP_ID] = {
-            "jwks": self.op.keyjar.export_jwks(),
-            'authority_hints': [TA_ID]
-        }
+        federation = build_federation(FEDERATION_CONFIG)
+        self.ta = federation[TA_ID]
+        self.im = federation[IM_ID]
+        self.op = federation[OP_ID]
+        self.rp = federation[RP_ID]
 
     def test_setup(self):
         assert self.ta
@@ -145,7 +112,7 @@ class TestComboCollect(object):
 
         trust_chain = trust_chains[0]
         assert trust_chain.metadata
-        assert set(trust_chain.metadata.keys()) == {'federation_entity'}
+        assert set(trust_chain.metadata.keys()) == {'openid_relying_party', 'federation_entity'}
         assert set(trust_chain.metadata['federation_entity'].keys()) == {
-            'organization_name', 'homepage_uri', 'contacts', "jwks"}
+            'organization_name', 'homepage_uri', 'contacts'}
         assert trust_chain.metadata['federation_entity']["contacts"] == 'operations@rp.example.com'

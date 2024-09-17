@@ -1,0 +1,21 @@
+{
+  "https://openidfed-test-1.sunet.se:7001": {
+    "keys": [
+      {
+        "kty": "RSA",
+        "use": "sig",
+        "kid": "UFpoajluZU42dTNUUXo5RnhBVEJnRk9JY2NtU1JKdlVYUk1RUFRyVkFFRQ",
+        "n": "p9S2whcSjmBdxerp80tIJreUUmZiGNGXIocJlNjx9pgD5_WD2l6mBNuEZMpP-QUB_TSV3VesNiqmOdydGp1wkfQ-NmVdoso29FjEdgrckLIwirAVmVQ6bGQQnXJrR56mRz0QqENi11vVpbDj6hsprxK1EZBQL-sQ2kem289B_BCNT-NvwVHrYJlaQA32z7cs1a7W8wt9eLxA10PeiYMgDVU_69wKBw4YrjjozOHKMRGchUQEjQhfSZfk49bip_5TNz4dmBmSCIbdE2yilFrfRSNrh7q2myuyDE3k2QZbSOXXGGT1LtHO74WIY58v-M3A7_zxp0f2Eo9ZD3N4h-InIw",
+        "e": "AQAB"
+      },
+      {
+        "kty": "EC",
+        "use": "sig",
+        "kid": "Nm82cTJKMDkydXhxOUMtTm0teFpMWlZiR0ZVa2U3YVVtbkJTV3hBd3FqOA",
+        "crv": "P-256",
+        "x": "69XlQkKYfWJDXAv_Vbrqyfz9gfAhu1qQ4mtLde18-Cg",
+        "y": "ntBwdhy4_cS2PRBS-xdKkNwcO1yQP8TdoOHbHN9Yjv8"
+      }
+    ]
+  }
+}

@@ -53,14 +53,13 @@ class TestClaimsEntity():
             'federation_list_endpoint': 'https://anchor.example.com/list'
         }
 
-        assert set(self.entity.get_metadata().keys()) == {'federation_entity'}
-        _fed_entity_metadata = self.entity.get_metadata()["federation_entity"]
+        assert set(self.entity.get_metadata('federation_entity').keys()) == {'federation_entity'}
+        _fed_entity_metadata = self.entity.get_metadata('federation_entity')["federation_entity"]
         assert set(_fed_entity_metadata.keys()) == {
             'contacts',
             'federation_fetch_endpoint',
             'federation_list_endpoint',
             'homepage_uri',
-            'jwks',
             'organization_name'}
 
         # stored under 2 IDs
@@ -120,30 +119,25 @@ class TestClaimsFRP():
         self.combo = FederationCombo(LEAF_CONFIG)
 
     def test(self):
-        _pref = self.combo.get_preferences()
+        _pref = self.combo.get_metadata()
         assert set(_pref.keys()) == {'federation_entity', "openid_relying_party"}
         assert set(_pref["federation_entity"].keys()) == {'contacts', 'federation_fetch_endpoint',
-                                                          'federation_list_endpoint', "jwks",
+                                                          'federation_list_endpoint',
                                                           'homepage_uri', 'organization_name'}
-        assert set(_pref["openid_relying_party"].keys()) == {'callback_uris',
-                                                             'client_id',
-                                                             'client_secret',
-                                                             'encrypt_request_object_supported',
-                                                             'encrypt_userinfo_supported',
-                                                             'grant_types',
-                                                             'jwks_uri',
-                                                             'redirect_uris',
-                                                             'request_object_encryption_alg',
-                                                             'request_object_encryption_enc',
-                                                             'request_object_signing_alg',
-                                                             'response_modes',
-                                                             'response_types',
-                                                             'scope',
-                                                             'token_endpoint_auth_method',
-                                                             'token_endpoint_auth_signing_alg',
-                                                             'userinfo_encrypted_response_alg',
-                                                             'userinfo_encrypted_response_enc',
-                                                             'userinfo_signed_response_alg'}
+        _keys = [k for k, v in _pref["openid_relying_party"].items() if v != []]
+        assert set(_keys) == {'application_type',
+                              'default_max_age',
+                              'grant_types',
+                              'id_token_signed_response_alg',
+                              'jwks_uri',
+                              'redirect_uris',
+                              'request_object_signing_alg',
+                              'response_modes',
+                              'response_types',
+                              'subject_type',
+                              'token_endpoint_auth_method',
+                              'token_endpoint_auth_signing_alg',
+                              'userinfo_signed_response_alg'}
 
         # IN this case the Combo has no keys, The federation entity and the openid relying party has
         # separate key jars. Same initial key owner IDs in both keyjars.

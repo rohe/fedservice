@@ -1,6 +1,7 @@
 import logging
 import time
 from datetime import datetime
+from typing import Callable
 
 import werkzeug
 from flask import Blueprint
@@ -13,6 +14,8 @@ from flask.helpers import make_response
 from flask.helpers import send_from_directory
 from idpyoidc.client.exception import OidcServiceError
 
+from fedservice.entity_statement.create import create_entity_statement
+
 logger = logging.getLogger(__name__)
 
 entity = Blueprint('oidc_rp', __name__, url_prefix='')
@@ -23,12 +26,11 @@ def send_js(filename):
     return send_from_directory('static', filename)
 
 
-@entity.route('/jwks/<use>')
-def keys(use):
-    for typ in ["openid_relying_party", "federation_entity"]:
-        if use == typ:
-            _ent_type = current_app.server[typ]
-            return _ent_type.context.keyjar.export_jwks_as_json()
+@entity.route('/jwks/<guise>')
+def keys(guise):
+    if guise in ["openid_relying_party", "federation_entity"]:
+        _ent_type = current_app.server[guise]
+        return _ent_type.context.keyjar.export_jwks_as_json()
 
     return "Asking for something I do not have", 400
 
@@ -58,10 +60,28 @@ def wkof():
         # Any client will do
         cli = _rph.issuer2rp[list(_rph.issuer2rp.keys())[0]]
 
-    _registration = cli.get_service("registration")
-    _jws = _registration.construct()
+    _metadata = current_app.server.get_metadata()
+    _metadata.update(cli.get_metadata())
 
-    response = make_response(_jws)
+    _fed_entity = current_app.server["federation_entity"]
+
+    if _fed_entity.context.trust_marks:
+        if isinstance(_fed_entity.context.trust_marks, Callable):
+            args = {"trust_marks": _fed_entity.context.trust_marks()}
+        else:
+            args = {"trust_marks": _fed_entity.context.trust_marks}
+    else:
+        args = {}
+
+    _ec = create_entity_statement(iss=_fed_entity.entity_id,
+                                  sub=_fed_entity.entity_id,
+                                  key_jar=_fed_entity.get_attribute('keyjar'),
+                                  metadata=_metadata,
+                                  authority_hints=_fed_entity.context.authority_hints,
+                                  **args
+                                  )
+
+    response = make_response(_ec)
     response.headers['Content-Type'] = 'application/jose; charset=UTF-8'
     return response
 

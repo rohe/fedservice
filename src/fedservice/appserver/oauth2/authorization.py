@@ -2,15 +2,16 @@ import logging
 from typing import List
 from typing import Optional
 
-from fedservice.entity.utils import get_federation_entity
 from idpyoidc.message import oauth2
 from idpyoidc.message.oauth2 import OauthClientMetadata
 from idpyoidc.node import topmost_unit
 from idpyoidc.server.oauth2 import authorization
 
+from fedservice.appserver import import_client_keys
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
 from fedservice.entity.function import verify_trust_chains
+from fedservice.entity.utils import get_federation_entity
 from fedservice.exception import NoTrustedChains
 
 logger = logging.getLogger(__name__)
@@ -68,18 +69,15 @@ class Authorization(authorization.Authorization):
         _fe.trust_chain_anchor = trust_chain.anchor
 
         # handle the registration request as in the non-federation case.
-        # If there is a jwks_uri in the metadata import keys
-        _jwks_uri = trust_chain.metadata['openid_relying_party'].get('jwks_uri')
-        if _jwks_uri:
-            _keyjar = self.upstream_get('attribute', 'keyjar')
-            _keyjar.add_url(entity_id, _jwks_uri)
+        # If there is a signed_jwks_uri, jwks_uri or jwks in the metadata import keys
+        import_client_keys(trust_chain.metadata['oauth_client'], self.upstream_get('attribute', 'keyjar'), entity_id)
 
-        req = OauthClientMetadata(**trust_chain.metadata['openid_relying_party'])
+        req = OauthClientMetadata(**trust_chain.metadata['oauth_client'])
         req['client_id'] = entity_id
         kwargs = {}
         kwargs['new_id'] = self.new_client_id
 
-        op = topmost_unit(self)['openid_relaying_party']
+        op = topmost_unit(self)['oauth_authorization_server']
         _registration = op.get_endpoint("registration")
         response_info = _registration.non_fed_process_request(req=req, **kwargs)
 

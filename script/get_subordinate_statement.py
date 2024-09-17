@@ -15,7 +15,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', "--insecure", action='store_true')
     parser.add_argument('-t', "--trust_anchors_file")
-    parser.add_argument('-c', dest='config', action='store_true')
     parser.add_argument('-s', "--superior")
     parser.add_argument(dest="entity_id")
     args = parser.parse_args()
@@ -36,23 +35,20 @@ if __name__ == '__main__':
     _collector = federation_entity.get_function("trust_chain_collector")
 
     _info = None
-    if args.config:
-        _jws = _collector.get_entity_configuration(args.entity_id)
-        entity_configuration = verify_self_signed_signature(_jws)
-        json_str = json.dumps(entity_configuration, indent=2)
-        print(20 * "=" + " Entity Configuration " + 20 * "=")
-        print(highlight(json_str, JsonLexer(), TerminalFormatter()))
 
-    if args.superior:
-        _jws = _collector.get_entity_configuration(args.superior)
-        superior_entity_configuration = verify_self_signed_signature(_jws)
-        _fetch_endpoint = superior_entity_configuration["metadata"]["federation_entity"][
-            "federation_fetch_endpoint"]
-        # The entity with the entity_id is the one issuing an entity statement
-        _jws = _collector.get_entity_statement(fetch_endpoint=_fetch_endpoint,
-                                               issuer=args.superior,
-                                               subject=args.entity_id)
-        entity_statement = unverified_entity_statement(_jws)
-        json_str = json.dumps(entity_statement, indent=2)
-        print(20 * "=" + " Entity Statement " + 20 * "=")
-        print(highlight(json_str, JsonLexer(), TerminalFormatter()))
+    # Get the entity configuration for the superior
+    _jws = _collector.get_entity_configuration(args.superior)
+    superior_entity_configuration = verify_self_signed_signature(_jws)
+
+    # Pick out the fetch endpoint
+    _fetch_endpoint = superior_entity_configuration["metadata"]["federation_entity"]["federation_fetch_endpoint"]
+
+    # Ask the superior for the subordinate statement
+    _jws = _collector.get_entity_statement(fetch_endpoint=_fetch_endpoint,
+                                           issuer=args.superior,
+                                           subject=args.entity_id)
+    # Don't try to verify the signatures
+    entity_statement = unverified_entity_statement(_jws)
+    json_str = json.dumps(entity_statement, indent=2)
+    print(20 * "=" + f" Subordinate Statement about {args.entity_id} from {args.superior} " + 20 * "=")
+    print(highlight(json_str, JsonLexer(), TerminalFormatter()))

@@ -1,5 +1,5 @@
-import logging
 from json import JSONDecodeError
+import logging
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -10,12 +10,13 @@ from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.client.configure import Configuration
 from idpyoidc.client.defaults import SUCCESSFUL
 from idpyoidc.client.exception import OidcServiceError
-from idpyoidc.client.service import init_services
 from idpyoidc.client.service import REQUEST_INFO
 from idpyoidc.client.service import Service
+from idpyoidc.client.service import init_services
 from idpyoidc.client.service_context import CLI_REG_MAP
 from idpyoidc.client.service_context import PROVIDER_INFO_MAP
 from idpyoidc.client.util import do_add_ons
+from idpyoidc.client.util import get_content_type
 from idpyoidc.client.util import get_deserialization_method
 from idpyoidc.exception import FormatError
 from idpyoidc.exception import ParseError
@@ -60,6 +61,7 @@ class FederationServiceContext(FederationContext):
         _key_jar = self.upstream_get("attribute", "keyjar")
         for iss, jwks in self.trusted_roots.items():
             _key_jar.import_jwks(jwks, iss)
+        self.server_metadata = {}
 
     def _get_crypt(self, typ, attr):
         _item_typ = CLI_REG_MAP.get(typ)
@@ -107,6 +109,22 @@ class FederationServiceContext(FederationContext):
 
     def get_client_id(self):
         return self.claims.get_usage("client_id")
+
+    def get_metadata_claim(self, claim, entity_type: Optional[List[str]] = ""):
+        if entity_type:
+            for _type in entity_type:
+                if _type in self.server_metadata:
+                    _val = self.server_metadata[_type].get(claim)
+                    if _val:
+                        return _val
+            raise KeyError(f"{claim} not in {entity_type} metadata")
+        else:
+            for _type in self.server_metadata.keys():
+                _val = self.server_metadata[_type].get(claim)
+                if _val:
+                    return _val
+            raise KeyError(f"{claim} not in server metadata")
+
 
 
 class FederationClientEntity(ClientUnit):
@@ -327,7 +345,7 @@ class FederationClient(FederationClientEntity):
             return {"http_response": resp}
         elif resp.status_code >= 400:
             logger.error(f"HTTP error: {resp}")
-
+            return service.error_msg(error="System error", error_description=f"{resp.text}")
         if resp.status_code < 300:
             if "keyjar" not in kwargs:
                 kwargs["keyjar"] = self.get_attribute("keyjar")
@@ -395,7 +413,7 @@ class FederationClient(FederationClientEntity):
 
         :param service: A :py:class:`idpyoidc.client.service.Service` instance
         :param reqresp: The HTTP request response
-        :param response_body_type: If response in body one of 'json', 'jwt' or
+        :param response_body_type: If response in body one of 'json', 'jwt', 'jose' or
             'urlencoded'
         :param state: Session identifier
         :param kwargs: Extra keyword arguments
@@ -407,7 +425,8 @@ class FederationClient(FederationClientEntity):
 
         if reqresp.status_code in SUCCESSFUL:
             logger.debug('response_body_type: "{}"'.format(response_body_type))
-            _deser_method = get_deserialization_method(reqresp)
+            ctype = get_content_type(reqresp)
+            _deser_method = get_deserialization_method(ctype)
 
             if _deser_method != response_body_type:
                 logger.warning(
@@ -435,7 +454,8 @@ class FederationClient(FederationClientEntity):
         elif 400 <= reqresp.status_code < 500:
             logger.error("Error response ({}): {}".format(reqresp.status_code, reqresp.text))
             # expecting an error response
-            _deser_method = get_deserialization_method(reqresp)
+            ctype = get_content_type(reqresp)
+            _deser_method = get_deserialization_method(ctype)
             if not _deser_method:
                 _deser_method = "json"
 
@@ -465,3 +485,7 @@ class FederationClient(FederationClientEntity):
             raise OidcServiceError(
                 "HTTP ERROR: %s [%s] on %s" % (reqresp.text, reqresp.status_code, reqresp.url)
             )
+
+    def get_metadata(self, *args):
+        metadata = self.context.claims.get_use()
+        return {self.name: metadata}

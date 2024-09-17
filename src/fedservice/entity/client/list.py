@@ -6,9 +6,8 @@ from urllib.parse import urlencode
 from idpyoidc.client.configure import Configuration
 from idpyoidc.message.oauth2 import ResponseMessage
 
+from fedservice.entity.function.trust_anchor import get_verified_endpoint
 from fedservice.entity.service import FederationService
-from fedservice.entity.utils import get_federation_entity
-from fedservice.message import ListResponse
 
 
 class List(FederationService):
@@ -20,6 +19,7 @@ class List(FederationService):
     service_name = "list"
     http_method = "GET"
     endpoint_name = "federation_list_endpoint"
+    response_body_type = "json"
 
     def __init__(self,
                  upstream_get: Callable,
@@ -44,12 +44,7 @@ class List(FederationService):
         :return: List of entity IDs
         """
         if not endpoint:
-            _federation_entity = get_federation_entity(self)
-            _collector = _federation_entity.function.trust_chain_collector
-            _ec = _collector.config_cache[entity_id]
-            endpoint = _ec["metadata"]["federation_entity"].get(self.endpoint_name)
-            if not endpoint:
-                return None
+            endpoint = get_verified_endpoint(self, entity_id, self.endpoint_name)
 
         qpart = {}
         for arg in ["entity_type", "trust_marked", "trust_mark_id", "intermediate"]:

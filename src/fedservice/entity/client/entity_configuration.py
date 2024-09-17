@@ -10,6 +10,7 @@ from idpyoidc.message import oauth2
 from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.node import topmost_unit
 
+from fedservice.entity import FederationEntity
 from fedservice.entity.service import FederationService
 from fedservice.entity.utils import get_federation_entity
 from fedservice.message import EntityStatement
@@ -37,6 +38,7 @@ class EntityConfiguration(FederationService):
     service_name = "entity_configuration"
     http_method = "GET"
     response_body_type = "jwt"
+    response_content_type = "application/entity-statement+jwt"
 
     def __init__(self,
                  upstream_get: Callable,
@@ -80,15 +82,18 @@ class EntityConfiguration(FederationService):
 
         if not _issuer:
             _root = topmost_unit(self)
-            for key, _unit in _root.items():
-                if key == "federation_entity":
-                    pass
-                else:
-                    _context = getattr(_unit, "context", None)
-                    if _context:
-                        _issuer = _unit.context.get("issuer", None)
-                        if _issuer:
-                            break
+            if isinstance(_root, FederationEntity):
+                _issuer = _root.entity_id
+            else:
+                for key, _unit in _root.items():
+                    if key == "federation_entity":
+                        pass
+                    else:
+                        _context = getattr(_unit, "context", None)
+                        if _context:
+                            _issuer = _unit.context.get("issuer", None)
+                            if _issuer:
+                                break
 
             if not _issuer:
                 raise AttributeError("Missing issuer id")

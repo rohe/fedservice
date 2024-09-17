@@ -57,19 +57,27 @@ class Registration(registration.Registration):
         _root = _federation_entity.upstream_get('unit')
         _md = _root.get_metadata()
         _keyjar = _federation_entity.get_attribute("keyjar")
-        _entity = self.upstream_get('unit')
-        if _entity.name not in _md:
-            _md.update(_entity.get_metadata())
+
+        # _entity = self.upstream_get('unit')
+        # if _entity.name not in _md:
+        #     _md.update(_entity.get_metadata())
+
         _authority_hints = _federation_entity.get_authority_hints()
         _context = _federation_entity.get_context()
         _entity_id = _federation_entity.upstream_get('attribute', 'entity_id')
+
+        kwargs = {}
+        if _context.trust_marks:
+            kwargs["trust_marks"] = _context.trust_marks
+
         _jws = _context.create_entity_statement(
             iss=_entity_id,
             sub=_entity_id,
             metadata=_md,
             key_jar=_keyjar,
             authority_hints=_authority_hints,
-            trust_marks=_context.trust_marks)
+            **kwargs)
+
         # store for later reference
         _federation_entity.entity_configuration = _jws
         return _jws

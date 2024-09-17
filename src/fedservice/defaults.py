@@ -3,40 +3,49 @@ from fedservice.message import FederationEntity
 from fedservice.message import OauthClientMetadata
 from fedservice.message import OAuthProtectedResourceMetadata
 from fedservice.message import OIDCRPMetadata
-from fedservice.message import OPMetadataMessage
-from fedservice.message import TrustMarkIssuerMetadata
+from fedservice.message import OPMetadata
 
 ENTITY_TYPE2METADATA_CLASS = {
     "openid_relying_party": OIDCRPMetadata,
-    "openid_provider": OPMetadataMessage,
+    "openid_provider": OPMetadata,
     "oauth_authorization_server": AuthorizationServerMetadata,
     "oauth_client": OauthClientMetadata,
     "oauth_resource": OAuthProtectedResourceMetadata,
-    "federation_entity": FederationEntity,
-    "trust_mark_issuer": TrustMarkIssuerMetadata
+    "federation_entity": FederationEntity
 }
 
 DEFAULT_OIDC_FED_SERVICES = {
-    'discovery': {
-        'class': 'fedservice.appclient.oidc.provider_info_discovery.ProviderInfoDiscovery'},
-    'registration': {
+    'oidc_authorization': {
+        'class': 'fedservice.appclient.oidc.authorization.Authorization'},
+    'oidc_registration': {
         'class': 'fedservice.appclient.oidc.registration.Registration'},
 }
 
 DEFAULT_OAUTH2_FED_SERVICES = {
-    'discovery': {
-        'class': 'fedservice.appclient.oauth2.server_metadata.ServerMetadata'}
+    'oauth_authorization': {
+        'class': 'fedservice.appclient.oauth2.authorization.Authorization'},
+    'oauth_registration': {
+        'class': 'fedservice.appclient.oauth2.registration.Registration'},
 }
 
+COMBINED_DEFAULT_OIDC_SERVICES = DEFAULT_OIDC_FED_SERVICES
+COMBINED_DEFAULT_OIDC_SERVICES.update({
+    "discovery": {"class": "idpyoidc.client.oidc.provider_info_discovery.ProviderInfoDiscovery"},
+    "access_token": {"class": "idpyoidc.client.oidc.access_token.AccessToken"},
+    "refresh_access_token": {
+        "class": "idpyoidc.client.oidc.refresh_access_token.RefreshAccessToken"},
+    "userinfo": {"class": "idpyoidc.client.oidc.userinfo.UserInfo"}
+})
+
+COMBINED_DEFAULT_OAUTH2_SERVICES = DEFAULT_OAUTH2_FED_SERVICES
+COMBINED_DEFAULT_OAUTH2_SERVICES.update({
+    "discovery": {"class": "idpyoidc.client.oauth2.server_metadata.ServerMetadata"},
+    "access_token": {"class": "idpyoidc.client.oauth2.access_token.AccessToken"},
+    "refresh_access_token": {
+        "class": "idpyoidc.client.oauth2.refresh_access_token.RefreshAccessToken"}
+})
+
 SERVICES = {
-    'discovery': {
-        'class': 'fedservice.appclient.oidc.provider_info_discovery.ProviderInfoDiscovery',
-        "kwargs": {}
-    },
-    'registration': {
-        'class': 'fedservice.appclient.oidc.registration.Registration',
-        "kwargs": {}
-    },
     "entity_configuration": {
         "class": 'fedservice.entity.client.entity_configuration.EntityConfiguration',
         "kwargs": {}
@@ -65,21 +74,57 @@ SERVICES = {
         "class": 'fedservice.entity.client.list.List',
         "kwargs": {}
     },
-    "metadata_verification": {
-        "class": "fedservice.entity.client.metadata_verification.MetadataVerification",
+    "who": {
+        "class": 'fedservice.entity.client.who.Who',
         "kwargs": {}
-    }
+    },
 }
 
 
 def federation_services(*api):
-    return {a: SERVICES[a] for a in api}
+    res = {}
+    for a in api:
+        if isinstance(a, dict):
+            continue
+        if a in SERVICES:
+            res[a] = SERVICES[a]
+        elif a in DEFAULT_OAUTH2_FED_SERVICES:
+            res[a] = DEFAULT_OAUTH2_FED_SERVICES[a]
+        elif a in DEFAULT_OIDC_FED_SERVICES:
+            res[a] = DEFAULT_OIDC_FED_SERVICES[a]
+
+    for a in api:
+        if isinstance(a, dict):
+            res.update(a)
+
+    return res
 
 
 FEDERATION_ENTITY_SERVICES = federation_services("entity_configuration", "entity_statement",
                                                  "resolve", "list")
 
 DEFAULT_FEDERATION_ENTITY_SERVICES = FEDERATION_ENTITY_SERVICES
+
+OIDC_FED_ENDPOINTS = {
+    'oidc_authorization': {
+        "path": "authn",
+        'class': 'fedservice.appserver.oidc.authorization.Authorization',
+        "kwargs": {}
+    },
+    'oidc_registration': {
+        'class': 'fedservice.appserver.oidc.registration.Registration'},
+}
+
+OAUTH2_FED_ENDPOINTS = {
+    'oauth_authorization': {
+        "path": "authz",
+        'class': 'fedservice.appserver.oauth2.authorization.Authorization'
+    },
+    'oauth_registration': {
+        "path": "registration",
+        'class': 'fedservice.appserver.oauth2.registration.Registration'
+    }
+}
 
 FEDERATION_ENDPOINTS = {
     "entity_configuration": {
@@ -104,22 +149,22 @@ FEDERATION_ENDPOINTS = {
     },
     "trust_mark_status": {
         "path": "trust_mark_status",
-        "class": 'fedservice.entity.server.trust_mark_status.TrustMarkStatus',
+        "class": 'fedservice.trust_mark_entity.server.trust_mark_status.TrustMarkStatus',
         "kwargs": {}
     },
     "trust_mark": {
         "path": "trust_mark",
-        "class": 'fedservice.entity.server.trust_mark.TrustMark',
+        "class": 'fedservice.trust_mark_entity.server.trust_mark.TrustMark',
         "kwargs": {}
     },
     "trust_mark_list": {
         "path": "trust_mark_list",
-        "class": 'fedservice.entity.server.trust_mark_list.TrustMarkList',
+        "class": 'fedservice.trust_mark_entity.server.trust_mark_list.TrustMarkList',
         "kwargs": {}
     },
-    "metadata_verification": {
-        "path": "verifier",
-        "class": "fedservice.entity.server.metadata_verification.MetadataVerification",
+    "who": {
+        "path": "who",
+        "class": "fedservice.entity.server.who.Who",
         "kwargs": {}
     }
 }

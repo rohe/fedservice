@@ -1,3 +1,7 @@
+import os
+
+from cryptojwt.utils import importer
+
 from fedservice.entity import FederationEntity
 from fedservice.entity.utils import get_federation_entity
 
@@ -17,12 +21,8 @@ SESSION_PARAMS = {"encrypter": CRYPT_CONFIG}
 
 RESPONSE_TYPES_SUPPORTED = [
     ["code"],
-    ["token"],
     ["id_token"],
-    ["code", "token"],
     ["code", "id_token"],
-    ["id_token", "token"],
-    ["code", "token", "id_token"],
     ["none"],
 ]
 
@@ -93,3 +93,10 @@ def create_trust_chain(leaf, *entity):
         chain.append(_endpoint.process_request(_req)["response"])
 
     return chain
+
+def rm_dir_files(dir):
+    for file_object in os.listdir(dir):
+        file_object_path = os.path.join(dir, file_object)
+        if os.path.isfile(file_object_path) or os.path.islink(file_object_path):
+            os.unlink(file_object_path)
+

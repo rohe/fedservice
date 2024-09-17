@@ -2,6 +2,8 @@ import json
 import os
 from typing import Optional
 
+from cryptojwt.jwt import utc_time_sans_frac
+
 
 class FileDB(object):
 
@@ -33,6 +35,12 @@ class FileDB(object):
             # Get the last issued
             for line in reversed(list(fp)):
                 _tmi = json.loads(line.rstrip())
+
+                if 'exp' in _tmi:
+                    now = utc_time_sans_frac()
+                    if now > _tmi["exp"]:
+                        return False
+
                 if self._match(sub, iat, _tmi):
                     return True
         return False

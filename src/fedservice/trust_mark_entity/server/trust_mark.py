@@ -9,6 +9,8 @@ from idpyoidc.message import Message
 from idpyoidc.message import oidc
 from idpyoidc.server.endpoint import Endpoint
 
+from fedservice.message import TrustMarkRequest
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,7 +20,7 @@ def create_trust_mark(keyjar, entity_id, **kwargs):
 
 
 class TrustMark(Endpoint):
-    request_cls = oidc.Message
+    request_cls = TrustMarkRequest
     name = "trust_mark"
     endpoint_name = 'federation_trust_mark_endpoint'
     response_format = "jose"
@@ -40,17 +42,12 @@ class TrustMark(Endpoint):
 
         _trust_mark_issuer = self.upstream_get("unit")
 
-        _id = request.get("trust_mark_id", None)
-        if not _id:
-            return self.error_cls(error="invalid_request", error_description="Missing required parameter")
-
-        _sub = request.get("client_id", None)  # gotten from the client authentication.
-        if not _sub:
-            return self.error_cls(error="invalid_client", error_description="Unauthorized client")
+        _id = request.get("trust_mark_id")
+        _sub = request.get("sub")  # Required parameter
 
         _jws = _trust_mark_issuer.create_trust_mark(_id, _sub)
 
-        return {"response": _jws}
+        return {"http_response": _jws}
 
     def response_info(
             self,

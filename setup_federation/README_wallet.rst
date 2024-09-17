@@ -185,7 +185,7 @@ usage: create_trust_mark.py [-h] [-d DIR_NAME] [-e ENTITY_ID] [-m TRUST_MARK_ID]
 The TRUST_MARK_ID is http://dc4eu.example.com/PersonIdentificationData/se.
 Which is something I just invented for this setup
 https://127.0.0.1:8080 is where the Credential Issuer (The OpenID4VCI SATOSA frontend)
-can be found.
+should be found.
 
 To finalize the setup of the Credential Issuer step over to the
 satosa-openid4vci/openid4vci_oidc directory

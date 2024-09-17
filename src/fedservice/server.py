@@ -48,7 +48,7 @@ class ServerUnit(Unit):
             keyjar = False
 
         Unit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc, config=config,
-                      httpc_params=httpc_params, issuer_id=self.entity_id, key_conf=key_conf)
+                      httpc_params=httpc_params, issuer_id=self.entity_id, key_conf=_key_conf)
 
         _per_conf = config.get("persistence", None)
         if _per_conf:

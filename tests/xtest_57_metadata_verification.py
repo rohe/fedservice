@@ -1,22 +1,24 @@
 import os
 
-import pytest
-import responses
 from cryptojwt.jws.jws import factory
-from fedservice.appserver import ServerEntity
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 from idpyoidc.client.defaults import DEFAULT_OIDC_SERVICES
 from idpyoidc.server.configure import DEFAULT_OIDC_ENDPOINTS
+import pytest
+import responses
 
+from fedservice import save_trust_chains
+from fedservice.appclient import ClientEntity
+from fedservice.appserver import ServerEntity
 from fedservice.defaults import DEFAULT_OIDC_FED_SERVICES
 from fedservice.defaults import FEDERATION_ENTITY_FUNCTIONS
 from fedservice.defaults import FEDERATION_ENTITY_SERVICES
 from fedservice.defaults import WELL_KNOWN_FEDERATION_ENDPOINT
-from fedservice.appclient import ClientEntity
+from fedservice.entity.function import get_verified_trust_chains
 from fedservice.utils import make_federation_combo
 from fedservice.utils import make_federation_entity
-from . import create_trust_chain_messages
 from . import CRYPT_CONFIG
+from . import create_trust_chain_messages
 
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.join(BASE_PATH, 'base_data')
@@ -30,12 +32,8 @@ TA_ENDPOINTS = ["entity_configuration", "fetch", "metadata_verification"]
 
 RESPONSE_TYPES_SUPPORTED = [
     ["code"],
-    ["token"],
     ["id_token"],
-    ["code", "token"],
     ["code", "id_token"],
-    ["id_token", "token"],
-    ["code", "token", "id_token"],
     ["none"],
 ]
 
@@ -208,22 +206,27 @@ class TestExplicit(object):
 
         ####################################################
         # [1] Let the RP do some provider info discovery
-        # Point the RP to the OP
-        self.rp['openid_relying_party'].get_context().issuer = self.op.entity_id
+        # by collecting a trust chain
 
         # Create the URLs and messages that will be involved in this process
         _msgs = create_trust_chain_messages(self.op, self.ta)
 
         # add the jwks_uri
-        _jwks_uri = self.op['openid_provider'].get_context().get_preference('jwks_uri')
-        _msgs[_jwks_uri] = self.op['openid_provider'].keyjar.export_jwks_as_json()
+        # _jwks_uri = self.op['openid_provider'].get_context().get_preference('jwks_uri')
+        # if _jwks_uri:
+        #     _msgs[_jwks_uri] = self.op['openid_provider'].keyjar.export_jwks_as_json()
 
         with responses.RequestsMock() as rsps:
             for _url, _jwks in _msgs.items():
                 rsps.add("GET", _url, body=_jwks,
                          headers={"Content-Type": "application/json"}, status=200)
 
-            self.rp['openid_relying_party'].do_request('provider_info')
+            _trust_chains = get_verified_trust_chains(self.rp,
+                                                      self.op["federation_entity"].entity_id)
+
+        save_trust_chains(self.rp["federation_entity"].context, _trust_chains)
+        trust_chain = self.rp["federation_entity"].pick_trust_chain(_trust_chains)
+        self.rp['openid_relying_party'].get_context().provider_info = trust_chain.metadata["openid_provider"]
 
         # the provider info should have been updated
 

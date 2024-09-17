@@ -8,6 +8,7 @@ from cryptojwt import KeyJar
 from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.configure import Configuration
 from idpyoidc.impexp import ImpExp
+from idpyoidc.transform import preferred_to_registered
 
 from fedservice.entity.claims import FederationEntityClaims
 from fedservice.entity_statement.create import create_entity_statement
@@ -54,7 +55,7 @@ class FederationContext(ImpExp):
         self.entity_id = entity_id or config.get("entity_id",
                                                  self.upstream_get("attribute", "entity_id"))
         self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
-        self.trust_marks = trust_marks or config.get('trust_marks')
+        self.trust_marks = trust_marks or config.get('trust_marks', [])
         self.trust_chain = {}
         # self.issuer = self.entity_id
 
@@ -114,20 +115,7 @@ class FederationContext(ImpExp):
         self.kid = {"sig": {}, "enc": {}}
 
     def supports(self):
-        res = {}
-        if self.upstream_get:
-            _services = self.upstream_get('services')
-            if _services:
-                for service in _services:
-                    res.update(service.supports())
-
-            _endpoints = self.upstream_get('endpoints')
-            if _endpoints:
-                for name, endp in _endpoints.items():
-                    res.update(endp.supports())
-
-        res.update(self.claims.supports())
-        return res
+        return self.claims._supports
 
     def setup_client_authn_methods(self):
         self.client_authn_methods = client_auth_setup(self.config.get("client_authn_methods"))
@@ -154,6 +142,15 @@ class FederationContext(ImpExp):
         return create_entity_statement(iss, sub, key_jar=key_jar, metadata=metadata,
                                        metadata_policy=metadata_policy,
                                        authority_hints=authority_hints, lifetime=lifetime, **kwargs)
+
+    def map_preferred_to_registered(self, registration_response: Optional[dict] = None):
+        self.claims.use = preferred_to_registered(
+            self.claims.prefer,
+            supported=self.supports(),
+            registration_response=registration_response,
+        )
+
+        return self.claims.use
 
 
 class FederationServerContext(FederationContext):

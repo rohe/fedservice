@@ -167,7 +167,7 @@ class TestTrustMarkDelegation():
         _audience = _server_endpoint.full_path
 
         req_info = _client_service.get_request_parameters(
-            request_args={"trust_mark_id": TRUST_MARK_ID},
+            request_args={"trust_mark_id": TRUST_MARK_ID, "sub": self.federation_entity.entity_id},
             endpoint=_audience,
             audience=_audience,
             algorithm="ES256")
@@ -208,7 +208,6 @@ class TestTrustMarkDelegation():
         _client_service = self.federation_entity.get_service("trust_mark_status")
         _server_endpoint = self.trust_mark_issuer.get_endpoint("trust_mark_status")
 
-
     def test_create_metadata(self):
         _metadata = self.trust_mark_issuer.get_metadata()
         assert set(_metadata.keys()) == {"federation_entity"}
@@ -219,5 +218,4 @@ class TestTrustMarkDelegation():
                                                               'federation_trust_mark_list_endpoint_auth_methods',
                                                               'federation_trust_mark_status_endpoint',
                                                               'federation_trust_mark_status_endpoint_auth_methods',
-                                                              'jwks',
                                                               'organization_name'}
