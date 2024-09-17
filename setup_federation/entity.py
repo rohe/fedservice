@@ -14,9 +14,6 @@ from fedservice.utils import make_federation_combo
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-template_dir = os.path.join(dir_path, 'templates')
-
-
 def init_app(dir_name, **kwargs) -> Flask:
     name = dir_name or __name__
     app = Flask(name, static_url_path='', **kwargs)
@@ -47,7 +44,7 @@ def init_app(dir_name, **kwargs) -> Flask:
 if __name__ == "__main__":
     print(sys.argv)
     directory_name = sys.argv[1]
-    template_dir = os.path.join(dir_path, 'templates')
+    template_dir = os.path.join(directory_name, 'templates')
     app = init_app(directory_name, template_folder=template_dir)
     if "logging" in app.cnf:
         configure_logging(config=app.cnf["logging"])
