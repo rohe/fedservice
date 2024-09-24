@@ -313,3 +313,14 @@ def load_values_from_file(config):
         config[k] = v
 
     return config
+
+def get_signed_jwks_uri(unit, keyjar, metadata, issuer_id):
+    pass
+
+def get_jwks(unit, keyjar, metadata, issuer_id):
+    if "signed_jwks_uri" in metadata:
+        get_signed_jwks_uri(unit, keyjar, metadata, issuer_id)
+    elif "jwks_uri" in metadata:
+        keyjar.add_url(issuer_id, metadata["jwks_uri"])
+    elif "jwks" in metadata:
+        keyjar.import_jwks(metadata["jwks"], issuer_id)

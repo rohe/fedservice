@@ -11,6 +11,7 @@
 # Get Trust Chain
 ./get_trust_chains.py -k -t ../setup_federation/trust_anchor.json https://127.0.0.1:5001
 ./get_trust_chains.py -k -t ../setup_federation/trust_anchor.json https://127.0.0.1:6000
+./get_trust_chains.py -k -t ../setup_federation/trust_anchor.json https://127.0.0.1:8080
 
 # Get new trust mark
 ./get_trust_mark.py -k -t ../setup_federation/trust_anchor.json -i http://dc4eu.example.com/PersonIdentificationData/se -s https://127.0.0.1:4002 https://127.0.0.1:6000

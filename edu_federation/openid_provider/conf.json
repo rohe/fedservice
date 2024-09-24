@@ -196,13 +196,6 @@
                 "path": ".well-known/webfinger",
                 "class": "idpyoidc.server.oidc.discovery.Discovery"
               },
-              "federation_info": {
-                "path": ".well-known/openid-federation",
-                "class": "fedservice.appserver.oidc.provider_config.ProviderConfiguration",
-                "kwargs": {
-                  "client_authn_method": null
-                }
-              },
               "federation_registration": {
                 "path": "registration",
                 "class": "fedservice.appserver.oidc.registration.Registration",
