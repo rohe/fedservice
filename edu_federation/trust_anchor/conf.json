@@ -1,0 +1,91 @@
+{
+  "logging": {
+    "version": 1,
+    "disable_existing_loggers": false,
+    "root": {
+      "handlers": [
+        "default",
+        "console"
+      ],
+      "level": "DEBUG"
+    },
+    "loggers": {
+      "entity": {
+        "level": "DEBUG"
+      }
+    },
+    "handlers": {
+      "default": {
+        "class": "logging.FileHandler",
+        "filename": "trust_anchor/debug.log",
+        "formatter": "default"
+      },
+      "console": {
+        "class": "logging.StreamHandler",
+        "stream": "ext://sys.stdout",
+        "formatter": "default"
+      }
+    },
+    "formatters": {
+      "default": {
+        "format": "%(asctime)s %(name)s %(levelname)s %(message)s"
+      }
+    }
+  },
+  "entity": {
+    "entity_id": "https://127.0.0.1:7003",
+    "httpc_params": {
+      "verify": false
+    },
+    "key_config": {
+      "private_path": "trust_anchor/private/fed_keys.json",
+      "key_defs": [
+        {
+          "type": "RSA",
+          "use": [
+            "sig"
+          ]
+        },
+        {
+          "type": "EC",
+          "crv": "P-256",
+          "use": [
+            "sig"
+          ]
+        }
+      ],
+      "public_path": "trust_anchor/static/fed_keys.json",
+      "read_only": false
+    },
+    "endpoints": [
+      "fetch",
+      "list",
+      "entity_configuration",
+      "resolve"
+    ],
+    "subordinate": {
+      "class": "idpyoidc.storage.abfile.AbstractFileSystem",
+      "kwargs": {
+        "fdir": "trust_anchor/subordinates",
+        "key_conv": "idpyoidc.util.Base64",
+        "value_conv": "idpyoidc.util.JSON"
+      }
+    },
+    "trust_mark_issuers": {
+      "class": "idpyoidc.storage.abfile.AbstractFileSystem",
+      "kwargs": {
+        "fdir": "trust_anchor/trust_mark_issuers",
+        "key_conv": "idpyoidc.util.Base64",
+        "value_conv": "idpyoidc.util.JSON"
+      }
+    }
+  },
+  "webserver": {
+    "server_cert": "certs/example.crt",
+    "server_key": "certs/example.key",
+    "cert_chain": null,
+    "port": 7003,
+    "domain": "127.0.0.1",
+    "debug": false
+  }
+}

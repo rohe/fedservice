@@ -52,7 +52,8 @@ class StandAloneClientEntity(ClientEntity):
             save_trust_chains(context, _trust_chains)
             trust_chain = federation_entity.pick_trust_chain(_trust_chains)
             federation_entity.trust_chain_anchor = trust_chain.anchor
-            _pi = trust_chain.metadata["openid_relying_party"]
+            # _pi = trust_chain.metadata["openid_relying_party"]
+            _pi = trust_chain.metadata["openid_provider"]
             context.provider_info = context.metadata = _pi
             return _pi
         else:
