@@ -1,0 +1,82 @@
+{
+  "logging": {
+    "version": 1,
+    "disable_existing_loggers": false,
+    "root": {
+      "handlers": [
+        "default",
+        "console"
+      ],
+      "level": "DEBUG"
+    },
+    "loggers": {
+      "entity": {
+        "level": "DEBUG"
+      }
+    },
+    "handlers": {
+      "default": {
+        "class": "logging.FileHandler",
+        "filename": "query_server/debug.log",
+        "formatter": "default"
+      },
+      "console": {
+        "class": "logging.StreamHandler",
+        "stream": "ext://sys.stdout",
+        "formatter": "default"
+      }
+    },
+    "formatters": {
+      "default": {
+        "format": "%(asctime)s %(name)s %(levelname)s %(message)s"
+      }
+    }
+  },
+  "entity": {
+    "entity_id": "https://127.0.0.1:6005",
+    "httpc_params": {
+      "verify": false
+    },
+    "key_config": {
+      "private_path": "query_server/private/fed_keys.json",
+      "key_defs": [
+        {
+          "type": "RSA",
+          "use": [
+            "sig"
+          ]
+        },
+        {
+          "type": "EC",
+          "crv": "P-256",
+          "use": [
+            "sig"
+          ]
+        }
+      ],
+      "public_path": "query_server/static/fed_keys.json",
+      "read_only": false
+    },
+    "endpoints": [
+      "entity_configuration",
+      {
+        "pid_query": {
+          "class": "fedservice.entity.server.pid_query.PIDQuery",
+          "kwargs": {
+            "entity_type": "credential_issuer",
+            "credential_type": "PersonIdentificationData",
+            "trust_mark_id": "http://dc4eu.example.com/PersonIdentificationData/se"
+          }
+        }
+      }
+    ]
+  },
+  "webserver": {
+    "server_cert": "certs/example.crt",
+    "server_key": "certs/example.key",
+    "cert_chain": null,
+    "port": 6005,
+    "domain": "127.0.0.1",
+    "debug": false
+  }
+}

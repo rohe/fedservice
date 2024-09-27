@@ -1,0 +1,216 @@
+{
+  "logging": {
+    "version": 1,
+    "disable_existing_loggers": false,
+    "root": {
+      "handlers": [
+        "default"
+      ],
+      "level": "DEBUG"
+    },
+    "loggers": {
+      "bobcat_idp": {
+        "level": "DEBUG"
+      }
+    },
+    "handlers": {
+      "default": {
+        "class": "logging.FileHandler",
+        "filename": "wallet_provider/debug.log",
+        "formatter": "default"
+      }
+    },
+    "formatters": {
+      "default": {
+        "format": "%(asctime)s %(name)s %(levelname)s %(message)s"
+      }
+    }
+  },
+  "entity": {
+    "entity_id": "https://127.0.0.1:5001",
+    "httpc_params": {
+      "verify": false
+    },
+    "key_config": {
+      "private_path": "wallet_provider/private/fed_keys.json",
+      "key_defs": [
+        {
+          "type": "RSA",
+          "use": [
+            "sig"
+          ]
+        },
+        {
+          "type": "EC",
+          "crv": "P-256",
+          "use": [
+            "sig"
+          ]
+        }
+      ],
+      "uri_path": "wp_fed_keys.json",
+      "read_only": false
+    },
+    "preference": {
+      "policy_uri": "https://wallet-provider.example.org/privacy_policy",
+      "tos_uri": "https://wallet-provider.example.org/info_policy",
+      "logo_uri": "https://wallet-provider.example.org/logo.svg",
+      "attested_security_context": "https://wallet-provider.example.org/LoA/basic",
+      "type": "WalletInstanceAttestation",
+      "authorization_endpoint": "eudiw:",
+      "response_types_supported": [
+        "vp_token"
+      ],
+      "vp_formats_supported": {
+        "jwt_vp_json": {
+          "alg_values_supported": [
+            "ES256"
+          ]
+        },
+        "jwt_vc_json": {
+          "alg_values_supported": [
+            "ES256"
+          ]
+        }
+      },
+      "request_object_signing_alg_values_supported": [
+        "ES256"
+      ],
+      "presentation_definition_uri_supported": false
+    },
+    "authority_hints": {
+      "class": "idpyoidc.storage.listfile.ReadOnlyListFile",
+      "kwargs": {
+        "file_name": "wallet_provider/authority_hints"
+      }
+    },
+    "trust_anchors": {
+      "class": "idpyoidc.storage.abfile.AbstractFileSystem",
+      "kwargs": {
+        "fdir": "wallet_provider/trust_anchors",
+        "key_conv": "idpyoidc.util.Base64",
+        "value_conv": "idpyoidc.util.JSON"
+      }
+    },
+    "endpoints": [
+      "entity_configuration"
+    ],
+    "entity_type": {
+      "wallet_provider": {
+        "class": "openid4v.wallet_provider.WalletProvider",
+        "kwargs": {
+          "config": {
+            "keys": {
+              "private_path": "wallet_provider/private/wp_keys.json",
+              "key_defs": [
+                {
+                  "type": "RSA",
+                  "use": [
+                    "sig"
+                  ]
+                },
+                {
+                  "type": "EC",
+                  "crv": "P-256",
+                  "use": [
+                    "sig"
+                  ]
+                }
+              ],
+              "uri_path": "wp_jwks.json",
+              "read_only": false
+            },
+            "endpoint": {
+              "token": {
+                "path": "token",
+                "class": "openid4v.wallet_provider.token.Token",
+                "kwargs": {
+                  "client_authn_method": [
+                    "client_secret_basic",
+                    "client_secret_post",
+                    "client_secret_jwt",
+                    "private_key_jwt"
+                  ]
+                }
+              },
+              "challenge": {
+                "path": "challenge",
+                "class": "openid4v.wallet_provider.challenge.Challenge"
+              },
+              "registration": {
+                "path": "registration",
+                "class": "openid4v.wallet_provider.registration.Registration"
+              }
+            },
+            "preference": {
+              "policy_uri": "https://wallet-provider.example.org/privacy_policy",
+              "tos_uri": "https://wallet-provider.example.org/info_policy",
+              "logo_uri": "https://wallet-provider.example.org/logo.svg",
+              "aal_values_supported": [
+                "https://wallet-provider.example.org/LoA/basic",
+                "https://wallet-provider.example.org/LoA/medium",
+                "https://wallet-provider.example.org/LoA/high"
+              ],
+              "grant_types_supported": [
+                "urn:ietf:params:oauth:client-assertion-type:jwt-client-attestation"
+              ],
+              "token_endpoint_auth_methods_supported": [
+                "private_key_jwt"
+              ],
+              "token_endpoint_auth_signing_alg_values_supported": [
+                "ES256",
+                "ES384",
+                "ES512"
+              ]
+            }
+          }
+        }
+      },
+      "device_integrity_service": {
+        "class": "openid4v.device_integrity_service.DeviceIntegrityService",
+        "kwargs": {
+          "config": {
+            "keys": {
+              "uri_path": "dis_jwks.json",
+              "private_path": "wallet_provider/private/dis_keys.json",
+              "key_defs": [
+                {
+                  "type": "RSA",
+                  "use": [
+                    "sig"
+                  ]
+                },
+                {
+                  "type": "EC",
+                  "crv": "P-256",
+                  "use": [
+                    "sig"
+                  ]
+                }
+              ],
+              "read_only": false
+            },
+            "endpoint": {
+              "integrity": {
+                "path": "integrity",
+                "class": "openid4v.device_integrity_service.integrity.IntegrityAssertion"
+              },
+              "key_attest": {
+                "path": "key_attest",
+                "class": "openid4v.device_integrity_service.key_attest.KeyAttestation"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webserver": {
+    "server_cert": "certs/example.crt",
+    "server_key": "certs/example.key",
+    "cert_chain": null,
+    "port": 5001,
+    "domain": "127.0.0.1",
+    "debug": false
+  }
+}
