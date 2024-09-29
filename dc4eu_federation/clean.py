@@ -4,7 +4,7 @@ import sys
 
 # federation types
 DIRECTORIES = {
-    "wallet": ["trust_anchor", "trust_mark_issuer", "wallet_provider"],
+    "dc4eu": ["trust_anchor", "trust_mark_issuer", "wallet_provider"],
     "identity": ["trust_anchor", "trust_mark_issuer", "openid_provider", "relying_party_explicit"]
 }
 
