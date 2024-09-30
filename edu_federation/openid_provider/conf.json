@@ -27,7 +27,7 @@
     }
   },
   "entity": {
-    "entity_id": "https://127.0.0.1:4004",
+    "entity_id": "https://127.0.0.1:4020",
     "httpc_params": {
       "verify": false
     },
@@ -374,7 +374,7 @@
     "server_cert": "certs/example.crt",
     "server_key": "certs/example.key",
     "cert_chain": null,
-    "port": 4004,
+    "port": 4020,
     "domain": "127.0.0.1",
     "debug": false
   }
