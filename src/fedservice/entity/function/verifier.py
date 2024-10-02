@@ -60,11 +60,12 @@ class TrustChainVerifier(Function):
         for entity_statement in entity_statement_list:
             _jwt = factory(entity_statement)
             if _jwt:
-                logger.debug(f"JWS header: {_jwt.headers()}", )
+                logger.debug(f"JWS header: {_jwt.jwt.headers}", )
                 logger.debug(f"JWS payload: {_jwt.jwt.payload()}")
                 keys = _keyjar.get_jwt_verify_keys(_jwt.jwt)
                 if keys == []:
                     logger.error(f'No keys matching: {_jwt.jwt.headers}')
+                    logger.debug(f"keyjar contains: {_keyjar}")
                     raise MissingKey(f'No keys matching: {_jwt.jwt.headers}')
 
                 _key_spec = [f'{k.kty}:{k.use}:{k.kid}' for k in keys]

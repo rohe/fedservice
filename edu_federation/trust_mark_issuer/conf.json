@@ -33,7 +33,7 @@
     }
   },
   "entity": {
-    "entity_id": "https://127.0.0.1:6000",
+    "entity_id": "https://127.0.0.1:6010",
     "key_config": {
       "private_path": "trust_mark_issuer/private/fed_keys.json",
       "key_defs": [
@@ -124,7 +124,7 @@
     "server_cert": "certs/example.crt",
     "server_key": "certs/example.key",
     "cert_chain": null,
-    "port": 6000,
+    "port": 6010,
     "domain": "127.0.0.1",
     "debug": false
   }

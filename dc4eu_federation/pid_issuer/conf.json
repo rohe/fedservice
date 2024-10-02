@@ -1,0 +1,483 @@
+{
+  "logging": {
+    "version": 1,
+    "disable_existing_loggers": false,
+    "root": {
+      "handlers": [
+        "default"
+      ],
+      "level": "DEBUG"
+    },
+    "loggers": {
+      "bobcat_idp": {
+        "level": "DEBUG"
+      }
+    },
+    "handlers": {
+      "default": {
+        "class": "logging.FileHandler",
+        "filename": "pid_issuer/debug.log",
+        "formatter": "default"
+      }
+    },
+    "formatters": {
+      "default": {
+        "format": "%(asctime)s %(name)s %(levelname)s %(message)s"
+      }
+    }
+  },
+  "entity": {
+    "entity_id": "https://127.0.0.1:6001",
+    "httpc_params": {
+      "verify": false
+    },
+    "key_config": {
+      "private_path": "pid_issuer/private/fed_keys.json",
+      "key_defs": [
+        {
+          "type": "RSA",
+          "use": [
+            "sig"
+          ]
+        },
+        {
+          "type": "EC",
+          "crv": "P-256",
+          "use": [
+            "sig"
+          ]
+        }
+      ],
+      "uri_path": "pid_fed_keys.json",
+      "read_only": false
+    },
+    "preference": {
+      "policy_uri": "https://pid.example.org/privacy_policy",
+      "tos_uri": "https://pid.example.org/info_policy",
+      "logo_uri": "https://pid.example.org/logo.svg"
+    },
+    "authority_hints": {
+      "class": "idpyoidc.storage.listfile.ReadOnlyListFile",
+      "kwargs": {
+        "file_name": "pid_issuer/authority_hints"
+      }
+    },
+    "trust_anchors": {
+      "class": "idpyoidc.storage.abfile.AbstractFileSystem",
+      "kwargs": {
+        "fdir": "pid_issuer/trust_anchors",
+        "key_conv": "idpyoidc.util.Base64",
+        "value_conv": "idpyoidc.util.JSON"
+      }
+    },
+    "trust_marks": [
+      "eyJhbGciOiJSUzI1NiIsImtpZCI6IlMycDFiek5GWjNGa09IVnBPV1JsTUVWNGFGWm9SVVZGU0hnelR6ZEVWbEJXVFVvemVqQkRVWGgwT0EifQ.eyJpYXQiOiAxNzIxNjQzNzQ1LCAiaWQiOiAiaHR0cDovL2RjNGV1LmV4YW1wbGUuY29tL1BlcnNvbklkZW50aWZpY2F0aW9uRGF0YS9zZSIsICJzdWIiOiAiaHR0cHM6Ly8xMjcuMC4wLjE6NjAwMSIsICJleHAiOiAxNzI0MjM1NzQ1LCAiaXNzIjogImh0dHBzOi8vMTI3LjAuMC4xOjYwMDAifQ.gHvVTp92fcGhmjlH8taijzgKZUQMLsBugHwyoA1YA7zY-0yR0sh4BKXzKCNMa3PVZ543Z7FNlT8cJ30Egb_-gaWZXIjfr2RI3qxGMRg7M_93RH8XMTGBu4wZd8-C_ushbambjnRWz9S1HwI8Ias98KsLG3xXMXIglIAZM0yzb-nkNp8Vrpm7J3B-76rvdmJWvig7MMwBFTCa_PWBtB8jEqNpmOgJgGtmZsbPoeiFS_FWg0LgYPvO9W-5LcMirHYbpyxigNy6D45bbinIE_rP_nMMsnQdUig9FXYXv1BK8Fu4lrxw66FIg_UI2OvsErG3ZjPYoFiK3ynYcqoZmdvuEA"
+    ],
+    "endpoints": [
+      "entity_configuration"
+    ],
+    "entity_type": {
+      "oauth_authorization_server": {
+        "class": "openid4v.ServerEntity",
+        "kwargs": {
+          "config": {
+            "client_authn_methods": {
+              "client_attestation": "openid4v.openid_credential_issuer.client_authn.ClientAuthenticationAttestation"
+            },
+            "httpc_params": {
+              "verify": false,
+              "timeout": 1
+            },
+            "preference": {
+              "grant_types_supported": [
+                "authorization_code",
+                "implicit",
+                "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                "refresh_token"
+              ]
+            },
+            "server_type": "oauth2",
+            "token_handler_args": {
+              "jwks_def": {
+                "private_path": "private/token_jwks.json",
+                "read_only": false,
+                "key_defs": [
+                  {
+                    "type": "oct",
+                    "bytes": "24",
+                    "use": [
+                      "enc"
+                    ],
+                    "kid": "code"
+                  }
+                ]
+              },
+              "code": {
+                "lifetime": 600,
+                "kwargs": {
+                  "crypt_conf": {
+                    "kwargs": {
+                      "keys": {
+                        "key_defs": [
+                          {
+                            "type": "OCT",
+                            "use": [
+                              "enc"
+                            ],
+                            "kid": "password"
+                          },
+                          {
+                            "type": "OCT",
+                            "use": [
+                              "enc"
+                            ],
+                            "kid": "salt"
+                          }
+                        ]
+                      },
+                      "iterations": 1
+                    }
+                  }
+                }
+              },
+              "token": {
+                "class": "idpyoidc.server.token.jwt_token.JWTToken",
+                "kwargs": {
+                  "lifetime": 3600,
+                  "add_claims_by_scope": true
+                }
+              },
+              "refresh": {
+                "class": "idpyoidc.server.token.jwt_token.JWTToken",
+                "kwargs": {
+                  "lifetime": 3600
+                }
+              },
+              "id_token": {
+                "class": "idpyoidc.server.token.id_token.IDToken",
+                "kwargs": {
+                  "base_claims": {
+                    "email": {
+                      "essential": true
+                    },
+                    "email_verified": {
+                      "essential": true
+                    }
+                  }
+                }
+              }
+            },
+            "keys": {
+              "key_defs": [
+                {
+                  "type": "RSA",
+                  "use": [
+                    "sig"
+                  ]
+                },
+                {
+                  "type": "EC",
+                  "crv": "P-256",
+                  "use": [
+                    "sig"
+                  ]
+                }
+              ],
+              "private_path": "private/oas_jwks.json",
+              "read_only": false
+            },
+            "endpoint": {
+              "token": {
+                "path": "token",
+                "class": "openid4v.openid_credential_issuer.access_token.Token",
+                "kwargs": {
+                  "client_authn_method": [
+                    "client_attestation"
+                  ]
+                }
+              },
+              "authorization": {
+                "path": "authorization",
+                "class": "openid4v.openid_credential_issuer.authorization.Authorization",
+                "kwargs": {
+                  "response_types_supported": [
+                    "code"
+                  ],
+                  "response_modes_supported": [
+                    "query",
+                    "form_post"
+                  ],
+                  "request_parameter_supported": true,
+                  "request_uri_parameter_supported": true,
+                  "client_authn_method": [
+                    "client_attestation"
+                  ]
+                }
+              },
+              "pushed_authorization": {
+                "path": "pushed_authorization",
+                "class": "idpyoidc.server.oauth2.pushed_authorization.PushedAuthorization",
+                "kwargs": {
+                  "client_authn_method": [
+                    "client_attestation"
+                  ]
+                }
+              }
+            },
+            "add_ons": {
+              "pkce": {
+                "function": "idpyoidc.server.oauth2.add_on.pkce.add_support",
+                "kwargs": {
+                  "code_challenge_length": 64,
+                  "code_challenge_method": "S256"
+                }
+              },
+              "dpop": {
+                "function": "idpyoidc.server.oauth2.add_on.dpop.add_support",
+                "kwargs": {
+                  "dpop_signing_alg_values_supported": [
+                    "ES256"
+                  ],
+                  "dpop_endpoints": [
+                    "token"
+                  ]
+                }
+              }
+            },
+            "template_dir": "template",
+            "authentication": {
+              "anon": {
+                "acr": "http://www.swamid.se/policy/assurance/al1",
+                "class": "idpyoidc.server.user_authn.user.NoAuthn",
+                "kwargs": {
+                  "user": "diana"
+                }
+              }
+            },
+            "userinfo": {
+              "class": "idpyoidc.server.user_info.UserInfo",
+              "kwargs": {
+                "db_file": "users.json"
+              }
+            },
+            "authz": {
+              "class": "idpyoidc.server.authz.AuthzHandling",
+              "kwargs": {
+                "grant_config": {
+                  "usage_rules": {
+                    "authorization_code": {
+                      "supports_minting": [
+                        "access_token",
+                        "refresh_token",
+                        "id_token"
+                      ],
+                      "max_usage": 1
+                    },
+                    "access_token": {},
+                    "refresh_token": {
+                      "supports_minting": [
+                        "access_token",
+                        "refresh_token",
+                        "id_token"
+                      ]
+                    }
+                  },
+                  "expires_in": 43200
+                }
+              }
+            },
+            "session_params": {
+              "encrypter": {
+                "kwargs": {
+                  "keys": {
+                    "key_defs": [
+                      {
+                        "type": "OCT",
+                        "use": [
+                          "enc"
+                        ],
+                        "kid": "password"
+                      },
+                      {
+                        "type": "OCT",
+                        "use": [
+                          "enc"
+                        ],
+                        "kid": "salt"
+                      }
+                    ]
+                  },
+                  "iterations": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "openid_credential_issuer": {
+        "class": "openid4v.openid_credential_issuer.OpenidCredentialIssuer",
+        "kwargs": {
+          "config": {
+            "client_authn_methods": {
+              "client_secret_basic": "idpyoidc.server.client_authn.ClientSecretBasic",
+              "client_secret_post": "idpyoidc.server.client_authn.ClientSecretPost",
+              "client_assertion": "openid4v.openid_credential_issuer.client_authn.ClientAuthenticationAttestation",
+              "dpop_client_auth": "idpyoidc.server.oauth2.add_on.dpop.DPoPClientAuth"
+            },
+            "keys": {
+              "private_path": "private/oci_jwks.json",
+              "read_only": false,
+              "key_defs": [
+                {
+                  "type": "RSA",
+                  "use": [
+                    "sig"
+                  ]
+                },
+                {
+                  "type": "EC",
+                  "crv": "P-256",
+                  "use": [
+                    "sig"
+                  ]
+                }
+              ]
+            },
+            "endpoint": {
+              "credential": {
+                "path": "credential",
+                "class": "openid4v.openid_credential_issuer.credential.Credential",
+                "kwargs": {
+                  "client_authn_method": [
+                    "dpop_client_auth"
+                  ]
+                }
+              }
+            },
+            "add_ons": {
+              "dpop": {
+                "function": "idpyoidc.server.oauth2.add_on.dpop.add_support",
+                "kwargs": {
+                  "dpop_signing_alg_values_supported": [
+                    "ES256"
+                  ],
+                  "dpop_endpoints": [
+                    "credential"
+                  ]
+                }
+              }
+            },
+            "userinfo": {
+              "class": "idpyoidc.server.user_info.UserInfo",
+              "kwargs": {
+                "db_file": "pid_issuer/users.json"
+              }
+            },
+            "preference": {
+              "credential_configurations_supported": [
+                {
+                  "format": "vc+sd-jwt",
+                  "id": "eudiw.pid.se",
+                  "cryptographic_binding_methods_supported": [
+                    "jwk"
+                  ],
+                  "cryptographic_suites_supported": [
+                    "RS256",
+                    "RS512",
+                    "ES256",
+                    "ES512"
+                  ],
+                  "display": [
+                    {
+                      "name": "Example Swedish PID Provider",
+                      "locale": "en-US"
+                    }
+                  ],
+                  "credential_definition": {
+                    "type": [
+                      "PersonIdentificationData"
+                    ],
+                    "credentialSubject": {
+                      "given_name": {
+                        "mandatory": true,
+                        "display": [
+                          {
+                            "name": "Current First Name",
+                            "locale": "en-US"
+                          }
+                        ]
+                      },
+                      "family_name": {
+                        "mandatory": true,
+                        "display": [
+                          {
+                            "name": "Current Family Name",
+                            "locale": "en-US"
+                          }
+                        ]
+                      },
+                      "birthdate": {
+                        "mandatory": true,
+                        "display": [
+                          {
+                            "name": "Date of Birth",
+                            "locale": "en-US"
+                          }
+                        ]
+                      },
+                      "place_of_birth": {
+                        "mandatory": true,
+                        "display": [
+                          {
+                            "name": "Place of Birth",
+                            "locale": "en-US"
+                          }
+                        ]
+                      },
+                      "unique_id": {
+                        "mandatory": true,
+                        "display": [
+                          {
+                            "name": "Unique Identifier",
+                            "locale": "en-US"
+                          }
+                        ]
+                      },
+                      "tax_id_code": {
+                        "mandatory": true,
+                        "display": [
+                          {
+                            "name": "Tax Id Number",
+                            "locale": "en-US"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              ],
+              "attribute_disclosure": {
+                "": [
+                  "given_name",
+                  "family_name",
+                  "birthdate",
+                  "place_of_birth",
+                  "unique_id",
+                  "tax_id_code"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webserver": {
+    "server_cert": "certs/example.crt",
+    "server_key": "certs/example.key",
+    "cert_chain": null,
+    "port": 6001,
+    "domain": "127.0.0.1",
+    "debug": false
+  }
+}

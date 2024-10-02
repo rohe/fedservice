@@ -27,7 +27,7 @@
     }
   },
   "entity": {
-    "entity_id": "https://127.0.0.1:4002",
+    "entity_id": "https://127.0.0.1:4010",
     "httpc_params": {
       "verify": false
     },
@@ -80,76 +80,79 @@
       "openid_relying_party": {
         "class": "idpyoidc.client.rp_handler.RPHandler",
         "kwargs": {
-          "base_url": "https://127.0.0.1:4002",
-          "client_type": "oidc",
           "client_class": "fedservice.appclient.stand_alone_client_entity.StandAloneClientEntity",
-          "key_conf": {
-            "private_path": "private/expl.rp.jwks.json",
-            "key_defs": [
-              {
-                "type": "RSA",
-                "use": [
-                  "sig"
-                ]
+          "config": {
+            "base_url": "https://127.0.0.1:4010",
+            "entity_id": "https://127.0.0.1:4010",
+            "client_type": "oidc",
+            "key_conf": {
+              "private_path": "private/expl.rp.jwks.json",
+              "key_defs": [
+                {
+                  "type": "RSA",
+                  "use": [
+                    "sig"
+                  ]
+                },
+                {
+                  "type": "EC",
+                  "crv": "P-256",
+                  "use": [
+                    "sig"
+                  ]
+                }
+              ],
+              "public_path": "relying_party_explicit/static/rp_keys.json",
+              "read_only": false,
+              "uri_path": "jwks/openid_relying_party"
+            },
+            "preference": {
+              "application_name": "rphandler",
+              "application_type": "web",
+              "contacts": [
+                "ops@example.com"
+              ],
+              "response_types_supported": [
+                "code"
+              ],
+              "scope": [
+                "openid",
+                "profile",
+                "email",
+                "address",
+                "phone"
+              ],
+              "token_endpoint_auth_method": [
+                "private_key_jwt"
+              ]
+            },
+            "services": {
+              "registration": {
+                "class": "fedservice.appclient.oidc.registration.Registration",
+                "kwargs": {}
               },
-              {
-                "type": "EC",
-                "crv": "P-256",
-                "use": [
-                  "sig"
-                ]
+              "authorization": {
+                "class": "idpyoidc.client.oidc.authorization.Authorization",
+                "kwargs": {}
+              },
+              "accesstoken": {
+                "class": "idpyoidc.client.oidc.access_token.AccessToken",
+                "kwargs": {}
+              },
+              "userinfo": {
+                "class": "idpyoidc.client.oidc.userinfo.UserInfo",
+                "kwargs": {}
               }
-            ],
-            "public_path": "relying_party_explicit/static/rp_keys.json",
-            "read_only": false,
-            "uri_path": "jwks/openid_relying_party"
-          },
-          "preference": {
-            "application_name": "rphandler",
-            "application_type": "web",
-            "contacts": [
-              "ops@example.com"
-            ],
-            "response_types_supported": [
-              "code"
-            ],
-            "scope": [
-              "openid",
-              "profile",
-              "email",
-              "address",
-              "phone"
-            ],
-            "token_endpoint_auth_method": [
-              "private_key_jwt"
-            ]
-          },
-          "services": {
-            "registration": {
-              "class": "fedservice.appclient.oidc.registration.Registration",
-              "kwargs": {}
             },
-            "authorization": {
-              "class": "idpyoidc.client.oidc.authorization.Authorization",
-              "kwargs": {}
-            },
-            "accesstoken": {
-              "class": "idpyoidc.client.oidc.access_token.AccessToken",
-              "kwargs": {}
-            },
-            "userinfo": {
-              "class": "idpyoidc.client.oidc.userinfo.UserInfo",
-              "kwargs": {}
-            }
-          },
-          "clients": {
-            "": {
-              "redirect_uris": null,
-              "local": {
-                "issuer": "https://127.0.0.1:5000",
-                "redirect_uris": [
-                  "https://{domain}:{port}/authz_cb/local"
-                ]
+            "clients": {
+              "": {
+                "redirect_uris": null,
+                "local": {
+                  "issuer": "https://127.0.0.1:5000",
+                  "redirect_uris": [
+                    "https://{domain}:{port}/authz_cb/local"
+                  ]
+                }
               }
             }
           }
@@ -158,7 +161,7 @@
     }
   },
   "webserver": {
-    "port": 4002,
+    "port": 4010,
     "server_cert": "certs/cert.pem",
     "server_key": "certs/key.pem",
     "domain": "127.0.0.1"
