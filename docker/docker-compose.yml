@@ -50,20 +50,20 @@ services:
     volumes:
     - ./trust_anchor:/trust_anchor:rw
     - ./certificates:/certs:ro
-  flask_wallet:
-    image: fedservice
-    command: "flask_wallet"
-    ports:
-      - "5005:5005"
-    environment:
-      FEDSERVICE_ENTITYID: https://example.com:5005
-      FEDSERVICE_WEBCERT_KEY: /cert/privkey.pem
-      FEDSERVICE_WEBCERT_CHAIN: /cert/chain.pem
-      FEDSERVICE_SECRET_KEY: 12345678909987654321
-      FEDSERVICE_DEBUG: true
-      FEDSERVICE_PORT: 5005
-      FEDSERVICE_BIND: 0.0.0.0
-    volumes:
-    - ./flask_wallet:/flask_wallet:rw
-    - ./certificates:/certs:ro
+#  flask_wallet:
+#    image: fedservice
+#    command: "flask_wallet"
+#    ports:
+#      - "5005:5005"
+#    environment:
+#      FEDSERVICE_ENTITYID: https://example.com:5005
+#      FEDSERVICE_WEBCERT_KEY: /cert/privkey.pem
+#      FEDSERVICE_WEBCERT_CHAIN: /cert/chain.pem
+#      FEDSERVICE_SECRET_KEY: 12345678909987654321
+#      FEDSERVICE_DEBUG: true
+#      FEDSERVICE_PORT: 5005
+#      FEDSERVICE_BIND: 0.0.0.0
+#    volumes:
+#    - ./flask_wallet:/flask_wallet:rw
+#    - ./certificates:/certs:ro
 
