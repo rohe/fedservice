@@ -1,0 +1,69 @@
+services:
+  wallet_provider:
+    image: fedservice
+    command: "wallet_provider"
+    ports:
+      - "5001:5001"
+    environment:
+      FEDSERVICE_ENTITYID: https://example.com:5001
+      FEDSERVICE_WEBCERT_KEY: /certs/privkey.pem
+      FEDSERVICE_WEBCERT_CHAIN: /certs/chain.pem
+      FEDSERVICE_WEBCERT_CERT: /certs/cert.pem
+      FEDSERVICE_SECRET_KEY: 12345678909987654321
+      FEDSERVICE_DEBUG: true
+      FEDSERVICE_PORT: 5001
+      FEDSERVICE_BIND: 0.0.0.0
+    volumes:
+    - ./wallet_provider:/wallet_provider:rw
+    - ./certificates:/certs:ro
+  trust_mark_issuer:
+    image: fedservice
+    command: "trust_mark_issuer"
+    ports:
+      - "6001:6001"
+    environment:
+      FEDSERVICE_ENTITYID: https://example.com:6001
+      FEDSERVICE_WEBCERT_KEY: /certs/privkey.pem
+      FEDSERVICE_WEBCERT_CHAIN: /certs/chain.pem
+      FEDSERVICE_WEBCERT_CERT: /certs/cert.pem
+      FEDSERVICE_SECRET_KEY: 12345678909987654321
+      FEDSERVICE_DEBUG: true
+      FEDSERVICE_PORT: 6001
+      FEDSERVICE_BIND: 0.0.0.0
+    volumes:
+    - ./trust_mark_issuer:/trust_mark_issuer:rw
+    - ./certificates:/certs:ro
+  trust_anchor:
+    image: fedservice
+    command: "trust_anchor"
+    ports:
+      - "7001:7001"
+    environment:
+      FEDSERVICE_ENTITYID: https://example.com:7001
+      FEDSERVICE_WEBCERT_KEY: /certs/privkey.pem
+      FEDSERVICE_WEBCERT_CHAIN: /certs/chain.pem
+      FEDSERVICE_WEBCERT_CERT: /certs/cert.pem
+      FEDSERVICE_SECRET_KEY: 12345678909987654321
+      FEDSERVICE_DEBUG: true
+      FEDSERVICE_PORT: 7001
+      FEDSERVICE_BIND: 0.0.0.0
+    volumes:
+    - ./trust_anchor:/trust_anchor:rw
+    - ./certificates:/certs:ro
+#  flask_wallet:
+#    image: fedservice
+#    command: "flask_wallet"
+#    ports:
+#      - "5005:5005"
+#    environment:
+#      FEDSERVICE_ENTITYID: https://example.com:5005
+#      FEDSERVICE_WEBCERT_KEY: /cert/privkey.pem
+#      FEDSERVICE_WEBCERT_CHAIN: /cert/chain.pem
+#      FEDSERVICE_SECRET_KEY: 12345678909987654321
+#      FEDSERVICE_DEBUG: true
+#      FEDSERVICE_PORT: 5005
+#      FEDSERVICE_BIND: 0.0.0.0
+#    volumes:
+#    - ./flask_wallet:/flask_wallet:rw
+#    - ./certificates:/certs:ro
+
