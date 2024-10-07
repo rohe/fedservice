@@ -7,8 +7,7 @@ services:
     environment:
       FEDSERVICE_ENTITYID: https://example.com:5001
       FEDSERVICE_WEBCERT_KEY: /certs/privkey.pem
-      FEDSERVICE_WEBCERT_CHAIN: /certs/chain.pem
-      FEDSERVICE_WEBCERT_CERT: /certs/cert.pem
+      FEDSERVICE_WEBCERT_CERT: /certs/cert+chain.pem
       FEDSERVICE_SECRET_KEY: 12345678909987654321
       FEDSERVICE_DEBUG: true
       FEDSERVICE_PORT: 5001
@@ -24,8 +23,7 @@ services:
     environment:
       FEDSERVICE_ENTITYID: https://example.com:6001
       FEDSERVICE_WEBCERT_KEY: /certs/privkey.pem
-      FEDSERVICE_WEBCERT_CHAIN: /certs/chain.pem
-      FEDSERVICE_WEBCERT_CERT: /certs/cert.pem
+      FEDSERVICE_WEBCERT_CERT: /certs/cert+chain.pem
       FEDSERVICE_SECRET_KEY: 12345678909987654321
       FEDSERVICE_DEBUG: true
       FEDSERVICE_PORT: 6001
@@ -41,8 +39,7 @@ services:
     environment:
       FEDSERVICE_ENTITYID: https://example.com:7001
       FEDSERVICE_WEBCERT_KEY: /certs/privkey.pem
-      FEDSERVICE_WEBCERT_CHAIN: /certs/chain.pem
-      FEDSERVICE_WEBCERT_CERT: /certs/cert.pem
+      FEDSERVICE_WEBCERT_CERT: /certs/cert+chain.pem
       FEDSERVICE_SECRET_KEY: 12345678909987654321
       FEDSERVICE_DEBUG: true
       FEDSERVICE_PORT: 7001
@@ -58,7 +55,7 @@ services:
 #    environment:
 #      FEDSERVICE_ENTITYID: https://example.com:5005
 #      FEDSERVICE_WEBCERT_KEY: /cert/privkey.pem
-#      FEDSERVICE_WEBCERT_CHAIN: /cert/chain.pem
+#      FEDSERVICE_WEBCERT_CERT: /certs/cert+chain.pem
 #      FEDSERVICE_SECRET_KEY: 12345678909987654321
 #      FEDSERVICE_DEBUG: true
 #      FEDSERVICE_PORT: 5005
