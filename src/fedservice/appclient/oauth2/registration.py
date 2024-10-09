@@ -53,7 +53,10 @@ class Registration(registration.Registration):
         _federation_entity = get_federation_entity(self)
         # _md = {_federation_context.entity_type: request_args.to_dict()}
         _combo = _federation_entity.upstream_get('unit')
-        _md = _combo.get_metadata()
+        metadata = {}
+        metadata.update(kwargs["client"].get_metadata())
+        metadata.update(_federation_entity.get_metadata())
+        # _md = _combo.get_metadata()
         _keyjar = _federation_entity.get_attribute("keyjar")
         _authority_hints = _federation_entity.get_authority_hints()
         _context = _federation_entity.get_context()
@@ -66,7 +69,7 @@ class Registration(registration.Registration):
         _jws = _context.create_entity_statement(
             iss=_entity_id,
             sub=_entity_id,
-            metadata=_md,
+            metadata=metadata,
             key_jar=_keyjar,
             authority_hints=_authority_hints,
             **kwargs)
@@ -142,10 +145,14 @@ class Registration(registration.Registration):
                 _trust_chains[0].verified_chain[-1]['metadata'] = _metadata
             # If it's metadata_policy what to do ?
             _trust_chains = apply_policies(_federation_entity, _trust_chains)
-            if self.upstream_get('unit').client_type == "oauth2":
-                _resp = _trust_chains[0].metadata['oauth_client']
-            else:
+            _root = _federation_entity.upstream_get("unit")
+            if 'openid_relying_party' in _root:
                 _resp = _trust_chains[0].metadata['openid_relying_party']
+            elif "oauth_client" in _root:
+                _resp = _trust_chains[0].metadata['oauth_client']
+            else: # Must be one more application type entity beside federation_entity
+                if len(_root.keys()) == 1:
+                    raise SystemError()
             _context = self.upstream_get('context')
             _context.registration_response = _resp
             return _resp
