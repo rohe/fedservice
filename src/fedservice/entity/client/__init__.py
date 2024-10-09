@@ -126,7 +126,6 @@ class FederationServiceContext(FederationContext):
             raise KeyError(f"{claim} not in server metadata")
 
 
-
 class FederationClientEntity(ClientUnit):
 
     def __init__(
@@ -212,7 +211,7 @@ class FederationClientEntity(ClientUnit):
 
 
 class FederationClient(FederationClientEntity):
-    client_type = "oauth2"
+    client_type = ""
 
     def __init__(
             self,
@@ -294,7 +293,8 @@ class FederationClient(FederationClientEntity):
     ):
         _srv = self.service[request_type]
         self.context.issuer = kwargs.get("entity_id", kwargs.get("issuer"))
-        _info = _srv.get_request_parameters(request_args=request_args, **kwargs)
+        _info = _srv.get_request_parameters(request_args=request_args,
+                                            behaviour_args=behaviour_args, **kwargs)
         if not _info:
             return None
 

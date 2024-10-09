@@ -16,6 +16,7 @@ from fedservice.defaults import federation_endpoints
 from fedservice.defaults import federation_functions
 from fedservice.defaults import federation_services
 from fedservice.entity import FederationEntity
+from fedservice.entity.function import get_verified_jwks
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,8 @@ def build_entity_config(entity_id: str,
         if items:
             if name == "service":
                 if isinstance(items, dict):
-                    # _filtered_spec = {k: v for k, v in items.items() if isinstance(k, str) and k in SERVICES}
+                    # _filtered_spec = {k: v for k, v in items.items() if isinstance(k, str) and
+                    # k in SERVICES}
                     func(args=_args, kwargs_spec=kwargs_spec, **items)
                 else:
                     func(args=_args, kwargs_spec=kwargs_spec, **federation_services(*items))
@@ -163,7 +165,8 @@ def make_federation_entity(entity_id: str,
 
     if self_signed_trust_mark_entity:
         _kwargs = self_signed_trust_mark_entity.get("kwargs", {})
-        _tme = instantiate(self_signed_trust_mark_entity['class'], upstream_get=fe.unit_get, **_kwargs)
+        _tme = instantiate(self_signed_trust_mark_entity['class'], upstream_get=fe.unit_get,
+                           **_kwargs)
         fe.server.self_signed_trust_mark_entity = _tme
 
     return fe
@@ -262,14 +265,16 @@ def make_federation_combo(entity_id: str,
 
     if trust_mark_entity:
         _kwargs = trust_mark_entity.get("kwargs", {})
-        _tme = instantiate(trust_mark_entity['class'], upstream_get=federation_entity.unit_get, **_kwargs)
+        _tme = instantiate(trust_mark_entity['class'], upstream_get=federation_entity.unit_get,
+                           **_kwargs)
         for name, endp in _tme.endpoint.items():
             federation_entity.server.endpoint[name] = endp
         federation_entity.server.trust_mark_entity = _tme
 
     if self_signed_trust_mark_entity:
         _kwargs = self_signed_trust_mark_entity.get("kwargs", {})
-        _tme = instantiate(self_signed_trust_mark_entity['class'], upstream_get=federation_entity.unit_get, **_kwargs)
+        _tme = instantiate(self_signed_trust_mark_entity['class'],
+                           upstream_get=federation_entity.unit_get, **_kwargs)
         federation_entity.server.self_signed_trust_mark_entity = _tme
 
     return entity
@@ -278,7 +283,7 @@ def make_federation_combo(entity_id: str,
 def _import(val):
     path = val[len("file:"):]
     if os.path.isfile(path) is False:
-        logger.info(f"No such file: {path}")
+        logger.info(f"No such file: '{path}'")
         return None
 
     with open(path, "r") as fp:
@@ -314,12 +319,16 @@ def load_values_from_file(config):
 
     return config
 
-def get_signed_jwks_uri(unit, keyjar, metadata, issuer_id):
-    pass
+
+def get_signed_jwks_uri(unit, keyjar, signed_jwks_uri, issuer_id):
+    _jwks = get_verified_jwks(unit, signed_jwks_uri)
+    if _jwks:
+        keyjar.import_jwks(_jwks, issuer_id)
+
 
 def get_jwks(unit, keyjar, metadata, issuer_id):
     if "signed_jwks_uri" in metadata:
-        get_signed_jwks_uri(unit, keyjar, metadata, issuer_id)
+        get_signed_jwks_uri(unit, keyjar, metadata["signed_jwks_uri"], issuer_id)
     elif "jwks_uri" in metadata:
         keyjar.add_url(issuer_id, metadata["jwks_uri"])
     elif "jwks" in metadata:

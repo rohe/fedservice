@@ -113,7 +113,7 @@ class TrustChainCollector(Function):
             raise
 
         if response.status_code == 200:
-            if 'application/jose' not in response.headers['Content-Type']:
+            if 'application/entity-statement+jwt' not in response.headers['Content-Type']:
                 logger.warning(f"Wrong Content-Type: {response.headers['Content-Type']}")
             return response.text
         elif response.status_code == 404:
@@ -280,7 +280,7 @@ class TrustChainCollector(Function):
             # The entity configuration for authority is collected at this point
             # It's stored in config_cache
             fed_fetch_endpoint = self.get_federation_fetch_endpoint(authority)
-            if fed_fetch_endpoint is None:
+            if not fed_fetch_endpoint:
                 return None
             logger.debug(f"Federation fetch endpoint: '{fed_fetch_endpoint}' for '{authority}'")
             entity_statement = self.get_entity_statement(fed_fetch_endpoint, authority, entity)

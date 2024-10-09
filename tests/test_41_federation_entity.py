@@ -1,13 +1,13 @@
 import os
 
-from fedservice import get_trust_chain
-from fedservice import save_trust_chains
-from fedservice.entity.function import get_verified_trust_chains
+from cryptojwt.jws.jws import factory
 import pytest
 import responses
-from cryptojwt.jws.jws import factory
 
+from fedservice import get_trust_chain
+from fedservice import save_trust_chains
 from fedservice.entity.function import collect_trust_chains
+from fedservice.entity.function import get_verified_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity.function.policy import TrustChainPolicy
 from fedservice.entity.function.trust_chain_collector import TrustChainCollector
@@ -167,7 +167,6 @@ class TestServer():
 
     # Simple chain setup leaf->intermediate->trust anchor
 
-
     def test_entity_setup(self):
         assert self.leaf['federation_entity'].function
         _func = self.leaf['federation_entity'].function
@@ -185,10 +184,12 @@ class TestServer():
         assert _client.get_service('entity_configuration').service_name == 'entity_configuration'
         assert _client.get_service('entity_statement').service_name == 'entity_statement'
 
-        assert set(self.leaf['federation_entity'].server.endpoint.keys()) == {'entity_configuration'}
+        assert set(self.leaf['federation_entity'].server.endpoint.keys()) == {
+            'entity_configuration'}
 
     def test_ta_setup(self):
-        assert set(self.ta.server.endpoint.keys()) == {'entity_configuration', 'fetch', 'list', 'resolve'}
+        assert set(self.ta.server.endpoint.keys()) == {'entity_configuration', 'fetch', 'list',
+                                                       'resolve'}
 
     def test_entity_configuration(self):
         _endpoint = self.leaf["federation_entity"].get_endpoint('entity_configuration')
@@ -362,7 +363,7 @@ class TestFunction:
         leaf_fe = self.leaf["federation_entity"]
         assert leaf_fe.client.upstream_get('attribute', 'keyjar') == leaf_fe.keyjar
         assert leaf_fe.function.upstream_get('attribute', 'keyjar') == leaf_fe.keyjar
-        assert leaf_fe.function.policy.upstream_get('attribute', 'keyjar') ==leaf_fe.keyjar
+        assert leaf_fe.function.policy.upstream_get('attribute', 'keyjar') == leaf_fe.keyjar
         assert leaf_fe.server.upstream_get('attribute', 'keyjar') == leaf_fe.keyjar
 
     def test_trust_anchors_attribute(self):
@@ -372,8 +373,7 @@ class TestFunction:
             for x in ['https://swamid.se', 'https://anchor.example.com', 'https://feide.no']:
                 anchors.remove(x)
 
-        assert anchors == {'https://ta.example.org',
-                                                                            'https://2nd.ta.example.org'}
+        assert anchors == {'https://ta.example.org', 'https://2nd.ta.example.org'}
 
     def test_save_trust_chains(self):
         _msgs = create_trust_chain_messages(self.leaf, self.intermediate, self.ta1)
@@ -384,7 +384,8 @@ class TestFunction:
                 rsps.add("GET", _url, body=_jwks,
                          adding_headers={"Content-Type": "application/json"}, status=200)
 
-            _trust_chains = get_verified_trust_chains(self.leaf, self.leaf["federation_entity"].entity_id)
+            _trust_chains = get_verified_trust_chains(self.leaf,
+                                                      self.leaf["federation_entity"].entity_id)
 
         federation_context = self.leaf["federation_entity"].context
         save_trust_chains(federation_context, _trust_chains)

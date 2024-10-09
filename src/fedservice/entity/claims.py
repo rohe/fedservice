@@ -1,7 +1,6 @@
 from typing import Optional
 
 from idpyoidc import alg_info
-from idpyoidc import metadata
 from idpyoidc.claims import Claims as ClaimsBase
 from idpyoidc.client.claims import oauth2 as OAuth2ClientClaims
 from idpyoidc.client.claims import oidc as OIDCClientClaims
