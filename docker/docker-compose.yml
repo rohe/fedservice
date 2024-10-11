@@ -5,7 +5,7 @@ services:
     ports:
       - "5001:5001"
     environment:
-      FEDSERVICE_ENTITYID: https://example.com:5001
+      FEDSERVICE_ENTITYID: https://${DOMAIN:-localhost}:5001
       FEDSERVICE_WEBCERT_KEY: /certs/privkey.pem
       FEDSERVICE_WEBCERT_CERT: /certs/cert+chain.pem
       FEDSERVICE_SECRET_KEY: 12345678909987654321
@@ -21,7 +21,7 @@ services:
     ports:
       - "6001:6001"
     environment:
-      FEDSERVICE_ENTITYID: https://example.com:6001
+      FEDSERVICE_ENTITYID: https://${DOMAIN:-localhost}:6001
       FEDSERVICE_WEBCERT_KEY: /certs/privkey.pem
       FEDSERVICE_WEBCERT_CERT: /certs/cert+chain.pem
       FEDSERVICE_SECRET_KEY: 12345678909987654321
@@ -37,7 +37,7 @@ services:
     ports:
       - "7001:7001"
     environment:
-      FEDSERVICE_ENTITYID: https://example.com:7001
+      FEDSERVICE_ENTITYID: https://${DOMAIN:-localhost}:7001
       FEDSERVICE_WEBCERT_KEY: /certs/privkey.pem
       FEDSERVICE_WEBCERT_CERT: /certs/cert+chain.pem
       FEDSERVICE_SECRET_KEY: 12345678909987654321
@@ -53,7 +53,7 @@ services:
 #    ports:
 #      - "5005:5005"
 #    environment:
-#      FEDSERVICE_ENTITYID: https://example.com:5005
+#      FEDSERVICE_ENTITYID: https://${DOMAIN:-localhost}:5005
 #      FEDSERVICE_WEBCERT_KEY: /cert/privkey.pem
 #      FEDSERVICE_WEBCERT_CERT: /certs/cert+chain.pem
 #      FEDSERVICE_SECRET_KEY: 12345678909987654321
