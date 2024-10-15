@@ -8,7 +8,7 @@ git checkout main
 cp -a example/flask_wallet ../../dc4eu_federation
 popd
 rm -rf satosa-openid4vci
-pushd dc4eu_federation/flask_wallet
+pushd ../dc4eu_federation/flask_wallet
 mv templates templates.orig
 mv templates_simplified templates
 mv conf_simplified.json conf.json
