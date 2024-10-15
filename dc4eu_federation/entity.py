@@ -44,8 +44,7 @@ def init_app(dir_name, **kwargs) -> Flask:
 if __name__ == "__main__":
     print(sys.argv)
     directory_name = sys.argv[1]
-    template_dir = os.path.join(directory_name, 'templates')
-    app = init_app(directory_name, template_folder=template_dir)
+    app = init_app(directory_name)
     if "logging" in app.cnf:
         configure_logging(config=app.cnf["logging"])
     _web_conf = app.cnf["webserver"]
