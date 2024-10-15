@@ -35,6 +35,10 @@ echo -e "${TRUST_ANCHOR}" >> wallet_provider/authority_hints
 #
 docker "${docker_args}"/get_info.py -k -s "${WALLET_PROVIDER}" > wallet_provider.json
 docker ${docker_args}/add_info.py -s /workdir/wallet_provider.json -t workdir/trust_anchor/subordinates
+if [ ! -d lask_wallet/trust_anchors ]; then
+    mkdir flask_wallet/trust_anchors
+fi
+cp -a wallet_provider/trust_anchors/* flask_wallet/trust_anchors/
 #
 ## Query Server
 #./add_info.py -s trust_anchor.json -t query_server/trust_anchors
