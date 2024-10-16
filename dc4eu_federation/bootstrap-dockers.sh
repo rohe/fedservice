@@ -32,7 +32,7 @@ echo -e "${TRUST_ANCHOR}" >> wallet_provider/authority_hints
 #
 #./entity.py wallet_provider &
 #sleep 2
-#
+#
 docker "${docker_args}"/get_info.py -k -s "${WALLET_PROVIDER}" > wallet_provider.json
 docker ${docker_args}/add_info.py -s /workdir/wallet_provider.json -t workdir/trust_anchor/subordinates
 if [ ! -d lask_wallet/trust_anchors ]; then
@@ -44,7 +44,7 @@ echo "config:             "
 echo "  op:               " 
 echo "    server_info:    "
 echo "      trust_anchors:"
-./convert_json_to_yaml.py trust_anchor.json
+docker "${docker_args}"/convert_json_to_yaml.py trust_anchor.json
 #
 ## Query Server
 #./add_info.py -s trust_anchor.json -t query_server/trust_anchors
