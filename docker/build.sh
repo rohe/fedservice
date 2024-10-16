@@ -12,6 +12,6 @@ pushd ../dc4eu_federation/flask_wallet
 mv templates templates.orig
 mv templates_simplified templates
 mv conf_simplified.json conf.json
-mv views_simplified.py views.py
+#mv views_simplified.py views.py
 popd
 docker build -t fedservice -f ./fedservice.Dockerfile .. --no-cache

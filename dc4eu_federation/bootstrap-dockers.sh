@@ -39,6 +39,12 @@ if [ ! -d lask_wallet/trust_anchors ]; then
     mkdir flask_wallet/trust_anchors
 fi
 cp -a wallet_provider/trust_anchors/* flask_wallet/trust_anchors/
+echo "Place this into oidc_frontend.yaml below:" 
+echo "config:             "
+echo "  op:               " 
+echo "    server_info:    "
+echo "      trust_anchors:"
+./convert_json_to_yaml.py trust_anchor.json
 #
 ## Query Server
 #./add_info.py -s trust_anchor.json -t query_server/trust_anchors
