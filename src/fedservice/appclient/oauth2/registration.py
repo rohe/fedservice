@@ -1,11 +1,13 @@
 import logging
 from typing import Optional
 
+from cryptojwt import KeyJar
 from idpyoidc.client.exception import ResponseError
 from idpyoidc.client.oidc import registration
 from idpyoidc.message.oauth2 import OauthClientInformationResponse
 from idpyoidc.message.oauth2 import OauthClientMetadata
 from idpyoidc.message.oauth2 import ResponseMessage
+from idpyoidc.node import topmost_unit
 
 from fedservice.entity.function import apply_policies
 from fedservice.entity.function import collect_trust_chains
@@ -140,24 +142,43 @@ class Registration(registration.Registration):
             # should only be one chain
             if len(_trust_chains) != 1:
                 raise SystemError(f"More then one chain ending in {payload['trust_anchor_id']}")
+
             _metadata = payload.get("metadata")
             if _metadata:
                 _trust_chains[0].verified_chain[-1]['metadata'] = _metadata
-            # If it's metadata_policy what to do ?
-            _trust_chains = apply_policies(_federation_entity, _trust_chains)
-            _root = _federation_entity.upstream_get("unit")
-            if 'openid_relying_party' in _root:
-                _resp = _trust_chains[0].metadata['openid_relying_party']
-            elif "oauth_client" in _root:
-                _resp = _trust_chains[0].metadata['oauth_client']
-            else: # Must be one more application type entity beside federation_entity
-                if len(_root.keys()) == 1:
-                    raise SystemError()
+                # If it's metadata_policy what to do ?
+                _trust_chains = apply_policies(_federation_entity, _trust_chains)
+
+            _resp = _trust_chains[0].metadata
             _context = self.upstream_get('context')
             _context.registration_response = _resp
             return _resp
 
+    def _add_client_secret_to_keyjar(self, context, client_id, metadata):
+        _client_secret = context.get_usage("client_secret")
+        if _client_secret:
+            _keyjar = getattr(context, "keyjar", None)
+            if not _keyjar:
+                _entity = self.upstream_get("unit")
+                _keyjar = _entity.keyjar = KeyJar()
+
+            context.client_secret = _client_secret
+            _keyjar.add_symmetric("", _client_secret)
+            _keyjar.add_symmetric(client_id, _client_secret)
+
+            _expires_at = metadata.get("client_secret_expires_at", None)
+            if _expires_at:
+                context.set_usage("client_secret_expires_at", _expires_at)
+
     def update_service_context(self, resp, **kwargs):
-        registration.Registration.update_service_context(self, resp, **kwargs)
-        _fe = self.upstream_get("context").federation_entity
-        _fe.iss = resp['client_id']
+        # Updated service_context per entity type
+        _root = topmost_unit(self)
+        for guise, item in _root.items():
+            _context = item.context
+            _context.map_preferred_to_registered(resp[guise])
+
+            _client_id = _context.get_usage("client_id")
+            if _client_id:
+                _context.client_id = _client_id
+            # _fe = self.upstream_get("context").federation_entity
+            # _fe.iss = resp['client_id']
