@@ -5,7 +5,6 @@ from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
 import pytest
 import responses
 
-from fedservice.defaults import COMBINED_DEFAULT_OAUTH2_SERVICES
 from fedservice.defaults import DEFAULT_OAUTH2_FED_SERVICES
 from fedservice.defaults import OAUTH2_FED_ENDPOINTS
 from fedservice.defaults import federation_services
@@ -107,7 +106,8 @@ class TestRpService(object):
 
         # construct the information needed to send the request
         _info = self.registration_service.get_request_parameters(
-            request_body_type="jose", method="POST")
+            request_body_type="jose", method="POST",
+            behaviour_args={"client": self.rp["oauth_client"]})
 
         assert set(_info.keys()) == {"method", "url", "body", "headers", "request"}
         assert _info["method"] == "POST"

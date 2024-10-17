@@ -38,6 +38,7 @@ LOGGING = {
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', dest='insecure', action='store_true')
+    parser.add_argument('-f', "--format", action='store_true')
     parser.add_argument('-t', dest='trust_anchors')
     parser.add_argument('-l', dest='logging', action='store_true')
     parser.add_argument(dest="url")
@@ -63,11 +64,12 @@ if __name__ == '__main__':
     trust_chains = apply_policies(federation_entity, trust_chains)
 
     for trust_chain in trust_chains:
-        print(20 * "=", f"Trust Chain Anchor: {trust_chain.anchor}", 20 * "=")
+        print(20 * "=", f" Trust Chain for: {args.url} ending in {trust_chain.anchor} ", 20 * "=")
+        trust_chain.verified_chain.reverse()
         for node in trust_chain.verified_chain:
             if node["iss"] == node["sub"]:
                 print(20 * "-", f"Entity Configuration for: {node['iss']}", 20 * "-")
             else:
                 print(20 * "-", f"Subordinate statement about: {node['sub']} from {node['iss']}", 20 * "-")
-            # pretty print JSON
-            print(json.dumps(node, sort_keys=True, indent=4))
+            # print JSON
+            print(json.dumps(node, sort_keys=True, indent=2))

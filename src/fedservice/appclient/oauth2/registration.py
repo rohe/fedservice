@@ -3,6 +3,7 @@ from typing import Optional
 
 from idpyoidc.client.exception import ResponseError
 from idpyoidc.client.oidc import registration
+from idpyoidc.client.rp_handler import RPHandler
 from idpyoidc.message.oauth2 import OauthClientInformationResponse
 from idpyoidc.message.oauth2 import OauthClientMetadata
 from idpyoidc.message.oauth2 import ResponseMessage
@@ -40,6 +41,26 @@ class Registration(registration.Registration):
         else:
             return request, {}
 
+    def get_guise(self, combo) -> list:
+        res = []
+        for key, item in combo.items():
+            if isinstance(item, RPHandler):
+                pass
+            else:
+                res.append(item)
+        return res
+
+    def collect_metadata(self, combo, **kwargs):
+        metadata = {}
+        _guise = kwargs.get("client", None)
+        if _guise is None:
+            for _guise in self.get_guise(combo):
+                metadata.update(_guise.get_metadata())
+        else:
+            metadata.update(_guise.get_metadata())
+            metadata.update(combo["federation_entity"].get_metadata())
+        return metadata
+
     def create_entity_statement(self, request_args: Optional[dict] = None, **kwargs):
         """
         Create a self-signed entity statement
@@ -51,12 +72,9 @@ class Registration(registration.Registration):
         """
 
         _federation_entity = get_federation_entity(self)
-        # _md = {_federation_context.entity_type: request_args.to_dict()}
         _combo = _federation_entity.upstream_get('unit')
-        metadata = {}
-        metadata.update(kwargs["client"].get_metadata())
-        metadata.update(_federation_entity.get_metadata())
-        # _md = _combo.get_metadata()
+        metadata = self.collect_metadata(_combo, **kwargs)
+
         _keyjar = _federation_entity.get_attribute("keyjar")
         _authority_hints = _federation_entity.get_authority_hints()
         _context = _federation_entity.get_context()
@@ -150,7 +168,7 @@ class Registration(registration.Registration):
                 _resp = _trust_chains[0].metadata['openid_relying_party']
             elif "oauth_client" in _root:
                 _resp = _trust_chains[0].metadata['oauth_client']
-            else: # Must be one more application type entity beside federation_entity
+            else:  # Must be one more application type entity beside federation_entity
                 if len(_root.keys()) == 1:
                     raise SystemError()
             _context = self.upstream_get('context')

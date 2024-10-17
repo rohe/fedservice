@@ -14,6 +14,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', "--insecure", action='store_true')
+    parser.add_argument('-f', "--format", action='store_true')
     parser.add_argument('-t', "--trust_anchor")
     parser.add_argument('-T', "--trust_anchor_file")
     parser.add_argument('-r', "--resolver")
@@ -48,5 +49,8 @@ if __name__ == '__main__':
                                                 endpoint=endpoint)
     json_str = json.dumps(resolve_resp.to_dict(), indent=2)
     print(20 * "=" + " Resolver response " + 20 * "=")
-    print(highlight(json_str, JsonLexer(), TerminalFormatter()))
+    if args.format:
+        print(highlight(json_str, JsonLexer(), TerminalFormatter()))
+    else:
+        print(json_str)
 
