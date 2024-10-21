@@ -182,7 +182,9 @@ class TestRpService(object):
             claims = self.registration_service.parse_response(resp["response_msg"],
                                                               request=_info["body"])
 
-        assert set(claims.keys()) == {'client_id',
+        assert set(claims.keys()) == {'oauth_client','federation_entity'}
+
+        assert set(claims["oauth_client"].keys()) == {'client_id',
                                       'client_id_issued_at',
                                       'client_secret',
                                       'client_secret_expires_at',

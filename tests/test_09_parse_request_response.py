@@ -100,7 +100,7 @@ class TestClient:
             }
         )
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(ValueError):
             self.rp.parse_request_response(self.rp.get_service('registration'), _resp)
 
     def test_redirect(self):
