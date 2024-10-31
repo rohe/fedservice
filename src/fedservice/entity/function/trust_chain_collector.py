@@ -27,6 +27,8 @@ logger = logging.getLogger(__name__)
 
 def unverified_entity_statement(signed_jwt):
     _jws = factory(signed_jwt)
+    if not _jws:
+        raise ValueError(f"Not a proper signed JWT: {signed_jwt}")
     return _jws.jwt.payload()
 
 
@@ -154,7 +156,8 @@ class TrustChainCollector(Function):
             logger.error(err)
             raise
         except ConnectionError as err:
-            return None
+            logger.error(err)
+            raise
         except Exception as err:
             logger.exception(err)
             raise

@@ -22,6 +22,7 @@ from idpyoidc.server.util import execute
 
 from fedservice.entity.claims import OPClaims
 from fedservice.message import AuthorizationServerMetadata
+from fedservice.message import OPMetadata
 from fedservice.server import ServerUnit
 
 logger = logging.getLogger(__name__)
@@ -75,14 +76,15 @@ class ServerEntity(ServerUnit):
         self.server_type = server_type or config.get("server_type", "")
         if not self.server_type:
             if entity_type == "oauth_authorization_server":
-                self.metadata_schema = AuthorizationServerMetadata
                 self.server_type = "oauth2"
             elif entity_type == "openid_provider":
                 self.server_type = "oidc"
-                self.metadata_schema = AuthorizationServerMetadata
 
         if self.server_type == "oauth2":
             self.name = "oauth_authorization_server"
+            self.metadata_schema = AuthorizationServerMetadata
+        elif self.server_type == "oidc":
+            self.metadata_schema = OPMetadata
 
         ServerUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, entity_id=entity_id, key_conf=key_conf,
