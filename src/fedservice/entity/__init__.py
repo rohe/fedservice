@@ -23,6 +23,8 @@ __author__ = 'Roland Hedberg'
 from fedservice.entity.context import FederationContext
 from idpyoidc.node import Unit
 
+from fedservice.keyjar import import_jwks
+
 logger = logging.getLogger(__name__)
 
 
@@ -295,7 +297,8 @@ class FederationEntity(Unit):
             _es = self.client.do_request("entity_statement", issuer=superior, subject=subordinate)
 
             # add subjects key/-s to keyjar
-            self.get_federation_entity().keyjar.import_jwks(_es["jwks"], _es["sub"])
+            _kj = self.get_federation_entity().keyjar
+            _kj= import_jwks(_kj, _es["jwks"], _es["sub"])
 
             # Fetch Entity Configuration
             _ec = self.client.do_request("entity_configuration", entity_id=subordinate)
@@ -378,7 +381,7 @@ class FederationEntity(Unit):
         else:
             raise ValueError("Missing keyjar")
 
-        _keyjar.import_jwks(jwks, entity_id)
+        _keyjar = import_jwks(_keyjar, jwks, entity_id)
         self.trust_anchors[entity_id] = jwks
 
     def supports(self):

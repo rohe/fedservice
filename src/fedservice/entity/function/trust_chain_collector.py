@@ -20,6 +20,7 @@ from fedservice.entity.function import verify_trust_chains
 from fedservice.entity.utils import get_federation_entity
 from fedservice.entity_statement.cache import ESCache
 from fedservice.exception import FailedConfigurationRetrieval
+from fedservice.keyjar import import_jwks
 from fedservice.utils import statement_is_expired
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ def verify_self_signed_signature(statement):
     payload = unverified_entity_statement(statement)
     keyjar = KeyJar()
     if payload['iss'] not in keyjar:
-        keyjar.import_jwks(payload['jwks'], payload['iss'])
+        keyjar = import_jwks(keyjar, payload['jwks'], payload['iss'])
 
     _jwt = JWT(key_jar=keyjar)
     _val = _jwt.unpack(statement)
@@ -85,7 +86,7 @@ class TrustChainCollector(Function):
             self.keyjar = None
             keyjar = upstream_get("attribute", "keyjar")
         for id, keys in trust_anchors.items():
-            keyjar.import_jwks(keys, id)
+            keyjar = import_jwks(keyjar, keys, id)
 
     def _get_service(self, service):
         federation_entity = get_federation_entity(self)
@@ -382,7 +383,7 @@ class TrustChainCollector(Function):
         else:
             raise ValueError("Missing keyjar")
 
-        _keyjar.import_jwks(jwks, entity_id)
+        _keyjar = import_jwks(_keyjar, jwks, entity_id)
         self.trust_anchors[entity_id] = jwks
 
     def get_chain(self, iss_path, trust_anchor, with_ta_ec: Optional[bool] = False):

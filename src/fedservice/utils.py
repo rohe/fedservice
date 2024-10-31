@@ -17,6 +17,7 @@ from fedservice.defaults import federation_functions
 from fedservice.defaults import federation_services
 from fedservice.entity import FederationEntity
 from fedservice.entity.function import get_verified_jwks
+from fedservice.keyjar import import_jwks
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +139,7 @@ def make_federation_entity(entity_id: str,
             trust_anchors = execute(trust_anchors)
 
         for id, jwk in trust_anchors.items():
-            fe.keyjar.import_jwks(jwk, id)
+            fe.keyjar = import_jwks(fe.keyjar, jwk, id)
 
         fe.function.trust_chain_collector.trust_anchors = trust_anchors
 
@@ -230,7 +231,7 @@ def make_federation_combo(entity_id: str,
             trust_anchors = execute(trust_anchors)
 
         for id, jwk in trust_anchors.items():
-            federation_entity.keyjar.import_jwks(jwk, id)
+            federation_entity.keyjar = import_jwks(federation_entity.keyjar, jwk, id)
 
         federation_entity.function.trust_chain_collector.trust_anchors = trust_anchors
 
@@ -323,7 +324,7 @@ def load_values_from_file(config):
 def get_signed_jwks_uri(unit, keyjar, signed_jwks_uri, issuer_id):
     _jwks = get_verified_jwks(unit, signed_jwks_uri)
     if _jwks:
-        keyjar.import_jwks(_jwks, issuer_id)
+        keyjar = import_jwks(keyjar, _jwks, issuer_id)
 
 
 def get_jwks(unit, keyjar, metadata, issuer_id):
@@ -332,4 +333,4 @@ def get_jwks(unit, keyjar, metadata, issuer_id):
     elif "jwks_uri" in metadata:
         keyjar.add_url(issuer_id, metadata["jwks_uri"])
     elif "jwks" in metadata:
-        keyjar.import_jwks(metadata["jwks"], issuer_id)
+        keyjar = import_jwks(keyjar, metadata["jwks"], issuer_id)

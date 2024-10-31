@@ -26,6 +26,7 @@ from requests import request
 
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_SERVICES
 from fedservice.entity import FederationContext
+from fedservice.keyjar import import_jwks
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class FederationServiceContext(FederationContext):
         self.signed_trust_marks = []
         _key_jar = self.upstream_get("attribute", "keyjar")
         for iss, jwks in self.trusted_roots.items():
-            _key_jar.import_jwks(jwks, iss)
+            _key_jar = import_jwks(_key_jar, jwks, iss)
         self.server_metadata = {}
 
     def _get_crypt(self, typ, attr):

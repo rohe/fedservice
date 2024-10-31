@@ -6,6 +6,7 @@ from urllib.parse import unquote_plus
 from urllib.parse import urlparse
 
 from fedservice.fetch_entity_statement import FetchEntityStatement
+from fedservice.keyjar import import_jwks_from_file
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class FSFetchEntityStatement(FetchEntityStatement):
 
     def load_jwks(self, sup, sub, sub_id):
         _jwks_file = os.path.join(self.base_path, sup, sub, "jwks.json")
-        self.keyjar.import_jwks_as_json(open(_jwks_file).read(), sub_id)
+        self.keyjar = import_jwks_from_file(self.keyjar, _jwks_file, sub_id)
 
     def gather_info(self, sub):
         iss_id = self.make_entity_id(self.iss)

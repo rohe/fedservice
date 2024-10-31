@@ -1,6 +1,7 @@
 from cryptojwt.key_jar import init_key_jar
 
 from fedservice.keyjar import import_jwks
+from fedservice.keyjar import issuer_keys
 
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},
@@ -14,4 +15,4 @@ def test():
     _keyjar = init_key_jar(key_defs=KEYSPEC)
     _jwks = _keyjar.export_jwks()
     keyjar = import_jwks(_keyjar, _jwks, "")
-    assert len(keyjar) == 5
+    assert len(issuer_keys(keyjar, "")) == 4

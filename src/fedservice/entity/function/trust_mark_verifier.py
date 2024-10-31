@@ -11,6 +11,7 @@ from fedservice.entity.function import Function
 from fedservice.entity.function import get_payload
 from fedservice.entity.function import get_verified_trust_chains
 from fedservice.entity.utils import get_federation_entity
+from fedservice.keyjar import import_jwks
 from fedservice.utils import statement_is_expired
 
 logger = logging.getLogger(__name__)
@@ -72,7 +73,9 @@ class TrustMarkVerifier(Function):
         keys = keyjar.get_jwt_verify_keys(_jwt.jwt)
         if not keys:
             _trust_chains = apply_policies(_federation_entity, _trust_chains)
-            keyjar.import_jwks(_trust_chains[0].verified_chain[-1]["jwks"], _trust_chains[0].iss_path[0])
+            keyjar= import_jwks(keyjar,
+                                _trust_chains[0].verified_chain[-1]["jwks"],
+                                _trust_chains[0].iss_path[0])
             keys = keyjar.get_jwt_verify_keys(_jwt.jwt)
 
         try:
@@ -96,6 +99,6 @@ class TrustMarkVerifier(Function):
         _delegation = factory(trust_mark['delegation'])
         tm_owner_info = ta_fe_metadata['trust_mark_owners'][trust_mark['id']]
         _key_jar = KeyJar()
-        _key_jar.import_jwks(tm_owner_info['jwks'], issuer_id=tm_owner_info['sub'])
+        _key_jar = import_jwks(_key_jar, tm_owner_info['jwks'], tm_owner_info['sub'])
         keys = _key_jar.get_jwt_verify_keys(_delegation.jwt)
         return _delegation.verify_compact(keys=keys)

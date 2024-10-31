@@ -10,6 +10,7 @@ from cryptojwt.key_jar import KeyJar
 from idpyoidc.impexp import ImpExp
 
 from fedservice.entity.utils import get_federation_entity
+from fedservice.keyjar import import_jwks
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ def verify_self_signed_signature(token):
 
     payload = unverified_entity_statement(token)
     keyjar = KeyJar()
-    keyjar.import_jwks(payload['jwks'], payload['iss'])
+    keyjar = import_jwks(keyjar, payload['jwks'], payload['iss'])
 
     _jwt = JWT(key_jar=keyjar)
     _val = _jwt.unpack(token)

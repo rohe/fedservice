@@ -21,6 +21,7 @@ from idpyoidc.server.user_authn.authn_context import populate_authn_broker
 from idpyoidc.server.util import execute
 
 from fedservice.entity.claims import OPClaims
+from fedservice.keyjar import import_jwks
 from fedservice.message import AuthorizationServerMetadata
 from fedservice.message import OPMetadata
 from fedservice.server import ServerUnit
@@ -49,7 +50,7 @@ def import_client_keys(information: Union[Message, dict], keyjar: KeyJar, entity
         else:
             _jwks = information.get('jwks')
             if _jwks:
-                keyjar.import_jwks(_jwks, entity_id)
+                keyjar = import_jwks(keyjar, _jwks, entity_id)
 
 
 class ServerEntity(ServerUnit):

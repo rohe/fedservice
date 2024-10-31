@@ -13,6 +13,7 @@ from fedservice.entity.function import get_verified_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity.utils import get_federation_entity
 from fedservice.exception import NoTrustedChains
+from fedservice.keyjar import import_jwks
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ class Authorization(authorization.Authorization):
                 else:
                     _jwks = _metadata.get('jwks')
                     _keyjar = self.upstream_get('attribute', 'keyjar')
-                    _keyjar.import_jwks(_jwks, client_entity_id)
+                    _keyjar = import_jwks(_keyjar, _jwks, client_entity_id)
 
         req = RegistrationRequest(**trust_chain.metadata['openid_relying_party'])
         req['client_id'] = client_entity_id

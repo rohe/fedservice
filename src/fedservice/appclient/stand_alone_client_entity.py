@@ -27,6 +27,8 @@ from fedservice.appclient import ClientEntity
 from fedservice.entity import get_verified_trust_chains
 from fedservice.entity.utils import get_federation_entity
 from fedservice.exception import NoTrustedChains
+from fedservice.keyjar import add_kb
+from fedservice.keyjar import import_jwks_from_file
 from fedservice.message import RegistrationRequest
 
 logger = logging.getLogger(__name__)
@@ -103,10 +105,10 @@ class StandAloneClientEntity(ClientEntity):
                     elif typ == "file":
                         for kty, _name in _spec.items():
                             if kty == "jwks":
-                                _kj.import_jwks_from_file(_name, _context.get("issuer"))
+                                _kj = import_jwks_from_file(_kj, _name, _context.get("issuer"))
                             elif kty == "rsa":  # PEM file
                                 _kb = keybundle_from_local_file(_name, "der", ["sig"])
-                                _kj.add_kb(_context.get("issuer"), _kb)
+                                _kj = add_kb(_kj, _context.get("issuer"), _kb)
                     else:
                         raise ValueError("Unknown provider JWKS type: {}".format(typ))
 
@@ -135,7 +137,8 @@ class StandAloneClientEntity(ClientEntity):
         _context = self.get_context()
         _federation_entity = get_federation_entity(self)
 
-        if _federation_entity.get_service("registration"):  # means I can do dynamic client registration
+        if _federation_entity.get_service(
+                "registration"):  # means I can do dynamic client registration
             if request_args is None:
                 request_args = {}
 
