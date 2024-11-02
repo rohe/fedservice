@@ -1,8 +1,8 @@
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import build_keyjar
+from idpyoidc.key_import import import_jwks_as_json
 
 from fedservice.entity_statement.create import create_entity_statement
-from fedservice.keyjar import import_jwks_as_json
 
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},

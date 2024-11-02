@@ -7,6 +7,7 @@ from typing import Union
 from cryptojwt import KeyJar
 from cryptojwt.utils import importer
 from idpyoidc.configure import Base
+from idpyoidc.key_import import import_jwks
 from idpyoidc.message import Message
 from idpyoidc.node import topmost_unit
 from idpyoidc.server import allow_refresh_token
@@ -21,7 +22,6 @@ from idpyoidc.server.user_authn.authn_context import populate_authn_broker
 from idpyoidc.server.util import execute
 
 from fedservice.entity.claims import OPClaims
-from fedservice.keyjar import import_jwks
 from fedservice.message import AuthorizationServerMetadata
 from fedservice.message import OPMetadata
 from fedservice.server import ServerUnit

@@ -23,7 +23,7 @@ __author__ = 'Roland Hedberg'
 from fedservice.entity.context import FederationContext
 from idpyoidc.node import Unit
 
-from fedservice.keyjar import import_jwks
+from idpyoidc.key_import import import_jwks
 
 logger = logging.getLogger(__name__)
 
@@ -298,7 +298,7 @@ class FederationEntity(Unit):
 
             # add subjects key/-s to keyjar
             _kj = self.get_federation_entity().keyjar
-            _kj= import_jwks(_kj, _es["jwks"], _es["sub"])
+            _kj = import_jwks(_kj, _es["jwks"], _es["sub"])
 
             # Fetch Entity Configuration
             _ec = self.client.do_request("entity_configuration", entity_id=subordinate)

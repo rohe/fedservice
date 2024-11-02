@@ -8,9 +8,9 @@ from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import JWT
 from cryptojwt.key_jar import KeyJar
 from idpyoidc.impexp import ImpExp
+from idpyoidc.key_import import import_jwks
 
 from fedservice.entity.utils import get_federation_entity
-from fedservice.keyjar import import_jwks
 
 logger = logging.getLogger(__name__)
 

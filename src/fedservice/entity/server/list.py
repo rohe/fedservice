@@ -1,13 +1,11 @@
 import json
 import logging
-from typing import Optional
 
 from cryptojwt import JWT
 from cryptojwt import KeyJar
+from idpyoidc.key_import import import_jwks
 from idpyoidc.message import oidc
 from idpyoidc.server.endpoint import Endpoint
-
-from fedservice.keyjar import import_jwks
 
 logger = logging.getLogger(__name__)
 

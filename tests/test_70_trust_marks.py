@@ -3,11 +3,11 @@ import os
 import pytest
 import responses
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
+from idpyoidc.key_import import import_jwks
 from idpyoidc.message import Message
 
 from fedservice.defaults import LEAF_ENDPOINTS
 from fedservice.entity.function import get_verified_trust_chains
-from fedservice.keyjar import import_jwks
 from fedservice.utils import make_federation_entity
 from tests import create_trust_chain_messages
 

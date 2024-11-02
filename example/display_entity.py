@@ -2,12 +2,12 @@
 import json
 import sys
 
+import requests
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
-import requests
+from idpyoidc.key_import import import_jwks
 from idpyoidc.server.exception import ServiceError
 
-from fedservice.keyjar import import_jwks
 from fedservice.message import EntityStatement
 
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
             if _url:
                 endpoint[endp] = _url
 
-    print(30*'='+"list"+30*"=")
+    print(30 * '=' + "list" + 30 * "=")
     if "list" in endpoint and "fetch" in endpoint:
         _list = list_entities(endpoint["list"])
         for _entity in _list:

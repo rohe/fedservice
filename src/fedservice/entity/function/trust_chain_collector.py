@@ -1,6 +1,6 @@
 import logging
-from ssl import SSLError
 import time
+from ssl import SSLError
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -11,16 +11,16 @@ from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import utc_time_sans_frac
 from idpyoidc.exception import MissingPage
+from idpyoidc.key_import import import_jwks
 from idpyoidc.message import Message
 from requests.exceptions import ConnectionError
 
-from fedservice.entity.function import Function
 from fedservice.entity.function import collect_trust_chains
+from fedservice.entity.function import Function
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity.utils import get_federation_entity
 from fedservice.entity_statement.cache import ESCache
 from fedservice.exception import FailedConfigurationRetrieval
-from fedservice.keyjar import import_jwks
 from fedservice.utils import statement_is_expired
 
 logger = logging.getLogger(__name__)

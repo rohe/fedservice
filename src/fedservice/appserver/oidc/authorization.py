@@ -2,6 +2,7 @@ import logging
 from typing import List
 from typing import Optional
 
+from idpyoidc.key_import import import_jwks
 from idpyoidc.message import oidc
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.node import topmost_unit
@@ -13,7 +14,6 @@ from fedservice.entity.function import get_verified_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity.utils import get_federation_entity
 from fedservice.exception import NoTrustedChains
-from fedservice.keyjar import import_jwks
 
 logger = logging.getLogger(__name__)
 

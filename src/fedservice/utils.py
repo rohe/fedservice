@@ -7,6 +7,7 @@ from typing import Union
 
 from cryptojwt.jwt import utc_time_sans_frac
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
+from idpyoidc.key_import import import_jwks
 from idpyoidc.server.util import execute
 from idpyoidc.util import instantiate
 
@@ -17,7 +18,6 @@ from fedservice.defaults import federation_functions
 from fedservice.defaults import federation_services
 from fedservice.entity import FederationEntity
 from fedservice.entity.function import get_verified_jwks
-from fedservice.keyjar import import_jwks
 
 logger = logging.getLogger(__name__)
 

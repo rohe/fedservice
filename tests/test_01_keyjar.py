@@ -1,7 +1,7 @@
 from cryptojwt.key_jar import init_key_jar
 
-from fedservice.keyjar import import_jwks
-from fedservice.keyjar import issuer_keys
+from idpyoidc.key_import import import_jwks
+from idpyoidc.key_import import issuer_keys
 
 KEYSPEC = [
     {"type": "RSA", "use": ["sig"]},

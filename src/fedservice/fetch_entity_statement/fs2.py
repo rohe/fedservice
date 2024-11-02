@@ -5,8 +5,9 @@ from urllib.parse import parse_qs
 from urllib.parse import unquote_plus
 from urllib.parse import urlparse
 
+from idpyoidc.key_import import import_jwks_from_file
+
 from fedservice.fetch_entity_statement import FetchEntityStatement
-from fedservice.keyjar import import_jwks_from_file
 
 logger = logging.getLogger(__name__)
 

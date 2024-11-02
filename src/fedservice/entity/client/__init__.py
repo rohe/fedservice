@@ -1,5 +1,5 @@
-from json import JSONDecodeError
 import logging
+from json import JSONDecodeError
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -10,9 +10,9 @@ from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.client.configure import Configuration
 from idpyoidc.client.defaults import SUCCESSFUL
 from idpyoidc.client.exception import OidcServiceError
+from idpyoidc.client.service import init_services
 from idpyoidc.client.service import REQUEST_INFO
 from idpyoidc.client.service import Service
-from idpyoidc.client.service import init_services
 from idpyoidc.client.service_context import CLI_REG_MAP
 from idpyoidc.client.service_context import PROVIDER_INFO_MAP
 from idpyoidc.client.util import do_add_ons
@@ -20,13 +20,13 @@ from idpyoidc.client.util import get_content_type
 from idpyoidc.client.util import get_deserialization_method
 from idpyoidc.exception import FormatError
 from idpyoidc.exception import ParseError
+from idpyoidc.key_import import import_jwks
 from idpyoidc.message import Message
 from idpyoidc.node import ClientUnit
 from requests import request
 
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_SERVICES
 from fedservice.entity import FederationContext
-from fedservice.keyjar import import_jwks
 
 logger = logging.getLogger(__name__)
 

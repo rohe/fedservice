@@ -13,11 +13,13 @@ from idpyoidc.client.exception import ConfigurationError
 from idpyoidc.client.exception import OidcServiceError
 from idpyoidc.client.oauth2.utils import pick_redirect_uri
 from idpyoidc.exception import MissingRequiredAttribute
+from idpyoidc.key_import import add_kb
+from idpyoidc.key_import import import_jwks_from_file
 from idpyoidc.message import Message
 from idpyoidc.message.oauth2 import AuthorizationRequest
 from idpyoidc.message.oauth2 import AuthorizationResponse
-from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.message.oauth2 import is_error_message
+from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.message.oidc import OpenIDSchema
 from idpyoidc.node import topmost_unit
 from idpyoidc.util import rndstr
@@ -27,8 +29,6 @@ from fedservice.appclient import ClientEntity
 from fedservice.entity import get_verified_trust_chains
 from fedservice.entity.utils import get_federation_entity
 from fedservice.exception import NoTrustedChains
-from fedservice.keyjar import add_kb
-from fedservice.keyjar import import_jwks_from_file
 from fedservice.message import RegistrationRequest
 
 logger = logging.getLogger(__name__)
