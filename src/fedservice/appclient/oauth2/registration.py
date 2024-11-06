@@ -84,7 +84,7 @@ class Registration(registration.Registration):
 
         kwargs = {}
         if _context.trust_marks:
-            kwargs["trust_marks"] = _context.trust_marks
+            kwargs["trust_marks"] = _context.get_trust_marks()
 
         _jws = _context.create_entity_statement(
             iss=_entity_id,
@@ -173,7 +173,7 @@ class Registration(registration.Registration):
             return _resp
 
     def _add_client_secret_to_keyjar(self, context, client_id, metadata):
-        _client_secret = context.get_usage("client_secret")
+        _client_secret = context.claims.get_usage("client_secret")
         if _client_secret:
             _keyjar = getattr(context, "keyjar", None)
             if not _keyjar:
@@ -195,7 +195,7 @@ class Registration(registration.Registration):
             _context = item.context
             _context.map_preferred_to_registered(resp[guise])
 
-            _client_id = _context.get_usage("client_id")
+            _client_id = _context.claims.get_usage("client_id")
             if _client_id:
                 _context.client_id = _client_id
             # _fe = self.upstream_get("context").federation_entity

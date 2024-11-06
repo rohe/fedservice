@@ -1,4 +1,6 @@
+from typing import Callable
 from typing import Optional
+from typing import Union
 
 from fedservice.defaults import DEFAULT_FEDERATION_ENTITY_FUNCTIONS
 from fedservice.defaults import federation_endpoints
@@ -16,7 +18,7 @@ class FederationEntityBuilder():
                  entity_id: Optional[str] = '',
                  preference: Optional[dict] = None,
                  key_conf: Optional[dict] = None,
-                 authority_hints: Optional[list] = None
+                 authority_hints: Optional[Union[list, str, Callable]] = None
                  ):
         self.conf = {
             "entity_id": entity_id,

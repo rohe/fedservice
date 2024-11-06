@@ -73,7 +73,7 @@
       }
     },
     "trust_anchors": {
-      "class": "idpyoidc.storage.abfile.AbstractFileSystem",
+      "class": "idpyoidc.storage.abfile_no_cache.AbstractFileSystemNoCache",
       "kwargs": {
         "fdir": "openid_provider/trust_anchors",
         "key_conv": "idpyoidc.util.Base64",
@@ -135,7 +135,16 @@
                 ]
               },
               "code": {
-                "lifetime": 1200
+                "lifetime": 600,
+                "kwargs": {
+                  "crypt_conf": {
+                    "kwargs": {
+                      "key": "0987654321abcdefghijklmnop...---",
+                      "salt": "abcdefghijklmnop",
+                      "iterations": 1
+                    }
+                  }
+                }
               },
               "token": {
                 "class": "idpyoidc.server.token.jwt_token.JWTToken",

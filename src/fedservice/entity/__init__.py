@@ -1,6 +1,7 @@
 import logging
 from typing import Callable
 from typing import Optional
+from typing import Union
 
 from cryptojwt import as_unicode
 from cryptojwt import KeyJar
@@ -42,7 +43,7 @@ class FederationEntity(Unit):
                  httpc: Optional[object] = None,
                  httpc_params: Optional[dict] = None,
                  preference: Optional[dict] = None,
-                 authority_hints: Optional[list] = None,
+                 authority_hints: Optional[Union[list, str, Callable]] = None,
                  persistence: Optional[dict] = None,
                  client_authn_methods: Optional[list] = None,
                  **kwargs
@@ -183,10 +184,10 @@ class FederationEntity(Unit):
         return list(self.client.service.db.keys())
 
     def get_authority_hints(self, *args):
-        if isinstance(self.context.authority_hints, list):
-            return self.context.authority_hints
-        else:
-            return list(self.context.authority_hints)
+        return self.context.get_authority_hints()
+
+    def get_trusted_roots(self, *args):
+        return self.context.get_trusted_roots()
 
     def get_context_attribute(self, attr, *args):
         _val = getattr(self.context, attr, None)

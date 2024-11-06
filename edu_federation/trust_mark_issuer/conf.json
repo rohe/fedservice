@@ -64,7 +64,7 @@
       }
     },
     "trust_anchors": {
-      "class": "idpyoidc.storage.abfile.AbstractFileSystem",
+      "class": "idpyoidc.storage.abfile_no_cache.AbstractFileSystemNoCache",
       "kwargs": {
         "fdir": "trust_mark_issuer/trust_anchors",
         "key_conv": "idpyoidc.util.Base64",

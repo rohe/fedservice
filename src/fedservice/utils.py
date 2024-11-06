@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Union
@@ -34,7 +35,7 @@ def statement_is_expired(item):
 
 def build_entity_config(entity_id: str,
                         key_config: Optional[dict] = None,
-                        authority_hints: Optional[List[str]] = None,
+                        authority_hints: Optional[Union[List[str], str, Callable]] = None,
                         preference: Optional[dict] = None,
                         endpoints: Optional[list] = None,
                         services: Optional[list] = None,
@@ -48,7 +49,7 @@ def build_entity_config(entity_id: str,
                         ) -> dict:
     _key_conf = key_config or {"key_defs": DEFAULT_KEY_DEFS}
 
-    if authority_hints:
+    if isinstance(authority_hints, dict):
         if "class" in authority_hints and "kwargs" in authority_hints:
             authority_hints = execute(authority_hints)
 

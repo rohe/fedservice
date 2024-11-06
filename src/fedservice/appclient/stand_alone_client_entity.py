@@ -146,7 +146,7 @@ class StandAloneClientEntity(ClientEntity):
                 _params = RegistrationRequest().parameters()
                 request_args.update({k: v for k, v in behaviour_args.items() if k in _params})
 
-            root = topmost_unit(_federation_entity)
+            # root = topmost_unit(_federation_entity)
             _endpoint_name = _federation_entity.client.get_service("registration").endpoint_name
             endpoint = self.context.provider_info[_endpoint_name]
             load_registration_response(_federation_entity, request_args=request_args,
@@ -281,7 +281,7 @@ class StandAloneClientEntity(ClientEntity):
         :return: The client authentication method
         """
         if endpoint == "token_endpoint":
-            auth_method = self.get_context().get_usage("token_endpoint_auth_method")
+            auth_method = self.get_context().claims.get_usage("token_endpoint_auth_method")
             if not auth_method:
                 return ""
             else:

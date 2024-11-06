@@ -40,7 +40,7 @@ class EntityConfiguration(Endpoint):
 
         if _fed_entity.context.trust_marks:
             if isinstance(_fed_entity.context.trust_marks, Callable):
-                args = {"trust_marks": _fed_entity.context.trust_marks()}
+                args = {"trust_marks": _fed_entity.context.get_trust_marks()}
             else:
                 args = {"trust_marks": _fed_entity.context.trust_marks}
         else:
