@@ -75,7 +75,10 @@
       "class": "fedservice.trust_mark_entity.entity.TrustMarkEntity",
       "kwargs": {
         "trust_mark_specification": {
-          "http://dc4eu.example.com/PersonIdentificationData/se": {
+          "http://dc4eu.example.com/EHICCredential/se": {
+            "lifetime": 2592000
+          },
+          "http://dc4eu.example.com/PDA1Credential/se": {
             "lifetime": 2592000
           },
           "http://dc4eu.example.com/OpenBadgeCredential/se": {
@@ -88,7 +91,8 @@
         "trust_mark_db": {
           "class": "fedservice.trust_mark_entity.FileDB",
           "kwargs": {
-            "http://dc4eu.example.com/PersonIdentificationData/se": "trust_mark_issuer/pid_se",
+            "http://dc4eu.example.com/EHICCredential/se": "trust_mark_issuer/ehic_se",
+            "http://dc4eu.example.com/PDA1Credential/se": "trust_mark_issuer/pda1_se",
             "http://dc4eu.example.com/OpenBadgeCredential/se": "trust_mark_issuer/obc_se",
             "https://refeds.org/category/personalized": "trust_mark_issuer/personalized"
           }

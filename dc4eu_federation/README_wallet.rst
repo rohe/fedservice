@@ -170,9 +170,8 @@ Creating a trust mark for an entity
 For this the script *create_trust_mark.py* is included.
 Typical usage::
 
-    ./create_trust_mark.py -d trust_mark_issuer -m http://dc4eu.example.com/PersonIdentificationData/se -e
-    https://127.0.0.1:8080
-
+    ./create_trust_mark.py -d trust_mark_issuer -m http://dc4eu.example.com/EHICCredential/se -e https://127.0.0.1:8080
+    ./create_trust_mark.py -d trust_mark_issuer -m http://dc4eu.example.com/PDA1Credential/se -e https://127.0.0.1:8080
 
 usage: create_trust_mark.py [-h] [-d DIR_NAME] [-e ENTITY_ID] [-m TRUST_MARK_ID] ::
 
