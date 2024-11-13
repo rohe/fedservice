@@ -2,9 +2,10 @@
 import json
 import sys
 
+import requests
 from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
-import requests
+from idpyoidc.key_import import import_jwks
 from idpyoidc.server.exception import ServiceError
 
 from fedservice.message import EntityStatement
@@ -20,7 +21,7 @@ def get_self_signed_entity_statement(entity_id):
     entity_statement = EntityStatement(**_payload)
     _key_jar = KeyJar()
     # verify  entity_statement["iss"]
-    _key_jar.import_jwks(entity_statement['jwks'], entity_id)
+    _key_jar = import_jwks(_key_jar, entity_statement['jwks'], entity_id)
     _keys = _key_jar.get_jwt_verify_keys(_jws.jwt)
     _res = _jws.verify_compact(keys=_keys)
     return _res
@@ -64,7 +65,7 @@ if __name__ == "__main__":
             if _url:
                 endpoint[endp] = _url
 
-    print(30*'='+"list"+30*"=")
+    print(30 * '=' + "list" + 30 * "=")
     if "list" in endpoint and "fetch" in endpoint:
         _list = list_entities(endpoint["list"])
         for _entity in _list:

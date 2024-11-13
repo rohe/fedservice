@@ -69,6 +69,7 @@ setup(
     tests_require=[
         "responses",
         "testfixtures",
+        "flask>=3.0.0"
     ],
     zip_safe=False,
     cmdclass={'test': PyTest},

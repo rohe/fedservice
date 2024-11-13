@@ -13,12 +13,15 @@ from idpyoidc.client.exception import ConfigurationError
 from idpyoidc.client.exception import OidcServiceError
 from idpyoidc.client.oauth2.utils import pick_redirect_uri
 from idpyoidc.exception import MissingRequiredAttribute
+from idpyoidc.key_import import add_kb
+from idpyoidc.key_import import import_jwks_from_file
 from idpyoidc.message import Message
 from idpyoidc.message.oauth2 import AuthorizationRequest
 from idpyoidc.message.oauth2 import AuthorizationResponse
-from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.message.oauth2 import is_error_message
+from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.message.oidc import OpenIDSchema
+from idpyoidc.node import topmost_unit
 from idpyoidc.util import rndstr
 
 from fedservice import save_trust_chains
@@ -31,9 +34,9 @@ from fedservice.message import RegistrationRequest
 logger = logging.getLogger(__name__)
 
 
-def load_registration_response(entity, request_args):
+def load_registration_response(entity, request_args, **kwargs):
     try:
-        response = entity.do_request("registration", request_args=request_args)
+        response = entity.do_request("registration", request_args=request_args, **kwargs)
     except KeyError:
         raise ConfigurationError("No registration info")
     except Exception as err:
@@ -102,10 +105,10 @@ class StandAloneClientEntity(ClientEntity):
                     elif typ == "file":
                         for kty, _name in _spec.items():
                             if kty == "jwks":
-                                _kj.import_jwks_from_file(_name, _context.get("issuer"))
+                                _kj = import_jwks_from_file(_kj, _name, _context.get("issuer"))
                             elif kty == "rsa":  # PEM file
                                 _kb = keybundle_from_local_file(_name, "der", ["sig"])
-                                _kj.add_kb(_context.get("issuer"), _kb)
+                                _kj = add_kb(_kj, _context.get("issuer"), _kb)
                     else:
                         raise ValueError("Unknown provider JWKS type: {}".format(typ))
 
@@ -134,7 +137,8 @@ class StandAloneClientEntity(ClientEntity):
         _context = self.get_context()
         _federation_entity = get_federation_entity(self)
 
-        if _federation_entity.get_service("registration"):  # means I can do dynamic client registration
+        if _federation_entity.get_service(
+                "registration"):  # means I can do dynamic client registration
             if request_args is None:
                 request_args = {}
 
@@ -142,7 +146,12 @@ class StandAloneClientEntity(ClientEntity):
                 _params = RegistrationRequest().parameters()
                 request_args.update({k: v for k, v in behaviour_args.items() if k in _params})
 
-            load_registration_response(_federation_entity, request_args=request_args)
+            # root = topmost_unit(_federation_entity)
+            _endpoint_name = _federation_entity.client.get_service("registration").endpoint_name
+            endpoint = self.context.provider_info[_endpoint_name]
+            load_registration_response(_federation_entity, request_args=request_args,
+                                       behaviour_args={"client": self},
+                                       endpoint=endpoint)
         else:
             _context.map_preferred_to_registered()
 
@@ -272,7 +281,7 @@ class StandAloneClientEntity(ClientEntity):
         :return: The client authentication method
         """
         if endpoint == "token_endpoint":
-            auth_method = self.get_context().get_usage("token_endpoint_auth_method")
+            auth_method = self.get_context().claims.get_usage("token_endpoint_auth_method")
             if not auth_method:
                 return ""
             else:

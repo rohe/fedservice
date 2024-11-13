@@ -38,8 +38,8 @@ class FederationContext(ImpExp):
                  default_lifetime: Optional[int] = 86400,
                  priority: Optional[list] = None,
                  trust_marks: Optional[list] = None,
-                 trusted_roots: Optional[dict] = None,
-                 authority_hints: Optional[list] = None,
+                 trusted_roots: Optional[Union[str, dict, Callable]] = None,
+                 authority_hints: Optional[Union[list, str, Callable]] = None,
                  keyjar: Optional[KeyJar] = None,
                  preference: Optional[dict] = None,
                  **kwargs
@@ -55,39 +55,22 @@ class FederationContext(ImpExp):
         self.entity_id = entity_id or config.get("entity_id",
                                                  self.upstream_get("attribute", "entity_id"))
         self.default_lifetime = default_lifetime or config.get("default_lifetime", 0)
+
         self.trust_marks = trust_marks or config.get('trust_marks', [])
+        self.trusted_roots = trusted_roots or config.get('trusted_roots', {})
+        self.authority_hints = authority_hints or config.get('authority_hints', [])
+
         self.trust_chain = {}
         # self.issuer = self.entity_id
 
         self.claims = FederationEntityClaims(prefer=preference)
-
-        if trusted_roots:
-            _trusted_roots = trusted_roots
-        else:
-            _trusted_roots = config.get("trusted_roots")
-
-        if _trusted_roots is None:
-            # Must be trust anchor then
-            self.trusted_roots = {}
-        elif isinstance(_trusted_roots, str):
-            self.trusted_roots = json.loads(open(_trusted_roots).read())
-        else:
-            self.trusted_roots = _trusted_roots
 
         if priority:
             self.tr_priority = priority
         elif 'priority' in config:
             self.tr_priority = config["priority"]
         else:
-            self.tr_priority = sorted(set(self.trusted_roots.keys()))
-
-        if authority_hints:
-            if isinstance(authority_hints, str):  # Allow it to be a file name
-                self.authority_hints = json.loads(open(authority_hints).read())
-            else:
-                self.authority_hints = authority_hints
-        else:
-            self.authority_hints = []
+            self.tr_priority = sorted(set(self.get_trusted_roots().keys()))
 
         for param, default in self.parameter.items():
             _val = kwargs.get(param)
@@ -136,8 +119,9 @@ class FederationContext(ImpExp):
         if not lifetime:
             lifetime = self.default_lifetime
 
-        if self.trust_marks:
-            kwargs["trust_marks"] = self.trust_marks
+        _trust_marks = self.get_trust_marks()
+        if _trust_marks:
+            kwargs["trust_marks"] = _trust_marks
 
         return create_entity_statement(iss, sub, key_jar=key_jar, metadata=metadata,
                                        metadata_policy=metadata_policy,
@@ -151,6 +135,42 @@ class FederationContext(ImpExp):
         )
 
         return self.claims.use
+
+    def get_authority_hints(self, *args) -> list:
+        _hints = self.authority_hints
+        if isinstance(_hints, list):
+            return _hints
+        elif isinstance(_hints, str):
+            return json.loads(open(_hints, "r").read())
+        elif isinstance(_hints, Callable):
+            return _hints()
+        else:
+            raise ValueError("authority_hints")
+
+    def get_trusted_roots(self) -> dict:
+        if self.trusted_roots is None:
+            # Must be trust anchor then
+            return {}
+        elif isinstance(self.trusted_roots, str):
+            return json.loads(open(self.trusted_roots).read())
+        elif isinstance(self.trusted_roots, dict):
+            return self.trusted_roots
+        elif isinstance(self.trusted_roots, Callable):
+            return self.trusted_roots()
+        else:
+            raise ValueError("trusted_roots")
+
+    def get_trust_marks(self)-> Optional[list]:
+        if self.trust_marks == None:
+            return []
+        elif isinstance(self.trust_marks, str):
+            return json.loads(open(self.trust_marks).read())
+        elif isinstance(self.trust_marks, list):
+            return self.trust_marks
+        elif isinstance(self.trust_marks, Callable):
+            return self.trust_marks()
+        else:
+            raise ValueError("trust_marks")
 
 
 class FederationServerContext(FederationContext):

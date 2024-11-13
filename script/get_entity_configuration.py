@@ -5,7 +5,6 @@ from pygments import highlight
 from pygments.formatters.terminal import TerminalFormatter
 from pygments.lexers.data import JsonLexer
 
-from fedservice.entity.function.trust_chain_collector import unverified_entity_statement
 from fedservice.entity.function.trust_chain_collector import verify_self_signed_signature
 from fedservice.utils import make_federation_entity
 
@@ -14,6 +13,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', "--insecure", action='store_true')
+    parser.add_argument('-f', "--format", action='store_true')
     parser.add_argument('-t', "--trust_anchors_file")
     parser.add_argument(dest="entity_id")
     args = parser.parse_args()
@@ -39,5 +39,8 @@ if __name__ == '__main__':
     entity_configuration = verify_self_signed_signature(_jws)
     # Print
     json_str = json.dumps(entity_configuration, indent=2)
-    print(20 * "=" + " Entity Configuration " + 20 * "=")
-    print(highlight(json_str, JsonLexer(), TerminalFormatter()))
+    print(20 * "=" + f" Entity Configuration for {args.entity_id} " + 20 * "=")
+    if args.format:
+        print(highlight(json_str, JsonLexer(), TerminalFormatter()))
+    else:
+        print(json_str)

@@ -12,6 +12,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', "--insecure", action='store_true')
+    parser.add_argument('-f', "--format", action='store_true')
     parser.add_argument('-i', "--trust_mark_id")
     parser.add_argument('-s', "--subject")
     parser.add_argument('-t', "--trust_anchors")

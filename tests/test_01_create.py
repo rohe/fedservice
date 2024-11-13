@@ -1,5 +1,6 @@
 from cryptojwt.jws.jws import factory
 from cryptojwt.key_jar import build_keyjar
+from idpyoidc.key_import import import_jwks_as_json
 
 from fedservice.entity_statement.create import create_entity_statement
 
@@ -80,11 +81,14 @@ def test_signed_someone_else_metadata():
     sub_key_jar = build_keyjar(KEYSPEC, issuer_id=sub)
 
     iss_key_jar = build_keyjar(KEYSPEC, issuer_id=iss)
-    iss_key_jar.import_jwks_as_json(sub_key_jar.export_jwks_as_json(issuer_id=sub),
-                                    issuer_id=sub)
 
-    sub_key_jar.import_jwks_as_json(iss_key_jar.export_jwks_as_json(issuer_id=iss),
-                                    issuer_id=iss)
+    iss_key_jar = import_jwks_as_json(iss_key_jar,
+                                      sub_key_jar.export_jwks_as_json(issuer_id=sub),
+                                      sub)
+
+    sub_key_jar = import_jwks_as_json(sub_key_jar,
+                                      iss_key_jar.export_jwks_as_json(issuer_id=iss),
+                                      iss)
 
     authority = {"https://core.example.com": ["https://federation.example.org"]}
 

@@ -48,9 +48,7 @@
           ]
         }
       ],
-      "public_path": "openid_provider/static/fed_keys.json",
-      "read_only": false,
-      "uri_path": "jwks/fed"
+      "read_only": false
     },
     "authority_hints": {
       "class": "idpyoidc.storage.listfile.ReadOnlyListFile",
@@ -75,7 +73,7 @@
       }
     },
     "trust_anchors": {
-      "class": "idpyoidc.storage.abfile.AbstractFileSystem",
+      "class": "idpyoidc.storage.abfile_no_cache.AbstractFileSystemNoCache",
       "kwargs": {
         "fdir": "openid_provider/trust_anchors",
         "key_conv": "idpyoidc.util.Base64",
@@ -137,7 +135,16 @@
                 ]
               },
               "code": {
-                "lifetime": 1200
+                "lifetime": 600,
+                "kwargs": {
+                  "crypt_conf": {
+                    "kwargs": {
+                      "key": "0987654321abcdefghijklmnop...---",
+                      "salt": "abcdefghijklmnop",
+                      "iterations": 1
+                    }
+                  }
+                }
               },
               "token": {
                 "class": "idpyoidc.server.token.jwt_token.JWTToken",

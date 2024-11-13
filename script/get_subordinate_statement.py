@@ -14,6 +14,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', "--insecure", action='store_true')
+    parser.add_argument('-f', "--format", action='store_true')
     parser.add_argument('-t', "--trust_anchors_file")
     parser.add_argument('-s', "--superior")
     parser.add_argument(dest="entity_id")
@@ -51,4 +52,7 @@ if __name__ == '__main__':
     entity_statement = unverified_entity_statement(_jws)
     json_str = json.dumps(entity_statement, indent=2)
     print(20 * "=" + f" Subordinate Statement about {args.entity_id} from {args.superior} " + 20 * "=")
-    print(highlight(json_str, JsonLexer(), TerminalFormatter()))
+    if args.format:
+        print(highlight(json_str, JsonLexer(), TerminalFormatter()))
+    else:
+        print(json_str)

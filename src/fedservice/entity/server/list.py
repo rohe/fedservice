@@ -1,9 +1,9 @@
 import json
 import logging
-from typing import Optional
 
 from cryptojwt import JWT
 from cryptojwt import KeyJar
+from idpyoidc.key_import import import_jwks
 from idpyoidc.message import oidc
 from idpyoidc.server.endpoint import Endpoint
 
@@ -87,7 +87,7 @@ class List(Endpoint):
             #  get entity configuration for subordinate
             _entity_configuration = _collector.get_entity_configuration(entity_id)
             # Verify signature with the keys I have
-            keyjar.import_jwks(conf['jwks'], entity_id)
+            keyjar = import_jwks(keyjar, conf['jwks'], entity_id)
             _jwt = JWT(key_jar=keyjar)
             _ec = _jwt.unpack(_entity_configuration)
             sub[entity_id] = _ec

@@ -1,5 +1,5 @@
-from json import JSONDecodeError
 import logging
+from json import JSONDecodeError
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -10,9 +10,9 @@ from idpyoidc.client.client_auth import client_auth_setup
 from idpyoidc.client.configure import Configuration
 from idpyoidc.client.defaults import SUCCESSFUL
 from idpyoidc.client.exception import OidcServiceError
+from idpyoidc.client.service import init_services
 from idpyoidc.client.service import REQUEST_INFO
 from idpyoidc.client.service import Service
-from idpyoidc.client.service import init_services
 from idpyoidc.client.service_context import CLI_REG_MAP
 from idpyoidc.client.service_context import PROVIDER_INFO_MAP
 from idpyoidc.client.util import do_add_ons
@@ -20,6 +20,7 @@ from idpyoidc.client.util import get_content_type
 from idpyoidc.client.util import get_deserialization_method
 from idpyoidc.exception import FormatError
 from idpyoidc.exception import ParseError
+from idpyoidc.key_import import import_jwks
 from idpyoidc.message import Message
 from idpyoidc.node import ClientUnit
 from requests import request
@@ -60,7 +61,7 @@ class FederationServiceContext(FederationContext):
         self.signed_trust_marks = []
         _key_jar = self.upstream_get("attribute", "keyjar")
         for iss, jwks in self.trusted_roots.items():
-            _key_jar.import_jwks(jwks, iss)
+            _key_jar = import_jwks(_key_jar, jwks, iss)
         self.server_metadata = {}
 
     def _get_crypt(self, typ, attr):
@@ -124,7 +125,6 @@ class FederationServiceContext(FederationContext):
                 if _val:
                     return _val
             raise KeyError(f"{claim} not in server metadata")
-
 
 
 class FederationClientEntity(ClientUnit):
@@ -212,7 +212,7 @@ class FederationClientEntity(ClientUnit):
 
 
 class FederationClient(FederationClientEntity):
-    client_type = "oauth2"
+    client_type = ""
 
     def __init__(
             self,
@@ -294,7 +294,8 @@ class FederationClient(FederationClientEntity):
     ):
         _srv = self.service[request_type]
         self.context.issuer = kwargs.get("entity_id", kwargs.get("issuer"))
-        _info = _srv.get_request_parameters(request_args=request_args, **kwargs)
+        _info = _srv.get_request_parameters(request_args=request_args,
+                                            behaviour_args=behaviour_args, **kwargs)
         if not _info:
             return None
 

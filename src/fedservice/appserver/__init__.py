@@ -7,6 +7,7 @@ from typing import Union
 from cryptojwt import KeyJar
 from cryptojwt.utils import importer
 from idpyoidc.configure import Base
+from idpyoidc.key_import import import_jwks
 from idpyoidc.message import Message
 from idpyoidc.node import topmost_unit
 from idpyoidc.server import allow_refresh_token
@@ -22,6 +23,7 @@ from idpyoidc.server.util import execute
 
 from fedservice.entity.claims import OPClaims
 from fedservice.message import AuthorizationServerMetadata
+from fedservice.message import OPMetadata
 from fedservice.server import ServerUnit
 
 logger = logging.getLogger(__name__)
@@ -48,7 +50,7 @@ def import_client_keys(information: Union[Message, dict], keyjar: KeyJar, entity
         else:
             _jwks = information.get('jwks')
             if _jwks:
-                keyjar.import_jwks(_jwks, entity_id)
+                keyjar = import_jwks(keyjar, _jwks, entity_id)
 
 
 class ServerEntity(ServerUnit):
@@ -75,14 +77,15 @@ class ServerEntity(ServerUnit):
         self.server_type = server_type or config.get("server_type", "")
         if not self.server_type:
             if entity_type == "oauth_authorization_server":
-                self.metadata_schema = AuthorizationServerMetadata
                 self.server_type = "oauth2"
             elif entity_type == "openid_provider":
                 self.server_type = "oidc"
-                self.metadata_schema = AuthorizationServerMetadata
 
         if self.server_type == "oauth2":
             self.name = "oauth_authorization_server"
+            self.metadata_schema = AuthorizationServerMetadata
+        elif self.server_type == "oidc":
+            self.metadata_schema = OPMetadata
 
         ServerUnit.__init__(self, upstream_get=upstream_get, keyjar=keyjar, httpc=httpc,
                             httpc_params=httpc_params, entity_id=entity_id, key_conf=key_conf,

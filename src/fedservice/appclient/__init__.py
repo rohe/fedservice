@@ -33,6 +33,11 @@ from fedservice.message import OauthClientMetadata
 
 logger = logging.getLogger(__name__)
 
+ENTITY2CLIENT_TYPE = {
+    "openid_relying_party": "oidc",
+    "oauth_client": "oauth2"
+}
+
 
 class ClientEntity(ClientUnit):
     name = 'openid_relying_party'
@@ -56,13 +61,11 @@ class ClientEntity(ClientUnit):
             config = {}
 
         self.client_type = config.get('client_type', client_type)
+        self.entity_type = config.get("entity_type", entity_type)
         if not self.client_type:
-            if entity_type == 'openid_relying_party':
-                self.client_type = "oidc"
-            elif entity_type == "oauth_client":
-                self.client_type = "oauth2"
-            else:
-                raise KeyError("Unknown entity_type")
+            self.client_type = ENTITY2CLIENT_TYPE.get(self.entity_type, "")
+            if not self.client_type:
+                self.client_type = ENTITY2CLIENT_TYPE[self.name]
 
         self.entity_id = entity_id or config.get("entity_id", config.get("client_id", ""))
 
@@ -344,7 +347,8 @@ class ClientEntity(ClientUnit):
                 content_type = "application/json"
 
             try:
-                err_resp = self._parse_response(service, reqresp.text, content_type, state, **kwargs)
+                err_resp = self._parse_response(service, reqresp.text, content_type, state,
+                                                **kwargs)
             except (FormatError, ValueError):
                 if content_type != response_body_type:
                     logger.warning(f'Response with wrong content-type: {content_type}')

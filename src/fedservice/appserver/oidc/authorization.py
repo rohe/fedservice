@@ -2,6 +2,7 @@ import logging
 from typing import List
 from typing import Optional
 
+from idpyoidc.key_import import import_jwks
 from idpyoidc.message import oidc
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.node import topmost_unit
@@ -87,7 +88,7 @@ class Authorization(authorization.Authorization):
                 else:
                     _jwks = _metadata.get('jwks')
                     _keyjar = self.upstream_get('attribute', 'keyjar')
-                    _keyjar.import_jwks(_jwks, client_entity_id)
+                    _keyjar = import_jwks(_keyjar, _jwks, client_entity_id)
 
         req = RegistrationRequest(**trust_chain.metadata['openid_relying_party'])
         req['client_id'] = client_entity_id

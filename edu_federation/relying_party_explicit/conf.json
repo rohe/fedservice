@@ -60,7 +60,7 @@
       }
     },
     "trust_anchors": {
-      "class": "idpyoidc.storage.abfile.AbstractFileSystem",
+      "class": "idpyoidc.storage.abfile_no_cache.AbstractFileSystemNoCache",
       "kwargs": {
         "fdir": "relying_party_explicit/trust_anchors",
         "key_conv": "idpyoidc.util.Base64",
@@ -76,15 +76,25 @@
     "endpoints": [
       "entity_configuration"
     ],
+    "services": [
+      "entity_configuration",
+      "entity_statement",
+      "oauth_registration",
+      "list"
+    ],
     "entity_type": {
       "openid_relying_party": {
         "class": "idpyoidc.client.rp_handler.RPHandler",
         "kwargs": {
-          "client_class": "fedservice.appclient.stand_alone_client_entity.StandAloneClientEntity",
           "config": {
+            "client_class": "fedservice.appclient.stand_alone_client_entity.StandAloneClientEntity",
             "base_url": "https://127.0.0.1:4010",
             "entity_id": "https://127.0.0.1:4010",
             "client_type": "oidc",
+            "entity_type": "openid_relying_party",
+            "httpc_params": {
+              "verify": false
+            },
             "key_conf": {
               "private_path": "private/expl.rp.jwks.json",
               "key_defs": [

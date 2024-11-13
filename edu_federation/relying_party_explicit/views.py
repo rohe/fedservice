@@ -77,7 +77,7 @@ def wkof():
                                   sub=_fed_entity.entity_id,
                                   key_jar=_fed_entity.get_attribute('keyjar'),
                                   metadata=_metadata,
-                                  authority_hints=_fed_entity.context.authority_hints,
+                                  authority_hints=_fed_entity.get_authority_hints(),
                                   **args
                                   )
 

@@ -72,7 +72,7 @@ class Registration(registration.Registration):
                 trust_anchor_id=trust_chain.anchor,
                 metadata={opponent_entity_type: _policy_metadata},
                 aud=payload['iss'],
-                authority_hints=_federation_entity.context.authority_hints
+                authority_hints=_federation_entity.get_authority_hints()
             )
             response_info["response_msg"] = entity_statement
             del response_info["response_args"]

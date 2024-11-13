@@ -1,6 +1,6 @@
 import logging
-from ssl import SSLError
 import time
+from ssl import SSLError
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -11,11 +11,12 @@ from cryptojwt import KeyJar
 from cryptojwt.jws.jws import factory
 from cryptojwt.jwt import utc_time_sans_frac
 from idpyoidc.exception import MissingPage
+from idpyoidc.key_import import import_jwks
 from idpyoidc.message import Message
 from requests.exceptions import ConnectionError
 
-from fedservice.entity.function import Function
 from fedservice.entity.function import collect_trust_chains
+from fedservice.entity.function import Function
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity.utils import get_federation_entity
 from fedservice.entity_statement.cache import ESCache
@@ -27,6 +28,8 @@ logger = logging.getLogger(__name__)
 
 def unverified_entity_statement(signed_jwt):
     _jws = factory(signed_jwt)
+    if not _jws:
+        raise ValueError(f"Not a proper signed JWT: {signed_jwt}")
     return _jws.jwt.payload()
 
 
@@ -42,7 +45,7 @@ def verify_self_signed_signature(statement):
     payload = unverified_entity_statement(statement)
     keyjar = KeyJar()
     if payload['iss'] not in keyjar:
-        keyjar.import_jwks(payload['jwks'], payload['iss'])
+        keyjar = import_jwks(keyjar, payload['jwks'], payload['iss'])
 
     _jwt = JWT(key_jar=keyjar)
     _val = _jwt.unpack(statement)
@@ -83,7 +86,7 @@ class TrustChainCollector(Function):
             self.keyjar = None
             keyjar = upstream_get("attribute", "keyjar")
         for id, keys in trust_anchors.items():
-            keyjar.import_jwks(keys, id)
+            keyjar = import_jwks(keyjar, keys, id)
 
     def _get_service(self, service):
         federation_entity = get_federation_entity(self)
@@ -113,7 +116,7 @@ class TrustChainCollector(Function):
             raise
 
         if response.status_code == 200:
-            if 'application/jose' not in response.headers['Content-Type']:
+            if 'application/entity-statement+jwt' not in response.headers['Content-Type']:
                 logger.warning(f"Wrong Content-Type: {response.headers['Content-Type']}")
             return response.text
         elif response.status_code == 404:
@@ -154,7 +157,8 @@ class TrustChainCollector(Function):
             logger.error(err)
             raise
         except ConnectionError as err:
-            return None
+            logger.error(err)
+            raise
         except Exception as err:
             logger.exception(err)
             raise
@@ -280,7 +284,7 @@ class TrustChainCollector(Function):
             # The entity configuration for authority is collected at this point
             # It's stored in config_cache
             fed_fetch_endpoint = self.get_federation_fetch_endpoint(authority)
-            if fed_fetch_endpoint is None:
+            if not fed_fetch_endpoint:
                 return None
             logger.debug(f"Federation fetch endpoint: '{fed_fetch_endpoint}' for '{authority}'")
             entity_statement = self.get_entity_statement(fed_fetch_endpoint, authority, entity)
@@ -379,7 +383,7 @@ class TrustChainCollector(Function):
         else:
             raise ValueError("Missing keyjar")
 
-        _keyjar.import_jwks(jwks, entity_id)
+        _keyjar = import_jwks(_keyjar, jwks, entity_id)
         self.trust_anchors[entity_id] = jwks
 
     def get_chain(self, iss_path, trust_anchor, with_ta_ec: Optional[bool] = False):

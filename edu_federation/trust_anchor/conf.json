@@ -64,7 +64,7 @@
       "resolve"
     ],
     "subordinate": {
-      "class": "idpyoidc.storage.abfile.AbstractFileSystem",
+      "class": "idpyoidc.storage.abfile_no_cache.AbstractFileSystemNoCache",
       "kwargs": {
         "fdir": "trust_anchor/subordinates",
         "key_conv": "idpyoidc.util.Base64",
@@ -72,7 +72,7 @@
       }
     },
     "trust_mark_issuers": {
-      "class": "idpyoidc.storage.abfile.AbstractFileSystem",
+      "class": "idpyoidc.storage.abfile_no_cache.AbstractFileSystemNoCache",
       "kwargs": {
         "fdir": "trust_anchor/trust_mark_issuers",
         "key_conv": "idpyoidc.util.Base64",

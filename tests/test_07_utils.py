@@ -2,6 +2,7 @@ import json
 import os
 
 from cryptojwt import KeyJar
+from idpyoidc.key_import import import_jwks_as_json
 from idpyoidc.node import Unit
 
 from fedservice.entity.function import tree2chains
@@ -25,7 +26,7 @@ foodle_jwks = open(
 def test_eval_chains():
     target = 'https://foodle.uninett.no'
     foodle_key_jar = KeyJar()
-    foodle_key_jar.import_jwks_as_json(jwks, target)
+    foodle_key_jar = import_jwks_as_json(foodle_key_jar, jwks, target)
     collector = DummyCollector(trust_anchors=ANCHOR,
                                httpd=FSPublisher(os.path.join(BASE_PATH, 'base_data')),
                                root_dir=os.path.join(BASE_PATH, 'base_data'),
@@ -42,7 +43,7 @@ def test_eval_chains():
     chains = tree2chains(_unit)
 
     key_jar = KeyJar()
-    key_jar.import_jwks_as_json(jwks, 'https://feide.no')
+    key_jar = import_jwks_as_json(key_jar, jwks, 'https://feide.no')
 
     _unit = Unit(keyjar=key_jar)
     _verifier = TrustChainVerifier(upstream_get=_unit.unit_get)

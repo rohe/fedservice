@@ -1,6 +1,7 @@
 import logging
 from typing import Callable
 from typing import Optional
+from typing import Union
 
 from cryptojwt import as_unicode
 from cryptojwt import KeyJar
@@ -23,6 +24,8 @@ __author__ = 'Roland Hedberg'
 from fedservice.entity.context import FederationContext
 from idpyoidc.node import Unit
 
+from idpyoidc.key_import import import_jwks
+
 logger = logging.getLogger(__name__)
 
 
@@ -40,7 +43,7 @@ class FederationEntity(Unit):
                  httpc: Optional[object] = None,
                  httpc_params: Optional[dict] = None,
                  preference: Optional[dict] = None,
-                 authority_hints: Optional[list] = None,
+                 authority_hints: Optional[Union[list, str, Callable]] = None,
                  persistence: Optional[dict] = None,
                  client_authn_methods: Optional[list] = None,
                  **kwargs
@@ -181,10 +184,10 @@ class FederationEntity(Unit):
         return list(self.client.service.db.keys())
 
     def get_authority_hints(self, *args):
-        if isinstance(self.context.authority_hints, list):
-            return self.context.authority_hints
-        else:
-            return list(self.context.authority_hints)
+        return self.context.get_authority_hints()
+
+    def get_trusted_roots(self, *args):
+        return self.context.get_trusted_roots()
 
     def get_context_attribute(self, attr, *args):
         _val = getattr(self.context, attr, None)
@@ -295,7 +298,8 @@ class FederationEntity(Unit):
             _es = self.client.do_request("entity_statement", issuer=superior, subject=subordinate)
 
             # add subjects key/-s to keyjar
-            self.get_federation_entity().keyjar.import_jwks(_es["jwks"], _es["sub"])
+            _kj = self.get_federation_entity().keyjar
+            _kj = import_jwks(_kj, _es["jwks"], _es["sub"])
 
             # Fetch Entity Configuration
             _ec = self.client.do_request("entity_configuration", entity_id=subordinate)
@@ -378,7 +382,7 @@ class FederationEntity(Unit):
         else:
             raise ValueError("Missing keyjar")
 
-        _keyjar.import_jwks(jwks, entity_id)
+        _keyjar = import_jwks(_keyjar, jwks, entity_id)
         self.trust_anchors[entity_id] = jwks
 
     def supports(self):

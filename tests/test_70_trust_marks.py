@@ -3,6 +3,7 @@ import os
 import pytest
 import responses
 from idpyoidc.client.defaults import DEFAULT_KEY_DEFS
+from idpyoidc.key_import import import_jwks
 from idpyoidc.message import Message
 
 from fedservice.defaults import LEAF_ENDPOINTS
@@ -173,8 +174,8 @@ class TestTrustMarkDelegation():
             algorithm="ES256")
 
         _client_jwks = _client_service.upstream_get("attribute", "keyjar").export_jwks()
-        _server_endpoint.upstream_get("attribute", "keyjar").import_jwks(_client_jwks,
-                                                                         issuer_id=self.federation_entity.entity_id)
+        _kj = _server_endpoint.upstream_get("attribute", "keyjar")
+        _kj = import_jwks(_kj, _client_jwks, self.federation_entity.entity_id)
         _query = req_info["url"].split("?")[1]
         _req = Message().from_urlencoded(_query)
 
