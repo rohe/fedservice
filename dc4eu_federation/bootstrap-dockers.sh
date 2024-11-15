@@ -39,13 +39,32 @@ if [ ! -d flask_wallet/trust_anchors ]; then
     mkdir flask_wallet/trust_anchors
 fi
 cp -a wallet_provider/trust_anchors/* flask_wallet/trust_anchors/
-echo "Place this into oidc_frontend.yaml below:" 
+echo "Place this into oidc_frontend.yaml. Add below:" 
 echo "config:             "
 echo "  op:               " 
 echo "    server_info:    "
 echo "      trust_anchors:"
 docker ${docker_args}/convert_json_to_yaml.py workdir/trust_anchor.json
-#
+
+echo "Also add authority_hints:"
+echo "    - ${TRUST_ANCHOR} "
+
+echo "Also add trust_marks:"
+echo "    <TRUST_MARKS>"
+docker run --rm -ti -v .:/workdir --entrypoint bash docker.sunet.se/fedservice:latest -c "cd workdir;/fedservice/dc4eu_federation/create_trust_mark.py -m http://dc4eu.example.com/PersonIdentificationData/se -d trust_mark_issuer -e $1"
+cat << EOF 
+On Satosa, copy /etc/satosa/public/pid_fed_keys.json and add to
+{
+  "$1": {
+    "entity_types": [
+      "federation_entity",
+      "openid_credential_issuer",
+      "oauth_authorization_server"
+    ],
+    "jwks": {
+EOF
+
+echo "docker ${docker_args}/add_info.py -s /workdir/ci.json -t workdir/trust_anchor/subordinates"
 ## Query Server
 #./add_info.py -s trust_anchor.json -t query_server/trust_anchors
 #rm -r query_server/authority_hints
