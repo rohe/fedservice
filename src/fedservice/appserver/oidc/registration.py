@@ -1,5 +1,6 @@
 import logging
 
+from fedservice.exception import NoTrustedChains
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.server.oidc import registration
 
@@ -35,16 +36,16 @@ class Registration(registration.Registration):
         :return:
         """
         payload = verify_self_signed_signature(request)
-        opponent_entity_type = set(payload['metadata'].keys()).difference(
-            {'federation_entity'}).pop()
+        opponent_entity_type = set(payload['metadata'].keys()).difference({'federation_entity'}).pop()
         _federation_entity = get_federation_entity(self)
 
-        # Collect trust chains
+        # Collect trust chains for client
         _trust_chains = get_verified_trust_chains(self, entity_id=payload['sub'])
+        if not _trust_chains:
+            raise NoTrustedChains(f"No trust chains for {payload['sub']}")
+
         save_trust_chains(self.upstream_get("context"), _trust_chains)
-
         trust_chain = _federation_entity.pick_trust_chain(_trust_chains)
-
         _federation_entity.trust_chain_anchor = trust_chain.anchor
 
         req = RegistrationRequest(**payload["metadata"][opponent_entity_type])
@@ -81,7 +82,7 @@ class Registration(registration.Registration):
 
     def non_fed_process_request(self, req, **kwargs):
         if "new_id" not in kwargs:
-            kwargs["net_id"] = False
+            kwargs["new_id"] = False
         # handle the registration request as in the non-federation case.
         return registration.Registration.process_request(self, req, authn=None, **kwargs)
 

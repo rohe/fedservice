@@ -306,7 +306,8 @@ class FederationClient(FederationClientEntity):
 
         _state = kwargs.get("state", "")
         return self.service_request(
-            _srv, response_body_type=response_body_type, state=_state, **_info
+            _srv, response_body_type=response_body_type, state=_state,
+            behaviour_args=behaviour_args, **_info
         )
 
     def set_client_id(self, client_id):

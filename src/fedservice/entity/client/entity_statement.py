@@ -1,3 +1,4 @@
+import logging
 from typing import Callable
 from typing import Optional
 from typing import Union
@@ -11,6 +12,8 @@ from idpyoidc.message.oauth2 import ResponseMessage
 from fedservice import message
 from fedservice.entity.service import FederationService
 from fedservice.entity.utils import get_federation_entity
+
+logger = logging.getLogger(__name__)
 
 
 def construct_entity_configuration_query(api_endpoint, issuer="", subject=""):
@@ -71,9 +74,13 @@ class EntityStatement(FederationService):
             method = self.http_method
 
         if not fetch_endpoint:
-            root = get_federation_entity(self)
-            _collector = root.function.trust_chain_collector
-            _ec = _collector.config_cache[issuer]
+            _federation_entity = get_federation_entity(self)
+            _collector = _federation_entity.function.trust_chain_collector
+            if issuer in _collector.config_cache:
+                _ec = _collector.config_cache[issuer]
+            else:
+                logger.debug(f"Entity Configuration for '{issuer}' not cached")
+                _ec = _federation_entity.client.do_request("entity_configuration", entity_id=issuer)
             fetch_endpoint = _ec["metadata"]["federation_entity"][self.endpoint_name]
             if not fetch_endpoint:
                 raise AttributeError("Missing endpoint")
