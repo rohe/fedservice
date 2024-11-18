@@ -192,11 +192,22 @@ class Registration(registration.Registration):
         # Updated service_context per entity type
         _root = topmost_unit(self)
         for guise, item in _root.items():
-            _context = item.context
-            _context.map_preferred_to_registered(resp[guise])
+            if isinstance(item, RPHandler):
+                try:
+                    client = kwargs["behaviour_args"]["client"]
+                    _context = client.context
+                    _context.map_preferred_to_registered(resp[guise])
 
-            _client_id = _context.claims.get_usage("client_id")
-            if _client_id:
-                _context.client_id = _client_id
-            # _fe = self.upstream_get("context").federation_entity
-            # _fe.iss = resp['client_id']
+                    for arg in ["client_id", "client_secret"]:
+                        _val = _context.claims.get_usage(arg)
+                        if _val:
+                            setattr(_context, arg, _val)
+                except KeyError:
+                    pass
+            else:
+                _context = item.get_context()
+                _context.map_preferred_to_registered(resp[guise])
+
+                _client_id = _context.claims.get_usage("client_id")
+                if _client_id:
+                    _context.client_id = _client_id

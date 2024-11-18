@@ -12,6 +12,7 @@ from flask import render_template
 from flask import request
 from flask.helpers import make_response
 from flask.helpers import send_from_directory
+from idpyoidc.message import Message
 from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.message.oidc import AccessTokenRequest
 from idpyoidc.message.oidc import AuthorizationRequest
@@ -82,7 +83,10 @@ def do_response(endpoint, req_args, error='', **args):
     if error:
         if _response_placement == 'body':
             _log.info('Error Response: {}'.format(info['response']))
-            resp = make_response(info['response'], 400)
+            _resp = info["response"]
+            if isinstance(_resp, Message):
+                _resp = _resp.to_dict()
+            resp = make_response(_resp, 400)
         else:  # _response_placement == 'url':
             _log.info('Redirect to: {}'.format(info['response']))
             resp = redirect(info['response'])

@@ -170,11 +170,11 @@ class ServerEntity(ServerUnit):
                 metadata[param] = self.context.entity_id
 
         # remove these from the metadata
-        for item in ["jwks", "jwks_uri", "signed_jwks_uri"]:
-            try:
-                del metadata[item]
-            except KeyError:
-                pass
+        # for item in ["jwks", "jwks_uri", "signed_jwks_uri"]:
+        #     try:
+        #         del metadata[item]
+        #     except KeyError:
+        #         pass
         # collect endpoints
         return {entity_type: metadata}
 

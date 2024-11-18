@@ -137,8 +137,7 @@ class StandAloneClientEntity(ClientEntity):
         _context = self.get_context()
         _federation_entity = get_federation_entity(self)
 
-        if _federation_entity.get_service(
-                "registration"):  # means I can do dynamic client registration
+        if _federation_entity.get_service("registration"):  # means I can do dynamic client registration
             if request_args is None:
                 request_args = {}
 
@@ -148,7 +147,7 @@ class StandAloneClientEntity(ClientEntity):
 
             # root = topmost_unit(_federation_entity)
             _endpoint_name = _federation_entity.client.get_service("registration").endpoint_name
-            endpoint = self.context.provider_info[_endpoint_name]
+            endpoint = _context.provider_info[_endpoint_name]
             load_registration_response(_federation_entity, request_args=request_args,
                                        behaviour_args={"client": self},
                                        endpoint=endpoint)

@@ -13,6 +13,7 @@ from flask import session
 from flask.helpers import make_response
 from flask.helpers import send_from_directory
 from idpyoidc.client.exception import OidcServiceError
+from idpyoidc.client.rp_handler import RPHandler
 
 from fedservice.entity_statement.create import create_entity_statement
 
@@ -30,7 +31,16 @@ def send_js(filename):
 def keys(guise):
     if guise in ["openid_relying_party", "federation_entity"]:
         _ent_type = current_app.server[guise]
-        return _ent_type.context.keyjar.export_jwks_as_json()
+        logger.debug(f"Returning keys for {guise}")
+        logger.debug(f"_ent_type: {_ent_type}")
+        if isinstance(_ent_type, RPHandler):
+            logger.debug(f"<<RPHandler>>")
+            _json = _ent_type.keyjar.export_jwks_as_json()
+        else:
+            _context = _ent_type.get_context()
+            _json = _context.keyjar.export_jwks_as_json()
+        logger.debug(f"keys: {_json}")
+        return _json
 
     return "Asking for something I do not have", 400
 
@@ -96,6 +106,7 @@ def rp():
         try:
             result = get_rph().begin(link)
         except Exception as err:
+            logger.exception("RP begin")
             return make_response('Something went wrong:{}'.format(err), 400)
         else:
             return redirect(result, 303)
