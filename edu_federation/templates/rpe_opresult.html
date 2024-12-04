@@ -47,15 +47,10 @@
     <dd>{{ url }}</dd>
 {% endfor %}
 <h3>Federation Entity information</h3>
-<h4>Trust Path</h4>
+<h4>OpenID Provider Trust Path</h4>
 {{ trust_path }}
 <h4>Trust path expires</h4>
 {{ trust_path_expires }}
-<h4>Federation Endpoints</h4>
-{% for end_point, url in federation_endpoints.items() %}
-    <dt>{{ end_point }}</dt>
-    <dd>{{ url }}</dd>
-{% endfor %}
 <h4>Trust marks</h4>
 {{ trust_marks }}
 </body>

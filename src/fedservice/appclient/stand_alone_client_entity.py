@@ -21,7 +21,7 @@ from idpyoidc.message.oauth2 import AuthorizationResponse
 from idpyoidc.message.oauth2 import is_error_message
 from idpyoidc.message.oauth2 import ResponseMessage
 from idpyoidc.message.oidc import OpenIDSchema
-from idpyoidc.node import topmost_unit
+from idpyoidc.transform import create_registration_request
 from idpyoidc.util import rndstr
 
 from fedservice import save_trust_chains
@@ -49,6 +49,20 @@ def load_registration_response(entity, request_args, **kwargs):
 
 class StandAloneClientEntity(ClientEntity):
 
+    def _import_keys(self, resp, keyjar, issuer):
+        if "jwks_uri" in resp:
+            logger.debug(f"'jwks_uri' in provider info: {resp['jwks_uri']}")
+            _hp = self.upstream_get("attribute","httpc_params")
+            if _hp:
+                if "verify" in _hp and "verify" not in keyjar.httpc_params:
+                    keyjar.httpc_params["verify"] = _hp["verify"]
+            keyjar.load_keys(issuer, jwks_uri=resp["jwks_uri"])
+        elif "jwks" in resp:
+            logger.debug("'jwks' in provider info")
+            keyjar.load_keys(issuer, jwks=resp["jwks"])
+        else:
+            logger.debug("Neither jws or jwks_uri in provider info")
+
     def _collect_metadata(self, federation_entity, context):
         _trust_chains = get_verified_trust_chains(self, context.issuer)
         if _trust_chains:
@@ -57,7 +71,9 @@ class StandAloneClientEntity(ClientEntity):
             federation_entity.trust_chain_anchor = trust_chain.anchor
             # _pi = trust_chain.metadata["openid_relying_party"]
             _pi = trust_chain.metadata["openid_provider"]
+            federation_entity.context.trust_chain[_pi["issuer"]] = trust_chain
             context.provider_info = context.metadata = _pi
+            self._import_keys(_pi, context.keyjar, _pi["issuer"])
             return _pi
         else:
             raise NoTrustedChains(context.issuer)
@@ -155,10 +171,16 @@ class StandAloneClientEntity(ClientEntity):
             _context.map_preferred_to_registered()
 
     def _get_response_type(self, context, req_args: Optional[dict] = None):
+        default_response_type = "code"
         if req_args:
-            return req_args.get("response_type", context.claims.get_usage("response_types")[0])
+            _response_type = req_args.get("response_type")
+            if _response_type:
+                return _response_type
         else:
-            return context.claims.get_usage("response_types")[0]
+            if default_response_type in context.claims.get_usage("response_types"):
+                return default_response_type
+            else:
+                return context.claims.get_usage("response_types")[0]
 
     def _get_response_mode(self, context, response_type, request_args):
         if request_args:
@@ -702,3 +724,7 @@ class StandAloneClientEntity(ClientEntity):
 
     def clear_session(self, state):
         self.get_context().cstate.remove_state(state)
+
+    def registration_metadata(self):
+        _context = self.get_context()
+        return {self.entity_type: create_registration_request(_context.claims.prefer, _context.claims.supports())}

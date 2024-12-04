@@ -63,6 +63,17 @@ class Registration(registration.Registration):
             metadata.update(combo["federation_entity"].get_metadata())
         return metadata
 
+    def registration_metadata(self, combo, **kwargs):
+        metadata = {}
+        _guise = kwargs.get("client", None)
+        if _guise is None:
+            for _guise in self.get_guise(combo):
+                metadata.update(_guise.registration_metadata())
+        else:
+            metadata.update(_guise.registration_metadata())
+            metadata.update(combo["federation_entity"].registration_metadata())
+        return metadata
+
     def create_entity_statement(self, request_args: Optional[dict] = None, **kwargs):
         """
         Create a self-signed entity statement
@@ -75,7 +86,8 @@ class Registration(registration.Registration):
 
         _federation_entity = get_federation_entity(self)
         _combo = _federation_entity.upstream_get('unit')
-        metadata = self.collect_metadata(_combo, **kwargs)
+        metadata = self.registration_metadata(_combo, **kwargs)
+        # metadata = self.collect_metadata(_combo, **kwargs)
 
         _keyjar = _federation_entity.get_attribute("keyjar")
         _authority_hints = _federation_entity.get_authority_hints()

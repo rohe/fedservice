@@ -1,6 +1,6 @@
-from json import JSONDecodeError
 import logging
 import re
+from json import JSONDecodeError
 from typing import Callable
 from typing import Optional
 from typing import Union
@@ -12,12 +12,11 @@ from idpyoidc.client.client_auth import method_to_item
 from idpyoidc.client.defaults import SUCCESSFUL
 from idpyoidc.client.exception import OidcServiceError
 from idpyoidc.client.rp_handler import RPHandler
+from idpyoidc.client.service import init_services
 from idpyoidc.client.service import REQUEST_INFO
 from idpyoidc.client.service import Service
-from idpyoidc.client.service import init_services
 from idpyoidc.client.service_context import ServiceContext
 from idpyoidc.client.util import do_add_ons
-from idpyoidc.client.util import get_content_type
 from idpyoidc.client.util import get_deserialization_method
 from idpyoidc.configure import Configuration
 from idpyoidc.context import OidcContext
@@ -28,8 +27,8 @@ from idpyoidc.node import ClientUnit
 
 from fedservice.defaults import COMBINED_DEFAULT_OAUTH2_SERVICES
 from fedservice.defaults import COMBINED_DEFAULT_OIDC_SERVICES
-from fedservice.message import OIDCRPMetadata
 from fedservice.message import OauthClientMetadata
+from fedservice.message import OIDCRPMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -152,6 +151,16 @@ class ClientEntity(ClientUnit):
 
         return self.context.claims.get_client_metadata(entity_type=entity_type,
                                                        metadata_schema=self.metadata_class)
+
+    def get_registration_metadata(self, entity_type="", *args):
+        if not entity_type:
+            if self.client_type == "oauth2":
+                entity_type = "oauth_client"
+            elif self.client_type == "oidc":
+                entity_type = "openid_relying_party"
+
+        return self.context.claims.get_registration_metadata(entity_type=entity_type,
+                                                             metadata_schema=self.metadata_class)
 
     def do_request(
             self,
@@ -315,8 +324,8 @@ class ClientEntity(ClientUnit):
 
         if reqresp.status_code in SUCCESSFUL:
             logger.debug(f'response_body_type: "{response_body_type}"')
-            _ctype = get_content_type(reqresp)
-            _deser_method = get_deserialization_method(_ctype)
+            _ctype = reqresp.headers.get("content-type")
+            _deser_method = get_deserialization_method(reqresp)
 
             if _ctype != response_body_type:
                 logger.warning(f"Not the body type I expected: {_ctype} != {response_body_type}")
@@ -341,8 +350,8 @@ class ClientEntity(ClientUnit):
         elif 400 <= reqresp.status_code < 500:
             logger.error(f"Error response ({reqresp.status_code}): {reqresp.text}")
             # expecting an error response
-            content_type = get_content_type(reqresp)
-            _deser_method = get_deserialization_method(content_type)
+            content_type = reqresp.headers.get("content-type")
+            _deser_method = get_deserialization_method(reqresp)
             if not content_type:
                 content_type = "application/json"
 

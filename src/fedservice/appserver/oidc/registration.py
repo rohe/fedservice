@@ -53,6 +53,7 @@ class Registration(registration.Registration):
         # Perform non-federation registration
         response_info = self.non_fed_process_request(req, **kwargs)
         if "response_args" in response_info:
+            logger.debug(f"Registration response args: {response_info['response_args']}")
             _context = _federation_entity.context
 
             for item in ["jwks", "jwks_uri", "signed_jwks_uri"]:
