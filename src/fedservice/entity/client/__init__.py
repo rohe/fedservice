@@ -16,6 +16,7 @@ from idpyoidc.client.service import Service
 from idpyoidc.client.service_context import CLI_REG_MAP
 from idpyoidc.client.service_context import PROVIDER_INFO_MAP
 from idpyoidc.client.util import do_add_ons
+from idpyoidc.client.util import get_content_type
 from idpyoidc.client.util import get_deserialization_method
 from idpyoidc.exception import FormatError
 from idpyoidc.exception import ParseError
@@ -426,8 +427,8 @@ class FederationClient(FederationClientEntity):
 
         if reqresp.status_code in SUCCESSFUL:
             logger.debug('response_body_type: "{}"'.format(response_body_type))
-            ctype = reqresp.headers.get("content-type")
-            _deser_method = get_deserialization_method(reqresp)
+            ctype = get_content_type(reqresp)
+            _deser_method = get_deserialization_method(ctype)
 
             if _deser_method != response_body_type:
                 logger.warning(
@@ -455,8 +456,8 @@ class FederationClient(FederationClientEntity):
         elif 400 <= reqresp.status_code < 500:
             logger.error("Error response ({}): {}".format(reqresp.status_code, reqresp.text))
             # expecting an error response
-            ctype = reqresp.headers.get("content-type")
-            _deser_method = get_deserialization_method(reqresp)
+            ctype =  get_content_type(reqresp)
+            _deser_method = get_deserialization_method(ctype)
             if not _deser_method:
                 _deser_method = "json"
 
