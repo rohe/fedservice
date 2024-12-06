@@ -109,7 +109,7 @@
                 "refresh_token"
               ]
             },
-            "template_dir": "templates",
+            "template_dir": "openid_provider/templates",
             "token_handler_args": {
               "jwks_def": {
                 "private_path": "openid_provider/private/token_jwk.json",
@@ -177,7 +177,7 @@
                 }
               }
             },
-            "keys": {
+            "key_conf": {
               "private_path": "openid_provider/private/jwks.json",
               "key_defs": [
                 {

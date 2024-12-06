@@ -84,7 +84,7 @@ class Registration(registration.Registration):
 
     def parse_response(self, info, sformat="", state="", **kwargs):
         resp = self.parse_federation_registration_response(info, **kwargs)
-
+        logger.debug(f"Registration response: {resp}")
         if not resp:
             logger.error('Missing or faulty response')
             raise ResponseError("Missing or faulty response")
