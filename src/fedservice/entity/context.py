@@ -119,7 +119,9 @@ class FederationContext(ImpExp):
         if not lifetime:
             lifetime = self.default_lifetime
 
-        _trust_marks = self.get_trust_marks()
+        _trust_marks = kwargs.get("trust_marks")
+        if not _trust_marks:
+            _trust_marks = self.get_trust_marks()
         if _trust_marks:
             kwargs["trust_marks"] = _trust_marks
 

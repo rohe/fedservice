@@ -157,16 +157,10 @@ class FederationEntity(Unit):
         _context = self.get_context()
         _claims = _context.claims
 
-        metadata = _claims.get_server_metadata(endpoints=self.get_all_endpoints())
+        # The entity metadata for a Federation entity server
+        metadata = _claims.get_server_metadata(endpoints=self.get_all_endpoints(),
+                                               metadata_schema=message.FederationEntity)
 
-        # remove these from the metadata
-        for item in ["jwks", "jwks_uri", "signed_jwks_uri"]:
-            try:
-                del metadata[item]
-            except KeyError:
-                pass
-
-        # _issuer = getattr(self.server.context, "trust_mark_server", None)
         return {entity_type: metadata}
 
     def get_preferences(self):

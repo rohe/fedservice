@@ -1,3 +1,4 @@
+import json
 import os
 
 from cryptojwt.jws.jws import factory
@@ -18,7 +19,7 @@ KEYDEFS = [
 SUB_KEYJAR = init_key_jar(key_defs=KEYDEFS)
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
-TRUST_MARKS = open(os.path.join(BASE_PATH, "trust_marks.json")).read()
+TRUST_MARKS = json.loads(open(os.path.join(BASE_PATH, "trust_marks.json")).read())
 
 ENTITY_ID = "https://entity.example.org"
 RP_ID = "https://rp.example.org"

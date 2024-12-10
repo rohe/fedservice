@@ -129,11 +129,7 @@ class TestFederationEntity(object):
                                                                         'federation_trust_mark_list_endpoint',
                                                                         'federation_trust_mark_status_endpoint',
                                                                         'homepage_uri',
-                                                                        'organization_name',
-                                                                        'federation_trust_mark_status_endpoint_auth_methods',
-                                                                        'federation_trust_mark_endpoint_auth_signing_alg_values',
-                                                                        'federation_trust_mark_endpoint_auth_methods',
-                                                                        'federation_trust_mark_list_endpoint_auth_methods'
+                                                                        'organization_name'
                                                                         }
 
     def test_fetch(self):
