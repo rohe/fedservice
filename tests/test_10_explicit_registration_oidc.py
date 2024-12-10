@@ -224,8 +224,8 @@ class TestRpService(object):
 
         assert set(claims.keys()) == {'client_id',
                                       'client_id_issued_at',
-                                      'client_secret',
                                       'client_secret_expires_at',
+                                      'client_secret',
                                       'default_max_age',
                                       'grant_types',
                                       'id_token_signed_response_alg',

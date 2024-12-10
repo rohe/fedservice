@@ -26,8 +26,8 @@ class Registration(registration.Registration):
     response_cls = OauthClientInformationResponse
     endpoint_name = 'federation_registration_endpoint'
     error_cls = ResponseMessage
-    request_body_type = 'jose'
-    response_body_type = 'jose'
+    request_body_type = 'jwt'
+    response_body_type = 'jwt'
     content_type = "application/entity-statement+jwt"
     name = 'registration'
 
@@ -86,8 +86,7 @@ class Registration(registration.Registration):
 
         _federation_entity = get_federation_entity(self)
         _combo = _federation_entity.upstream_get('unit')
-        metadata = self.registration_metadata(_combo, **kwargs)
-        # metadata = self.collect_metadata(_combo, **kwargs)
+        metadata = _combo.get_metadata()
 
         _keyjar = _federation_entity.get_attribute("keyjar")
         _authority_hints = _federation_entity.get_authority_hints()

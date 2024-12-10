@@ -45,7 +45,8 @@ class TestClaimsEntity():
                                               'trust_mark_issuers'}
 
         assert set(self.entity.context.claims.prefer.keys()) == {
-            "organization_name", "homepage_uri", "contacts", "jwks"
+            "organization_name", "homepage_uri", "contacts", "jwks", 'federation_fetch_endpoint',
+            'federation_list_endpoint'
         }
 
         assert self.entity.get_endpoint_claims() == {

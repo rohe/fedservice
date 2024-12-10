@@ -324,11 +324,11 @@ class ClientEntity(ClientUnit):
 
         if reqresp.status_code in SUCCESSFUL:
             logger.debug(f'response_body_type: "{response_body_type}"')
-            _ctype = reqresp.headers.get("content-type")
-            _deser_method = get_deserialization_method(reqresp)
+            content_type = reqresp.headers.get("content-type")
+            _deser_method = get_deserialization_method(content_type)
 
-            if _ctype != response_body_type:
-                logger.warning(f"Not the body type I expected: {_ctype} != {response_body_type}")
+            if content_type != response_body_type:
+                logger.warning(f"Not the body type I expected: {content_type} != {response_body_type}")
             if _deser_method in ["json", "jwt", "urlencoded"]:
                 body_type = _deser_method
             else:
@@ -351,7 +351,7 @@ class ClientEntity(ClientUnit):
             logger.error(f"Error response ({reqresp.status_code}): {reqresp.text}")
             # expecting an error response
             content_type = reqresp.headers.get("content-type")
-            _deser_method = get_deserialization_method(reqresp)
+            _deser_method = get_deserialization_method(content_type)
             if not content_type:
                 content_type = "application/json"
 

@@ -213,10 +213,6 @@ class TestTrustMarkDelegation():
         _metadata = self.trust_mark_issuer.get_metadata()
         assert set(_metadata.keys()) == {"federation_entity"}
         assert set(_metadata["federation_entity"].keys()) == {'federation_trust_mark_endpoint',
-                                                              'federation_trust_mark_endpoint_auth_methods',
-                                                              'federation_trust_mark_endpoint_auth_signing_alg_values',
                                                               'federation_trust_mark_list_endpoint',
-                                                              'federation_trust_mark_list_endpoint_auth_methods',
                                                               'federation_trust_mark_status_endpoint',
-                                                              'federation_trust_mark_status_endpoint_auth_methods',
                                                               'organization_name'}
