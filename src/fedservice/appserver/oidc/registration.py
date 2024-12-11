@@ -36,7 +36,12 @@ class Registration(registration.Registration):
         :return:
         """
         payload = verify_self_signed_signature(request)
-        opponent_entity_type = set(payload['metadata'].keys()).difference({'federation_entity'}).pop()
+        _entity_types = set(payload['metadata'].keys())
+        if len(_entity_types) == 1:
+            opponent_entity_type = _entity_types.pop()
+        else:
+            opponent_entity_type = _entity_types.difference({'federation_entity'}).pop()
+
         _federation_entity = get_federation_entity(self)
 
         # Collect trust chains for client

@@ -7,6 +7,7 @@ import werkzeug
 from flask import Blueprint
 from flask import current_app
 from flask import redirect
+from flask import render_template
 from flask import request
 from flask.helpers import make_response
 from flask.helpers import send_from_directory
@@ -132,6 +133,13 @@ def service_endpoint(endpoint):
     response = do_response(endpoint, req_args, **args)
     return response
 
+
+@entity.route('/')
+def index():
+    _entity = current_app.federation_entity
+    _keys = _entity.server.subordinate.keys()
+    display = {k:_entity.server.subordinate[k] for k in _keys}
+    return render_template('trust_anchor.html', subordinates=display)
 
 @entity.route('/static/<path:path>')
 def send_js(path):

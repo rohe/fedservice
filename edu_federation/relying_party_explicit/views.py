@@ -70,8 +70,8 @@ def wkof():
         # Any client will do
         cli = _rph.issuer2rp[list(_rph.issuer2rp.keys())[0]]
 
-    _metadata = current_app.server.get_metadata()
-    _metadata.update(cli.get_metadata())
+    _metadata = current_app.server.get_metadata(cli)
+    #_metadata.update(cli.get_metadata())
 
     _fed_entity = current_app.server["federation_entity"]
 
