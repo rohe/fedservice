@@ -86,7 +86,7 @@ class Registration(registration.Registration):
 
         _federation_entity = get_federation_entity(self)
         _combo = _federation_entity.upstream_get('unit')
-        metadata = _combo.get_metadata()
+        metadata = _combo.get_metadata(client=kwargs.get("client"))
 
         _keyjar = _federation_entity.get_attribute("keyjar")
         _authority_hints = _federation_entity.get_authority_hints()

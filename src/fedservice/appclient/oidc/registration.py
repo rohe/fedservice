@@ -22,6 +22,7 @@ class Registration(registration.Registration):
     endpoint_name = 'federation_registration_endpoint'
     request_body_type = 'jwt'
     response_body_type = 'jwt'
+    content_type = "application/entity-statement+jwt"
     name = 'registration'
 
     def __init__(self, upstream_get, conf=None, client_authn_factory=None, **kwargs):

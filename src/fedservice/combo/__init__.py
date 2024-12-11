@@ -5,6 +5,7 @@ from typing import Union
 
 from cryptojwt import KeyJar
 from idpyoidc.client.entity_metadata import EntityMetadata
+from idpyoidc.client.rp_handler import RPHandler
 from idpyoidc.configure import Configuration
 from idpyoidc.message import Message
 from idpyoidc.node import Unit
@@ -106,10 +107,14 @@ class FederationCombo(Combo):
             return _hp
         return config["federation_entity"].get("httpc_params")
 
-    def get_metadata(self):
+    def get_metadata(self, client = None):
         res = {}
         for federation_type, item in self._part.items():
-            if getattr(item, "get_metadata", None):
+            if isinstance(item, RPHandler): # Special treatment
+                if client:
+                    _res = client.get_metadata()
+                    res.update(_res)
+            elif getattr(item, "get_metadata", None):
                 res.update(item.get_metadata(entity_type=federation_type))
         return res
 
