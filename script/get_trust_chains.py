@@ -38,7 +38,6 @@ LOGGING = {
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', dest='insecure', action='store_true')
-    parser.add_argument('-f', "--format", action='store_true')
     parser.add_argument('-t', dest='trust_anchors')
     parser.add_argument('-l', dest='logging', action='store_true')
     parser.add_argument(dest="url")

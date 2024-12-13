@@ -10,7 +10,6 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-k', "--insecure", action='store_true')
-    parser.add_argument('-f', "--format", action='store_true')
     parser.add_argument('-t', "--trust_anchors_file")
     parser.add_argument('-s', "--superior")
     parser.add_argument(dest="entity_id")
