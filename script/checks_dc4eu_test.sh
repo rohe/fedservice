@@ -1,6 +1,7 @@
 # Trust Anchor: https://127.0.0.1:7003
 # Trust Mark Issuer: https://127.0.0.1:6000
 # Wallet Provider: https://127.0.0.1:5001
+# Credential Issuer: https://127.0.0.1:8080
 
 # Get the entity configuration
 ./get_entity_configuration.py -k -t ../setup_federation/trust_anchor.json https://127.0.0.1:5001
