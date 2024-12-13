@@ -1,3 +1,5 @@
+from idpyoidc.key_import import import_jwks
+
 
 def federation_entity(unit):
     if hasattr(unit, "upstream_get"):
@@ -19,7 +21,7 @@ def get_federation_entity(unit):
     # Look both upstream and downstream if necessary
     if unit.__class__.__name__ == 'FederationEntity':
         return unit
-    _ug = getattr(unit,'upstream_get', None)
+    _ug = getattr(unit, 'upstream_get', None)
     if _ug:
         return get_federation_entity(_ug('unit'))
 
@@ -32,3 +34,26 @@ def get_federation_entity(unit):
         return _get_guise("federation_entity")
     else:
         return None
+
+
+def get_verified_jwks(unit, _signed_jwks_uri):
+    # Fetch a signed JWT that contains a JWKS.
+    # Verify the signature on the JWS with a federation key
+    # To be implemented
+    return None
+
+
+def get_keys(metadata, keyjar, entity_id, unit):
+    _signed_jwks_uri = metadata.get('signed_jwks_uri')
+    if _signed_jwks_uri:
+        if _signed_jwks_uri:
+            _jwks = get_verified_jwks(unit, _signed_jwks_uri)
+            if _jwks:
+                keyjar.add(entity_id, _jwks)
+    else:
+        _jwks_uri = metadata.get('jwks_uri')
+        if _jwks_uri:
+            keyjar.add_url(entity_id, _jwks_uri)
+        else:
+            _jwks = metadata.get('jwks')
+            _keyjar = import_jwks(keyjar, _jwks, entity_id)
