@@ -158,8 +158,8 @@ If you now restart it it should have all the necessary information to be part of
 entity_id of the trust anchor or the wallet provider you have to change the
 command parameters accordingly.
 
-OpenID Relying Party
---------------------
+OpenID Relying Party - Explicit registration
+--------------------------------------------
 
 Much the same as for the openid relying party.
 To start running the relying party you have to do::
@@ -195,6 +195,53 @@ The first two are simply::
 The third would look like this::
 
     ./get_info.py -k -s https://127.0.0.1:4010 > tmp.json
+    ./add_info.py -s tmp.json -t trust_anchor/subordinates
+
+
+That should do it for the openid relying party.
+If you now restart it it should have all the necessary information to be part of the federation.
+
+**Note** The same goes for these commands as was noted above. If you change the
+entity_id of the trust anchor or the wallet provider you have to change the
+command parameters accordingly.
+
+OpenID Relying Party - Automatic registration
+---------------------------------------------
+
+Much the same as for the openid relying party.
+To start running the relying party you have to do::
+
+    ./entity.py relying_party_automatic
+
+A slightly different set of files/directories has been added
+
+* private
+    Where the JWKS representation of the private federation keys are kept
+* static
+    Where the JWKS representation of the public federation keys are kept
+* trust_anchors
+    A directory where information about trust anchors are kept
+* authority_hints
+    A file containing entity_ids of this entity's authority hints.
+    Note that there is also a authority_hints.lock file present you can safely
+    ignore it.
+* debug.log
+    A log file
+
+Now four things have to happen::
+
+1. Adding information about trust anchors
+2. Add authority hints
+3. Add information about the wallet provider as a subordinate to the trust anchor
+
+The first two are simply::
+
+    ./add_info.py -s trust_anchor.json -t relying_party_automatic/trust_anchors
+    echo -e "https://127.0.0.1:7010" >> relying_party_automatic/authority_hints
+
+The third would look like this::
+
+    ./get_info.py -k -s https://127.0.0.1:4015 > tmp.json
     ./add_info.py -s tmp.json -t trust_anchor/subordinates
 
 

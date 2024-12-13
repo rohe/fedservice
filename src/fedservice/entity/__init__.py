@@ -206,7 +206,7 @@ class FederationEntity(Unit):
         else:
             return _val
 
-    def pick_trust_chain(self, trust_chains):
+    def pick_trust_chain(self, trust_chains: list):
         """
         Pick one trust chain out of the list of possible trust chains
 
@@ -227,6 +227,18 @@ class FederationEntity(Unit):
         # Can only arrive here if the federations I got back and trust are not
         # in the priority list. So, just pick one
         return trust_chains[0]
+
+    def pick_from_stored_trust_chains(self, entity_id):
+        _trust_chains = self.context.trust_chain[entity_id]
+        _tas = list(_trust_chains.keys())
+        if len(_tas) == 1:
+            return _trust_chains[_tas[0]]
+        elif self.context.tr_priority:
+            # Go by priority
+            for ta_id in self.context.tr_priority:
+                for ta_id in _tas:
+                    return _trust_chains[ta_id]
+        return _trust_chains[_tas[0]]
 
     def get_payload(self, self_signed_statement):
         _jws = as_unicode(self_signed_statement)

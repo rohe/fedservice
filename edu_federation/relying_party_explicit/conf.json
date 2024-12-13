@@ -136,6 +136,9 @@
               ],
               "token_endpoint_auth_method": [
                 "private_key_jwt"
+              ],
+              "client_registration_types": [
+                "explicit"
               ]
             },
             "services": {
@@ -156,14 +159,32 @@
                 "kwargs": {}
               }
             },
-            "clients": {
+            "client_configs": {
               "": {
-                "redirect_uris": null,
-                "local": {
-                  "issuer": "https://127.0.0.1:5000",
-                  "redirect_uris": [
-                    "https://{domain}:{port}/authz_cb/local"
+                "client_type": "oidc",
+                "preference": {
+                  "client_registration_types": [
+                    "explicit"
+                  ],
+                  "application_type": "web",
+                  "response_types": [
+                    "code",
+                    "id_token",
+                    "code id_token"
+                  ],
+                  "token_endpoint_auth_method": "client_secret_basic",
+                  "scopes_supported": [
+                    "openid"
                   ]
+                },
+                "add_ons": {
+                  "pkce": {
+                    "function": "idpyoidc.client.oauth2.add_on.pkce.add_support",
+                    "kwargs": {
+                      "code_challenge_length": 64,
+                      "code_challenge_method": "S256"
+                    }
+                  }
                 }
               }
             }

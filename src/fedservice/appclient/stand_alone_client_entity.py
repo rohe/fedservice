@@ -135,6 +135,18 @@ class StandAloneClientEntity(ClientEntity):
         except:
             return _context.issuer
 
+    def pick_from_stored_trust_chains(self, entity_id, federation_entity):
+        _trust_chains = self.context.trust_chain[entity_id]
+        _tas = list(_trust_chains.keys())
+        if len(_tas) == 1:
+            return _trust_chains[_tas[0]]
+        elif federation_entity.context.tr_priority:
+            # Go by priority
+            for ta_id in federation_entity.context.tr_priority:
+                for ta_id in _tas:
+                    return _trust_chains[ta_id]
+        return _trust_chains[_tas[0]]
+
     def do_client_registration(
             self,
             request_args: Optional[dict] = None,
@@ -152,6 +164,19 @@ class StandAloneClientEntity(ClientEntity):
 
         _context = self.get_context()
         _federation_entity = get_federation_entity(self)
+
+        # What kind of registration I can do
+        _ability = _context.claims.get_preference("client_registration_types")
+        # What the server supports
+        _trust_chain = self.pick_from_stored_trust_chains(_context.issuer, _federation_entity)
+        _supported = _trust_chain.metadata["openid_provider"]['client_registration_types_supported']
+        _possible = set(_ability).intersection(set(_supported))
+        if len(_possible) == 0:
+            raise ValueError("No common client registration method")
+
+        if len(_possible) == 1:
+            if 'automatic' in _possible:
+                return
 
         if _federation_entity.get_service("registration"):  # means I can do dynamic client registration
             if request_args is None:

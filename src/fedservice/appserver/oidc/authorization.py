@@ -2,17 +2,16 @@ import logging
 from typing import List
 from typing import Optional
 
-from idpyoidc.key_import import import_jwks
 from idpyoidc.message import oidc
 from idpyoidc.message.oidc import RegistrationRequest
 from idpyoidc.node import topmost_unit
 from idpyoidc.server.oidc import authorization
 
 from fedservice.entity.function import apply_policies
-from fedservice.entity.function import get_verified_jwks
 from fedservice.entity.function import get_verified_trust_chains
 from fedservice.entity.function import verify_trust_chains
 from fedservice.entity.utils import get_federation_entity
+from fedservice.entity.utils import get_keys
 from fedservice.exception import NoTrustedChains
 
 logger = logging.getLogger(__name__)
@@ -72,28 +71,17 @@ class Authorization(authorization.Authorization):
         # If there is a jwks_uri in the metadata import keys
         _root = topmost_unit(self)
         if "openid_provider" in _root:
-            _metadata = trust_chain.metadata['openid_relying_party']
-            _signed_jwks_uri = _metadata.get('signed_jwks_uri')
-            if _signed_jwks_uri:
-                if _signed_jwks_uri:
-                    _jwks = get_verified_jwks(self, _signed_jwks_uri)
-                    if _jwks:
-                        _keyjar = self.upstream_get('attribute', 'keyjar')
-                        _keyjar.add(client_entity_id, _jwks)
-            else:
-                _jwks_uri = _metadata.get('jwks_uri')
-                if _jwks_uri:
-                    _keyjar = self.upstream_get('attribute', 'keyjar')
-                    _keyjar.add_url(client_entity_id, _jwks_uri)
-                else:
-                    _jwks = _metadata.get('jwks')
-                    _keyjar = self.upstream_get('attribute', 'keyjar')
-                    _keyjar = import_jwks(_keyjar, _jwks, client_entity_id)
+            get_keys(
+                trust_chain.metadata['openid_relying_party'],
+                self.upstream_get('attribute', 'keyjar'),
+                client_entity_id,
+                self)
 
         req = RegistrationRequest(**trust_chain.metadata['openid_relying_party'])
         req['client_id'] = client_entity_id
         kwargs = {}
         kwargs['new_id'] = self.new_client_id
+        kwargs["set_secret"] = False
 
         op = topmost_unit(self)['openid_provider']
         _registration = op.get_endpoint("registration")
@@ -109,8 +97,10 @@ class Authorization(authorization.Authorization):
         _context = self.upstream_get("context")
         # If this is a registered client then this should return some info
         client_info = _context.cdb.get(_cid)
-        if client_info is None:
+        if client_info is None or "automatic_registered" in client_info:
             if 'automatic' in _context.provider_info.get('client_registration_types_supported', []):
+                if client_info and "automatic_registered" in client_info:  # Remove the old one
+                    del _context.cdb[_cid]
                 # try the federation way
                 _trust_chain = request.get('trust_chain', [])
                 registered_client_id = self.do_automatic_registration(_cid, _trust_chain)
@@ -121,6 +111,7 @@ class Authorization(authorization.Authorization):
                     }
                 else:
                     logger.debug('Automatic registration done')
+                    _context.cdb[registered_client_id]["automatic_registered"] = True
                     if registered_client_id != _cid:
                         request["client_id"] = registered_client_id
                         kwargs["also_known_as"] = {_cid: registered_client_id}

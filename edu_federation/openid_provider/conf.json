@@ -98,6 +98,10 @@
           },
           "config": {
             "preference": {
+              "client_registration_types_supported": [
+                "automatic",
+                "explicit"
+              ],
               "subject_types_supported": [
                 "public",
                 "pairwise"

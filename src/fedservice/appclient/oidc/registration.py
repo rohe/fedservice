@@ -25,6 +25,10 @@ class Registration(registration.Registration):
     content_type = "application/entity-statement+jwt"
     name = 'registration'
 
+    _supports = {
+        "client_registration_types": ["automatic", "explicit"]
+    }
+
     def __init__(self, upstream_get, conf=None, client_authn_factory=None, **kwargs):
         registration.Registration.__init__(self, upstream_get, conf=conf)
         #
