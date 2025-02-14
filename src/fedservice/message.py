@@ -549,7 +549,16 @@ class RegistrationRequest(message.oidc.RegistrationRequest):
         'client_registration_types': REQUIRED_LIST_OF_STRINGS,
         'organization_name': SINGLE_OPTIONAL_STRING,
         'signed_jwks_uri': SINGLE_OPTIONAL_STRING,
-        'jwks': SINGLE_OPTIONAL_JSON
+        'jwks': SINGLE_OPTIONAL_JSON,
+        "claims_parameter_supported": OPTIONAL_LIST_OF_STRINGS,
+        "response_types_supported": OPTIONAL_LIST_OF_STRINGS,
+        "response_modes_supported": OPTIONAL_LIST_OF_STRINGS,
+        "request_object_signing_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "request_object_encryption_alg_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "request_object_encryption_enc_values_supported": OPTIONAL_LIST_OF_STRINGS,
+        "code_challenge_methods_supported": OPTIONAL_LIST_OF_STRINGS,
+        "scopes_supported": OPTIONAL_LIST_OF_STRINGS,
+        "claims_suppported": OPTIONAL_LIST_OF_STRINGS
     })
 
 
